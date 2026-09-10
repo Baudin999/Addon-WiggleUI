@@ -2,7 +2,7 @@
 revision: 5
 id: 01M25THBKRZDYR86JYQR1VHCDB
 type: bug
-status: todo
+status: doing
 title: "The floating numbers draw no miss, dodge, parry or resist"
 ---
 
