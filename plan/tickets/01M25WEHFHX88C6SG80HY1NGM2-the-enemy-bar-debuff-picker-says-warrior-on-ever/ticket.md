@@ -2,7 +2,7 @@
 revision: 5
 id: 01M25WEHFHX88C6SG80HY1NGM2
 type: task
-status: doing
+status: done
 title: The enemy bar debuff picker says warrior on every class
 ---
 
