@@ -216,7 +216,7 @@ local function Debuffs(ui)
 		DebuffRow(ui, slot)
 	end
 
-	ui.Picker("add a warrior debuff",
+	ui.Picker("add one of your class's debuffs",
 		function() return "pick one" end,
 		function(spellID)
 			if type(spellID) ~= "number" then
@@ -241,7 +241,7 @@ local function Debuffs(ui)
 			end
 			return options
 		end)
-	ui.Hint("The picker is the warrior's own debuffs and a shortlist, not the limit. Matching is by name, so rank 1 covers every rank and another warrior's Sunder counts.")
+	ui.Hint("The picker is a shortlist of your class's debuffs, not the limit. Matching is by name, so rank 1 covers every rank and the same debuff from another player counts.")
 
 	ui.TextField("or add any spell by id",
 		function() return "" end,
