@@ -2,7 +2,7 @@
 revision: 5
 id: 01M25VRJ1QNKZCV2WF4CM6DYXX
 type: task
-status: doing
+status: done
 title: An added debuff raises Can't measure restricted regions on a plate bar
 ---
 
