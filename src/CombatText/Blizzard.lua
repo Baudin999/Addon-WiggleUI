@@ -28,9 +28,17 @@ ns.CombatTextBlizzard = Blizzard
 --
 -- The column that scrolls up beside your character is Blizzard_CombatText, and
 -- it is a different thing wearing the same words. `enableFloatingCombatText` is
--- its master switch and taking it is still the wrong move: it carries your
--- dodges and parries, aura gains and fades, entering and leaving combat, combo
--- points, energy, honour and reputation, and this part draws none of those.
+-- its master switch and taking it is still the wrong move: it carries aura
+-- gains and fades, entering and leaving combat, combo points, energy, honour
+-- and reputation, and this part draws none of those.
+--
+-- Its dodges, parries, misses and resists are the exception, because this part
+-- draws those now, in grey, in the column the blow was aimed at. Every one of
+-- those types names one of two CVars, `floatingCombatTextDodgeParryMiss_v2` and
+-- `floatingCombatTextDamageReduction_v2`, so they are taken the way the four
+-- over the target are and remembered and given back the same way. Clearing
+-- their `show` would not hold: UpdateDisplayedMessages rewrites `show` from the
+-- CVar on every type that names one.
 --
 -- What it also carries is every heal that lands on you and every hit that
 -- lands on you, and those are drawn twice: once rising beside your character in
@@ -60,26 +68,34 @@ ns.CombatTextBlizzard = Blizzard
 -- reason this is a file rather than four lines in Numbers.lua.
 --------------------------------------------------------------------------
 
--- The four, in the order the client's own options page lists them.
+-- The six. The four over the target come first, in the order the client's own
+-- options page lists them, and damage stays first because Describe and the
+-- read back both ask it. The two after them are the scrolling column's.
 --
 --   damage    the numbers over whatever you are hitting
 --   periodic  a bleed or a damage over time tick, which is a child of damage
 --   pet       a pet's melee, also a child of damage
 --   healing   health going up, which stands on its own
+--   missed    a miss, dodge, parry, evade, immune, deflect or reflect beside you
+--   reduced   a resist, block or absorb that took the whole blow, beside you
 --
--- Read off Blizzard_SettingsDefinitions_Frame/Classic/CombatOverrides.lua on
--- the 2.5.6 source rather than from memory.
+-- The first four read off Blizzard_SettingsDefinitions_Frame/Classic/CombatOverrides.lua
+-- and the last two off Blizzard_CombatText/Shared/CombatTextConstants.lua, both
+-- on the 2.5.6 source rather than from memory.
 local TAKEN = {
 	"floatingCombatTextCombatDamage_v2",
 	"floatingCombatTextCombatLogPeriodicSpells_v2",
 	"floatingCombatTextPetMeleeDamage_v2",
 	"floatingCombatTextCombatHealing_v2",
+	"floatingCombatTextDodgeParryMiss_v2",
+	"floatingCombatTextDamageReduction_v2",
 }
 
 -- The scrolling column's message types this part redraws, and nothing else it
 -- draws. Every one of these is a hit or a heal on you, which is what the two
--- right hand streams and the heal stream are; a dodge, an aura, a reputation
--- tick and a combo point are the client's and stay the client's.
+-- right hand streams and the heal stream are; an aura, a reputation tick and a
+-- combo point are the client's and stay the client's. A dodge is not here
+-- because it names a CVar, and TAKEN is where it is taken.
 --
 -- SPLIT_DAMAGE, DAMAGE_SHIELD and the absorb shapes are left alone. The
 -- client's own table gives none of them a `show`, so it is already drawing none
@@ -274,7 +290,7 @@ function Blizzard.Describe()
 	return "the client's own damage numbers are off"
 end
 
--- How many of the four are down, for the harness.
+-- How many of the six are down, for the harness.
 function Blizzard.Quiet()
 	local down = 0
 	for index = 1, #TAKEN do

@@ -27,6 +27,12 @@
 -- it does not bow. All three are assertions because all three are ways of
 -- putting good news where the eye is looking for bad.
 --
+-- Does a blow that did not land say so. A dodge, a parry and a resist carry no
+-- number, and this part skipped them on purpose while the quiet setting took
+-- the client's own "Miss" off the target, so nothing on screen said a swing had
+-- failed. It is a grey word in the column the blow was aimed at, and it never
+-- merges.
+--
 -- Does a column lean one way. The stream alternates sides per number when
 -- nobody says otherwise, which is right for one stream and wrong for two: half
 -- of what you land bows across your character towards the other column. Each
@@ -132,6 +138,21 @@ local function spellHeal(source, dest, spellId, amount)
 	logArgs[12] = spellId
 	logArgs[13] = "Bandage"
 	logArgs[15] = amount
+	fire("COMBAT_LOG_EVENT_UNFILTERED")
+end
+
+-- A blow that did not land. A swing puts the kind at twelve and a spell puts it
+-- at fifteen, after its id and name.
+local function missed(source, dest, kind, spellId)
+	if spellId then
+		clear("SPELL_MISSED", source, dest)
+		logArgs[12] = spellId
+		logArgs[13] = "Mortal Strike"
+		logArgs[15] = kind
+	else
+		clear("SWING_MISSED", source, dest)
+		logArgs[12] = kind
+	end
 	fire("COMBAT_LOG_EVENT_UNFILTERED")
 end
 
@@ -246,6 +267,62 @@ do
 	swing(MOB, "Creature-0-0-0-0-9999-0000ffff", 900)
 	check(Stream.Count() == held,
 		"a blow between two other creatures drew a number on your screen")
+
+	Stream.Clear()
+end
+
+----------------------------------------------------------------------
+-- A blow that did not land says so
+----------------------------------------------------------------------
+
+do
+	local left, right = Anchors.Of("dealt"), Anchors.Of("taken")
+
+	-- The word the client would have said, which is what the harness client
+	-- answers for either global or, with neither, the log's own token.
+	local function said(kind)
+		return _G["COMBAT_TEXT_" .. kind] or _G[kind] or kind
+	end
+
+	local function isGrey(item)
+		local r, g, b = item.frame.text:GetTextColor()
+		return r > 0.4 and r < 0.6 and g > 0.4 and g < 0.6 and b > 0.4 and b < 0.65
+	end
+
+	-- A spell of yours resisted goes where your blows go.
+	missed(ME, MOB, "RESIST", 12294)
+	local item = newest()
+	check(item ~= nil and select(1, readAt(item)) == left,
+		"a spell of yours that was resisted did not come off the left anchor")
+	check(item and item.frame.said == said("RESIST"),
+		("a resist was drawn as %s"):format(tostring(item and item.frame.said)))
+	check(item and isGrey(item), "a resist is not grey")
+
+	-- Never bigger than the smallest hit, because it is not a hit.
+	check(item and item.weight < 1,
+		("a miss was weighted %s, and a word is drawn at the floor"):format(tostring(item and item.weight)))
+
+	-- A swing that failed on you goes where blows on you go.
+	missed(MOB, ME, "DODGE")
+	item = newest()
+	check(item ~= nil and select(1, readAt(item)) == right,
+		"your dodge did not come off the right anchor")
+	check(item and item.frame.said == said("DODGE"),
+		("a dodge was drawn as %s"):format(tostring(item and item.frame.said)))
+
+	-- Two parries are two events. A word has no amount to add up, and one that
+	-- merged would sit on the screen saying one thing happened.
+	local held = Stream.Count()
+	missed(MOB, ME, "PARRY")
+	missed(MOB, ME, "PARRY")
+	check(Stream.Count() == held + 2,
+		("two parries drew %d words"):format(Stream.Count() - held))
+
+	-- And the same filter as a blow that landed.
+	held = Stream.Count()
+	missed(MOB, "Creature-0-0-0-0-9999-0000ffff", "MISS")
+	check(Stream.Count() == held,
+		"a miss between two other creatures drew a word on your screen")
 
 	Stream.Clear()
 end
@@ -652,6 +729,8 @@ do
 		"floatingCombatTextCombatLogPeriodicSpells_v2",
 		"floatingCombatTextPetMeleeDamage_v2",
 		"floatingCombatTextCombatHealing_v2",
+		"floatingCombatTextDodgeParryMiss_v2",
+		"floatingCombatTextDamageReduction_v2",
 	}
 	ns.db.hits, ns.db.hitsQuiet = false, true
 	Numbers.Apply()
@@ -673,6 +752,11 @@ do
 	check(_G.GetCVar("enableFloatingCombatText") ~= "0",
 		"the part took the client's whole combat text and not its damage numbers")
 
+	-- Its dodges and resists are taken, by name, because this part draws them
+	-- now and the client's scroll would draw every one a second time.
+	check(_G.GetCVar("floatingCombatTextDodgeParryMiss_v2") == "0",
+		"the client still scrolls its own dodges beside you while this part draws them")
+
 	-- The other half, and the one no CVar reaches. The column the client
 	-- scrolls beside your character draws every heal and every hit that lands
 	-- on you, its own table gives those types no setting to turn off, and the
@@ -686,10 +770,11 @@ do
 	check(not types.HEAL.show and not types.PERIODIC_HEAL.show,
 		"the client is still scrolling healing beside your character")
 
-	-- And nothing it does not redraw. A dodge, a combo point and an energy gain
-	-- each name a CVar of their own, which is the player's setting and not this
+	-- And nothing it does not redraw. A combo point and an energy gain each
+	-- name a CVar of their own, which is the player's setting and not this
 	-- addon's business; the spell name the column calls out is not a number at
-	-- all.
+	-- all. A dodge names one too, and it is taken through that CVar above
+	-- rather than through its `show` here.
 	check(types.DODGE.cvar and types.COMBO_POINTS.cvar and types.ENERGIZE.cvar,
 		"the harness table has lost the types that carry a setting of their own")
 	check(types.SPELL_CAST.show and types.SPLIT_DAMAGE.show,

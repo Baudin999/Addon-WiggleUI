@@ -149,9 +149,10 @@ ns.Register({
 		-- On. Two parts drawing the same hit is worse than either alone, and a
 		-- part that replaces the client's readout and leaves it running has
 		-- replaced nothing. Only what this part redraws: the four over your
-		-- target, and the hits and heals the client scrolls beside you, which
-		-- have no setting of their own and were the half that was still doubled.
-		-- Your dodges, combo points and energy are still its own.
+		-- target, the hits and heals the client scrolls beside you, which have
+		-- no setting of their own and were the half that was still doubled, and
+		-- the dodges, misses and resists it scrolls there. Your combo points
+		-- and energy are still its own.
 		hitsQuiet = true,
 
 		-- A hundred and fifty pixels either side of you and forty above, which
@@ -213,7 +214,7 @@ ns.Register({
 
 	panel = function(ui)
 		ui.Section("Floating numbers", "Fighting")
-		ui.Lede("What you land falls left, what an enemy lands on you falls right, healing rises over your character. Damage is white, healing green, a big hit gold.")
+		ui.Lede("What you land falls left, what lands on you falls right, healing rises. Damage is white, healing green, a big hit gold, a miss grey.")
 
 		ui.Size("size", SIZE_LOW, SIZE_HIGH, 1,
 			function() return ns.db.hitsSize end,
@@ -263,7 +264,7 @@ ns.Register({
 				ns.db.hitsQuiet = on
 				Restyle()
 			end)
-		ui.Hint("The four over your target and the hits and heals it scrolls beside you. Your dodges, combo points and energy stay the client's, and it gets them all back when this goes off.")
+		ui.Hint("The numbers over your target and the hits, heals, dodges and resists it scrolls beside you. Your combo points and energy stay the client's, and it gets everything back when this goes off.")
 
 		ui.Reading("the numbers", function()
 			if not ns.CombatLog.Ready() then

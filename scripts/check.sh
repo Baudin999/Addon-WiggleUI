@@ -1543,6 +1543,7 @@ sections/39-party-raid.lua:950:one subject, two lists, two directions each; the 
 sections/42-cooldown-row.lua:734:one subject, the cooldown row; what is on it, what a square draws, when the row is up and what the tick costs are four readings of one row and every one of them moves when an entry does
 sections/54-world-map.lua:809:one subject, the world map; the column, the picture, Questie's markers and the gestures over them are one window under one zone fixture, and splitting them copies the map tree, the standing position and the icon frames three ways
 client/05-quests.lua:830:one subject, what Questie answers; the item rows, the drop rates, the public API and the icon table are four faces of one addon under one loader stub, and a file of their own would carry the loader and the quest table twice
+sections/80-floating-numbers.lua:872:one subject, the floating numbers; which column a blow or a miss comes off, its colour, its envelope, the merge and the client's own text put away are readings of one stream under one combat log fixture, and a file of their own would carry the line builders and the anchors twice
 sections/40-loot-feed.lua:908:one subject, the loot feed; what it is dressed in, how a chip filters it, what a hover on a row says, the arithmetic of folding a repeat onto a row and why a row matters are readings of one column under one feed instance, one item fixture and one clock, and a file of their own would carry all three twice
 "
 

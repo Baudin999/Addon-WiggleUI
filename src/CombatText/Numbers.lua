@@ -62,20 +62,30 @@ ns.CombatTextNumbers = Numbers
 -- the two sides read as leaning into each other over your character. Each column
 -- leans one way now, outwards, and healing does not bow at all.
 --
+-- **A blow that does not land says so.** A dodge, a parry, a resist and a miss
+-- are the client's own word for it in grey, in the column the blow was aimed
+-- at, at the size of the smallest hit of the fight. Four dodges in a row is why
+-- a rotation stalled. The quiet setting takes the client's own "Miss" off your
+-- target along with its numbers, so while this part skipped them nothing on the
+-- screen said a swing had failed. A word never merges: two parries are two
+-- events, and one word that grew would read as neither.
+--
 -- Nothing here decides where the numbers come from. That is four rectangles in
 -- CombatText/Anchors.lua that you drag.
 --------------------------------------------------------------------------
 
--- The three colours, and they are the whole readout at a glance.
+-- The four colours, and they are the whole readout at a glance.
 --
 -- Held as tables this file owns rather than read off UI.Color, for the reason
 -- Feeds/Combat.lua holds its own: these are the meaning of a number over the
 -- world and not the palette of a panel, and the guard below compares a colour
--- by identity. The green and the gold are the same two values the combat feed
--- draws a heal and a critical in, because one fact must not have two colours.
+-- by identity. The green, the gold and the grey are the same three values the
+-- combat feed draws a heal, a critical and a miss in, because one fact must not
+-- have two colours.
 local DAMAGE = { 0.95, 0.95, 0.97 }
 local HEAL = { 0.34, 0.80, 0.44 }
 local BIG = { 1.00, 0.82, 0.20 }
+local MISS = { 0.50, 0.50, 0.55 }
 
 -- How far into its life a number may be and still be merged into. Past the
 -- hold it is already fading and the eye has finished with it, so adding to one
@@ -367,6 +377,44 @@ end
 
 --------------------------------------------------------------------------
 
+-- The client's own word for each way a blow can fail to land. Its scrolling
+-- column asks for COMBAT_TEXT_<kind> first and the bare global second, so this
+-- does the same and says what the client would have said, in the player's own
+-- language.
+--
+-- Built at load, because the lookup is a joined string and the line it would
+-- otherwise run on is the busiest event the client sends. A kind missing from
+-- this list is drawn as the log's own token for it, which is upper case English
+-- and still a word.
+local SAID = {}
+for _, kind in ipairs({ "MISS", "DODGE", "PARRY", "BLOCK", "RESIST", "IMMUNE",
+	"EVADE", "DEFLECT", "REFLECT", "ABSORB" }) do
+	local word = _G["COMBAT_TEXT_" .. kind]
+	if type(word) ~= "string" then
+		word = _G[kind]
+	end
+	if type(word) == "string" then
+		SAID[kind] = word
+	end
+end
+
+-- One blow that did not land, as a word in the column it was aimed at.
+--
+-- No key, so it never merges and nothing merges into it. Weighted at the floor
+-- of the band, so a miss is never drawn bigger than the smallest hit beside it,
+-- and it leaves the fight's biggest hit alone because it has no amount to set.
+local function Missed(kind, onMe)
+	if type(kind) ~= "string" then
+		return false
+	end
+	local side = onMe and "taken" or "dealt"
+	local frame = Dress(SAID[kind] or kind, MISS)
+	Stream.Push(Anchors.Of(side), frame, styles.plain, FLOOR, nil, LEAN[side])
+	return true
+end
+
+--------------------------------------------------------------------------
+
 -- hot: Numbers.OnLog is a combat log reader, called back out of ns.CombatLog's list
 --
 -- The positions are ns.CombatLog.SHAPES and the reason they are read from there
@@ -379,10 +427,7 @@ function Numbers.OnLog(_, subevent, _, sourceGUID, _, _, _, destGUID,
 	end
 
 	local shape = SHAPES[subevent]
-	-- A miss carries no number, and drawing the word for one is a decision
-	-- about what this part is for rather than a line of code, so it is not
-	-- taken here.
-	if not shape or not shape.amount then
+	if not shape then
 		return false
 	end
 
@@ -396,6 +441,12 @@ function Numbers.OnLog(_, subevent, _, sourceGUID, _, _, _, destGUID,
 	local byMe = Mine(sourceGUID, me)
 	if not onMe and not byMe then
 		return false
+	end
+
+	-- A blow that did not land carries its kind where the number would be, and
+	-- goes to the column it was aimed at like any other blow.
+	if shape.miss then
+		return Missed(shape.miss == 12 and a12 or a15, onMe)
 	end
 
 	local amount = (shape.amount == 12) and a12 or a15
