@@ -27,7 +27,8 @@
 --   The hook, from the other end. Meter/Standing.lua registers one line against
 --   the unit kind and never learns that this part exists. That is the whole
 --   claim ns.Tip.Source is for and it cannot be made from inside the part that
---   opens the box.
+--   opens the box. UnitFrames/Vitals.lua registers two more, health and power,
+--   which Blizzard draws as a bar the scanner cannot read or not at all.
 
 local H = ...
 local ns, check, fire = H.ns, H.check, H.fire
@@ -70,6 +71,20 @@ do
 			lines[index] = Box.Text(index) or ""
 		end
 		return lines
+	end
+
+	-- The right hand side of the first line whose left side is `label`, and
+	-- which line that was. Found by label rather than by number, because the
+	-- body band sits between the client's lines and the extra band and a
+	-- source added to it moves every line under it down.
+	local function beside(label)
+		for index = 1, Box.Lines() do
+			local left, right = Box.Text(index)
+			if left == label then
+				return right, index
+			end
+		end
+		return nil, nil
 	end
 
 	-- One edge of the box in physical pixels, which is the unit
@@ -159,6 +174,25 @@ do
 		"the client's third line is missing: " .. tostring(said[3]))
 
 	------------------------------------------------------------------
+	-- How alive it is
+	--
+	-- Blizzard draws a unit's health as a bar under its text and never draws
+	-- power, and the scanner reads text, so neither reached this box until
+	-- UnitFrames/Vitals.lua registered both against the unit kind. They are
+	-- facts about the thing and sit in the body band, straight under the
+	-- client's own lines.
+	------------------------------------------------------------------
+
+	local health, healthAt = beside("Health")
+	check(health == "4200 / 9000 (46%)",
+		"the box does not say how much health the mob has: " .. tostring(health))
+	check(healthAt == 4, ("health landed on line %s rather than under the client's three")
+		:format(tostring(healthAt)))
+	local rage = beside("Rage")
+	check(rage == "40 / 100",
+		"the box does not say what is in the mob's pool: " .. tostring(rage))
+
+	------------------------------------------------------------------
 	-- The hook, from the other end
 	--
 	-- Meter/Standing.lua registered one line against the unit kind at load and
@@ -168,13 +202,11 @@ do
 	-- switch.
 	------------------------------------------------------------------
 
-	check(said[4] == "Threat",
-		"nothing the addon knows about a mob reached its tooltip: " .. table.concat(said, " / "))
-	local _, standing = Box.Text(4)
+	local standing, threatAt = beside("Threat")
 	check(standing == "theirs, you are at 62%",
-		"the threat line does not say where you stand: " .. tostring(standing))
-	check(#said == 4, ("the box drew %d lines rather than four: %s")
-		:format(#said, table.concat(said, " / ")))
+		"the threat line does not say where you stand: " .. table.concat(said, " / "))
+	check(threatAt == #said, ("the threat line is line %s of %d rather than the last: %s")
+		:format(tostring(threatAt), #said, table.concat(said, " / ")))
 
 	------------------------------------------------------------------
 	-- Blizzard's own box, held down
@@ -256,9 +288,30 @@ do
 	_G.WarriorKitFriendlyUnits.mouseover = true
 	fire("UPDATE_MOUSEOVER_UNIT")
 	said = drawn()
-	check(said[4] ~= "Threat",
+	check(beside("Threat") == nil,
 		"a quest giver was told where you stand on it: " .. table.concat(said, " / "))
+	-- Health is not the threat line's guard. A friend you might heal is the
+	-- unit whose health you most want to read.
+	check(beside("Health") == "4200 / 9000 (46%)",
+		"a friendly unit lost its health line with the threat line: " .. table.concat(said, " / "))
 	_G.WarriorKitFriendlyUnits.mouseover = nil
+
+	------------------------------------------------------------------
+	-- A client that answers a percentage
+	--
+	-- A max of exactly 100 is a percentage and not a mob with a hundred hit
+	-- points, so the line prints the percent alone. The dead line and the unit
+	-- with no pool are not reached from here: the stub answers
+	-- UnitIsDeadOrGhost for the player whatever token it is asked about, and
+	-- its power is three constants that Unit/Unit.lua takes into locals at
+	-- load.
+	------------------------------------------------------------------
+
+	_G.WarriorKitHealth.mouseover, _G.WarriorKitHealthMax.mouseover = 46, 100
+	fire("UPDATE_MOUSEOVER_UNIT")
+	local percent = beside("Health")
+	check(percent == "46%", "a percentage was printed as a figure out of 100: " .. tostring(percent))
+	_G.WarriorKitHealth.mouseover, _G.WarriorKitHealthMax.mouseover = nil, nil
 
 	------------------------------------------------------------------
 	-- The other answers the threat line has
@@ -284,13 +337,13 @@ do
 		return true, 3, 100
 	end
 	fire("UPDATE_MOUSEOVER_UNIT")
-	local _, holding = Box.Text(4)
+	local holding = beside("Threat")
 	check(holding == "yours, and nobody is close",
 		"holding a mob with nobody behind you reads as: " .. tostring(holding))
 
 	state.threatReader = function() return nil end
 	fire("UPDATE_MOUSEOVER_UNIT")
-	local _, idle = Box.Text(4)
+	local idle = beside("Threat")
 	check(idle == "nothing on it yet",
 		"a mob that has never heard of you reads as: " .. tostring(idle))
 
@@ -312,12 +365,12 @@ do
 		return true, 3, 100
 	end
 	raw("UPDATE_MOUSEOVER_UNIT")
-	local _, held = Box.Text(4)
+	local held = beside("Threat")
 	check(held == idle,
 		"a second event about the creature already on screen built the box again")
 
 	fire("UPDATE_MOUSEOVER_UNIT")
-	local _, back = Box.Text(4)
+	local back = beside("Threat")
 	check(back == "yours, and nobody is close",
 		"looking away and back did not build the box again: " .. tostring(back))
 
@@ -679,7 +732,7 @@ do
 	check(Box.Text(1) == "Snarlmouth",
 		"a client with no text about a unit did not fall back to the name: "
 			.. tostring(Box.Text(1)))
-	local _, still = Box.Text(2)
+	local still = beside("Threat")
 	check(still == "theirs, you are at 62%",
 		"the addon's own line went with the client's: " .. tostring(still))
 

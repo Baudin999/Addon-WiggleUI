@@ -517,6 +517,13 @@ UnitFrames\Paint.lua
 
 UnitFrames\Skin.lua
 
+# Health and power on every hover of a unit. Blizzard's box draws health as a
+# bar the scanner cannot read and power not at all, so these are two sources
+# registered into ns.Tip against the unit kind: the world hover and the skinned
+# blocks both get them. After Unit\Unit.lua, which reads both figures, and
+# beside the part that draws the same two numbers as bars.
+UnitFrames\Vitals.lua
+
 # One party or raid member's block: build it, lay it out, tick it. Its own file
 # for the reason UnitFrames\Cast.lua is: it knows nothing about a header, an
 # order or a setting other than the two sizes handed to it, and everything in it
