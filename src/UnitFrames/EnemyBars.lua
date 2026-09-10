@@ -1302,6 +1302,7 @@ local function LayoutWidget(widget, width, onPlate)
 	widget:SetWidth(width)
 	widget.onPlate = onPlate -- PlaceOnPlate centres on a plate and not in the list
 
+	local gauge = { frame = widget.health, grow = 1 } -- read back for gaugeMid
 	Flow.Arrange(widget, {
 		direction = "column", width = width, align = "stretch",
 
@@ -1333,8 +1334,7 @@ local function LayoutWidget(widget, width, onPlate)
 			-- measures once at layout, and a chamber that comes and goes five
 			-- times a fight is a state, not a measurement.
 			{ frame = widget.box, height = boxHeight, pad = px, align = "stretch",
-				direction = "column",
-				{ frame = widget.health, grow = 1 },
+				direction = "column", gauge,
 			},
 		},
 	})
@@ -1394,13 +1394,12 @@ local function LayoutWidget(widget, width, onPlate)
 
 	-- Where the gauge's middle sits below the widget's top edge, which is what
 	-- PlaceOnPlate centres on the mob, and where the box's bottom edge is at
-	-- rest, which is what the `above` style stands on the plate. Read off the
-	-- layout rather than added up from the constants again: Flow pins everything
-	-- to the widget's top left, so a change to any row above the gauge moves both
-	-- of these without being told.
-	local _, _, _, _, gaugeY = widget.health:GetPoint()
-	widget.gaugeMid = -(gaugeY or 0) + widget.health:GetHeight() / 2
-	widget.boxBottom = widget.gaugeMid + widget.health:GetHeight() / 2 + px
+	-- rest, which is what the `above` style stands on the plate. Read off Flow's
+	-- tree and never off the frame: a widget on a plate is under a restricted
+	-- region, and the client throws on GetPoint anywhere under one.
+	local _, gaugeTop, _, gaugeTall = Flow.Rect(gauge)
+	widget.gaugeMid = gaugeTop + gaugeTall / 2
+	widget.boxBottom = gaugeTop + gaugeTall + px
 
 	if onPlate then
 		PlateFootprint(widget, width, unit)
@@ -2047,18 +2046,7 @@ function EnemyBars.Mode()
 	return mode
 end
 
--- A coordinate snapped to the frame's own pixel.
---
--- ns.UI.Round is the same arithmetic for a size, and it floors at one pixel,
--- which is right for a width and wrong for a position: nought is a real place
--- to stand and so is anywhere left of it.
-local function Snap(frame, value)
-	local px = ns.Pixel(frame)
-	return math.floor(value / px + 0.5) * px
-end
-
--- Everything that ends a widget's life on a plate, taken out of Release because
--- a fading bar does half of it now and the other half when the ramp lands.
+-- Everything that ends a widget's life on a plate.
 local function Unhost(widget)
 	widget.plate = nil
 	-- The events go back with the plate. A pooled widget still registered
@@ -2087,7 +2075,7 @@ local function Retire(widget)
 	Cast.Clear(widget)
 	widget:Hide()
 	fading[widget] = nil
-	widget.fade, widget.fadeGoal, widget.fadeHome = 1, 1, nil
+	widget.fade, widget.fadeGoal = 1, 1
 	pool[#pool + 1] = widget
 end
 
@@ -2142,9 +2130,7 @@ local function Fades(delta)
 		PaintAlpha(widget)
 		if value == goal then
 			fading[widget] = nil
-			if widget.fadeHome then
-				Retire(widget)
-			elseif goal == 0 then
+			if goal == 0 then
 				-- A list row, which is not pooled and keeps its slot. The cast
 				-- is cleared here rather than when the row dropped off, so the
 				-- chamber does not close under a bar that is still on screen.
@@ -2259,58 +2245,30 @@ local function Attach(unit)
 	Wake()
 end
 
--- `now` means take it off the screen this frame, which is what a settings
--- change and a mode switch want: a ghost of the old shape fading out over a
--- rebuild is a bar drawn to a design that no longer exists.
+-- Off its plate and back in the pool, in the frame the plate goes.
+--
+-- A bar leaving used to be held on UIParent where its plate had stood and
+-- faded out there. Finding that place is a positional read under a nameplate,
+-- which this client refuses by throwing, and the plate itself is hidden the
+-- moment its mob is gone, so a bar left on it has nowhere to draw a tail.
+-- Blizzard's own plates vanish the same way. The list's rows are not on plates
+-- and still ramp out; see UpdateList.
 -- hot: run on NAME_PLATE_UNIT_REMOVED for every nameplate the client takes
 -- down, which in a busy zone is several a second, and the OnEvent closure that
 -- calls it is not a root the walk can name.
-local function Release(unit, now)
+local function Release(unit)
 	local widget = attached[unit]
 	if not widget then
 		return
 	end
 	attached[unit] = nil
-
-	-- Where the bar stood, in UIParent's units, taken before the reparent
-	-- moves it. A fading bar is held on the screen rather than on the plate,
-	-- because the plate is gone: the client hides it the moment the mob is out
-	-- of range or dead, and a child of a hidden frame does not draw whatever
-	-- its own alpha says.
-	local left, bottom
-	if not now then
-		left = ns.UI.Convert(widget:GetLeft(), widget, UIParent)
-		bottom = ns.UI.Convert(widget:GetBottom(), widget, UIParent)
-	end
-
 	Unhost(widget)
-
-	if now or not left or not bottom or not StartFade(widget, nil, 0) then
-		Retire(widget)
-		return
-	end
-	widget.fadeHome = true -- the ramp pools it when it lands
-	-- Snapped, because the position came off a plate and a plate's origin is
-	-- wherever the mob was standing, which is a fraction of a pixel. Everything
-	-- else on the grid is anchored in whole ones and a bar spending a fifth of a
-	-- second drawn across two rows on the way out is the one thing the eye is
-	-- actually looking at.
-	widget:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", -- unguarded: the returns above take every widget that is not fading home, and this is where its plate stood
-		Snap(widget, ns.UI.Convert(left, UIParent, widget)),
-		Snap(widget, ns.UI.Convert(bottom, UIParent, widget)))
+	Retire(widget)
 end
 
 local function ReleaseAll()
 	for unit in pairs(attached) do
-		Release(unit, true)
-	end
-	-- The ghosts of mobs that left a moment ago go with them. A rebuild is a
-	-- shape change, and a bar still fading out is drawn to the shape being
-	-- left behind.
-	for widget in pairs(fading) do
-		if widget.fadeHome then
-			Retire(widget)
-		end
+		Release(unit)
 	end
 	for plate in pairs(stripped) do
 		RestorePlate(plate)

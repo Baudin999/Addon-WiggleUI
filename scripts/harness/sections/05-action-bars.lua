@@ -889,6 +889,9 @@ local function Pull(index)
 	local unit = "nameplate" .. index
 	local plate = region("frame", _G.UIParent)
 	plate.namePlateUnitToken = unit
+	-- A restricted region, as every plate is on this client: the addon may not
+	-- ask where anything under it is. See refused in client/02-place.lua.
+	plate.restricted = true
 	plate.scale = 1.1
 	plate:SetSize(plateSize[1] or PLATE_W, plateSize[2] or PLATE_H)
 	plate.UnitFrame = region("frame", plate)

@@ -63,7 +63,7 @@ local BRANCHES = 30
 -- walked by ns.Command.Word rather than a chain of ifs. That is what this list
 -- is for: an entry comes off it because the shape it excused stopped existing.
 local ALLOWED = {
-	{ path = "./UnitFrames/EnemyBars.lua", fn = "LayoutWidget", own = 168,
+	{ path = "./UnitFrames/EnemyBars.lua", fn = "LayoutWidget", own = 167,
 	  why = "places every region of one nameplate widget in one pass" },
 	{ path = "./UnitFrames/Block.lua", fn = "Block.Place", own = 147,
 	  why = "places every region of one block in one pass" },

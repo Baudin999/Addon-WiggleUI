@@ -190,7 +190,8 @@ local BarsWord = ns.Command.Word({
 	{ "fade", toggle = true, key = "barsFade",
 	  say = function(on)
 		return on
-			and "bars ramp in as a mob comes into range and out again behind it."
+			and "bars ramp in as a mob comes into range. In the list they ramp out"
+				.. " too; on a plate they go with the plate."
 			or "bars appear and disappear with the plate under them."
 	  end },
 

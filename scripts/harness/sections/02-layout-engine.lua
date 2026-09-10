@@ -49,6 +49,25 @@ do
 	near(select(2, At(c)), 34, "the third row's top")
 end
 
+-- The rectangle a frame was given, read back off the node. It is what the
+-- enemy bars use for a widget on a nameplate, where the client refuses
+-- GetPoint, so it has to agree with the offset Flow wrote on the frame.
+do
+	local a, b = Cell(), Cell()
+	local second = { frame = b, height = 20 * px }
+	Flow.Arrange(root, {
+		direction = "column", gap = 2 * px, align = "stretch", width = 100 * px,
+		{ frame = a, height = 10 * px },
+		second,
+	})
+	local x, y, w, h = Flow.Rect(second)
+	near(y / px, select(2, At(b)), "Flow.Rect's top against the offset written")
+	near(y / px, 12, "Flow.Rect's top")
+	near(x / px, 0, "Flow.Rect's left")
+	near(w / px, 100, "Flow.Rect's width")
+	near(h / px, 20, "Flow.Rect's height")
+end
+
 -- One child growing into what the others left, which is how a label takes
 -- the room beside a fixed control.
 do

@@ -155,7 +155,7 @@ local function EnemyBars(ui)
 	ui.Check("ramp a bar in and out",
 		function() return ns.db.barsFade end,
 		function(value) ns.db.barsFade = value end)
-	ui.Hint("Off, a bar is simply there and then not.")
+	ui.Hint("Off, a bar is simply there and then not. On a nameplate it always goes out at once, because the client hides the plate the moment the mob is gone.")
 
 	do
 		local low, high = ns.Plates.DistanceRange()

@@ -139,7 +139,37 @@ function Region:SetPoint(point, relative, relativePoint, x, y)
 end
 function Region:ClearAllPoints() self.points, self.allPoints = nil, nil end
 function Region:GetNumPoints() return self.points and #self.points or 0 end
+
+-- A positional read the client refuses: the addon asking where a region is
+-- while a nameplate is somewhere above it. The client throws on that rather
+-- than answering nil, and the one LayoutWidget made shipped because this stub
+-- answered it. The plates the harness puts up carry `restricted`.
+--
+-- Refused for the addon only. The sections measure plate widgets to assert
+-- where they landed, and the arithmetic below asks GetPoint of every frame on
+-- an anchor chain. So the caller is read off the stack: the level above the
+-- method is a file under harness/ or it is the addon. A call made through
+-- pcall reads as the addon's, which is right, because that is how ns.Measure
+-- asks, and ns.Measure turns the refusal into nil the way it does on the
+-- client.
+local function refused(self, method)
+	local step = self
+	while step and not step.restricted do
+		step = step.parent
+	end
+	if not step then
+		return
+	end
+	local caller = debug.getinfo(3, "S")
+	if caller and caller.short_src:find("harness", 1, true) then
+		return
+	end
+	error(("%s(): Action[FrameMeasurement] failed because[Can't measure"
+		.. " restricted regions]"):format(method), 3)
+end
+
 function Region:GetPoint(index)
+	refused(self, "GetPoint")
 	local pt = self.points and self.points[index or 1]
 	if not pt then
 		return "CENTER", nil, "CENTER", 0, 0
@@ -265,15 +295,24 @@ function Region:GetHeight()
 end
 
 function Region:GetLeft()
+	refused(self, "GetLeft")
 	return (origin(self)) / self:GetEffectiveScale()
 end
 function Region:GetTop()
+	refused(self, "GetTop")
 	local _, y = origin(self)
 	return y / self:GetEffectiveScale()
 end
-function Region:GetRight() return self:GetLeft() + self:GetWidth() end
-function Region:GetBottom() return self:GetTop() - self:GetHeight() end
+function Region:GetRight()
+	refused(self, "GetRight")
+	return self:GetLeft() + self:GetWidth()
+end
+function Region:GetBottom()
+	refused(self, "GetBottom")
+	return self:GetTop() - self:GetHeight()
+end
 function Region:GetCenter()
+	refused(self, "GetCenter")
 	return self:GetLeft() + self:GetWidth() / 2, self:GetTop() - self:GetHeight() / 2
 end
 --------------------------------------------------------------------------

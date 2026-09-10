@@ -130,26 +130,18 @@ print("told   a target change and a health event are on screen the next frame, a
 guids.target = nil
 local frame = 1 / 60
 
--- Leaving first, because nameplate1 is up and taking it down is the state the
--- ramp exists for: the client hides a plate the moment its mob is gone, so a
--- bar still fading has to be off that plate and holding its own place on the
--- screen or the tail is invisible whatever its alpha says.
+-- Leaving first, because nameplate1 is up. A bar on a plate goes out in the
+-- frame its plate does. The ramp used to hold it on UIParent where the plate
+-- had stood, and finding that place is a positional read under a plate, which
+-- the client refuses. The plate is hidden the moment its mob is gone, so there
+-- is nowhere else a tail could draw.
 local leaving = ns.EnemyBars.WidgetFor("nameplate1")
 fire("NAME_PLATE_UNIT_REMOVED", "nameplate1")
 check(ns.EnemyBars.WidgetFor("nameplate1") == nil,
 	"the bar is still attached to a plate that is gone")
-check(leaving:IsShown() and leaving:GetAlpha() > 0, "the bar went out in one frame")
+check(not leaving:IsShown(), "a bar that left its plate is still on the screen")
 check(leaving:GetParent() == _G.UIParent,
-	"a fading bar is still a child of the plate it is leaving")
-for _ = 1, 4 do
-	barMoving:Beat(frame)
-	barVerify:Beat(frame)
-end
-check(leaving:GetAlpha() < 1 and leaving:GetAlpha() > 0,
-	("four frames out, a bar leaving is at %.2f"):format(leaving:GetAlpha()))
-Tick()
-Tick()
-check(not leaving:IsShown(), "a bar leaving never finished")
+	"a bar that left its plate is still a child of it")
 
 -- And arriving, which is the same plate coming back.
 fire("NAME_PLATE_UNIT_ADDED", "nameplate1")

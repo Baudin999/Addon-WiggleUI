@@ -336,10 +336,12 @@ function Place(node, root, x, y, w, h)
 	if node.frame then
 		local px = UI.Round(root, x)
 		local py = UI.Round(root, y)
+		local pw = math.max(UI.Round(root, w), UI.Pixel(root))
+		local ph = math.max(UI.Round(root, h), UI.Pixel(root))
 		node.frame:ClearAllPoints()
 		node.frame:SetPoint("TOPLEFT", root, "TOPLEFT", px, -py)
-		node.frame:SetSize(math.max(UI.Round(root, w), UI.Pixel(root)),
-			math.max(UI.Round(root, h), UI.Pixel(root)))
+		node.frame:SetSize(pw, ph)
+		node.placedX, node.placedY, node.placedW, node.placedH = px, py, pw, ph
 	end
 
 	if not node.direction then
@@ -401,6 +403,21 @@ end
 function Flow.Lines(node)
 	Measure(node)
 	return node.rows
+end
+
+-- Where Arrange put a node's frame: the offset from the root's top left, with
+-- down counted positive, and the size, in root units. These are the rounded
+-- numbers the frame was handed, so they match what SetPoint was given exactly.
+--
+-- Off the node and not off the frame, because some frames cannot be asked. An
+-- enemy bar on a nameplate is under a restricted region, and the client throws
+-- on GetPoint anywhere under one rather than answering nil. The bars lay out a
+-- widget that is already on a plate whenever a setting moves, and read the
+-- gauge's place back from here.
+--
+-- Nil for a node Arrange has not placed.
+function Flow.Rect(node)
+	return node.placedX, node.placedY, node.placedW, node.placedH
 end
 
 -- Lay a tree out inside a frame, and size the frame to what came out unless the
