@@ -284,7 +284,7 @@ local anchor, header, place
 -- above it. Nothing can reach Rebuild before the file has finished loading.
 local CastEvents
 local pool, attached, listWidgets = {}, {}, {}
--- Every enemy plate the client currently has up, kept by the add and remove
+-- Every plate the client currently has up, kept by the add and remove
 -- events. GetNamePlates builds a fresh table on every call, and both the list
 -- collector and the attach walk wanted one on every reading.
 local plateUnits = {}
@@ -295,21 +295,21 @@ local plateUnits = {}
 local UnitIsPVP, UnitIsPVPFreeForAll = _G.UnitIsPVP, _G.UnitIsPVPFreeForAll
 local UnitFactionGroup = _G.UnitFactionGroup
 
--- Whether a unit gets a bar at all. One function because it is one rule asked
--- from three places: the plate arriving, the tick deciding whether a bar
--- stays, and the list collector.
+-- Whether a unit gets a row in the list. The list is the enemy panel and keeps
+-- the narrow rule: eight rows is room for a pull and not for a city, and every
+-- player walking past the bank would push the mob that is on you off the end.
 --
 -- Attackable is the client's answer and it is most of the rule. A player of
 -- the other faction is the exception, and the flag is the rest of it. On a PvP
 -- realm a Horde player standing in Durotar is attackable and unflagged, and a
--- bar on them is a bar on somebody who has not started anything; the moment
--- either of you does, the flag goes up and the bar with it. A player of your
+-- row for them is a row for somebody who has not started anything; the moment
+-- either of you does, the flag goes up and the row with it. A player of your
 -- own faction is left to the client, because a duel does not flag anybody and
--- a bar on your duel partner is the point of the duel.
+-- a row for your duel partner is the point of the duel.
 --
 -- Free-for-all counts as flagged. Gurubashi is the one place a player of the
 -- other faction is attackable under a flag that is not the PvP one.
-local function Wanted(unit)
+local function Hostile(unit)
 	if not UnitCanAttack("player", unit) then
 		return false
 	end
@@ -324,6 +324,30 @@ local function Wanted(unit)
 	end
 	return type(UnitIsPVPFreeForAll) == "function" and UnitIsPVPFreeForAll(unit) == true
 end
+
+-- Whether a plate gets a bar. One function because it is one rule asked from
+-- three places: the plate arriving, the faction event, and the tick deciding
+-- whether a bar stays.
+--
+-- Every player but you, on either side and whether or not you may hit them. A
+-- player is somebody you read by class and health at a glance, your own side as
+-- much as the other, and what stood over them before was Blizzard's plate: a
+-- second look on the screen for the same kind of thing. Whether they may start
+-- on you is the flag, and PaintPvp hangs that on the bar.
+--
+-- A mob needs to be attackable, which is the client's answer and the whole rule
+-- for anything that is not a player. A friendly npc is a vendor or a guard, and
+-- its plate stays the client's.
+--
+-- Not you. Your own plate is the personal bar when nameplateShowSelf is on, and
+-- the skinned player frame already says all of it.
+local function Wanted(unit)
+	if UnitIsPlayer(unit) then
+		return not UnitIsUnit(unit, "player")
+	end
+	return UnitCanAttack("player", unit)
+end
+
 -- ns.dbc.barsSpells, resolved. Names because the aura scan matches on the
 -- localised name, textures because the row draws them, and both indexed by slot
 -- so the tick reads two arrays rather than calling into the spell API. Rebuilt
@@ -1018,11 +1042,10 @@ end
 --   marker    the raid target icon. SetRaidTargetIconTexture picks one of eight
 --             out of a single sheet, so it takes the sampling fix without the
 --             crop that comes with a spell icon.
---   pvp       the faction's flag, and the loudest thing on the bar. Wanted() is
---             what lets it be this blunt: an enemy player of the other faction
---             gets a bar of ours only once the flag is up, so every bar
---             carrying this is somebody who is allowed to start on you and no
---             other part of the widget has to be read to tell that.
+--   pvp       the faction's flag, and the loudest thing on the bar. Every
+--             player has a bar, so the bar alone does not say whether somebody
+--             is in the fight. The flag says it, in the faction's own art, and
+--             it is this blunt because it is the only thing that does.
 --   questText what the mob is still wanted for, in gold, outlined because a
 --             string over the world has no fill behind it and a shadow has
 --             nothing to be darker than.
@@ -1627,7 +1650,11 @@ local function PaintWorth(widget, unit, guid, isTarget)
 		end
 	end
 
-	local text = xp == WORTHLESS and WORTHLESS
+	-- Grey says the kill pays nothing, which is a claim about somebody you can
+	-- kill. A friendly player far below you is not a worthless kill, they are
+	-- not a kill at all, so their name stays the colour every other name is.
+	local worthless = xp == WORTHLESS and UnitCanAttack("player", unit)
+	local text = worthless and WORTHLESS
 		or (isTarget and TARGET_TEXT or NAME_TEXT)
 	if widget.nameColor ~= text then
 		widget.nameColor = text
@@ -1648,8 +1675,17 @@ end
 -- than on itself. See ThreatState: building the string first and comparing it
 -- afterwards was one throwaway string per engaged bar per pass to find out that
 -- nothing had moved.
+--
+-- A player has no threat table, so their bar wears the class instead: what
+-- Blizzard's plate wore for them and what the skin's target block wears. The
+-- line above the gauge goes blank with it, since there is no number to print.
 local function PaintThreat(widget, unit)
-	local color, percent, who, mode = ThreatState(unit)
+	local color, percent, who, mode
+	if UnitIsPlayer(unit) then
+		color = Color.OfUnit(unit)
+	else
+		color, percent, who, mode = ThreatState(unit)
+	end
 	if widget.threatColor ~= color then
 		widget.threatColor = color
 		Gauge.Paint(widget.health, widget.health.track, color)
@@ -2315,7 +2351,7 @@ local function ByFirstSeen(a, b)
 end
 
 local function Collect(unit)
-	if not UnitExists(unit) or UnitIsDead(unit) or not Wanted(unit) then
+	if not UnitExists(unit) or UnitIsDead(unit) or not Hostile(unit) then
 		return
 	end
 	local guid = UnitGUID(unit)
@@ -2678,10 +2714,10 @@ events:RegisterEvent("PLAYER_TARGET_CHANGED")
 if C_NamePlate then
 	events:RegisterEvent("NAME_PLATE_UNIT_ADDED")
 	events:RegisterEvent("NAME_PLATE_UNIT_REMOVED")
-	-- The PvP flag going up or down on a unit with a plate. The reading would
-	-- catch a bar that has to go, a second later; what it cannot
-	-- catch is a plate that arrived unflagged and has no bar for the tick to
-	-- look at, which is every enemy player who flags in front of you.
+	-- A unit's side or its PvP flag moving. The reading would catch both a
+	-- second later. What it cannot catch is a plate with no bar for the tick
+	-- to look at, which is a mob that turns on you, and what the event buys on
+	-- a bar already up is the flag landing on the next frame.
 	events:RegisterEvent("UNIT_FACTION")
 end
 
@@ -2728,10 +2764,14 @@ events:SetScript("OnEvent", function(_, event, arg1)
 		return
 	elseif event == "UNIT_FACTION" then
 		if plateUnits[arg1] then
-			if not attached[arg1] then
+			local widget = attached[arg1]
+			if not widget then
 				Attach(arg1)
 			elseif not Wanted(arg1) then
 				Release(arg1)
+			else
+				dirty[widget] = true
+				Wake()
 			end
 		end
 		return

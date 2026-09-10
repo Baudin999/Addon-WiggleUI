@@ -699,7 +699,7 @@ local NAMEPLATE_MAX_DISTANCE_CEILING = 41
 -- that decides which edge a secure button acts on, so a stub that left it off
 -- would agree with a square registered for the release and hide the one bug
 -- that makes a square dead.
-local cvars = { nameplateShowEnemies = "1", nameplateMotion = "0",
+local cvars = { nameplateShowEnemies = "1", nameplateShowFriendlyPlayers = "0", nameplateMotion = "0",
 	nameplateOverlapV = "1.10", SoftTargetEnemy = "0",
 	nameplateMaxDistance = "41", ActionButtonUseKeyDown = "1" }
 function _G.GetCVar(k) return cvars[k] end

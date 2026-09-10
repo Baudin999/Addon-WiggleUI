@@ -168,37 +168,35 @@ print(("ramp   four frames in is %.2f, out is off the plate and holding its plac
 	:format(arriving))
 
 --------------------------------------------------------------------------
--- The other faction
+-- Players
 --
--- Attackable is the client's word and it is nearly the whole rule for which
--- plate gets a bar. The exception is a player of the other faction, who is
--- attackable and unflagged in their own zone on a PvP realm and gets a bar
--- only once the flag is up. Driven on nameplate2 rather than a plate of its
--- own, because the stub's plates persist and a third would be in every scene
--- after this one.
+-- Every player but you gets a bar on a plate, on either side and whether or
+-- not you may hit them. Attackable is still the whole rule for a mob. Driven
+-- on nameplate2 rather than a plate of its own, because the stub's plates
+-- persist and a third would be in every scene after this one.
 --------------------------------------------------------------------------
 
-local realPlayers, unitFaction = H.realPlayers, H.unitFaction
+local realPlayers, unitFaction, unitClass = H.realPlayers, H.unitFaction, H.unitClass
 local pvpUnits, ffaUnits = H.pvpUnits, H.ffaUnits
+local friendlyUnits = _G.WarriorKitFriendlyUnits
+local Color = ns.Unit.Color
 
 fire("NAME_PLATE_UNIT_REMOVED", "nameplate2")
 realPlayers.nameplate2, unitFaction.nameplate2 = true, "Horde"
 fire("NAME_PLATE_UNIT_ADDED", "nameplate2")
-check(ns.EnemyBars.WidgetFor("nameplate2") == nil,
-	"an unflagged player of the other faction got a bar")
+check(ns.EnemyBars.WidgetFor("nameplate2") ~= nil,
+	"an unflagged player of the other faction got no bar")
+Tick()
+check(not ns.EnemyBars.WidgetFor("nameplate2").pvp:IsShown(),
+	"an unflagged player of the other faction carries the PvP flag")
 
--- Flagging in front of you is the faction event on a plate that has no bar
--- for the tick to look at, so the event is the only way the bar arrives.
+-- Flagging in front of you is the faction event, and the flag is on the bar
+-- the next frame rather than at the next reading. Every player has a bar, so
+-- the flag is the one thing on the screen that says which of them may start
+-- on you, and a badge that never drew would leave the two looking the same.
 pvpUnits.nameplate2 = true
 fire("UNIT_FACTION", "nameplate2")
-check(ns.EnemyBars.WidgetFor("nameplate2") ~= nil,
-	"a player of the other faction flagged and got no bar")
-
--- And the flag is on the bar, in the faction's own art. The gate above is
--- what decides a bar is there at all, so a badge that never drew would leave
--- the two kinds of bar on the screen looking the same, which is the thing the
--- flag is for.
-Tick()
+Frame()
 local flag = ns.EnemyBars.WidgetFor("nameplate2").pvp
 check(flag:IsShown() and flag:GetTexture() == "Interface\\TargetingFrame\\UI-PVP-Horde",
 	("a flagged Horde player's bar drew %s where the Horde flag belongs")
@@ -206,40 +204,72 @@ check(flag:IsShown() and flag:GetTexture() == "Interface\\TargetingFrame\\UI-PVP
 check(flag:GetWidth() > ns.EnemyBars.WidgetFor("nameplate2").marker:GetWidth(),
 	"the flag is drawn no bigger than the raid marker, and the art it uses is mostly margin")
 
--- The flag dropping is the tick's business as much as the event's: a bar on
--- somebody who is no longer flagged goes on the next reading either way.
+-- The flag dropping takes the badge and leaves the bar.
 pvpUnits.nameplate2 = nil
 Tick()
-check(ns.EnemyBars.WidgetFor("nameplate2") == nil,
-	"a player whose flag dropped kept the bar")
+check(ns.EnemyBars.WidgetFor("nameplate2") ~= nil,
+	"a player whose flag dropped lost the bar")
+check(not ns.EnemyBars.WidgetFor("nameplate2").pvp:IsShown(),
+	"a player whose flag dropped still carries it")
 
--- Gurubashi: no PvP flag, free-for-all instead, and still a bar.
+-- Gurubashi: no PvP flag, free-for-all instead, and the skull for it.
 ffaUnits.nameplate2 = true
 fire("UNIT_FACTION", "nameplate2")
-check(ns.EnemyBars.WidgetFor("nameplate2") ~= nil,
-	"a free-for-all player of the other faction got no bar")
-Tick()
+Frame()
 check(ns.EnemyBars.WidgetFor("nameplate2").pvp:GetTexture()
 	== "Interface\\TargetingFrame\\UI-PVP-FFA",
 	"a free-for-all player's bar drew the faction flag instead of the skull")
 ffaUnits.nameplate2 = nil
 Tick()
 
--- Your own faction is left to the client. A duel flags nobody and the bar on
--- your duel partner is the point of the duel.
-unitFaction.nameplate2 = "Alliance"
-fire("UNIT_FACTION", "nameplate2")
-check(ns.EnemyBars.WidgetFor("nameplate2") ~= nil,
-	"an attackable player of your own faction got no bar without a flag")
-Tick()
-check(not ns.EnemyBars.WidgetFor("nameplate2").pvp:IsShown(),
-	"an unflagged player of your own faction carries the PvP flag")
+-- Not you. With nameplateShowSelf on the client puts a plate up for you too,
+-- and the skinned player frame already says everything a bar would. The
+-- section's UnitIsUnit compares GUIDs, so the plate is you by carrying yours.
+local plateWas, playerWas = guids.nameplate2, guids.player
+fire("NAME_PLATE_UNIT_REMOVED", "nameplate2")
+guids.player = playerWas or "Player-0-SELF"
+guids.nameplate2 = guids.player
+fire("NAME_PLATE_UNIT_ADDED", "nameplate2")
+check(ns.EnemyBars.WidgetFor("nameplate2") == nil, "your own plate got a bar")
+fire("NAME_PLATE_UNIT_REMOVED", "nameplate2")
+guids.nameplate2, guids.player = plateWas, playerWas
+fire("NAME_PLATE_UNIT_ADDED", "nameplate2")
 
-print("faction the other side gets a bar flagged or free-for-all, and none otherwise; your own side is the client's call; a flagged bar carries the faction's flag and a mob carries none")
+-- Your own side, who you cannot attack outside a duel. The bar is there
+-- anyway, and it wears the class: a player has no threat table, so a gauge
+-- coloured by threat would be the idle grey on every player in a city. Ten
+-- levels is below the green line against the stub's 62, which is the name a
+-- mob would grey out as worthless and a friend must not.
+unitFaction.nameplate2, friendlyUnits.nameplate2 = "Alliance", true
+unitClass.nameplate2 = "PRIEST"
+_G.WarriorKitLevels.nameplate2 = 10
+fire("UNIT_FACTION", "nameplate2")
+Tick()
+local mate = ns.EnemyBars.WidgetFor("nameplate2")
+check(mate ~= nil, "a player of your own faction you cannot attack got no bar")
+check(not mate.pvp:IsShown(), "an unflagged player of your own faction carries the PvP flag")
+check(mate.threatColor == Color.Class("PRIEST"),
+	"a priest's gauge wore threat rather than the class colour")
+check(ns.Unit.Level.WorthAt("nameplate2", 10) == Color.xp.none,
+	"ten levels down is not below the green line here, so the grey check below proves nothing")
+check(mate.nameColor ~= Color.xp.none,
+	"a friendly player far below you had the worthless grey name")
+
+-- Flagged, which your own side can be too, and the flag is your faction's.
+-- Left up on purpose: the widget goes back to the pool carrying it.
+pvpUnits.nameplate2 = true
+fire("UNIT_FACTION", "nameplate2")
+Frame()
+check(mate.pvp:IsShown() and mate.pvp:GetTexture() == "Interface\\TargetingFrame\\UI-PVP-Alliance",
+	"a flagged player of your own faction drew no Alliance flag")
+
+print("players every player but you gets a bar on either side, in the class colour; the flag says who may start on you and a mob carries none")
 
 -- Back to a mob, so every section after this one sees the plate it always has.
 fire("NAME_PLATE_UNIT_REMOVED", "nameplate2")
 realPlayers.nameplate2, unitFaction.nameplate2 = nil, nil
+friendlyUnits.nameplate2, unitClass.nameplate2 = nil, nil
+pvpUnits.nameplate2, _G.WarriorKitLevels.nameplate2 = nil, nil
 fire("NAME_PLATE_UNIT_ADDED", "nameplate2")
 check(ns.EnemyBars.WidgetFor("nameplate2") ~= nil, "nameplate2 did not come back as a mob")
 Tick()
@@ -247,8 +277,42 @@ Tick()
 -- The widget that sat on the flagged player is the one the pool handed back
 -- for the mob, so this is the badge coming off rather than a fresh widget
 -- never having drawn it.
+check(ns.EnemyBars.WidgetFor("nameplate2") == mate,
+	"the pool handed the mob a different widget, so the check below proves nothing")
 check(not ns.EnemyBars.WidgetFor("nameplate2").pvp:IsShown(),
 	"a pooled widget came back onto a mob still carrying the last player's flag")
+
+--------------------------------------------------------------------------
+-- The list, and the plate the client puts up
+--
+-- The list is the enemy panel and keeps the narrow rule, so the player next
+-- to you at the bank is not a row. The friendly player plate is a CVar the
+-- bars borrow while they are on plates and hand back when they are not.
+--------------------------------------------------------------------------
+
+check(_G.GetCVar("nameplateShowFriendlyPlayers") == "1",
+	"the bars are on plates and the client is not putting up friendly player plates")
+
+realPlayers.nameplate2, friendlyUnits.nameplate2 = true, true
+ns.db.barsMode = "list"
+ns.EnemyBars.Rebuild()
+Tick()
+check(_G.GetCVar("nameplateShowFriendlyPlayers") == "0",
+	"the list left friendly player plates up with no bar to put on them")
+local friendRows = ns.EnemyBars.Count()
+realPlayers.nameplate2, friendlyUnits.nameplate2 = nil, nil
+Tick()
+check(ns.EnemyBars.Count() == friendRows + 1,
+	("the list drew %d rows with a friendly player on nameplate2 and %d with a mob there")
+		:format(friendRows, ns.EnemyBars.Count()))
+
+ns.db.barsMode = "plates"
+ns.EnemyBars.Rebuild()
+Tick()
+check(ns.EnemyBars.WidgetFor("nameplate1") ~= nil and ns.EnemyBars.WidgetFor("nameplate2") ~= nil,
+	"the plates did not get their bars back after the list")
+
+print("list   a friendly player is no row, and the friendly plate CVar is up on plates and handed back in the list")
 
 _G.UnitIsUnit = realIsUnit
 guids.target = nil

@@ -621,13 +621,14 @@ ns.Register({
 		-- fifteen bars blinking on at a pull reads as a fault.
 		barsFade = true,
 
-		-- What those three CVars were before the addon first wrote to them, so
-		-- turning a setting off puts back what was actually there. Empty is
-		-- the sentinel for "not remembered yet". Account scoped, because the
-		-- CVars are.
+		-- What those three CVars were before the addon first wrote to them, and
+		-- the friendly player plate with them, so turning a setting off puts
+		-- back what was actually there. Empty is the sentinel for "not
+		-- remembered yet". Account scoped, because the CVars are.
 		platesMotionPrior = "",
 		platesOverlapPrior = "",
 		platesDistancePrior = "",
+		platesFriendsPrior = "",
 		barsPoint = { "CENTER", "UIParent", "CENTER", 378, 184 },
 
 		-- The square skin on the player, target and target of target frames.

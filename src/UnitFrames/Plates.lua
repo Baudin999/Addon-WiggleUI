@@ -50,7 +50,8 @@ ns.Plates = Plates
 -- A bigger plate does swallow more of a camera drag, which is the trade `bars
 -- camera` and `bars clickthrough` manage.
 --
--- All four are the player's, borrowed. Turning a setting off puts back what
+-- All four are the player's, borrowed, and so is the friendly player plate the
+-- bars need to reach your own side. Turning a setting off puts back what
 -- was there, the same way Targeting/Aim.lua hands its own CVars back.
 --------------------------------------------------------------------------
 
@@ -257,6 +258,47 @@ function Plates.DistanceRange()
 	return DISTANCE_LOW, Ceiling() or DISTANCE_HIGH
 end
 
+-- The friendly player plate, which is a CVar of its own on this client and off
+-- until somebody turns it on. A bar is a child of a plate, so a player of your
+-- own side had no bar because the client had put nothing up to hang one on.
+-- Borrowed while the bars are on plates, the way the range is, and handed back
+-- when they go off or go to the list: a list has no plate to put a bar on, and
+-- leaving the CVar up would put Blizzard's friendly plates on a screen that
+-- never had them.
+--
+-- Only the players. Friendly npcs are nameplateShowFriendlyNpcs, a vendor or a
+-- guard gets no bar, and a plate with no bar over it is Blizzard's art.
+local FRIENDS = "nameplateShowFriendlyPlayers"
+local friendsApplied
+
+-- A client that does not know the CVar answers nil and has nothing to borrow.
+-- Settled rather than refused, for the reason ApplySize is: an answer of
+-- "not done" would re-run the whole apply on every combat drop for nothing.
+local function ApplyFriends()
+	if Read(FRIENDS) == nil then
+		return true
+	end
+	Remember("platesFriendsPrior", FRIENDS)
+	friendsApplied = true
+	return Write(FRIENDS, "1")
+end
+
+local function RestoreFriends()
+	if not friendsApplied then
+		return true
+	end
+	local prior = ns.db and ns.db.platesFriendsPrior
+	if prior == nil or prior == "" then
+		friendsApplied = false
+		return true
+	end
+	if Write(FRIENDS, prior) then
+		friendsApplied = false
+		return true
+	end
+	return false
+end
+
 local function RestoreMotion()
 	local prior = ns.db and ns.db.platesMotionPrior
 	if prior == nil or prior == "" then
@@ -305,6 +347,14 @@ function Plates.Apply()
 		done = RestoreSize() and done
 	end
 
+	-- The friendly player plate, which belongs to the bars being on plates
+	-- rather than to the bars being on at all. See FRIENDS.
+	if ns.db.bars and ns.EnemyBars.Mode() == "plates" then
+		done = ApplyFriends() and done
+	else
+		done = RestoreFriends() and done
+	end
+
 	-- The spacing, which is what `bars stack` is.
 	if ns.db.barsStack and ns.db.bars then
 		Remember("platesMotionPrior", "nameplateMotion")
@@ -326,6 +376,7 @@ function Plates.Restore()
 	done = RestoreSize() and done
 	done = RestoreDistance() and done
 	done = RestoreMotion() and done
+	done = RestoreFriends() and done
 	return done
 end
 

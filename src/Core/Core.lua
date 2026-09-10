@@ -2625,22 +2625,23 @@ local KEPT = {
 	errorMuted = true,
 	mailFavourites = true,
 
-	-- What three nameplate CVars held before the addon first wrote to them.
+	-- What four nameplate CVars held before the addon first wrote to them.
 	-- Wiping one does not restore a default, it loses the only note of what to
 	-- put back, and the next `bars stack off` hands the client a number it
 	-- never had.
 	platesMotionPrior = true,
 	platesOverlapPrior = true,
 	platesDistancePrior = true,
+	platesFriendsPrior = true,
 
 	-- What the charge key and the switch key were bound to before this addon
-	-- took them, kept for the reason the three above are: the override is
+	-- took them, kept for the reason the four above are: the override is
 	-- still ours and this is the only record of what is under it.
 	chargeKeyDisplaced = true,
 	switchKeyDisplaced = true,
 
 	-- Whether this addon is the one holding Questie's tracker off. The same
-	-- kind as the three CVar notes: wiping it does not restore a default, it
+	-- kind as the four CVar notes: wiping it does not restore a default, it
 	-- loses the only record that another addon's setting is ours to put back,
 	-- and Questie's tracker would stay off with nothing left that knows why.
 	questsTrackerTook = true,

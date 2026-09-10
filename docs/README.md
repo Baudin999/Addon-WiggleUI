@@ -3547,21 +3547,28 @@ string puts both back.
 **Reaction is the frame, and it is a departure channel.** `UnitReaction` under 4
 is hostile and draws iron `#3D404A`, which reads as chrome and disappears. 4 is
 neutral and draws amber `#F2BF26` around the whole box, which is unmissable
-across a room and is exactly what "do not cleave this one" needs to be. Anything
-over 4 does not fight you at all and cannot reach a bar, since both halves of
-the collector require `UnitCanAttack`, so friendly draws the quiet frame rather
-than a colour no caller can reach.
+across a room and is exactly what "do not cleave this one" needs to be. Over 4
+does not fight you at all and draws the quiet frame, which is every player of
+your own side.
 
-**A player of the other faction needs the flag as well.** Attackable is the
-client's word and it is nearly the whole rule for which plate gets a bar. The
-exception is the other faction: on a PvP realm a Horde player standing in
-Durotar is attackable and unflagged, and a bar on them is a bar on somebody who
-has not started anything. So a player of the other faction gets a bar while
-`UnitIsPVP` or `UnitIsPVPFreeForAll` says so and not otherwise, and
-`UNIT_FACTION` puts the bar up the moment they flag, because a plate that
-arrived unflagged has no bar for the tick to look at. A player of your own
-faction is left to `UnitCanAttack`: a duel flags nobody, and the bar on your
-duel partner is the point of the duel.
+**Every player gets a bar on a plate; a mob has to be attackable.** A player of
+either faction gets a bar whether or not you may hit them, and you do not. The
+gauge wears the class colour, because a player has no threat table and a
+gauge coloured by threat would be the idle grey on everybody in a city. The
+name goes grey for worthless only on somebody `UnitCanAttack` says you can
+kill. Who may start on you is the PvP flag off the bar's right edge, and
+`UNIT_FACTION` marks the bar so the flag lands the next frame. The friendly
+player plate is `nameplateShowFriendlyPlayers` on 2.5.6 and is off unless you
+turn it on, so the bars borrow it while they are on plates, prior kept in
+`platesFriendsPrior` like the other three CVars.
+
+**The list keeps the narrow rule.** Eight rows is room for a pull and not for a
+city. A row needs `UnitCanAttack`, and a player of the other faction needs
+`UnitIsPVP` or `UnitIsPVPFreeForAll` as well: on a PvP realm a Horde player
+standing in Durotar is attackable and unflagged, and a row for them is a row
+for somebody who has not started anything. A player of your own faction is
+left to `UnitCanAttack`: a duel flags nobody, and the row for your duel partner
+is the point of the duel.
 
 That is the second thing the revamp moved and the reasoning is worth keeping.
 Reaction used to be a five pixel stripe closing a level chip on its far left,
