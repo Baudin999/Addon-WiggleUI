@@ -2,7 +2,7 @@
 revision: 5
 id: 01M25X24SVB6GQRB7FQMM2XYHE
 type: bug
-status: doing
+status: done
 title: Hovering a unit shows no health or mana in the tooltip
 ---
 
