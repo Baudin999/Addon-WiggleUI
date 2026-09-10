@@ -2,7 +2,7 @@
 revision: 5
 id: 01M25WD8FC05V4N3G68Y49RF07
 type: task
-status: todo
+status: doing
 title: Pressing Enter in a settings text field commits it twice
 ---
 
