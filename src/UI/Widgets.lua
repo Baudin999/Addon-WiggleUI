@@ -1803,9 +1803,10 @@ function UI.Kit(host)
 			set(self:GetText())
 			Changed()
 		end
+		-- Clearing focus is the commit. ClearFocus fires OnEditFocusLost below,
+		-- and a Commit here as well ran every setter twice on one Enter.
 		edit:SetScript("OnEnterPressed", function(self)
 			self:ClearFocus()
-			Commit(self)
 		end)
 		edit:SetScript("OnEscapePressed", function(self)
 			self:ClearFocus()

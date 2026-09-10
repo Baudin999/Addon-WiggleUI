@@ -520,5 +520,39 @@ if window then
 	ns.Options.Hide()
 end
 
+-- One Enter, one commit. kit.TextField committed in OnEnterPressed and again
+-- in OnEditFocusLost, which the ClearFocus in the first one fires, so every
+-- setter behind a text field ran twice on one press. Built as a kit of its
+-- own on a stack of its own, the way 17-zoom-page.lua builds its slider,
+-- because the panel above is not put back afterwards.
+do
+	local host = { stack = ns.UI.Stack(window.frame, 300) }
+	local commits = 0
+	local row = ns.UI.Kit(host).TextField("a field",
+		function() return "" end,
+		function() commits = commits + 1 end)
+	host.stack:Reflow()
+
+	local function EditBoxIn(frame)
+		if frame.kind == "editbox" then
+			return frame
+		end
+		for index = 1, #frame.children do
+			local found = EditBoxIn(frame.children[index])
+			if found then
+				return found
+			end
+		end
+	end
+	local edit = row and EditBoxIn(row)
+	check(edit ~= nil, "the text field row has no edit box in it")
+	if edit then
+		edit:SetFocus()
+		edit:SetText("x")
+		edit:GetScript("OnEnterPressed")(edit)
+		check(commits == 1, ("one Enter committed a text field %d times"):format(commits))
+	end
+end
+
 -- Left for the sections below.
 H.carry.whole, H.carry.window, H.carry.wrapped = whole, window, wrapped
