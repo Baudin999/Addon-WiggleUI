@@ -2,7 +2,7 @@
 revision: 5
 id: 01M25XH1VZX83HWF7C3W26R8NT
 type: task
-status: doing
+status: done
 title: A player of either faction has no bar on their nameplate
 ---
 
