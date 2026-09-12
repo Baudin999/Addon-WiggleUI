@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2ADE6CXG6A18HXH3XXMC9EN
 type: task
-status: done
+status: doing
 title: "The tracker's zone tabs lay across or down, and across ships"
 ---
 
