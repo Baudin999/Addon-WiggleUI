@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2ACQ4RXERAX7EEC6CX7RZ3V
 type: bug
-status: todo
+status: doing
 title: The tracker drew its zone tabs over an empty column
 parent: 01M1B7RTAFVTSQ3FARJZCD1PYK
 ---
