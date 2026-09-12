@@ -65,6 +65,27 @@ do
 	_G.MAX_QUESTLOG_QUESTS = cap
 end
 
+-- A client whose template carries words in it, which is the one shape the
+-- reading has to refuse: the addon's line already ends in "quests", and a
+-- template naming the client's own window would put its numbers in the middle
+-- of a sentence. Nothing proves this build spells it without words, so the
+-- answer is read back rather than trusted.
+do
+	local template = _G.QUEST_LOG_COUNT_TEMPLATE
+	_G.QUEST_LOG_COUNT_TEMPLATE = "Quest Log %d/%d"
+	check(Log.Full() == "5/25",
+		("a template with words in it reads %q"):format(Log.Full()))
+	_G.QUEST_LOG_COUNT_TEMPLATE = "%d of %d"
+	check(Log.Full() == "5/25",
+		("a template with a word between the numbers reads %q"):format(Log.Full()))
+	-- Punctuation the client chose is kept, which is the whole reason the
+	-- template is asked for at all.
+	_G.QUEST_LOG_COUNT_TEMPLATE = "%d / %d"
+	check(Log.Full() == "5 / 25",
+		("the client's own spacing came back as %q"):format(Log.Full()))
+	_G.QUEST_LOG_COUNT_TEMPLATE = template
+end
+
 local zones = Log.Zones()
 check(zones[1].name == "Elwynn Forest" and #zones[1].quests == 2,
 	("the first zone came out as %s with %d quests")

@@ -285,12 +285,18 @@ end
 -- the two disagree in the details nobody looks at until they are side by side.
 --
 -- QUEST_LOG_COUNT_TEMPLATE is the client's own format string for the pair and
--- is what the client draws in the corner of its own log. It is used rather than
--- typed out for the reason Quests/Client.lua's objective patterns give: a slash
--- written here is a sentence that is right in English, and the client already
--- carries the one that is right everywhere. `%d/%d` is the fallback for a build
--- that has no such string, and it is what every locale of this one spells it as
--- anyway.
+-- is what QuestLogUpdateQuestCount draws in the corner of the client's own log.
+-- It is asked for rather than typed out for the reason Quests/Client.lua's
+-- objective patterns give: punctuation written here is punctuation that is
+-- right in English.
+--
+-- **And it is read back before it is used.** The two numbers are the whole of
+-- what this addon wants, and a client whose template carries words in it, its
+-- own window's name among them, would put them in the middle of a sentence
+-- that already ends in "quests". So the formatted answer has to be numbers and
+-- punctuation and nothing else; anything with a letter in it is a template
+-- about the client's window rather than about the pair, and `%d/%d` is what a
+-- slash between two numbers is in every locale either of these clients ships.
 --
 -- A client that will not say how many you may hold gets the count alone. A
 -- denominator this addon guessed would be a number a player counts against.
@@ -299,13 +305,14 @@ function Log.Full()
 	if not cap then
 		return ("%d"):format(total)
 	end
+	local plain = ("%d/%d"):format(total, cap)
 	local template = _G.QUEST_LOG_COUNT_TEMPLATE
 	if type(template) ~= "string" then
-		template = "%d/%d"
+		return plain
 	end
 	local ok, said = pcall(string.format, template, total, cap)
-	if not ok then
-		return ("%d/%d"):format(total, cap)
+	if not ok or type(said) ~= "string" or said:find("%a") then
+		return plain
 	end
 	return said
 end
