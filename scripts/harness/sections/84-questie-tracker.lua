@@ -298,6 +298,58 @@ do
 end
 
 ----------------------------------------------------------------------
+-- And Blizzard's own tracker, which the same box moves
+--
+-- The defect this is written against shipped and was found in game. Questie
+-- hides the client's QuestWatchFrame, and only while its own tracker is
+-- enabled: QuestieInit:Init and Questie:OnEnable are both behind
+-- trackerEnabled. So ticking this box, whose whole job is to switch that
+-- setting off, handed Blizzard's tracker back to the client rather than to this
+-- addon, and it arrived partway through an evening because autoQuestWatch is
+-- what puts a quest on the client's list rather than login.
+--
+-- Asserted on the parent rather than on IsShown, because the parent is the
+-- claim: the client's own QuestWatch_Update calls Show on that frame whenever a
+-- watched quest ticks over, and a frame that was only hidden would be back.
+----------------------------------------------------------------------
+
+do
+	settle()
+
+	local watch, timer = _G.QuestWatchFrame, _G.QuestTimerFrame
+	local attic = ns.Attic.Frame()
+
+	ns.db.questsTrackerOff = false
+	ns.QuestWatchBlizzard.Apply()
+	check(watch:GetParent() ~= attic,
+		"Blizzard's tracker is in the attic with the box unticked, where Questie has it")
+	check(ns.QuestWatchBlizzard.Describe() == "on screen",
+		("the reading says %q"):format(ns.QuestWatchBlizzard.Describe()))
+
+	ns.db.questsTrackerOff = true
+	ns.QuestWatchBlizzard.Apply()
+	check(watch:GetParent() == attic,
+		"Blizzard's own tracker is still on the screen with this addon's column up")
+	check(timer:GetParent() == attic,
+		"the timed quest's frame was left behind by the cage beside it")
+	check(ns.QuestWatchBlizzard.Describe() == "in the attic",
+		("the reading says %q"):format(ns.QuestWatchBlizzard.Describe()))
+
+	-- The client putting it back, which is the one route that matters: nothing
+	-- else in this addon hides a frame the client shows on its own schedule.
+	watch:Show()
+	check(watch:GetParent() == attic,
+		"the client showed its tracker again and it came out of the attic")
+
+	-- And handed back whole when the box is unticked, because Questie takes it
+	-- again from there.
+	ns.db.questsTrackerOff = false
+	ns.QuestWatchBlizzard.Apply()
+	check(watch:GetParent() == _G.UIParent,
+		"unticking the box did not give Blizzard's tracker back to the client")
+end
+
+----------------------------------------------------------------------
 
 -- Back the way it was found, which for this section means Questie's tracker on
 -- and this addon claiming nothing.

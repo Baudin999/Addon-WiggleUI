@@ -295,7 +295,11 @@ end
 --             rather than the feature
 --   feature   the db key for this addon's own part being on
 --   switch    the db key for the switch that hides the client's
---   global    the client's own toggle, taken so the key opens ours
+--   global    the client's own toggle, taken so the key opens ours. Absent
+--             where the frames have no toggle to take: Blizzard's quest watch
+--             frame is put up by the client's own QuestWatch_Update and there
+--             is no key and no global that opens it, so that part cages and
+--             takes nothing
 --   Toggle    what to put on it, a named function at file scope in the part's
 --             own file rather than a closure made here, because the swap runs
 --             on a pass that goes once a second forever and a fresh closure a
@@ -352,6 +356,15 @@ function Adapter.Cage(d)
 			original = _G[d.global]
 		end
 		return original ~= nil
+	end
+
+	-- Whether this part takes a key at all. A descriptor with no global is a
+	-- cage and nothing else, and every branch below that would have swapped one
+	-- answers true rather than false: there is no work, which is not the same
+	-- as work that failed, and a false here would put the whole pass on the
+	-- combat retry forever.
+	local function Keyed()
+		return d.global ~= nil
 	end
 
 	-- Every key the client has on its own page, in the order it answers them.
@@ -422,6 +435,9 @@ function Adapter.Cage(d)
 	end
 
 	local function TakeKey()
+		if not Keyed() then
+			return true
+		end
 		if _G[d.global] == d.Toggle then
 			return Bind()
 		end
@@ -436,6 +452,9 @@ function Adapter.Cage(d)
 	-- holding the global is a client this leaves alone, which is the same rule
 	-- Remember keeps at the other end.
 	local function GiveKey()
+		if not Keyed() then
+			return true
+		end
 		Unbind()
 		if type(original) ~= "function" or _G[d.global] ~= d.Toggle then
 			return false
@@ -510,11 +529,17 @@ function Adapter.Cage(d)
 				return ns.Attic.Held(frame)
 			end
 		end
+		if not Keyed() then
+			return Blizz.Wanted()
+		end
 		return Blizz.Wanted() and _G[d.global] == d.Toggle
 	end
 
 	function Blizz.Describe()
 		if not ns.db[d.switch] then
+			if not Keyed() then
+				return "on screen"
+			end
 			return ("on screen, and %s opens it")
 				:format(d.offKey or Blizz.KeyText())
 		end
@@ -524,6 +549,9 @@ function Adapter.Cage(d)
 			end
 		elseif not caged then
 			return "on screen"
+		end
+		if not Keyed() then
+			return d.place
 		end
 		if type(original) ~= "function" then
 			return ("%s, and this client has no %s to redirect")

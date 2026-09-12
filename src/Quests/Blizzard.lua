@@ -77,3 +77,46 @@ ns.QuestBlizzard = ns.BlizzAdapter.Cage({
 	offKey = "L",
 	onKey = "L",
 })
+
+--------------------------------------------------------------------------
+-- The client's on-screen tracker, which is a second frame and a second switch
+--
+-- QuestWatchFrame is the five lines of quest text the client draws down the
+-- right of the screen. It is not the log window above and it does not follow
+-- that window's switch, because the two are up in different states: the log is
+-- a window you open and the watch frame arrives on its own, off `autoQuestWatch`
+-- and the client's own QuestWatch_Update, in the middle of an evening.
+--
+-- **Questie used to hide it and stopped.** `QuestieInit:Init` calls
+-- WatchFrameHook.Hide and `Questie:OnEnable` calls QuestieCompat.HideWatchFrame,
+-- and both are behind `Questie.db.profile.trackerEnabled`. Quests/TrackerOff.lua
+-- switches that setting off, which is what the box is for, so ticking it took
+-- Blizzard's tracker off Questie's hands and gave it to nobody. That is the bug
+-- this closes, and it is worth reading beside Quests/TrackerOff.lua's header:
+-- the cost of reaching into a neighbour's setting is that you inherit what the
+-- neighbour was doing with it.
+--
+-- **So it follows the tracker switch and not the window one.** `quests` and
+-- `questsTrackerOff`, which is ns.QuestColumn.Wanted() by another name: the
+-- state the hole opens in is exactly the state this addon's own column has the
+-- screen. With that box unticked Questie's tracker is up and Questie hides the
+-- client's frame itself, and with Questie absent the player keeps the client's
+-- tracker, which is the right answer in both.
+--
+-- **Nothing takes a key.** There is no global that opens a watch frame and no
+-- binding that shows one, so the descriptor carries no `global` and
+-- Core/BlizzAdapter.lua's cage does the cage alone. That field being optional
+-- is the one change this needed in the shape.
+--
+-- QuestTimerFrame is beside it because it is the same picture for a timed
+-- quest, and it is the frame Questie's own WatchFrameHook hides in the same
+-- call. A name this client does not carry costs one lookup against nil.
+--------------------------------------------------------------------------
+
+ns.QuestWatchBlizzard = ns.BlizzAdapter.Cage({
+	frames = { "QuestWatchFrame", "QuestTimerFrame" },
+	feature = "quests",
+	switch = "questsTrackerOff",
+	place = "in the attic",
+	off = "on screen with the quest log switched off",
+})

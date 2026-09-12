@@ -1421,6 +1421,11 @@ events:SetScript("OnEvent", function(_, event)
 		-- swaps belongs to another addon, and at load there is no promise that
 		-- addon has loaded yet.
 		ns.QuestBlizzard.Apply()
+		-- And Blizzard's own tracker, which is a second cage on a second switch
+		-- and is here for the first reason rather than the third: the client
+		-- shows its watch frame off autoQuestWatch, so it has to be in the attic
+		-- before the first quest of the session ticks over.
+		ns.QuestWatchBlizzard.Apply()
 		ns.QuestTracker.Apply()
 		-- And the quest updates for the reason the line above it is here.
 		-- The list this puts a callback on is on that addon's own global,

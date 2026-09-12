@@ -13,6 +13,7 @@ local function SetQuests(value)
 		ns.QuestWindow.Hide()
 	end
 	ns.QuestBlizzard.Apply()
+	ns.QuestWatchBlizzard.Apply()
 	ns.QuestTracker.Apply()
 	ns.QuestTrackerOff.Apply()
 	ns.QuestColumn.Apply()
@@ -30,6 +31,12 @@ end
 local function SetTrackerOff(value)
 	ns.db.questsTrackerOff = value
 	ns.QuestTrackerOff.Apply()
+	-- Blizzard's own watch frame goes with it, and that is the third tracker
+	-- this one box moves. Questie hides the client's frame only while its own
+	-- tracker is enabled, so switching Questie's off used to hand the screen
+	-- back to the client rather than to this addon. Quests/Blizzard.lua's
+	-- second cage is what closes that.
+	ns.QuestWatchBlizzard.Apply()
 	ns.QuestColumn.Apply()
 end
 
@@ -45,7 +52,8 @@ local function QuestWord(arg, rawArg)
 		ns.Print("Blizzard's quest log is " .. ns.QuestBlizzard.Describe() .. ".")
 	elseif word == "tracker" then
 		SetTrackerOff(ns.Command.Toggle(rest))
-		ns.Print("Questie's tracker is " .. ns.QuestTrackerOff.Describe() .. ".")
+		ns.Print("Questie's tracker is " .. ns.QuestTrackerOff.Describe()
+			.. ", and Blizzard's is " .. ns.QuestWatchBlizzard.Describe() .. ".")
 	elseif word == "where" then
 		ns.Print(ns.QuestWhere.Describe() .. ".")
 	elseif word == "drops" then
@@ -173,9 +181,10 @@ ns.Register({
 		-- addon moves that belongs to somebody else. A player who cannot see
 		-- which way it is and who put it there reads a missing tracker as
 		-- Questie having broken.
-		return ("%s; %s; Blizzard's %s; Questie's tracker is %s"):format(
-			ns.QuestWindow.Describe(), ns.QuestLog.Describe(),
-			ns.QuestBlizzard.Describe(), ns.QuestTrackerOff.Describe())
+		return ("%s; %s; Blizzard's %s; Blizzard's tracker is %s; Questie's tracker is %s")
+			:format(ns.QuestWindow.Describe(), ns.QuestLog.Describe(),
+				ns.QuestBlizzard.Describe(), ns.QuestWatchBlizzard.Describe(),
+				ns.QuestTrackerOff.Describe())
 	end,
 
 	panel = function(ui)
@@ -201,5 +210,6 @@ ns.Register({
 		ui.Reading("clicking Questie's tracker", ns.QuestTracker.Describe)
 		ui.Reading("Questie's tracker itself", ns.QuestTrackerOff.Describe)
 		ui.Reading("Blizzard's window", ns.QuestBlizzard.Describe)
+		ui.Reading("Blizzard's own tracker", ns.QuestWatchBlizzard.Describe)
 	end,
 })

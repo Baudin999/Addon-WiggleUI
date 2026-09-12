@@ -398,6 +398,17 @@ end
 
 _G.QuestLogFrame = region("Frame", _G.UIParent, "QuestLogFrame")
 
+-- The client's on-screen tracker, which is a different frame from the window
+-- above and comes up on its own. QuestWatch_Update shows it whenever
+-- autoQuestWatch has put a quest on the list, so it is shown here: a stub that
+-- started hidden would let a cage that did nothing at all pass.
+_G.QuestWatchFrame = region("Frame", _G.UIParent, "QuestWatchFrame")
+_G.QuestWatchFrame:Show()
+
+-- And the timed quest's own, beside it for the same reason Quests/Blizzard.lua
+-- names it: Questie's WatchFrameHook hides the pair in one call.
+_G.QuestTimerFrame = region("Frame", _G.UIParent, "QuestTimerFrame")
+
 -- The client's own toggle, which Quests/Blizzard.lua replaces and has to be
 -- able to hand back. Counted, so a section can prove the key opens this addon's
 -- window rather than this one.
