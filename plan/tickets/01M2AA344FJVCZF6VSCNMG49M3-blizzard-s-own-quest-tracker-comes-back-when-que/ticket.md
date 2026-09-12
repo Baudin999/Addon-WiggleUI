@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2AA344FJVCZF6VSCNMG49M3
 type: bug
-status: todo
+status: doing
 title: Blizzard's own quest tracker comes back when Questie's goes off
 ---
 
