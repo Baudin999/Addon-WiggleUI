@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2AA3DMXDF5SPDC27MJEX30T
 type: task
-status: doing
+status: done
 title: "How full the log is, at the top of the window and the tracker"
 ---
 
