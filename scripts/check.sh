@@ -419,7 +419,7 @@ UI/Draw.lua:1:the return above compares all four channels
 UI/Feed.lua:1:the return above compares the marker against what the row is drawing
 UI/Pixel.lua:1:UI.Rezoom compares the zoom a frame already carries before it calls Rescale
 UnitFrames/Cast.lua:1:the moving edge of a cast bar
-UnitFrames/EnemyBars.lua:6:a nameplate appearing and a nameplate going, which is once per plate and not once per tick
+UnitFrames/EnemyBars.lua:5:a nameplate appearing and a nameplate going, which is once per plate and not once per tick
 UnitFrames/PlayerCast.lua:2:the moving edge of the player's cast and of the channel it replaces
 "
 

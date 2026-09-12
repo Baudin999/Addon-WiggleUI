@@ -883,15 +883,12 @@ end
 
 -- A mob and the plate the client puts up for it, carrying a scale of its own
 -- the way a real plate does, so a widget that inherited it would be measurably
--- wrong. The size is whatever the client has in force, which is this stub's own
--- figure until the addon has asked for another.
+-- wrong. The size is the client's own figure until the addon asks for another.
 local function Pull(index)
 	local unit = "nameplate" .. index
 	local plate = region("frame", _G.UIParent)
 	plate.namePlateUnitToken = unit
-	-- A restricted region, as every plate is on this client: the addon may not
-	-- ask where anything under it is. See refused in client/02-place.lua.
-	plate.restricted = true
+	plate.restricted = true -- as every plate is; see refused in client/02-place.lua
 	plate.scale = 1.1
 	plate:SetSize(plateSize[1] or PLATE_W, plateSize[2] or PLATE_H)
 	plate.UnitFrame = region("frame", plate)
