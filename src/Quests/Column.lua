@@ -82,23 +82,30 @@ local Log = ns.QuestLog
 -- it is the wrong shape for the question. A pin is for the one quest you always
 -- want in front of you; looking at Westfall for a moment is not that.
 --
--- So UI.SideTabs draws one tab per zone your log has quests in, with the zone's
--- name and how many quests you still have there on it and a gold dot where one
--- of them is ready to hand in.
+-- So every zone your log has quests in is on the tracker, with how many quests
+-- you still have there beside its name and a gold dot where one of them is
+-- ready to hand in, and pressing one draws that zone.
 --
--- **Which way that strip runs is a setting, and the harmonica is the default.**
--- A row of tabs over the quests costs the column height and no width; a turned
--- column down its left edge costs it fifteen pixels of width and no height.
--- Neither is better and the answer is about the screen it stands on: a player
--- who has put the tracker down the side of a tall monitor is spending something
--- different from one who has it in a corner over the world.
+-- **They are drawn as a harmonica, and the turned strip is the other setting.**
+-- A harmonica is a plate per zone stacked down the column, each with its name
+-- written the way round every other word here is, and the open one's quests
+-- under it. A closed plate costs one line. The turned strip is what this was:
+-- one tab per zone down the left edge, each label rotated a quarter turn so the
+-- whole strip costs fifteen pixels of width and no height at all.
 --
--- Across is the default because the tracker is read rather than scanned. A
--- harmonica writes the zone names out the way round the rest of the column is
--- written, so the strip is one more line of the thing you are already reading;
--- turned, every tab is a word your head has to tilt for. The turn is the
--- cheaper strip and the row is the legible one, and legible wins on the frame a
--- player looks at a hundred times a night.
+-- The harmonica ships. The turn is the cheaper control and it is the one you
+-- have to tilt your head to read, on the frame in this addon that is looked at
+-- most often; a plate says its zone's name in the same direction as the quest
+-- names under it, so the tracker is one thing being read rather than two. What
+-- the turn buys is width, which is why it is still here: a player who has put
+-- this column down the edge of a tall screen is spending something a player
+-- with it in a corner over the world is not.
+--
+-- A harmonica is not a strip and is not drawn by one. The plates are rows in
+-- the same stack the quest names are in, because that is what makes the open
+-- zone's quests sit under its own plate and the next plate sit under them. The
+-- turned strip stands beside that stack and UI.SideTabs draws it; in a
+-- harmonica it holds no tabs and is not on the screen.
 --
 -- **Walking and clicking are two gestures and the second outranks the first.**
 -- Where you are standing is what the column draws until you press a tab, and
@@ -109,7 +116,7 @@ local Log = ns.QuestLog
 -- against ZONE_CHANGED, which fires every time you cross a road.
 --
 -- Walking somewhere with no quests in it drops nothing. Standing in Ironforge
--- reading Westfall is exactly what the tabs are for.
+-- reading Westfall is exactly what the plates are for.
 --
 -- **So it stops hiding itself.** The old rule was that a tracker with no quests
 -- on it is not drawn, which was right while the tracker was only ever the zone
@@ -157,12 +164,20 @@ local LEAD = M.rowGap + PIN + M.rowGap
 local TALLY = 13
 local TALLY_TEXT = 11
 
--- The zone strip's own label size, and the air between the strip and the words
+-- A zone's own label size, and the air between the turned strip and the words
 -- beside it. Eleven rather than the twelve a quest name is drawn at, because a
--- zone tab is furniture: it says where you are looking and the quest names are
--- what you are reading.
+-- zone is furniture either way it is drawn: it says where you are looking and
+-- the quest names are what you are reading.
 local ZONE_TEXT = 11
 local ZONE_GAP = M.rowGap
+
+-- One plate of the harmonica, which is a row in the stack with the same air
+-- round its label that a quest name has round its own.
+local ZONE = 16
+
+-- The mark in a plate's corner saying a quest is ready to hand in somewhere you
+-- are not looking. Three pixels, which is what the turned strip's tabs carry.
+local DOT = 3
 
 -- The longest and the shortest one zone tab is allowed to be, down the strip.
 --
@@ -196,17 +211,22 @@ local function Room()
 	return math.max(math.floor(tall * ZONE_SHARE), ZONE_SHORTEST)
 end
 
--- Which way the strip runs. Anything but the word for the turned column is the
--- harmonica, so a saved file written before this setting existed comes up the
--- way it ships rather than the way it happened to be missing.
-local function Across()
-	return ns.db.questsTabs ~= "down"
+-- How the zones are drawn: a plate each down the column, or a tab each down a
+-- turned strip beside it. Anything but the word for the strip is the harmonica,
+-- so a saved file written before this setting existed comes up the way it ships
+-- rather than the way it happened to be missing.
+local function Harmonica()
+	return ns.db.questsTabs ~= "turned"
 end
 
 --------------------------------------------------------------------------
 
 local frame, stack, place, wash, tally, side, body
-local heads, lines = {}, {}
+local heads, lines, plates = {}, {}, {}
+
+-- What a strip with nothing on it is handed. One table rather than a fresh one
+-- per paint: UI.SideTabs reads the list and never keeps it.
+local NONE = {}
 local built = false
 
 -- The zone a tab was pressed on, or nothing for "wherever I am standing".
@@ -349,12 +369,22 @@ function Column.Tabs()
 		if #zone.quests > 0 then
 			out[#out + 1] = {
 				key = zone.name,
-				label = ("%s %d"):format(zone.name, #zone.quests),
+				label = Column.Zoned(zone),
 				dot = zone.done > 0,
 			}
 		end
 	end
 	return out
+end
+
+-- What a zone is called on the tracker: its own name and how many quests you
+-- still have under it.
+--
+-- One function for both drawings. A plate and a tab are the same label on two
+-- different shapes, and two format strings is how the harmonica and the strip
+-- come to disagree about whether the number is there.
+function Column.Zoned(zone)
+	return ("%s %d"):format(zone.name, #zone.quests)
 end
 
 -- The zone a tab was pressed on, or nothing to go back to where you are
@@ -495,72 +525,180 @@ local function Mouse(pool, on)
 end
 
 --------------------------------------------------------------------------
+-- The plates
+--------------------------------------------------------------------------
+
+-- What a plate looks like, in the three states a tab on the turned strip has
+-- and in the same three fills, so one zone drawn two ways reads as one control.
+local function Shade(row)
+	local fill, tone = C.chrome, C.dim
+	if row.open then
+		fill, tone = C.selected, C.heading
+	elseif row.hovered then
+		fill, tone = C.hover, C.text
+	end
+	UI.Tint(row.bg, fill)
+	row.text:SetTextColor(tone[1], tone[2], tone[3])
+	row.mark:SetShown(row.open and true or false)
+end
+
+local function Unfold(row)
+	Column.Choose(row.key)
+end
+
+local function Lit(row)
+	row.hovered = true
+	Shade(row)
+end
+
+local function Unlit(row)
+	row.hovered = nil
+	Shade(row)
+end
+
+-- One plate, made once and reused for whatever zone lands on it next.
+--
+-- Not off Take above, which builds a line of text. A plate is a control: it
+-- carries a fill the pointer answers, a dot in the corner nothing else uses and
+-- a press that opens a zone rather than a quest.
+--
+-- Its accent is the two pixels a pinned quest's mark is, in the same column of
+-- the row, so the tracker keeps one left edge whichever kind of row is at the
+-- top of it. In the accent colour rather than the pin's gold, because the two
+-- say different things: this one is the zone you are reading and that one is a
+-- quest that is yours.
+local function Slab(at)
+	local row = plates[at]
+	if row then
+		return row
+	end
+	row = CreateFrame("Button", nil, stack.frame)
+	row.bg = ns.Fill(row, "BACKGROUND", C.chrome[1], C.chrome[2], C.chrome[3], 1)
+	row.bg:SetAllPoints()
+
+	row.mark = ns.Fill(row, "ARTWORK", C.accent[1], C.accent[2], C.accent[3], 1)
+	row.mark:SetPoint("TOPLEFT")
+	row.mark:SetPoint("BOTTOMLEFT")
+	row.mark:SetWidth(PIN)
+
+	-- A quest ready to hand in, somewhere you are not looking. The same three
+	-- pixels of heading gold the turned strip puts in the corner of a tab, in
+	-- the corner of a plate instead.
+	row.dot = ns.Fill(row, "OVERLAY", C.heading[1], C.heading[2], C.heading[3], 1)
+	row.dot:SetSize(DOT, DOT)
+	row.dot:SetPoint("RIGHT", -M.rowGap, 0)
+
+	row.text = UI.Label(row, ZONE_TEXT, C.dim, "LEFT", UI.SHADOW)
+	row.text:SetPoint("LEFT", LEAD, 0)
+	row.text:SetPoint("RIGHT", -(M.rowGap * 2 + DOT), 0)
+
+	row:RegisterForClicks("LeftButtonUp")
+	row:SetScript("OnClick", Unfold)
+	row:SetScript("OnEnter", Lit)
+	row:SetScript("OnLeave", Unlit)
+	UI.PassCamera(row)
+
+	plates[at] = row
+	return row
+end
+
+--------------------------------------------------------------------------
 -- Drawing
 --------------------------------------------------------------------------
 
+-- One quest's name and a row under it per thing the quest still wants. Answers
+-- the two counts it moved on, because the pools are trimmed on them.
+local function Quest(quest, head, line)
+	head = head + 1
+	local row = Take(heads, head, TITLE_TEXT, LEAD)
+	local tone = Tone(quest)
+	row.quest = quest.id
+	row.text:SetText(quest.title or "")
+	row.text:SetTextColor(tone[1], tone[2], tone[3])
+	row.mark:SetShown(Pinned(quest))
+	row:Show()
+	stack:Add(row, { height = TITLE })
+
+	for _, step in ipairs(Log.Objectives(quest.key) or {}) do
+		line = line + 1
+		local under = Take(lines, line, LINE_TEXT, LEAD + M.indent)
+		local shade = step.done and C.quiet or C.dim
+		under.quest = quest.id
+		under.text:SetText(step.text or "")
+		under.text:SetTextColor(shade[1], shade[2], shade[3])
+		under:Show()
+		stack:Add(under, { height = LINE })
+	end
+	return head, line
+end
+
+-- The quests of an open zone, under its own plate, and nothing under a closed
+-- one. Every quest it draws is noted, because the pass below has to be able to
+-- tell a pin it has already drawn here from one it still owes a row.
+local function Quests(zone, open, head, line, drawn)
+	if not open then
+		return head, line
+	end
+	for _, quest in ipairs(zone.quests) do
+		head, line = Quest(quest, head, line)
+		drawn[quest.key] = true
+	end
+	return head, line
+end
+
+-- The harmonica: a plate per zone your log has quests in, in the log's own
+-- order, with the open ones unfolded under their own plates.
+--
+-- Off Log.Zones rather than off Column.Tabs, because this needs the quests as
+-- well as the label and Tabs throws them away. Both label the plate through
+-- Column.Zoned, which is the part that would drift.
+local function Folded(head, line)
+	local showing = Column.Showing() or {}
+	local at, drawn = 0, {}
+	for _, zone in ipairs(Log.Zones()) do
+		if #zone.quests > 0 then
+			at = at + 1
+			local open = showing[zone.name] and true or false
+			local row = Slab(at)
+			row.key = zone.name
+			row.open = open
+			row.text:SetText(Column.Zoned(zone))
+			row.dot:SetShown(zone.done > 0 and not open)
+			Shade(row)
+			row:Show()
+			stack:Add(row, { height = ZONE })
+			head, line = Quests(zone, open, head, line, drawn)
+		end
+	end
+	return head, line, at, drawn
+end
+
 -- The column, filled in from the model. Answers how many quests went on it.
+--
+-- Two shapes and one list of quests. A harmonica lays the plates first and
+-- unfolds the open ones as it goes, so what is left of Column.Quests by the
+-- time the loop below runs is the pins from somewhere you are not standing;
+-- with the turned strip nothing has been drawn yet and that loop draws the lot.
+-- Either way the pins land at the foot, which is where they have always been
+-- and is the whole of why they are ordered after the zone.
 local function Fill()
 	stack.cells = {}
 
 	local quests = Column.Quests()
-	local head, line = 0, 0
+	local head, line, at, drawn = 0, 0, 0, nil
+	if Harmonica() then
+		head, line, at, drawn = Folded(head, line)
+	end
 	for _, quest in ipairs(quests) do
-		head = head + 1
-		local row = Take(heads, head, TITLE_TEXT, LEAD)
-		local tone = Tone(quest)
-		row.quest = quest.id
-		row.text:SetText(quest.title or "")
-		row.text:SetTextColor(tone[1], tone[2], tone[3])
-		row.mark:SetShown(Pinned(quest))
-		row:Show()
-		stack:Add(row, { height = TITLE })
-
-		for _, step in ipairs(Log.Objectives(quest.key) or {}) do
-			line = line + 1
-			local under = Take(lines, line, LINE_TEXT, LEAD + M.indent)
-			local shade = step.done and C.quiet or C.dim
-			under.quest = quest.id
-			under.text:SetText(step.text or "")
-			under.text:SetTextColor(shade[1], shade[2], shade[3])
-			under:Show()
-			stack:Add(under, { height = LINE })
+		if not (drawn and drawn[quest.key]) then
+			head, line = Quest(quest, head, line)
 		end
 	end
 
 	Spare(heads, head)
 	Spare(lines, line)
+	Spare(plates, at)
 	return #quests
-end
-
--- The strip, laid out the way the setting says, and what it cost the words: how
--- far right they start, how far down they start, and how tall the strip itself
--- came out.
---
--- Two of those three are always nothing. A harmonica takes height and a turned
--- column takes width, and the column's own height is handed back either way
--- because the frame has to hold whichever of the strip and the words is taller.
-local function Strip(tabs)
-	if Across() then
-		-- A tab as wide as its own zone name, up to the width of the column it
-		-- is standing on, and folded onto another line when that runs out. The
-		-- share of the screen the turned strip divides up is not asked: a row
-		-- that runs out of width grows a line rather than shortening its tabs,
-		-- so nothing here has to be told how many zones there are.
-		local _, down = side:Resize(WIDTH, WIDTH)
-		return 0, (#tabs > 0 and (down + ZONE_GAP) or 0), down
-	end
-
-	-- What one tab may be, which is the screen divided by how many of them
-	-- there are and never more than a zone name needs. A log with quests in
-	-- fifteen zones gets fifteen short tabs rather than a strip off the bottom
-	-- of the monitor.
-	local longest = ZONE_LONGEST
-	if #tabs > 0 then
-		longest = math.min(longest,
-			math.max(math.floor(Room() / #tabs), ZONE_SHORTEST))
-	end
-	local wide, down = side:Resize(longest)
-	return (#tabs > 0 and (wide + ZONE_GAP) or 0), 0, down
 end
 
 -- Everything the tracker draws, from the model rather than from the client.
@@ -587,13 +725,23 @@ function Column.Paint()
 	end
 	stoodIn = here
 
-	-- Which way the strip runs, before the tabs land on it rather than after: a
-	-- tab is made the way the strip is running, so a strip told afterwards turns
-	-- every label it has just made and then measures it.
-	side:Across(Across())
-	local tabs = Column.Tabs()
+	-- The zones, as tabs on the turned strip or as plates in the stack, and
+	-- never as both. A harmonica draws its own in Fill below, so the strip is
+	-- handed nothing, takes no width and goes off the screen; one empty table
+	-- rather than a fresh one, because this runs on every quest update.
+	local tabs = Harmonica() and NONE or Column.Tabs()
 	side:Set(tabs)
-	local lead, top, down = Strip(tabs)
+	-- What one tab may be, which is the screen divided by how many of them
+	-- there are and never more than a zone name needs. A log with quests in
+	-- fifteen zones gets fifteen short tabs rather than a strip off the bottom
+	-- of the monitor.
+	local longest = ZONE_LONGEST
+	if #tabs > 0 then
+		longest = math.min(longest,
+			math.max(math.floor(Room() / #tabs), ZONE_SHORTEST))
+	end
+	local strip, down = side:Resize(longest)
+	local lead = #tabs > 0 and (strip + ZONE_GAP) or 0
 	side.frame:SetShown(#tabs > 0)
 	side:Select(chosen or here)
 
@@ -607,15 +755,15 @@ function Column.Paint()
 	-- the tally and the rows arriving on the screen rather than a tidy number.
 	local told = math.max(TALLY + M.rowGap + height, 1)
 	body:ClearAllPoints()
-	body:SetPoint("TOPLEFT", lead, -top)
+	body:SetPoint("TOPLEFT", lead, 0)
 	body:SetHeight(told)
 	frame:SetWidth(lead + WIDTH)
-	frame:SetHeight(math.max(top + told, down))
+	frame:SetHeight(math.max(told, down))
 
 	-- Up whenever your log has a quest in it, and down when the log is empty.
 	-- It was up only while there were quests under your feet, which was right
-	-- until the strip arrived: standing in a city would take the tabs away with
-	-- the rows, and the tabs are how you get out of the city.
+	-- until the zones arrived: standing in a city would take the plates away
+	-- with the rows, and the plates are how you get out of the city.
 	local full = (Log.Tally()) > 0
 	frame:SetShown(full)
 	-- Last, and over whatever the pools now hold. A row or a tab made on this
@@ -641,14 +789,13 @@ function Column.Build()
 	frame:SetSize(WIDTH, 1)
 	UI.Adopt(frame, ns.Zoom("questsZoom"))
 
-	-- One tab per zone, across the top or down the left edge as the setting
-	-- says. Named for the reason every list in this addon is: a strip that has
-	-- laid itself out wrongly has to be measurable from a macro and from
-	-- scripts/harness.lua.
+	-- One tab per zone, down the left edge, turned a quarter turn, and empty
+	-- whenever the zones are drawn as plates instead. Named for the reason every
+	-- list in this addon is: a strip that has laid itself out wrongly has to be
+	-- measurable from a macro and from scripts/harness.lua.
 	side = UI.SideTabs(frame, {
 		name = "WarriorKitQuestZones",
 		size = ZONE_TEXT,
-		across = Across(),
 		onSelect = function(name) Column.Choose(name) end,
 	})
 	side.frame:SetPoint("TOPLEFT")
@@ -742,6 +889,7 @@ function Column.Lock()
 	place:Lock(unlocked)
 	Mouse(heads, not unlocked)
 	Mouse(lines, not unlocked)
+	Mouse(plates, not unlocked)
 	side:Mouse(not unlocked)
 end
 

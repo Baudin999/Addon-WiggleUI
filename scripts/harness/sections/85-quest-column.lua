@@ -85,15 +85,21 @@ local function canvas()
 	return nil
 end
 
--- What the column is drawing, top down, as one string per row on the screen.
+-- What the column is drawing, top down, as one string per quest row on the
+-- screen.
 --
 -- Off the frames rather than off Column.Quests, which is the point: a scope
 -- that answered correctly and a paint that drew last zone's rows would pass
 -- every assertion made against the model.
+--
+-- Quest rows only. A harmonica puts a plate per zone in the same stack, and a
+-- count of rows that swept those in would be counting the control along with
+-- the thing it controls. A row carrying a quest id is a quest's name or one of
+-- its objectives, which is exactly what every count in this file is about.
 local function drawn()
 	local out = {}
 	for _, row in ipairs(canvas().children) do
-		if row.shown then
+		if row.shown and row.quest then
 			for _, text in ipairs(row.regions) do
 				if text.kind == "fontstring" and text.text ~= "" then
 					out[#out + 1] = text.text
@@ -104,12 +110,41 @@ local function drawn()
 	return out
 end
 
+-- The plates of the harmonica, as one string per zone, and the one a zone's
+-- name is on.
+local function folded()
+	local out = {}
+	for _, row in ipairs(canvas().children) do
+		if row.shown and row.key then
+			for _, text in ipairs(row.regions) do
+				if text.kind == "fontstring" and text.text ~= "" then
+					out[#out + 1] = text.text
+				end
+			end
+		end
+	end
+	return out
+end
+
+local function plate(said)
+	for _, row in ipairs(canvas().children) do
+		if row.shown and row.key then
+			for _, text in ipairs(row.regions) do
+				if text.kind == "fontstring" and text.text == said then
+					return row, text
+				end
+			end
+		end
+	end
+	return nil, nil
+end
+
 -- One row of the column by the string it is drawing, so a click can be aimed at
 -- the quest it is meant for rather than at whichever frame the pool happens to
 -- have put first.
 local function row(said)
 	for _, kid in ipairs(canvas().children) do
-		if kid.shown then
+		if kid.shown and kid.quest then
 			for _, text in ipairs(kid.regions) do
 				if text.kind == "fontstring" and text.text == said then
 					return kid
@@ -421,21 +456,20 @@ do
 end
 
 ----------------------------------------------------------------------
--- The zone strip
+-- The zones
 --
--- Five questions the file cannot answer. Does the strip list the zones your log
--- has quests in rather than the zones the client has maps of. Does pressing one
--- draw that zone from anywhere. Does walking somewhere new take the choice back,
--- and does walking somewhere with no quests in it leave it alone.
+-- Five questions the file cannot answer. Are the zones your log has quests in
+-- the ones drawn, rather than the zones the client has maps of. Does pressing
+-- one draw that zone from anywhere. Does walking somewhere new take the choice
+-- back, and does walking somewhere with no quests in it leave it alone.
 --
--- Does it run the way the setting says. The strip lays across by default and
--- down when it is asked to, and the two are one object with one flag, so the
--- failure worth catching is a tab left over from the other direction: a label
--- turned once and then laid in a row is a zone name written up the side of a
--- domino, and neither the file nor a count of tabs can see it.
+-- Is the shape the setting's. There are two and only one is on the screen at a
+-- time: the harmonica draws a plate per zone into the same stack the quests are
+-- in, and the turned strip draws a tab per zone beside it. The failure worth
+-- catching is both at once, which reads from inside either file as correct.
 --
--- And is the label turned when it is a column, because a strip that fell back
--- to upright labels is fifteen pixels wide in the file and a hundred and ten on
+-- And is the label turned when it is a strip, because one that fell back to
+-- upright labels is fifteen pixels wide in the file and a hundred and ten on
 -- the screen.
 ----------------------------------------------------------------------
 
@@ -474,6 +508,67 @@ do
 		return nil, nil
 	end
 
+	-- The harmonica, which is what it ships as: a plate per zone in the stack
+	-- the quests are in, the zone under your feet unfolded under its own plate,
+	-- and the turned strip holding nothing and off the screen.
+	check(ns.db.questsTabs == "harmonica",
+		("the tracker's zones ship as %q"):format(tostring(ns.db.questsTabs)))
+	check(#folded() == 2,
+		("%d plates are on the tracker where the log has quests in two zones")
+			:format(#folded()))
+	check(folded()[1] == "Elwynn Forest 2" and folded()[2] == "Westfall 1",
+		("the plates read %s"):format(table.concat(folded(), ", ")))
+	check(#tabs() == 0,
+		("%d tabs are on the turned strip while the zones are drawn as plates")
+			:format(#tabs()))
+	check(not strip:IsShown(),
+		"the turned strip is on the screen with no tabs on it")
+
+	-- The open plate wears the accent and the closed one does not, which is the
+	-- whole of what a harmonica says: one of these is unfolded and the rest are
+	-- lines. Read off the mark rather than off the fill, because the fill is a
+	-- colour and the mark is the same two pixels a pinned quest carries.
+	check(plate("Westfall 1") ~= nil and plate("Elwynn Forest 2") ~= nil,
+		"a zone with quests in it has no plate of its own")
+	check(select(1, plate("Westfall 1")).mark:IsShown(),
+		"the plate for the zone you are standing in is not the open one")
+	check(not select(1, plate("Elwynn Forest 2")).mark:IsShown(),
+		"a zone you are not standing in is drawn open")
+
+	-- And the quests sit between the plates rather than under all of them. The
+	-- open zone's row has to be below its own plate and above the next one, or
+	-- the harmonica is a list of zones with a column of quests after it.
+	do
+		local open = select(1, plate("Westfall 1"))
+		local quest = row("The Defias Brotherhood")
+		check(quest:GetTop() <= open:GetBottom(),
+			"the open zone's quest is drawn above its own plate")
+	end
+
+	-- Pressing a plate draws that zone, which is the same gesture the tabs
+	-- carry and the reason either shape is on the tracker at all.
+	press(select(1, plate("Elwynn Forest 2")))
+	check(says("The Missing Diplomat") and not says("The Defias Brotherhood"),
+		"pressing the Elwynn plate did not put Elwynn's quests on the tracker")
+	check(select(1, plate("Elwynn Forest 2")).mark:IsShown()
+		and not select(1, plate("Westfall 1")).mark:IsShown(),
+		"pressing a plate did not move which one is open")
+	seen[#seen + 1] = ("harmonica of %d over %d rows"):format(#folded(), #drawn())
+	Column.Choose(nil)
+
+	-- The turned strip, which is the other shape. The zones come off the stack
+	-- and go onto a strip down the left edge, and the tracker pays width for
+	-- them instead of height.
+	local wasWide = frame:GetWidth()
+	ns.db.questsTabs = "turned"
+	check(Column.Apply(), "turning the zones onto a strip emptied the tracker")
+	check(#folded() == 0,
+		("%d plates are still in the stack with the zones on a strip")
+			:format(#folded()))
+	check(frame:GetWidth() > wasWide,
+		("the tracker is %d wide with a strip down its edge and was %d wide with plates in it")
+			:format(frame:GetWidth(), wasWide))
+
 	-- One tab per zone with quests under it, in the log's own order, and the
 	-- count on it is what is still in your log there rather than what the zone
 	-- ever held.
@@ -483,60 +578,19 @@ do
 	check(tabs()[1] == "Elwynn Forest 2" and tabs()[2] == "Westfall 1",
 		("the strip reads %s"):format(table.concat(tabs(), ", ")))
 
-	-- Whether two rectangles are over one another, which is what the strip and
-	-- the words must never be whichever way the strip runs. The words live in
-	-- one frame and the strip is the tracker's other child, so this is the whole
-	-- of the question: a strip that took no room off the column would pass every
-	-- assertion above it and draw its tabs over the first two quests.
-	local function overlaps(a, b)
-		return a:GetLeft() < b:GetRight() and b:GetLeft() < a:GetRight()
-			and a:GetBottom() < b:GetTop() and b:GetBottom() < a:GetTop()
-	end
-
-	-- Across, which is what it ships as. A row of upright tabs over the quests,
-	-- each as wide as its own zone name, and the words pushed down under it.
-	--
-	-- The angle is read back off the label rather than assumed, in both
-	-- directions and for the same reason: the tabs are pooled, so every one of
-	-- them was made the other way round at some point in a session where the
-	-- setting moved, and a label nobody turned back is invisible from the file.
-	check(ns.db.questsTabs == "across",
-		("the tracker's zone tabs ship as %q"):format(tostring(ns.db.questsTabs)))
-	do
-		local button, label = tab("Westfall 1")
-		check(label:GetRotation() == 0,
-			("a tab in a row is turned %s radians"):format(tostring(label:GetRotation())))
-		check(button:GetWidth() > button:GetHeight(),
-			("a zone tab is %d by %d, which is not one in a row")
-				:format(button:GetWidth(), button:GetHeight()))
-		check(strip:GetWidth() <= frame:GetWidth(),
-			("the harmonica is %d wide over a tracker %d wide, so it hangs off the side")
-				:format(strip:GetWidth(), frame:GetWidth()))
-		check(not overlaps(strip, trunk()),
-			"the tabs are drawn over the quests rather than above them")
-	end
-
-	-- Down, which is the other half of the setting, and the whole reason a
-	-- turned strip is fifteen pixels wide.
-	local wasWide = frame:GetWidth()
-	ns.db.questsTabs = "down"
-	check(Column.Apply(), "turning the zone strip on its side emptied the tracker")
-	do
-		local button, label = tab("Westfall 1")
-		check(label:GetRotation() < 0,
-			("the zone label is turned %s radians"):format(tostring(label:GetRotation())))
-		check(button:GetHeight() > button:GetWidth(),
-			("a zone tab is %d by %d, which is not a turned one")
-				:format(button:GetWidth(), button:GetHeight()))
-		check(strip:GetWidth() < 40,
-			("the strip is %d wide, which is a rail rather than a strip")
-				:format(strip:GetWidth()))
-		check(frame:GetWidth() > wasWide,
-			("the tracker is %d wide with a strip down its edge and was %d wide with a row over it")
-				:format(frame:GetWidth(), wasWide))
-		check(not overlaps(strip, trunk()),
-			"the turned tabs are drawn over the quests rather than beside them")
-	end
+	-- Turned, which is the whole reason the strip is fifteen pixels wide. The
+	-- angle is read back off the label rather than assumed, because the addon
+	-- probes SetRotation and falls back to upright labels on a client that
+	-- refuses it, and a fallback nobody notices is a strip four times as wide.
+	local button, label = tab("Westfall 1")
+	check(label:GetRotation() < 0,
+		("the zone label is turned %s radians"):format(tostring(label:GetRotation())))
+	check(button:GetHeight() > button:GetWidth(),
+		("a zone tab is %d by %d, which is not a turned one")
+			:format(button:GetWidth(), button:GetHeight()))
+	check(strip:GetWidth() < 40,
+		("the strip is %d wide, which is a rail rather than a strip")
+			:format(strip:GetWidth()))
 
 	-- And air on both sides of the turned label, off the line's own height
 	-- rather than off the size the font was asked for. They are different
@@ -547,17 +601,10 @@ do
 	-- floor rather than the six the strip asks for, because the line height is
 	-- the client's answer and a client whose font leads differently is not a
 	-- failure worth stopping a run for.
-	do
-		local button, label = tab("Westfall 1")
-		check(button:GetWidth() - label:GetStringHeight() >= 8,
-			("a zone tab is %.1f across a line of %.1f, which is %.1f of air a side")
-				:format(button:GetWidth(), label:GetStringHeight(),
-					(button:GetWidth() - label:GetStringHeight()) / 2))
-	end
-
-	-- And back to the harmonica, which is what the rest of this section reads.
-	ns.db.questsTabs = "across"
-	Column.Apply()
+	check(button:GetWidth() - label:GetStringHeight() >= 8,
+		("a zone tab is %.1f across a line of %.1f, which is %.1f of air a side")
+			:format(button:GetWidth(), label:GetStringHeight(),
+				(button:GetWidth() - label:GetStringHeight()) / 2))
 
 	-- Pressing one draws that zone from wherever you are standing, which is the
 	-- whole feature: the quests in Elwynn, read in Westfall, without walking.
@@ -587,6 +634,11 @@ do
 		"walking back into Westfall left the tracker on the zone picked before")
 	check(Column.Describe() == "one quest, in Westfall",
 		("the reading says %q"):format(Column.Describe()))
+
+	-- And the shape handed back, so everything below this reads the tracker the
+	-- way the addon ships it.
+	ns.db.questsTabs = WAS_TABS
+	Column.Apply()
 end
 
 ----------------------------------------------------------------------
