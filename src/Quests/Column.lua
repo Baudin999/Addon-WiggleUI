@@ -557,10 +557,15 @@ function Column.Paint()
 	stack:SetWidth(WIDTH)
 	local height = stack:Reflow()
 
+	-- The words, measured, and the body given it. A frame with no height has
+	-- no rectangle on this client and lays nothing inside it out, so this is
+	-- the tally and the rows arriving on the screen rather than a tidy number.
+	local told = math.max(TALLY + M.rowGap + height, 1)
 	body:ClearAllPoints()
 	body:SetPoint("TOPLEFT", lead, 0)
+	body:SetHeight(told)
 	frame:SetWidth(lead + WIDTH)
-	frame:SetHeight(math.max(TALLY + M.rowGap + height, down, 1))
+	frame:SetHeight(math.max(told, down))
 
 	-- Up whenever your log has a quest in it, and down when the log is empty.
 	-- It was up only while there were quests under your feet, which was right
@@ -603,9 +608,17 @@ function Column.Build()
 
 	-- Everything that is not the strip, in one frame, so a paint moves the
 	-- words off the strip's width with one anchor rather than two.
+	--
+	-- Sized in both directions rather than only across, and the one is not
+	-- decoration. A frame with no height has no rectangle on this client, and
+	-- nothing anchored inside one is laid out at all: the tally and every row
+	-- under it went through this frame the moment the strip arrived, so a
+	-- width and nothing else was a tracker drawing its zone tabs over an empty
+	-- column. It is the rule every other container in this addon already
+	-- follows, which is why they are all made with math.max(size, 1).
 	body = CreateFrame("Frame", nil, frame)
 	body:SetPoint("TOPLEFT")
-	body:SetWidth(WIDTH)
+	body:SetSize(WIDTH, 1)
 
 	-- No background and no hairline, because this is not a window. The wash is
 	-- the whole of the ground: solid shadow at the left edge where the words

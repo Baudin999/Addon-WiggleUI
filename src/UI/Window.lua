@@ -1470,7 +1470,13 @@ end
 -- numbers TABPAD is for the strip above, and they are not one number here: a
 -- tab is a long thin rectangle and the air at its ends reads differently from
 -- the air at its sides.
-local SIDEPAD, SIDEEDGE = 10, 4
+--
+-- Six across rather than four, because four was the air a tab had on paper and
+-- not the air it had on the screen: the width was taken off the font's asked
+-- size, a line of text is taller than the size it is asked for, and the label
+-- ate both edges and sat against one of them. The measurement below is the fix
+-- and this is the air that fix makes visible.
+local SIDEPAD, SIDEEDGE = 10, 6
 
 -- A quarter turn clockwise, which is what a reader turning their head to the
 -- right sees the right way up. Negative because this client counts
@@ -1642,12 +1648,26 @@ function Side:Resize(longest)
 			button.text:SetWidth(0)
 		end
 
+		-- How tall one line of this label actually is, rather than the size
+		-- the font was asked for. They are not the same number: a font asked
+		-- for eleven draws a line of thirteen or so, the difference is the
+		-- leading, and a tab sized on the asked number is a tab narrower than
+		-- the words in it. Turned a quarter, that is a label centred on a
+		-- button too thin to hold it, which reads as text shoved against one
+		-- edge of the strip with no air on the other.
+		--
+		-- Measured per tab per paint, which is one call per zone on a frame
+		-- that repaints when your log changes, and the floor is the asked size
+		-- so a client that will not measure a hidden font string draws the
+		-- strip it drew before.
+		local line = math.max(UI.TextHeight(button.text, self.size), self.size)
+
 		local tall, wide
 		if self:Turned() then
 			tall = UI.Round(self.frame, words + SIDEPAD * 2)
-			wide = UI.Round(self.frame, self.size + SIDEEDGE * 2)
+			wide = UI.Round(self.frame, line + SIDEEDGE * 2)
 		else
-			tall = UI.Round(self.frame, self.size + SIDEEDGE * 2)
+			tall = UI.Round(self.frame, line + SIDEEDGE * 2)
 			wide = UI.Round(self.frame, words + SIDEPAD * 2)
 		end
 		button:SetSize(math.max(wide, 1), math.max(tall, 1))

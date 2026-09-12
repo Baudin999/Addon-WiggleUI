@@ -153,6 +153,23 @@ end
 check(#Column.Quests() == 1,
 	("%d quests are on the tracker in Westfall, where the log has one")
 		:format(#Column.Quests()))
+
+-- The words have a rectangle to stand in.
+--
+-- A frame with no height is not drawn on this client and neither is anything
+-- anchored inside it, and everything on this tracker that is not a zone tab
+-- lives inside one frame: the tally and every row under it. That frame shipped
+-- with a width and no height, which is a tracker drawing its zone tabs down
+-- the left of an empty column, and every other assertion in this section
+-- passed while it did. They are all made against the model and the pool, and
+-- both were right. Section 89 sweeps this rule over the whole addon and cannot
+-- reach here, because the foot of this file puts the tracker away again.
+do
+	local wide, tall = trunk():GetWidth(), trunk():GetHeight()
+	check(wide > 0 and tall > 0,
+		("the tracker's words stand in a frame measuring %.1f by %.1f")
+			:format(wide, tall))
+end
 check(#drawn() == 3,
 	("the column drew %d rows in Westfall, where one quest and two objectives is three")
 		:format(#drawn()))
@@ -470,6 +487,20 @@ do
 	check(strip:GetWidth() < 40,
 		("the strip is %d wide, which is a rail rather than a strip")
 			:format(strip:GetWidth()))
+
+	-- And air on both sides of the turned label, off the line's own height
+	-- rather than off the size the font was asked for. They are different
+	-- numbers: a font asked for eleven draws a line of thirteen or more, the
+	-- difference is the leading, and a tab sized on the asked number is a tab
+	-- with less air than it was written to have and a label sitting against one
+	-- edge of a strip that is fifteen pixels wide to begin with. Four is the
+	-- floor rather than the six the strip asks for, because the line height is
+	-- the client's answer and a client whose font leads differently is not a
+	-- failure worth stopping a run for.
+	check(button:GetWidth() - label:GetStringHeight() >= 8,
+		("a zone tab is %.1f across a line of %.1f, which is %.1f of air a side")
+			:format(button:GetWidth(), label:GetStringHeight(),
+				(button:GetWidth() - label:GetStringHeight()) / 2))
 
 	-- Pressing one draws that zone from wherever you are standing, which is the
 	-- whole feature: the quests in Elwynn, read in Westfall, without walking.

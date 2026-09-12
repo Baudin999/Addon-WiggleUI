@@ -567,6 +567,10 @@ local SECTIONS = {
 	-- being said once is measured on and is the reason it is under everything
 	-- rather than beside the other Core sections.
 	"88-other-addons",
+	-- Last, and it reads what every section above it left standing rather than
+	-- building anything: a frame with something in it and no rectangle is not
+	-- drawn on this client, and neither is anything inside it.
+	"89-frame-rects",
 }
 
 -- Naming a section runs every section up to and including it, rather than that
