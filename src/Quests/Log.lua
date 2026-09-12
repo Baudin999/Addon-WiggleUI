@@ -277,6 +277,39 @@ function Log.Tally()
 	return total, done
 end
 
+-- How full your log is, as the client's own sentence: `17/25`.
+--
+-- One reading with two drawings, which is the rule this file already keeps
+-- about the zones. The window's title bar and the tracker's first row both say
+-- it and neither counts anything itself, because two counts of one log is how
+-- the two disagree in the details nobody looks at until they are side by side.
+--
+-- QUEST_LOG_COUNT_TEMPLATE is the client's own format string for the pair and
+-- is what the client draws in the corner of its own log. It is used rather than
+-- typed out for the reason Quests/Client.lua's objective patterns give: a slash
+-- written here is a sentence that is right in English, and the client already
+-- carries the one that is right everywhere. `%d/%d` is the fallback for a build
+-- that has no such string, and it is what every locale of this one spells it as
+-- anyway.
+--
+-- A client that will not say how many you may hold gets the count alone. A
+-- denominator this addon guessed would be a number a player counts against.
+function Log.Full()
+	local cap = Client.Cap()
+	if not cap then
+		return ("%d"):format(total)
+	end
+	local template = _G.QUEST_LOG_COUNT_TEMPLATE
+	if type(template) ~= "string" then
+		template = "%d/%d"
+	end
+	local ok, said = pcall(string.format, template, total, cap)
+	if not ok then
+		return ("%d/%d"):format(total, cap)
+	end
+	return said
+end
+
 -- A zone with nothing in it is not drawn, which only happens on a log the
 -- client has half handed over. Counted rather than asserted, because the window
 -- would rather draw the eleven zones it did get.

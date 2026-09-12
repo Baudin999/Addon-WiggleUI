@@ -104,9 +104,18 @@ local PIN = 2
 -- column has one left edge rather than two.
 local LEAD = M.rowGap + PIN + M.rowGap
 
+-- The line over the quests saying how full your log is, and the air under it.
+--
+-- Chrome rather than a row, which is why it is anchored above the stack instead
+-- of added to it. Every cell in that stack is a quest or a thing a quest still
+-- wants, and a line that is neither would be a row a click has to be taught to
+-- ignore and a row every count of the column has to subtract.
+local TALLY = 13
+local TALLY_TEXT = 11
+
 --------------------------------------------------------------------------
 
-local frame, stack, place, wash
+local frame, stack, place, wash, tally
 local heads, lines = {}, {}
 local built = false
 
@@ -359,9 +368,10 @@ function Column.Paint()
 	Log.Read()
 
 	local count = Fill()
+	tally.text:SetText(("%s quests"):format(Log.Full()))
 	stack:SetWidth(WIDTH)
 	local height = stack:Reflow()
-	frame:SetHeight(math.max(height, 1))
+	frame:SetHeight(math.max(TALLY + M.rowGap + height, 1))
 	-- A tracker with nothing on it is a rectangle of shade over the world
 	-- saying you are not on a quest here, which is a thing you already know.
 	frame:SetShown(count > 0)
@@ -394,7 +404,24 @@ function Column.Build()
 	wash = UI.Wash(frame, C.shadow, "LEFT", "BACKGROUND")
 	wash:SetAllPoints(frame)
 
+	-- How full your log is, over the quests. The same reading the quest window
+	-- puts in its title bar, off the same Log.Full, because two counts of one
+	-- log is how the two drift.
+	--
+	-- Quiet rather than body text. It is the one line here that is not a thing
+	-- you have to do, and a tracker read at a glance has to let the eye go
+	-- straight past it to the quest names.
+	tally = CreateFrame("Frame", nil, frame)
+	tally:SetPoint("TOPLEFT")
+	tally:SetPoint("TOPRIGHT")
+	tally:SetHeight(TALLY)
+	tally.text = UI.Label(tally, TALLY_TEXT, C.quiet, "LEFT", UI.SHADOW)
+	tally.text:SetPoint("LEFT", LEAD, 0)
+	tally.text:SetPoint("RIGHT", -M.rowGap, 0)
+
 	stack = UI.Stack(frame, WIDTH)
+	stack.frame:ClearAllPoints()
+	stack.frame:SetPoint("TOPLEFT", tally, "BOTTOMLEFT", 0, -M.rowGap)
 
 	place = UI.Placeable(frame, {
 		name = "WarriorKit quest tracker",

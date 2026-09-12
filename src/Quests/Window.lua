@@ -1063,6 +1063,17 @@ function Window.PaintFooter(detail)
 	local total, done = Log.Tally()
 	window.tally:SetText(("%d quests, %d ready to hand in"):format(total, done))
 
+	-- And how full the log is, in the title bar, where it is the first thing
+	-- read rather than the last. It is the one number you open a quest log to
+	-- check that is not about any of the quests in it: a log at 24 of 25 is a
+	-- log you have to hand something in before you can take another quest, and
+	-- the client says so in the corner of its own window for the same reason.
+	--
+	-- The footer keeps its own longer sentence. That one answers what is in the
+	-- log and this one answers how much room is left, which are two questions
+	-- and are read at two ends of the window.
+	window:Note(("%s quests"):format(Log.Full()))
+
 	local quest = detail and detail.quest
 	local shareable = (detail and detail.shareable) and true or false
 

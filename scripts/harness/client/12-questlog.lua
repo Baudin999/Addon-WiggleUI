@@ -223,6 +223,16 @@ _G.QUEST_ITEMS_NEEDED = "%s: %d/%d"
 _G.QUEST_MONSTERS_KILLED = "%s slain: %d/%d"
 _G.QUEST_OBJECTS_FOUND = "%s: %d/%d"
 
+-- How full your log may get, and the sentence the client writes the pair with.
+--
+-- 25 and "%d/%d" are 2.5.6's own: Blizzard_FrameXMLBase/TBC/Constants.lua sets
+-- MAX_QUESTLOG_QUESTS and QuestLogUpdateQuestCount formats it against
+-- QUEST_LOG_COUNT_TEMPLATE. Both are here rather than in the addon because the
+-- vanilla file beside them says 20, and a number typed into Quests/Client.lua
+-- would be wrong on one of the two clients this addon ships for.
+_G.MAX_QUESTLOG_QUESTS = 25
+_G.QUEST_LOG_COUNT_TEMPLATE = "%d/%d"
+
 _G.GetQuestLogTimeLeft = function()
 	local row = Selected()
 	return row and row.seconds or nil

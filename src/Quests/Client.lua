@@ -158,6 +158,28 @@ function Client.Entry(index)
 	}
 end
 
+-- How many quests this character may hold at once, or nil where the client will
+-- not say.
+--
+-- MAX_QUESTLOG_QUESTS is a FrameXML constant rather than a call, and it is the
+-- number the client's own log draws in its corner: QuestLogUpdateQuestCount
+-- formats it against QUEST_LOG_COUNT_TEMPLATE. Blizzard_FrameXMLBase/TBC
+-- /Constants.lua sets it to 25 and the vanilla file beside it to 20, which is
+-- exactly why it is read off the client rather than typed here: the two clients
+-- this addon ships for disagree, and a 25 written into this file would be wrong
+-- on one of them every time somebody counted.
+--
+-- Probed through _G like every other name in this file, and nil is a real
+-- answer: a client that will not say how full your log can be is a client the
+-- window says "17 quests" on rather than inventing a denominator.
+function Client.Cap()
+	local cap = _G.MAX_QUESTLOG_QUESTS
+	if type(cap) == "number" and cap > 0 then
+		return cap
+	end
+	return nil
+end
+
 -- Where a quest id sits in the log right now, or nil if you are not on it.
 function Client.IndexOf(questId)
 	if type(questId) ~= "number" then

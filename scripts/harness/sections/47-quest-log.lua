@@ -45,6 +45,26 @@ local total, done = Log.Tally()
 check(total == 5, ("%d quests were counted where the stub has five"):format(total))
 check(done == 1, ("%d quests read as ready to hand in, and one is"):format(done))
 
+-- How full the log is, which is the count against the client's own cap rather
+-- than against a number written into this addon. The two clients disagree,
+-- 25 on 2.5.6 and 20 on vanilla, so the denominator being read rather than
+-- typed is the whole assertion.
+check(Client.Cap() == 25,
+	("the client's cap read back as %s where the stub says 25")
+		:format(tostring(Client.Cap())))
+check(Log.Full() == "5/25", ("the log reads %q full"):format(Log.Full()))
+
+-- And the client that will not say, which is a different answer from a client
+-- that says nothing is allowed. The count alone, because a denominator this
+-- addon guessed is a number a player counts against.
+do
+	local cap = _G.MAX_QUESTLOG_QUESTS
+	_G.MAX_QUESTLOG_QUESTS = nil
+	check(Client.Cap() == nil, "a client with no cap answered one anyway")
+	check(Log.Full() == "5", ("a log with no cap reads %q"):format(Log.Full()))
+	_G.MAX_QUESTLOG_QUESTS = cap
+end
+
 local zones = Log.Zones()
 check(zones[1].name == "Elwynn Forest" and #zones[1].quests == 2,
 	("the first zone came out as %s with %d quests")
@@ -530,6 +550,40 @@ do
 	ns.QuestBlizzard.Apply()
 	ns.QuestTracker.Apply()
 	print("quests " .. ns.QuestTracker.Describe() .. "; " .. ns.QuestParty.Describe())
+end
+
+----------------------------------------------------------------------
+-- The reading in the title bar
+--
+-- The one number a player opens the log to check that is not about any quest in
+-- it: a log at 24 of 25 is a log you have to empty before you can take another
+-- quest. It is in the title bar rather than the footer because it is read
+-- first, and it is asserted off the window's own font string because a Log.Full
+-- that answered correctly and a title bar drawing last paint's number would
+-- read correctly from inside the file.
+----------------------------------------------------------------------
+
+do
+	Window.Show()
+	Window.Refresh()
+
+	-- The window object rather than the frame, because the reading is a field on
+	-- what UI.Window hands back and the global is only the frame under it.
+	local held
+	for _, entry in ipairs(ns.UI.Windows) do
+		if entry.frame == _G.WarriorKitQuests then
+			held = entry
+		end
+	end
+	check(held ~= nil, "the quest window is not in the addon's own list of windows")
+	check(held.note ~= nil, "the quest window has no reading in its title bar")
+	-- Three by now rather than the five counted at the top of this section: the
+	-- abandon above took one and the share block another, which is what makes
+	-- this a reading of the log as it stands rather than of the fixture.
+	check(held.note:GetText() == "3/25 quests",
+		("the title bar says %q"):format(tostring(held.note:GetText())))
+	check(held.tally:GetText() == "3 quests, 1 ready to hand in",
+		("the footer says %q"):format(tostring(held.tally:GetText())))
 end
 
 ----------------------------------------------------------------------

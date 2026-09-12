@@ -157,6 +157,34 @@ check(Column.Describe() == "one quest, in Westfall",
 seen[#seen + 1] = ("%s over %d rows"):format(Column.Describe(), #drawn())
 
 ----------------------------------------------------------------------
+-- How full the log is, over the quests
+----------------------------------------------------------------------
+
+-- The same reading the quest window puts in its title bar, off the same
+-- Log.Full, and it is chrome rather than a row: it is anchored above the stack,
+-- so nothing that counts the rows on this column has to subtract it and no
+-- click can land on it.
+do
+	-- Found by walking the tracker's own children for the one with no rows
+	-- under it, which is what "not a row" means here: the stack is the child
+	-- that has children, and this is the other one.
+	local line = nil
+	for _, child in ipairs(frame.children) do
+		if #child.children == 0 then
+			for _, region in ipairs(child.regions) do
+				if region.kind == "fontstring" and region.text ~= "" then
+					line = region.text
+				end
+			end
+		end
+	end
+	check(line == "3/25 quests", ("the tracker's first line says %q"):format(tostring(line)))
+	check(#drawn() == 3,
+		("the tally landed among the rows: %d rows where three is right")
+			:format(#drawn()))
+end
+
+----------------------------------------------------------------------
 -- Walking somewhere else
 ----------------------------------------------------------------------
 

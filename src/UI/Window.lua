@@ -812,6 +812,35 @@ function Window:Search(opts)
 	return edit
 end
 
+-- One short reading in the title bar, right aligned, left of the close box.
+--
+-- The corner Window:Search already anchors into, and it is the second caller
+-- that wants it: a window whose title names what it is and whose contents are a
+-- list has one fact about the whole list that belongs beside the name rather
+-- than in the footer. The quest log's is how full your log is, which is the
+-- number you open it to check and the number a footer at the bottom of six
+-- hundred pixels makes you look for.
+--
+-- Made on the first call rather than with the bar, because eleven of the twelve
+-- windows do not have one and a font string per window is a font string per
+-- window.
+--
+-- Nothing wraps and nothing is measured. It is a handful of characters at the
+-- small size, and a window with a title long enough to reach it is a window
+-- whose title is the thing to shorten.
+function Window:Note(text)
+	if not self.title then
+		return false
+	end
+	if not self.note then
+		self.note = UI.Label(self.frame, M.small, C.quiet, "RIGHT", UI.FLAT)
+		self.note:SetPoint("RIGHT", self.close, "LEFT", -M.gutter, 0)
+		UI.Wrap(self.note, false)
+	end
+	self.note:SetText(text or "")
+	return true
+end
+
 function Window:SetTitle(text)
 	-- A bare window has no title to set. Refused rather than raised, because the
 	-- caller that asks is a page naming itself and a page in a window with no
