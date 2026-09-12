@@ -135,6 +135,21 @@ ns.Register({
 		-- of something on most screens. The top left is empty on all of them.
 		questsColumnPoint = { "TOPLEFT", "UIParent", "TOPLEFT", 15, -15 },
 
+		-- Which way that tracker's zone tabs run, and it is the only other
+		-- setting it has.
+		--
+		-- Across, which is the harmonica: a row of tabs over the quests, each as
+		-- wide as its own zone name, folded onto a second line when your log has
+		-- more zones than the column is wide. Down is the turned strip along the
+		-- left edge, which costs fifteen pixels of width and no height at all.
+		--
+		-- The row is the default because the tracker is read rather than
+		-- scanned. It writes the zone names the way round the quest names under
+		-- them are written, so the strip is one more line of the thing you are
+		-- already reading; turned, every tab is a word your head tilts for.
+		-- Quests/Column.lua's header carries the argument in full.
+		questsTabs = "across",
+
 		-- Whether this addon is the one holding that tracker off. A record and
 		-- not a preference, so Core/Core.lua keeps it out of the reset: it is
 		-- the only note of whether Questie's setting is ours to put back.
@@ -203,8 +218,15 @@ ns.Register({
 		-- the only place the client's watch list is worth anything to this
 		-- addon's player, and a pin never reaches it.
 		ui.Hint("Shift click a quest to pin it, or press pin under it. Pins are this character's and uncapped. The cost is Questie: its map icons can be filtered to tracked quests and a pin is not one.")
+		ui.Cycle("zone tabs", { "across", "down" },
+			function() return ns.db.questsTabs end,
+			function(value)
+				ns.db.questsTabs = value
+				ns.QuestColumn.Apply()
+			end)
+		ui.Hint("Across is a row of tabs over the quests, folded onto a second line when there are more zones than fit. Down is a strip along the left edge with every zone name turned on its side.")
 		ui.Reading("this addon's own tracker", ns.QuestColumn.Describe)
-		ui.Hint("A turned tab down its left edge per zone you have quests in, with how many are left there. Press one to read Westfall from Ironforge; walking into a zone that has quests takes the choice back.")
+		ui.Hint("A tab per zone you have quests in, with how many are left there. Press one to read Westfall from Ironforge; walking into a zone that has quests takes the choice back.")
 		ui.Reading("a creature's quest drops", ns.QuestDrops.Describe)
 		ui.Reading("the where column and the map", ns.QuestWhere.Describe)
 		ui.Reading("who else in your group is on a quest", ns.QuestParty.Describe)

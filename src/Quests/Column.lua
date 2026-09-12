@@ -82,10 +82,23 @@ local Log = ns.QuestLog
 -- it is the wrong shape for the question. A pin is for the one quest you always
 -- want in front of you; looking at Westfall for a moment is not that.
 --
--- So UI.SideTabs draws one tab per zone your log has quests in, turned a
--- quarter turn so the strip costs fifteen pixels rather than a zone name's
--- width, with the zone's name and how many quests you still have there on it
--- and a gold dot where one of them is ready to hand in.
+-- So UI.SideTabs draws one tab per zone your log has quests in, with the zone's
+-- name and how many quests you still have there on it and a gold dot where one
+-- of them is ready to hand in.
+--
+-- **Which way that strip runs is a setting, and the harmonica is the default.**
+-- A row of tabs over the quests costs the column height and no width; a turned
+-- column down its left edge costs it fifteen pixels of width and no height.
+-- Neither is better and the answer is about the screen it stands on: a player
+-- who has put the tracker down the side of a tall monitor is spending something
+-- different from one who has it in a corner over the world.
+--
+-- Across is the default because the tracker is read rather than scanned. A
+-- harmonica writes the zone names out the way round the rest of the column is
+-- written, so the strip is one more line of the thing you are already reading;
+-- turned, every tab is a word your head has to tilt for. The turn is the
+-- cheaper strip and the row is the legible one, and legible wins on the frame a
+-- player looks at a hundred times a night.
 --
 -- **Walking and clicking are two gestures and the second outranks the first.**
 -- Where you are standing is what the column draws until you press a tab, and
@@ -181,6 +194,13 @@ local function Room()
 		tall = UIParent:GetHeight() or 0
 	end
 	return math.max(math.floor(tall * ZONE_SHARE), ZONE_SHORTEST)
+end
+
+-- Which way the strip runs. Anything but the word for the turned column is the
+-- harmonica, so a saved file written before this setting existed comes up the
+-- way it ships rather than the way it happened to be missing.
+local function Across()
+	return ns.db.questsTabs ~= "down"
 end
 
 --------------------------------------------------------------------------
@@ -512,6 +532,37 @@ local function Fill()
 	return #quests
 end
 
+-- The strip, laid out the way the setting says, and what it cost the words: how
+-- far right they start, how far down they start, and how tall the strip itself
+-- came out.
+--
+-- Two of those three are always nothing. A harmonica takes height and a turned
+-- column takes width, and the column's own height is handed back either way
+-- because the frame has to hold whichever of the strip and the words is taller.
+local function Strip(tabs)
+	if Across() then
+		-- A tab as wide as its own zone name, up to the width of the column it
+		-- is standing on, and folded onto another line when that runs out. The
+		-- share of the screen the turned strip divides up is not asked: a row
+		-- that runs out of width grows a line rather than shortening its tabs,
+		-- so nothing here has to be told how many zones there are.
+		local _, down = side:Resize(WIDTH, WIDTH)
+		return 0, (#tabs > 0 and (down + ZONE_GAP) or 0), down
+	end
+
+	-- What one tab may be, which is the screen divided by how many of them
+	-- there are and never more than a zone name needs. A log with quests in
+	-- fifteen zones gets fifteen short tabs rather than a strip off the bottom
+	-- of the monitor.
+	local longest = ZONE_LONGEST
+	if #tabs > 0 then
+		longest = math.min(longest,
+			math.max(math.floor(Room() / #tabs), ZONE_SHORTEST))
+	end
+	local wide, down = side:Resize(longest)
+	return (#tabs > 0 and (wide + ZONE_GAP) or 0), 0, down
+end
+
 -- Everything the tracker draws, from the model rather than from the client.
 --
 -- The log is read here. That is a second Log.Read in the sessions where the
@@ -536,19 +587,13 @@ function Column.Paint()
 	end
 	stoodIn = here
 
+	-- Which way the strip runs, before the tabs land on it rather than after: a
+	-- tab is made the way the strip is running, so a strip told afterwards turns
+	-- every label it has just made and then measures it.
+	side:Across(Across())
 	local tabs = Column.Tabs()
 	side:Set(tabs)
-	-- What one tab may be, which is the screen divided by how many of them
-	-- there are and never more than a zone name needs. A log with quests in
-	-- fifteen zones gets fifteen short tabs rather than a strip off the bottom
-	-- of the monitor.
-	local longest = ZONE_LONGEST
-	if #tabs > 0 then
-		longest = math.min(longest,
-			math.max(math.floor(Room() / #tabs), ZONE_SHORTEST))
-	end
-	local strip, down = side:Resize(longest)
-	local lead = #tabs > 0 and (strip + ZONE_GAP) or 0
+	local lead, top, down = Strip(tabs)
 	side.frame:SetShown(#tabs > 0)
 	side:Select(chosen or here)
 
@@ -562,10 +607,10 @@ function Column.Paint()
 	-- the tally and the rows arriving on the screen rather than a tidy number.
 	local told = math.max(TALLY + M.rowGap + height, 1)
 	body:ClearAllPoints()
-	body:SetPoint("TOPLEFT", lead, 0)
+	body:SetPoint("TOPLEFT", lead, -top)
 	body:SetHeight(told)
 	frame:SetWidth(lead + WIDTH)
-	frame:SetHeight(math.max(told, down))
+	frame:SetHeight(math.max(top + told, down))
 
 	-- Up whenever your log has a quest in it, and down when the log is empty.
 	-- It was up only while there were quests under your feet, which was right
@@ -596,12 +641,14 @@ function Column.Build()
 	frame:SetSize(WIDTH, 1)
 	UI.Adopt(frame, ns.Zoom("questsZoom"))
 
-	-- One tab per zone, down the left edge, turned a quarter turn. Named for
-	-- the reason every list in this addon is: a strip that has laid itself out
-	-- wrongly has to be measurable from a macro and from scripts/harness.lua.
+	-- One tab per zone, across the top or down the left edge as the setting
+	-- says. Named for the reason every list in this addon is: a strip that has
+	-- laid itself out wrongly has to be measurable from a macro and from
+	-- scripts/harness.lua.
 	side = UI.SideTabs(frame, {
 		name = "WarriorKitQuestZones",
 		size = ZONE_TEXT,
+		across = Across(),
 		onSelect = function(name) Column.Choose(name) end,
 	})
 	side.frame:SetPoint("TOPLEFT")

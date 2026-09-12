@@ -1444,6 +1444,21 @@ end
 -- it. The quest tracker is what asked, and one zone name per tab down its left
 -- edge costs it fifteen pixels.
 --
+-- **It also lays across, and that is a setting rather than a second widget.**
+-- Down costs width and no height, across costs height and no width, and which
+-- of those a player would rather spend is a fact about their screen and not
+-- about this code. So the strip runs either way and the caller says which: the
+-- harmonica is a row of tabs over the thing, each as wide as its own name,
+-- packed left to right and folded onto another line when the width runs out.
+--
+-- One object with a flag rather than two, which is the opposite of the call the
+-- list below makes against the rail above it. The difference is what the flag
+-- decides. A rail and a list disagree about what is drawn at all; these two
+-- disagree about the direction of one loop and the angle of one label, and
+-- everything either of them is worth keeping, the pooling, the keyed selection,
+-- the clipping and the probe, is the same code in both. Two copies of that is
+-- two places to fix the next selection bug in.
+--
 -- **Two differences from the strip, and both are about what changes.** A strip
 -- is built once with the tabs a window has: two on the quest log, one per room
 -- in the chat window's loadouts. The zones you have quests in change every time
@@ -1464,6 +1479,11 @@ end
 -- that will not turn a label gets the labels upright: the strip is then as wide
 -- as its widest word, which is worse and is still readable, rather than a
 -- column of tabs with nothing written on them.
+--
+-- The angle is set on the tab rather than asked for on every paint, and it is
+-- reset on every tab when the direction changes. A label turned once and then
+-- laid in a row is a zone name written up the side of a tab the shape of a
+-- domino, which is the shape this reads as when the reset is forgotten.
 --------------------------------------------------------------------------
 
 -- The air round a rotated label, along the strip and across it. The same two
@@ -1501,12 +1521,14 @@ end
 
 -- opts.onSelect  function(key), called when a tab is pressed
 -- opts.size      the label's font height, defaulting to the small size
+-- opts.across    the harmonica: a row of upright tabs rather than a turned column
 function UI.SideTabs(parent, opts)
 	local tabs = setmetatable({
 		buttons = {},
 		keys = {},
 		shown = 0,
 		size = (opts and opts.size) or M.small,
+		across = (opts and opts.across) and true or false,
 		onSelect = opts and opts.onSelect,
 	}, Side)
 	tabs.frame = CreateFrame("Frame", (opts and opts.name) or nil, parent)
@@ -1514,11 +1536,61 @@ function UI.SideTabs(parent, opts)
 	return tabs
 end
 
--- Whether this client turned the label. Asked once, on the first tab made,
--- because the answer is a fact about the client rather than about the string
--- and a pcall per tab per paint is a pcall per zone per quest update.
+-- Whether the labels are lying on their side. The turn is what a column of tabs
+-- is for and it is the wrong answer in a row, where a tab is wide and short and
+-- a turned name would be written up through the ceiling of it.
+--
+-- Whether the client turns a label at all is asked once, on the first tab made,
+-- because the answer is a fact about the client rather than about the string and
+-- a pcall per tab per paint is a pcall per zone per quest update.
 function Side:Turned()
-	return self.turned and true or false
+	return self.turned and not self.across
+end
+
+-- The label put the way round this strip runs. Nothing is asked back off the
+-- font string: the probe's own answer is the record of whether the call works.
+local function Turn(strip, button)
+	local angle = strip:Turned() and QUARTER or 0
+	if strip.turned == nil then
+		strip.turned = type(button.text.SetRotation) == "function"
+			and pcall(button.text.SetRotation, button.text, angle) or false
+	elseif strip.turned then
+		pcall(button.text.SetRotation, button.text, angle)
+	end
+end
+
+-- The accent on the edge the strip is attached to, which is the edge the words
+-- it belongs to are on: down the left of a turned tab, along the bottom of one
+-- in a row. The same two places the strip above puts it, and the anchors do the
+-- sizing in one direction, so a stale width or height from the other way round
+-- is overwritten rather than left to fight them.
+local function Edge(strip, button)
+	button.mark:ClearAllPoints()
+	if strip.across then
+		button.mark:SetPoint("BOTTOMLEFT")
+		button.mark:SetPoint("BOTTOMRIGHT")
+		button.mark:SetHeight(2)
+	else
+		button.mark:SetPoint("TOPLEFT")
+		button.mark:SetPoint("BOTTOMLEFT")
+		button.mark:SetWidth(2)
+	end
+end
+
+-- Which way the strip runs from here on. Answers whether anything moved, and
+-- turns the tabs it already has: they are pooled, so every one of them was made
+-- the other way round and none of them is remade.
+function Side:Across(on)
+	on = on and true or false
+	if self.across == on then
+		return false
+	end
+	self.across = on
+	for index = 1, #self.buttons do
+		Turn(self, self.buttons[index])
+		Edge(self, self.buttons[index])
+	end
+	return true
 end
 
 local function Make(strip, index)
@@ -1530,12 +1602,8 @@ local function Make(strip, index)
 	button.bg = ns.Fill(button, "BACKGROUND", C.chrome[1], C.chrome[2], C.chrome[3], 1)
 	button.bg:SetAllPoints()
 
-	-- The accent down the edge the strip is anchored by, which is where the
-	-- strip above puts it along the bottom: the edge the tab is attached to.
 	button.mark = ns.Fill(button, "ARTWORK", C.accent[1], C.accent[2], C.accent[3], 1)
-	button.mark:SetPoint("TOPLEFT")
-	button.mark:SetPoint("BOTTOMLEFT")
-	button.mark:SetWidth(2)
+	Edge(strip, button)
 
 	button.dot = ns.Fill(button, "OVERLAY", C.heading[1], C.heading[2], C.heading[3], 1)
 	button.dot:SetSize(3, 3)
@@ -1553,13 +1621,7 @@ local function Make(strip, index)
 	button.text = UI.Label(button, strip.size, C.dim, "CENTER", UI.SHADOW)
 	button.text:SetPoint("CENTER")
 	UI.Wrap(button.text, false)
-
-	if strip.turned == nil then
-		strip.turned = type(button.text.SetRotation) == "function"
-			and pcall(button.text.SetRotation, button.text, QUARTER) or false
-	elseif strip.turned then
-		pcall(button.text.SetRotation, button.text, QUARTER)
-	end
+	Turn(strip, button)
 
 	-- The left button and the up edge, written out rather than left to the
 	-- widget's default. A Button that registers nothing answers exactly this
@@ -1619,66 +1681,112 @@ function Side:Set(entries)
 	return self.shown
 end
 
--- Lays the strip out top down and answers how wide and how tall it came out,
--- which are the two numbers the caller has to lay itself out against.
+-- One tab's own measure, across the strip and along it, with its label clipped
+-- to `longest` if it does not fit in that.
 --
--- `longest` is the most one tab may measure along the strip, and it is not
+-- `longest` is the most one tab may measure along its own words, and it is not
 -- decoration. A tab is as long as its own label, a zone is called Eastern
 -- Plaguelands, and ten of those down the side of a tracker is thirteen hundred
 -- pixels of strip on a screen that has nine hundred. So the caller works out
--- how much room it has, divides it by how many tabs there are, and hands the
--- answer down; a label that does not fit is given that width and clipped by the
--- client rather than allowed to push the strip off the bottom of the monitor.
+-- how much room it has and hands the answer down; a label that does not fit is
+-- given that width and clipped by the client rather than allowed to push the
+-- strip off the bottom of the monitor.
+local function Measure(strip, button, longest)
+	local words = button.text:GetStringWidth() or 0
+	local room = longest and (longest - SIDEPAD * 2) or nil
+	if room and room > 0 and words > room then
+		-- Along the text rather than across it, whichever way the label is
+		-- turned: a font string's own width is measured in the direction it
+		-- reads, and the turn happens after.
+		button.text:SetWidth(room)
+		words = room
+	else
+		button.text:SetWidth(0)
+	end
+
+	-- How tall one line of this label actually is, rather than the size the font
+	-- was asked for. They are not the same number: a font asked for eleven draws
+	-- a line of thirteen or so, the difference is the leading, and a tab sized on
+	-- the asked number is a tab narrower than the words in it. Turned a quarter,
+	-- that is a label centred on a button too thin to hold it, which reads as
+	-- text shoved against one edge of the strip with no air on the other.
+	--
+	-- Measured per tab per paint, which is one call per zone on a frame that
+	-- repaints when your log changes, and the floor is the asked size so a client
+	-- that will not measure a hidden font string draws the strip it drew before.
+	local line = math.max(UI.TextHeight(button.text, strip.size), strip.size)
+
+	if strip:Turned() then
+		return UI.Round(strip.frame, line + SIDEEDGE * 2),
+			UI.Round(strip.frame, words + SIDEPAD * 2)
+	end
+	return UI.Round(strip.frame, words + SIDEPAD * 2),
+		UI.Round(strip.frame, line + SIDEEDGE * 2)
+end
+
+local function Put(strip, button, wide, tall, x, y)
+	button:SetSize(math.max(wide, 1), math.max(tall, 1))
+	button:ClearAllPoints()
+	button:SetPoint("TOPLEFT", strip.frame, "TOPLEFT", x, -y)
+	button:Show()
+end
+
+-- Top down, one tab under the last.
 --
 -- Nothing wraps onto a second column. A strip is one column by definition and a
 -- second one would be a rail.
-function Side:Resize(longest)
-	local across, y = 0, 0
-	for index = 1, self.shown do
-		local button = self.buttons[index]
-		local words = button.text:GetStringWidth() or 0
-		local room = longest and (longest - SIDEPAD * 2) or nil
-		if room and room > 0 and words > room then
-			-- Along the text rather than across it, whichever way the label is
-			-- turned: a font string's own width is measured in the direction it
-			-- reads, and the turn happens after.
-			button.text:SetWidth(room)
-			words = room
-		else
-			button.text:SetWidth(0)
-		end
-
-		-- How tall one line of this label actually is, rather than the size
-		-- the font was asked for. They are not the same number: a font asked
-		-- for eleven draws a line of thirteen or so, the difference is the
-		-- leading, and a tab sized on the asked number is a tab narrower than
-		-- the words in it. Turned a quarter, that is a label centred on a
-		-- button too thin to hold it, which reads as text shoved against one
-		-- edge of the strip with no air on the other.
-		--
-		-- Measured per tab per paint, which is one call per zone on a frame
-		-- that repaints when your log changes, and the floor is the asked size
-		-- so a client that will not measure a hidden font string draws the
-		-- strip it drew before.
-		local line = math.max(UI.TextHeight(button.text, self.size), self.size)
-
-		local tall, wide
-		if self:Turned() then
-			tall = UI.Round(self.frame, words + SIDEPAD * 2)
-			wide = UI.Round(self.frame, line + SIDEEDGE * 2)
-		else
-			tall = UI.Round(self.frame, line + SIDEEDGE * 2)
-			wide = UI.Round(self.frame, words + SIDEPAD * 2)
-		end
-		button:SetSize(math.max(wide, 1), math.max(tall, 1))
-		button:ClearAllPoints()
-		button:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -y)
-		button:Show()
+local function LayDown(strip, longest)
+	local widest, y = 0, 0
+	for index = 1, strip.shown do
+		local button = strip.buttons[index]
+		local wide, tall = Measure(strip, button, longest)
+		Put(strip, button, wide, tall, 0, y)
 		y = y + tall
-		across = math.max(across, wide)
+		widest = math.max(widest, wide)
 	end
-	self.frame:SetSize(math.max(across, 1), math.max(y, 1))
-	return across, y
+	return widest, y
+end
+
+-- Left to right, folded onto another line when `room` runs out.
+--
+-- The harmonica. It wraps where the column above does not, and the difference
+-- is which way the thing it is attached to is short: a strip down the side of
+-- the screen has the whole screen to run in and a row over a tracker has the
+-- tracker's own width, which is two zone names. A row that ran off the end
+-- would put half the player's zones past the edge of the monitor, so it folds,
+-- and the tracker pays the second line in height it can see.
+--
+-- Every tab on a line is the same height, because every label is one line of
+-- one font, so the line below starts a whole tab down from the one above.
+local function LayAcross(strip, longest, room)
+	local widest, x, y, tall = 0, 0, 0, 0
+	for index = 1, strip.shown do
+		local button = strip.buttons[index]
+		local wide, high = Measure(strip, button, longest)
+		if room and x > 0 and x + wide > room then
+			x, y = 0, y + tall
+		end
+		Put(strip, button, wide, high, x, y)
+		x, tall = x + wide, high
+		widest = math.max(widest, x)
+	end
+	return widest, y + tall
+end
+
+-- Lays the strip out and answers how wide and how tall it came out, which are
+-- the two numbers the caller has to lay itself out against.
+--
+-- `room` is how far a row may run before it folds, and it is read only by the
+-- harmonica: a column does not wrap, so a column has nothing to ask it.
+function Side:Resize(longest, room)
+	local wide, tall
+	if self.across then
+		wide, tall = LayAcross(self, longest, room)
+	else
+		wide, tall = LayDown(self, longest)
+	end
+	self.frame:SetSize(math.max(wide, 1), math.max(tall, 1))
+	return wide, tall
 end
 
 function Side:Select(key)

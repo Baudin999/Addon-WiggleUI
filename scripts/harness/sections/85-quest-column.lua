@@ -38,6 +38,7 @@ local standing = quests.standing
 local WAS_MAP = standing.map
 local WAS_OFF = ns.db.questsTrackerOff
 local WAS_LOCK = ns.db.locked
+local WAS_TABS = ns.db.questsTabs
 local WAS_OPEN = ns.QuestWindow.Shown()
 
 -- Three places, and every one of them is a map id the client fixtures already
@@ -422,12 +423,20 @@ end
 ----------------------------------------------------------------------
 -- The zone strip
 --
--- Four questions the file cannot answer. Does the strip list the zones your log
+-- Five questions the file cannot answer. Does the strip list the zones your log
 -- has quests in rather than the zones the client has maps of. Does pressing one
 -- draw that zone from anywhere. Does walking somewhere new take the choice back,
--- and does walking somewhere with no quests in it leave it alone. And is the
--- label turned, because a strip that fell back to upright labels is fifteen
--- pixels wide in the file and a hundred and ten on the screen.
+-- and does walking somewhere with no quests in it leave it alone.
+--
+-- Does it run the way the setting says. The strip lays across by default and
+-- down when it is asked to, and the two are one object with one flag, so the
+-- failure worth catching is a tab left over from the other direction: a label
+-- turned once and then laid in a row is a zone name written up the side of a
+-- domino, and neither the file nor a count of tabs can see it.
+--
+-- And is the label turned when it is a column, because a strip that fell back
+-- to upright labels is fifteen pixels wide in the file and a hundred and ten on
+-- the screen.
 ----------------------------------------------------------------------
 
 do
@@ -474,19 +483,60 @@ do
 	check(tabs()[1] == "Elwynn Forest 2" and tabs()[2] == "Westfall 1",
 		("the strip reads %s"):format(table.concat(tabs(), ", ")))
 
-	-- Turned, which is the whole reason the strip is fifteen pixels wide. The
-	-- angle is read back off the label rather than assumed, because the addon
-	-- probes SetRotation and falls back to upright labels on a client that
-	-- refuses it, and a fallback nobody notices is a strip four times as wide.
-	local button, label = tab("Westfall 1")
-	check(label:GetRotation() < 0,
-		("the zone label is turned %s radians"):format(tostring(label:GetRotation())))
-	check(button:GetHeight() > button:GetWidth(),
-		("a zone tab is %d by %d, which is not a turned one")
-			:format(button:GetWidth(), button:GetHeight()))
-	check(strip:GetWidth() < 40,
-		("the strip is %d wide, which is a rail rather than a strip")
-			:format(strip:GetWidth()))
+	-- Whether two rectangles are over one another, which is what the strip and
+	-- the words must never be whichever way the strip runs. The words live in
+	-- one frame and the strip is the tracker's other child, so this is the whole
+	-- of the question: a strip that took no room off the column would pass every
+	-- assertion above it and draw its tabs over the first two quests.
+	local function overlaps(a, b)
+		return a:GetLeft() < b:GetRight() and b:GetLeft() < a:GetRight()
+			and a:GetBottom() < b:GetTop() and b:GetBottom() < a:GetTop()
+	end
+
+	-- Across, which is what it ships as. A row of upright tabs over the quests,
+	-- each as wide as its own zone name, and the words pushed down under it.
+	--
+	-- The angle is read back off the label rather than assumed, in both
+	-- directions and for the same reason: the tabs are pooled, so every one of
+	-- them was made the other way round at some point in a session where the
+	-- setting moved, and a label nobody turned back is invisible from the file.
+	check(ns.db.questsTabs == "across",
+		("the tracker's zone tabs ship as %q"):format(tostring(ns.db.questsTabs)))
+	do
+		local button, label = tab("Westfall 1")
+		check(label:GetRotation() == 0,
+			("a tab in a row is turned %s radians"):format(tostring(label:GetRotation())))
+		check(button:GetWidth() > button:GetHeight(),
+			("a zone tab is %d by %d, which is not one in a row")
+				:format(button:GetWidth(), button:GetHeight()))
+		check(strip:GetWidth() <= frame:GetWidth(),
+			("the harmonica is %d wide over a tracker %d wide, so it hangs off the side")
+				:format(strip:GetWidth(), frame:GetWidth()))
+		check(not overlaps(strip, trunk()),
+			"the tabs are drawn over the quests rather than above them")
+	end
+
+	-- Down, which is the other half of the setting, and the whole reason a
+	-- turned strip is fifteen pixels wide.
+	local wasWide = frame:GetWidth()
+	ns.db.questsTabs = "down"
+	check(Column.Apply(), "turning the zone strip on its side emptied the tracker")
+	do
+		local button, label = tab("Westfall 1")
+		check(label:GetRotation() < 0,
+			("the zone label is turned %s radians"):format(tostring(label:GetRotation())))
+		check(button:GetHeight() > button:GetWidth(),
+			("a zone tab is %d by %d, which is not a turned one")
+				:format(button:GetWidth(), button:GetHeight()))
+		check(strip:GetWidth() < 40,
+			("the strip is %d wide, which is a rail rather than a strip")
+				:format(strip:GetWidth()))
+		check(frame:GetWidth() > wasWide,
+			("the tracker is %d wide with a strip down its edge and was %d wide with a row over it")
+				:format(frame:GetWidth(), wasWide))
+		check(not overlaps(strip, trunk()),
+			"the turned tabs are drawn over the quests rather than beside them")
+	end
 
 	-- And air on both sides of the turned label, off the line's own height
 	-- rather than off the size the font was asked for. They are different
@@ -497,10 +547,17 @@ do
 	-- floor rather than the six the strip asks for, because the line height is
 	-- the client's answer and a client whose font leads differently is not a
 	-- failure worth stopping a run for.
-	check(button:GetWidth() - label:GetStringHeight() >= 8,
-		("a zone tab is %.1f across a line of %.1f, which is %.1f of air a side")
-			:format(button:GetWidth(), label:GetStringHeight(),
-				(button:GetWidth() - label:GetStringHeight()) / 2))
+	do
+		local button, label = tab("Westfall 1")
+		check(button:GetWidth() - label:GetStringHeight() >= 8,
+			("a zone tab is %.1f across a line of %.1f, which is %.1f of air a side")
+				:format(button:GetWidth(), label:GetStringHeight(),
+					(button:GetWidth() - label:GetStringHeight()) / 2))
+	end
+
+	-- And back to the harmonica, which is what the rest of this section reads.
+	ns.db.questsTabs = "across"
+	Column.Apply()
 
 	-- Pressing one draws that zone from wherever you are standing, which is the
 	-- whole feature: the quests in Elwynn, read in Westfall, without walking.
@@ -657,6 +714,7 @@ check(Column.Refresh() == false, "a redraw put a switched-off tracker back up")
 
 ns.db.questsTrackerOff = WAS_OFF
 ns.db.locked = WAS_LOCK
+ns.db.questsTabs = WAS_TABS
 standing.map = WAS_MAP
 Column.Apply()
 if WAS_OPEN then
