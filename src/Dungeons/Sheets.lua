@@ -114,10 +114,10 @@ Sheets.PLACES = {
 		{ map = 240, name = "The Shrine of Eldretharr", art = "interface\\worldmap\\diremaul\\diremaul6_" },
 	},
 	["Scholomance"] = {
-		{ map = 306, name = "The Reliquary", art = "interface\\worldmap\\scholomance\\scholomance1_" },
-		{ map = 307, name = "Chamber of Summoning", art = "interface\\worldmap\\scholomance\\scholomance2_" },
-		{ map = 308, name = "The Upper Study", art = "interface\\worldmap\\scholomance\\scholomance3_" },
-		{ map = 309, name = "Headmaster's Study", art = "interface\\worldmap\\scholomance\\scholomance4_" },
+		{ map = 306, name = "The Reliquary", art = "interface\\worldmap\\scholomanceold\\scholomanceold1_" },
+		{ map = 307, name = "Chamber of Summoning", art = "interface\\worldmap\\scholomanceold\\scholomanceold2_" },
+		{ map = 308, name = "The Upper Study", art = "interface\\worldmap\\scholomanceold\\scholomanceold3_" },
+		{ map = 309, name = "Headmaster's Study", art = "interface\\worldmap\\scholomanceold\\scholomanceold4_" },
 	},
 	["Stratholme"] = {
 		{ map = 317, name = "Crusader's Square", art = "interface\\worldmap\\stratholme\\stratholme1_" },
