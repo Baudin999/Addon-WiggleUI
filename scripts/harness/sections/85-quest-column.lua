@@ -58,12 +58,25 @@ check(Column.Apply(),
 local frame = _G.WarriorKitQuestColumn
 check(frame ~= nil, "the tracker is on the screen and has no name to find it by")
 
--- The stack's own frame, which is the one child of the tracker with rows under
--- it. Found rather than indexed, because the rim a placeable frame wears while
--- it is being dragged is a child too and which of them was made first is not a
--- fact worth writing a test against.
-local function canvas()
+-- Everything on the tracker that is not the zone strip: the tally over the
+-- rows and the stack under it.
+--
+-- Found rather than indexed, because the rim a placeable frame wears while it
+-- is being dragged is a child too and which of them was made first is not a
+-- fact worth writing a test against. The strip is skipped by name, which is the
+-- one child of the tracker that has one.
+local function trunk()
 	for _, child in ipairs(frame.children) do
+		if child ~= _G.WarriorKitQuestZones and #child.children > 0 then
+			return child
+		end
+	end
+	return nil
+end
+
+-- The stack's own frame, which is the one child of that with rows under it.
+local function canvas()
+	for _, child in ipairs(trunk().children) do
 		if #child.children > 0 then
 			return child
 		end
@@ -165,11 +178,11 @@ seen[#seen + 1] = ("%s over %d rows"):format(Column.Describe(), #drawn())
 -- so nothing that counts the rows on this column has to subtract it and no
 -- click can land on it.
 do
-	-- Found by walking the tracker's own children for the one with no rows
-	-- under it, which is what "not a row" means here: the stack is the child
-	-- that has children, and this is the other one.
+	-- Found by walking for the one child with no rows under it, which is what
+	-- "not a row" means here: the stack is the child that has children, and
+	-- this is the other one.
 	local line = nil
-	for _, child in ipairs(frame.children) do
+	for _, child in ipairs(trunk().children) do
 		if #child.children == 0 then
 			for _, region in ipairs(child.regions) do
 				if region.kind == "fontstring" and region.text ~= "" then
@@ -210,13 +223,20 @@ seen[#seen + 1] = ("%s over %d rows"):format(Column.Describe(), #drawn())
 -- which is the ordinary case for two thirds of the zones in the game and the
 -- one that has to leave the tracker empty rather than showing the last zone.
 standing.map = STORMWIND
-check(Column.Refresh() == false,
-	"standing where no header names put quests on the tracker")
+check(Column.Refresh(),
+	"the tracker went down in a city, taking the zone strip with it")
 check(#Column.Quests() == 0,
 	("%d quests are on the tracker in a zone the log has no header for")
 		:format(#Column.Quests()))
-check(not frame:IsShown(),
-	"a tracker with nothing on it is still a rectangle of shade over the world")
+check(#drawn() == 0,
+	("%d rows are on the tracker in a zone the log has no header for")
+		:format(#drawn()))
+-- Up rather than down, and the zone strip is the whole reason. The old rule
+-- was that a tracker with nothing on it is a rectangle of shade saying you are
+-- not on a quest here; with tabs on it, taking it away in a city takes away
+-- the control you use to look at anywhere else.
+check(frame:IsShown(),
+	"the tracker is down in a city, so there are no tabs to pick a zone with")
 check(Column.Describe() == "nothing in your log is in Stormwind City",
 	("the reading says %q"):format(Column.Describe()))
 seen[#seen + 1] = Column.Describe()
@@ -380,6 +400,105 @@ do
 	check(#drawn() == alone,
 		("the tracker drew %d rows after the pin came off where it drew %d before it went on")
 			:format(#drawn(), alone))
+end
+
+----------------------------------------------------------------------
+-- The zone strip
+--
+-- Four questions the file cannot answer. Does the strip list the zones your log
+-- has quests in rather than the zones the client has maps of. Does pressing one
+-- draw that zone from anywhere. Does walking somewhere new take the choice back,
+-- and does walking somewhere with no quests in it leave it alone. And is the
+-- label turned, because a strip that fell back to upright labels is fifteen
+-- pixels wide in the file and a hundred and ten on the screen.
+----------------------------------------------------------------------
+
+do
+	standing.map = WESTFALL
+	Column.Refresh()
+
+	local strip = _G.WarriorKitQuestZones
+	check(strip ~= nil, "the zone strip is on the tracker and has no name to find it by")
+
+	-- What is on the strip, as one string per tab, top down.
+	local function tabs()
+		local out = {}
+		for _, button in ipairs(strip.children) do
+			if button.shown then
+				for _, region in ipairs(button.regions) do
+					if region.kind == "fontstring" and region.text ~= "" then
+						out[#out + 1] = region.text
+					end
+				end
+			end
+		end
+		return out
+	end
+
+	local function tab(said)
+		for _, button in ipairs(strip.children) do
+			if button.shown then
+				for _, region in ipairs(button.regions) do
+					if region.kind == "fontstring" and region.text == said then
+						return button, region
+					end
+				end
+			end
+		end
+		return nil, nil
+	end
+
+	-- One tab per zone with quests under it, in the log's own order, and the
+	-- count on it is what is still in your log there rather than what the zone
+	-- ever held.
+	check(#tabs() == 2,
+		("%d tabs are on the strip where the log has quests in two zones")
+			:format(#tabs()))
+	check(tabs()[1] == "Elwynn Forest 2" and tabs()[2] == "Westfall 1",
+		("the strip reads %s"):format(table.concat(tabs(), ", ")))
+
+	-- Turned, which is the whole reason the strip is fifteen pixels wide. The
+	-- angle is read back off the label rather than assumed, because the addon
+	-- probes SetRotation and falls back to upright labels on a client that
+	-- refuses it, and a fallback nobody notices is a strip four times as wide.
+	local button, label = tab("Westfall 1")
+	check(label:GetRotation() < 0,
+		("the zone label is turned %s radians"):format(tostring(label:GetRotation())))
+	check(button:GetHeight() > button:GetWidth(),
+		("a zone tab is %d by %d, which is not a turned one")
+			:format(button:GetWidth(), button:GetHeight()))
+	check(strip:GetWidth() < 40,
+		("the strip is %d wide, which is a rail rather than a strip")
+			:format(strip:GetWidth()))
+
+	-- Pressing one draws that zone from wherever you are standing, which is the
+	-- whole feature: the quests in Elwynn, read in Westfall, without walking.
+	check(not says("The Missing Diplomat"),
+		"an Elwynn quest is on the tracker in Westfall before any tab is pressed")
+	press(select(1, tab("Elwynn Forest 2")))
+	check(says("The Missing Diplomat") and says("Wanted: Hogger"),
+		"pressing the Elwynn tab did not put Elwynn's quests on the tracker")
+	check(not says("The Defias Brotherhood"),
+		"pressing a tab left the zone you are standing in on the tracker as well")
+	check(Column.Describe() == "2 quests, in Elwynn Forest, which you picked",
+		("the reading says %q"):format(Column.Describe()))
+	seen[#seen + 1] = Column.Describe()
+
+	-- Walking somewhere with no quests in it leaves the choice alone. Standing
+	-- in a city reading Westfall is exactly what the strip is for.
+	standing.map = STORMWIND
+	Column.Refresh()
+	check(says("The Missing Diplomat"),
+		"walking into a city with no quests in it dropped the zone you picked")
+
+	-- And walking into a zone that has quests takes it back, because that
+	-- gesture means "I am here now".
+	standing.map = WESTFALL
+	Column.Refresh()
+	check(says("The Defias Brotherhood") and not says("The Missing Diplomat"),
+		"walking back into Westfall left the tracker on the zone picked before")
+	check(Column.Describe() == "one quest, in Westfall",
+		("the reading says %q"):format(Column.Describe()))
 end
 
 ----------------------------------------------------------------------

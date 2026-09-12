@@ -204,6 +204,7 @@ ns.Register({
 		-- addon's player, and a pin never reaches it.
 		ui.Hint("Shift click a quest to pin it, or press pin under it. Pins are this character's and uncapped. The cost is Questie: its map icons can be filtered to tracked quests and a pin is not one.")
 		ui.Reading("this addon's own tracker", ns.QuestColumn.Describe)
+		ui.Hint("A turned tab down its left edge per zone you have quests in, with how many are left there. Press one to read Westfall from Ironforge; walking into a zone that has quests takes the choice back.")
 		ui.Reading("a creature's quest drops", ns.QuestDrops.Describe)
 		ui.Reading("the where column and the map", ns.QuestWhere.Describe)
 		ui.Reading("who else in your group is on a quest", ns.QuestParty.Describe)

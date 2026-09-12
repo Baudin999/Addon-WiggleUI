@@ -74,6 +74,37 @@ local Log = ns.QuestLog
 -- so there is never a moment where both are drawn and no rule about which one a
 -- quest name belongs to. It is not questsHideBlizz, which is about the client's
 -- own window and the L key.
+--
+-- **And a tab per zone down its left edge.** The scope above is the right
+-- default and it was the whole of the feature for too long: a log with quests
+-- in six zones was a tracker you could read one sixth of, and the only way to
+-- see the rest was to walk there. The pin is what that left players doing and
+-- it is the wrong shape for the question. A pin is for the one quest you always
+-- want in front of you; looking at Westfall for a moment is not that.
+--
+-- So UI.SideTabs draws one tab per zone your log has quests in, turned a
+-- quarter turn so the strip costs fifteen pixels rather than a zone name's
+-- width, with the zone's name and how many quests you still have there on it
+-- and a gold dot where one of them is ready to hand in.
+--
+-- **Walking and clicking are two gestures and the second outranks the first.**
+-- Where you are standing is what the column draws until you press a tab, and
+-- then that zone until you walk into another one that has quests. Walking means
+-- "I am here now" and a click means "show me there", and a click that a
+-- subzone boundary undid would be a control you cannot use while moving. That
+-- is why the choice is dropped against the scoped zone changing rather than
+-- against ZONE_CHANGED, which fires every time you cross a road.
+--
+-- Walking somewhere with no quests in it drops nothing. Standing in Ironforge
+-- reading Westfall is exactly what the tabs are for.
+--
+-- **So it stops hiding itself.** The old rule was that a tracker with no quests
+-- on it is not drawn, which was right while the tracker was only ever the zone
+-- under your feet: a rectangle of shade saying you are not on a quest here is a
+-- thing you already know. It is wrong the moment there are tabs on it, because
+-- standing in a city would take away the control you use to look at anywhere
+-- else. It is up whenever your log has a quest in it, and down when the log is
+-- empty.
 --------------------------------------------------------------------------
 
 -- The column's width, in design units. Wide enough for a quest name at twelve
@@ -113,11 +144,74 @@ local LEAD = M.rowGap + PIN + M.rowGap
 local TALLY = 13
 local TALLY_TEXT = 11
 
+-- The zone strip's own label size, and the air between the strip and the words
+-- beside it. Eleven rather than the twelve a quest name is drawn at, because a
+-- zone tab is furniture: it says where you are looking and the quest names are
+-- what you are reading.
+local ZONE_TEXT = 11
+local ZONE_GAP = M.rowGap
+
+-- The longest and the shortest one zone tab is allowed to be, down the strip.
+--
+-- A tab is as long as its own label and a zone is called Eastern Plaguelands,
+-- so ten of them is a strip taller than the monitor. The longest is what a tab
+-- gets when there is room for it: 130 units holds about twenty characters at
+-- eleven, which is every zone name in either of these games. The shortest is
+-- the floor a share of the screen may not go below, because a strip of tabs
+-- with two letters on each is a strip you cannot read, and a player with quests
+-- in fifteen zones is better served by a strip that runs long than by one that
+-- says nothing.
+local ZONE_LONGEST = 130
+local ZONE_SHORTEST = 54
+
+-- How much of the screen the strip may take, in this frame's own units.
+--
+-- Four fifths, which is the same kind of margin UI/Window.lua keeps off the
+-- edge of a monitor and for the same reason: the tracker is anchored fifteen
+-- pixels down from the top by default, and a strip that ran to the last pixel
+-- of the panel would hang off the bottom of a windowed client.
+local ZONE_SHARE = 0.8
+
+local function Room()
+	local zoom = ns.Zoom("questsZoom")
+	local tall
+	if UI.Supported() and zoom > 0 then
+		tall = UI.ScreenHeight() / zoom
+	else
+		tall = UIParent:GetHeight() or 0
+	end
+	return math.max(math.floor(tall * ZONE_SHARE), ZONE_SHORTEST)
+end
+
 --------------------------------------------------------------------------
 
-local frame, stack, place, wash, tally
+local frame, stack, place, wash, tally, side, body
 local heads, lines = {}, {}
 local built = false
+
+-- The zone a tab was pressed on, or nothing for "wherever I am standing".
+--
+-- A zone's name rather than its index, for the reason Quests/Log.lua gives
+-- about quest keys: an index into the log's zones is a position, and handing in
+-- the last quest in Elwynn moves every zone under it by one.
+local chosen = nil
+
+-- The scoped zone the last paint found under your feet, so the paint after it
+-- can tell walking somewhere new from the log changing under you.
+--
+-- Written on every paint, nil included, and that is what makes walking through
+-- a city work. Going from Westfall to Stormwind records nothing underfoot and
+-- keeps whatever tab you pressed, because a zone with no quests in it is not
+-- somewhere you arrived to do anything. Coming back out into Westfall is then a
+-- change from nothing to Westfall, which is arriving, and takes the choice back.
+local stoodIn = nil
+
+-- Whether Paint is the thing that moved the strip's selection.
+--
+-- Selecting a tab calls back, the callback repaints, and the repaint selects.
+-- It is the same latch Quests/Window.lua keeps between its list and its paint,
+-- and without it the first press on a zone would read the log twice.
+local painting = false
 
 --------------------------------------------------------------------------
 -- The model
@@ -190,9 +284,73 @@ local function Scope()
 	return scope
 end
 
--- The quests on the tracker right now: the ones the client filed under the
--- place you are standing in, in the log's own order, and then whatever you have
--- pinned that is not already among them.
+-- The first zone in the log that the scope names, or nothing.
+--
+-- One name out of a set, and it is only ever asked one question: has the ground
+-- under your feet changed since the last paint. The set is what draws, because
+-- a level 2 human is standing in two headers at once and both belong on the
+-- column; one name out of it is enough to tell Westfall from Elwynn, which is
+-- all the choice has to survive.
+local function Underfoot(scope)
+	if not scope then
+		return nil
+	end
+	for _, zone in ipairs(Log.Zones()) do
+		if scope[zone.name] then
+			return zone.name
+		end
+	end
+	return nil
+end
+
+-- Which zones the column is drawing, as a set of the log's own header strings.
+--
+-- The zone you pressed, or the scope under your feet. One door, so the rows,
+-- the reading on the options page and the tab that lights up cannot disagree
+-- about what the column is looking at.
+function Column.Showing()
+	if chosen then
+		return { [chosen] = true }
+	end
+	return Scope()
+end
+
+-- Every zone your log has quests in, as the strip draws them: the header's own
+-- name, how many quests are still under it, and whether one of those is ready
+-- to hand in.
+--
+-- Off Log.Zones in the log's own order, which is the order the quest window's
+-- left column draws them in, so the two windows list your zones the same way
+-- round. A zone with nothing under it is one the client half handed over and is
+-- not a tab.
+function Column.Tabs()
+	local out = {}
+	for _, zone in ipairs(Log.Zones()) do
+		if #zone.quests > 0 then
+			out[#out + 1] = {
+				key = zone.name,
+				label = ("%s %d"):format(zone.name, #zone.quests),
+				dot = zone.done > 0,
+			}
+		end
+	end
+	return out
+end
+
+-- The zone a tab was pressed on, or nothing to go back to where you are
+-- standing. Answers whether anything moved.
+function Column.Choose(name)
+	if painting or chosen == name then
+		return false
+	end
+	chosen = name
+	Column.Paint()
+	return true
+end
+
+-- The quests on the tracker right now: the ones under whichever zone it is
+-- showing, in the log's own order, and then whatever you have pinned that is
+-- not already among them.
 --
 -- The pins are the exception to the scope and they are the whole of why the pin
 -- exists. Everything else comes off the tracker when you walk out of the zone,
@@ -209,7 +367,7 @@ end
 -- of them for quests you handed in an hour ago.
 function Column.Quests()
 	local out, here = {}, {}
-	local scope = Scope()
+	local scope = Column.Showing()
 	if scope then
 		for _, zone in ipairs(Log.Zones()) do
 			if scope[zone.name] then
@@ -362,25 +520,61 @@ end
 -- closed nobody else would have read at all. Both drawings still come off the
 -- one set of zones that read leaves behind, which is the part that matters.
 function Column.Paint()
-	if not built then
+	if not built or painting then
 		return false
 	end
+	painting = true
 	Log.Read()
 
-	local count = Fill()
+	-- Walking somewhere new, which is the one thing that undoes a press on a
+	-- tab. Read here rather than off a zone event, because ZONE_CHANGED fires
+	-- every time you cross a road inside one zone and a choice a road undid
+	-- would be a control you cannot use while moving.
+	local here = Underfoot(Scope())
+	if here and here ~= stoodIn then
+		chosen = nil
+	end
+	stoodIn = here
+
+	local tabs = Column.Tabs()
+	side:Set(tabs)
+	-- What one tab may be, which is the screen divided by how many of them
+	-- there are and never more than a zone name needs. A log with quests in
+	-- fifteen zones gets fifteen short tabs rather than a strip off the bottom
+	-- of the monitor.
+	local longest = ZONE_LONGEST
+	if #tabs > 0 then
+		longest = math.min(longest,
+			math.max(math.floor(Room() / #tabs), ZONE_SHORTEST))
+	end
+	local strip, down = side:Resize(longest)
+	local lead = #tabs > 0 and (strip + ZONE_GAP) or 0
+	side.frame:SetShown(#tabs > 0)
+	side:Select(chosen or here)
+
+	Fill()
 	tally.text:SetText(("%s quests"):format(Log.Full()))
 	stack:SetWidth(WIDTH)
 	local height = stack:Reflow()
-	frame:SetHeight(math.max(TALLY + M.rowGap + height, 1))
-	-- A tracker with nothing on it is a rectangle of shade over the world
-	-- saying you are not on a quest here, which is a thing you already know.
-	frame:SetShown(count > 0)
-	-- Last, and over whatever the pool now holds. A row made on this paint has
-	-- taken no side in the lock yet, and a row that answers the pointer while
-	-- the frame is being placed swallows the drag that is the point of
+
+	body:ClearAllPoints()
+	body:SetPoint("TOPLEFT", lead, 0)
+	frame:SetWidth(lead + WIDTH)
+	frame:SetHeight(math.max(TALLY + M.rowGap + height, down, 1))
+
+	-- Up whenever your log has a quest in it, and down when the log is empty.
+	-- It was up only while there were quests under your feet, which was right
+	-- until the strip arrived: standing in a city would take the tabs away with
+	-- the rows, and the tabs are how you get out of the city.
+	local full = (Log.Tally()) > 0
+	frame:SetShown(full)
+	-- Last, and over whatever the pools now hold. A row or a tab made on this
+	-- paint has taken no side in the lock yet, and one that answers the pointer
+	-- while the frame is being placed swallows the drag that is the point of
 	-- unlocking.
 	Column.Lock()
-	return count > 0
+	painting = false
+	return full
 end
 
 --------------------------------------------------------------------------
@@ -397,6 +591,22 @@ function Column.Build()
 	frame:SetSize(WIDTH, 1)
 	UI.Adopt(frame, ns.Zoom("questsZoom"))
 
+	-- One tab per zone, down the left edge, turned a quarter turn. Named for
+	-- the reason every list in this addon is: a strip that has laid itself out
+	-- wrongly has to be measurable from a macro and from scripts/harness.lua.
+	side = UI.SideTabs(frame, {
+		name = "WarriorKitQuestZones",
+		size = ZONE_TEXT,
+		onSelect = function(name) Column.Choose(name) end,
+	})
+	side.frame:SetPoint("TOPLEFT")
+
+	-- Everything that is not the strip, in one frame, so a paint moves the
+	-- words off the strip's width with one anchor rather than two.
+	body = CreateFrame("Frame", nil, frame)
+	body:SetPoint("TOPLEFT")
+	body:SetWidth(WIDTH)
+
 	-- No background and no hairline, because this is not a window. The wash is
 	-- the whole of the ground: solid shadow at the left edge where the words
 	-- start, gone by the right edge where they end, so the column has something
@@ -411,7 +621,7 @@ function Column.Build()
 	-- Quiet rather than body text. It is the one line here that is not a thing
 	-- you have to do, and a tracker read at a glance has to let the eye go
 	-- straight past it to the quest names.
-	tally = CreateFrame("Frame", nil, frame)
+	tally = CreateFrame("Frame", nil, body)
 	tally:SetPoint("TOPLEFT")
 	tally:SetPoint("TOPRIGHT")
 	tally:SetHeight(TALLY)
@@ -419,7 +629,7 @@ function Column.Build()
 	tally.text:SetPoint("LEFT", LEAD, 0)
 	tally.text:SetPoint("RIGHT", -M.rowGap, 0)
 
-	stack = UI.Stack(frame, WIDTH)
+	stack = UI.Stack(body, WIDTH)
 	stack.frame:ClearAllPoints()
 	stack.frame:SetPoint("TOPLEFT", tally, "BOTTOMLEFT", 0, -M.rowGap)
 
@@ -472,6 +682,7 @@ function Column.Lock()
 	place:Lock(unlocked)
 	Mouse(heads, not unlocked)
 	Mouse(lines, not unlocked)
+	side:Mouse(not unlocked)
 end
 
 -- Redrawn only while it is on the screen, which is the rule the quest window's
@@ -503,18 +714,26 @@ function Column.Describe()
 	-- Westfall quest on it. The reading is the only place a player finds out
 	-- what the tracker thinks it is looking at, so it has to be able to say that
 	-- what it is looking at is somewhere else.
-	local scope = Scope() or {}
+	local showing = Column.Showing() or {}
 	local here, away = 0, 0
 	for _, quest in ipairs(Column.Quests()) do
-		if scope[quest.zone] then
+		if showing[quest.zone] then
 			here = here + 1
 		else
 			away = away + 1
 		end
 	end
 
+	-- A zone you pressed is named as one you pressed. It is the one state where
+	-- the column is not answering "what is in front of me", and a reading that
+	-- said "3 quests, in Westfall" while the player stood in Ironforge would be
+	-- the tracker looking wrong rather than the strip looking chosen.
 	local said
-	if here == 0 then
+	if chosen and here == 1 then
+		said = ("one quest, in %s, which you picked"):format(chosen)
+	elseif chosen then
+		said = ("%d quests, in %s, which you picked"):format(here, chosen)
+	elseif here == 0 then
 		said = ("nothing in your log is in %s"):format(name)
 	elseif here == 1 then
 		said = ("one quest, in %s"):format(name)

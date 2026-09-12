@@ -1434,6 +1434,259 @@ end
 
 
 --------------------------------------------------------------------------
+-- The side strip
+--
+-- The same idea as the strip above, turned a quarter turn: a column of tabs
+-- down the edge of something, each one's label rotated so the strip is only as
+-- wide as a line of text is tall. It is for a thing standing over the world
+-- rather than inside a window, where a row of tabs across the top would cost
+-- the whole width of the thing and a rail down the side would cost a third of
+-- it. The quest tracker is what asked, and one zone name per tab down its left
+-- edge costs it fifteen pixels.
+--
+-- **Two differences from the strip, and both are about what changes.** A strip
+-- is built once with the tabs a window has: two on the quest log, one per room
+-- in the chat window's loadouts. The zones you have quests in change every time
+-- you accept or hand one in, so this takes a list on every paint and pools the
+-- buttons, the way UI.List does and for the same reason: a frame cannot be
+-- destroyed on this client, so a strip that rebuilt would leak a button per
+-- quest handed in.
+--
+-- And a tab here is keyed rather than numbered. An index into a list of zones
+-- is a position that moves the moment a zone empties, which is the same
+-- argument Quests/Log.lua makes about quest ids: the caller says "Westfall" and
+-- gets Westfall whatever the log did since.
+--
+-- **The turn is real and it is probed.** FontString:SetRotation is on both of
+-- the clients this addon ships for: it is in SimpleFontStringAPIDocumentation
+-- .lua on the anniversary branch and on classic_era. It is still asked for by
+-- name and pcalled, because every client call in this addon is, and a client
+-- that will not turn a label gets the labels upright: the strip is then as wide
+-- as its widest word, which is worse and is still readable, rather than a
+-- column of tabs with nothing written on them.
+--------------------------------------------------------------------------
+
+-- The air round a rotated label, along the strip and across it. The same two
+-- numbers TABPAD is for the strip above, and they are not one number here: a
+-- tab is a long thin rectangle and the air at its ends reads differently from
+-- the air at its sides.
+local SIDEPAD, SIDEEDGE = 10, 4
+
+-- A quarter turn clockwise, which is what a reader turning their head to the
+-- right sees the right way up. Negative because this client counts
+-- anticlockwise from where the text already is.
+local QUARTER = -math.pi / 2
+
+local Side = {}
+Side.__index = Side
+
+local function PaintSide(button)
+	local fill, tone = C.chrome, C.dim
+	if button.selected then
+		fill, tone = C.selected, C.heading
+	elseif button.hovered then
+		fill, tone = C.hover, C.text
+	end
+	UI.Tint(button.bg, fill)
+	button.text:SetTextColor(tone[1], tone[2], tone[3])
+	button.mark:SetShown(button.selected and true or false)
+	button.dot:SetShown(button.dotted and not button.selected)
+end
+
+-- opts.onSelect  function(key), called when a tab is pressed
+-- opts.size      the label's font height, defaulting to the small size
+function UI.SideTabs(parent, opts)
+	local tabs = setmetatable({
+		buttons = {},
+		keys = {},
+		shown = 0,
+		size = (opts and opts.size) or M.small,
+		onSelect = opts and opts.onSelect,
+	}, Side)
+	tabs.frame = CreateFrame("Frame", (opts and opts.name) or nil, parent)
+	tabs.frame:SetSize(1, 1)
+	return tabs
+end
+
+-- Whether this client turned the label. Asked once, on the first tab made,
+-- because the answer is a fact about the client rather than about the string
+-- and a pcall per tab per paint is a pcall per zone per quest update.
+function Side:Turned()
+	return self.turned and true or false
+end
+
+local function Make(strip, index)
+	local button = strip.buttons[index]
+	if button then
+		return button
+	end
+	button = CreateFrame("Button", nil, strip.frame)
+	button.bg = ns.Fill(button, "BACKGROUND", C.chrome[1], C.chrome[2], C.chrome[3], 1)
+	button.bg:SetAllPoints()
+
+	-- The accent down the edge the strip is anchored by, which is where the
+	-- strip above puts it along the bottom: the edge the tab is attached to.
+	button.mark = ns.Fill(button, "ARTWORK", C.accent[1], C.accent[2], C.accent[3], 1)
+	button.mark:SetPoint("TOPLEFT")
+	button.mark:SetPoint("BOTTOMLEFT")
+	button.mark:SetWidth(2)
+
+	button.dot = ns.Fill(button, "OVERLAY", C.heading[1], C.heading[2], C.heading[3], 1)
+	button.dot:SetSize(3, 3)
+	button.dot:SetPoint("TOPRIGHT", -3, -3)
+	button.dot:Hide()
+
+	-- Centred and unsized, which is what makes the turn work: a font string
+	-- with no width of its own is as wide as its text, and a quarter turn about
+	-- its own middle then draws that width down the tab. Anchored anywhere else
+	-- and the turn would swing it off the button.
+	--
+	-- Shadowed rather than flat, because a side strip is drawn over the world
+	-- as often as inside a window and the fill behind a tab is a dark grey the
+	-- grass shows through at the edges.
+	button.text = UI.Label(button, strip.size, C.dim, "CENTER", UI.SHADOW)
+	button.text:SetPoint("CENTER")
+	UI.Wrap(button.text, false)
+
+	if strip.turned == nil then
+		strip.turned = type(button.text.SetRotation) == "function"
+			and pcall(button.text.SetRotation, button.text, QUARTER) or false
+	elseif strip.turned then
+		pcall(button.text.SetRotation, button.text, QUARTER)
+	end
+
+	-- The left button and the up edge, written out rather than left to the
+	-- widget's default. A Button that registers nothing answers exactly this
+	-- already, so it changes no behaviour and says what the behaviour is, which
+	-- is the thing that goes wrong first when nobody writes it down.
+	button:RegisterForClicks("LeftButtonUp")
+	button:SetScript("OnClick", function(this)
+		strip:Select(this.key)
+	end)
+	button:SetScript("OnEnter", function(this)
+		this.hovered = true
+		PaintSide(this)
+	end)
+	button:SetScript("OnLeave", function(this)
+		this.hovered = nil
+		PaintSide(this)
+	end)
+
+	-- The right button and the middle one to the camera, on a client that will
+	-- take the call. 2.5.6 will not, which is the trade the tracker's own rows
+	-- already write out: a right drag begun on the strip stops dead there.
+	UI.PassCamera(button)
+
+	strip.buttons[index] = button
+	return button
+end
+
+-- The tabs this strip is holding, as a list of { key, label, dot }.
+--
+-- `dot` is a mark in the corner saying the thing behind this tab wants
+-- attention, which is what the unread dot is on the strip above. It is a
+-- different colour here because it means a different thing: the quest tracker
+-- lights it on a zone with a quest ready to hand in, which is the addon's
+-- heading gold everywhere else it appears.
+function Side:Set(entries)
+	self.keys = {}
+	for index = 1, #entries do
+		local entry = entries[index]
+		local button = Make(self, index)
+		button.key = entry.key
+		button.dotted = entry.dot and true or false
+		button.text:SetText(entry.label or "")
+		self.keys[entry.key] = index
+	end
+	for index = #entries + 1, #self.buttons do
+		self.buttons[index]:Hide()
+		self.buttons[index].key = nil
+	end
+	self.shown = #entries
+	if self.selected and not self.keys[self.selected] then
+		self.selected = nil
+	end
+	for index = 1, self.shown do
+		self.buttons[index].selected = (self.buttons[index].key == self.selected)
+		PaintSide(self.buttons[index])
+	end
+	return self.shown
+end
+
+-- Lays the strip out top down and answers how wide and how tall it came out,
+-- which are the two numbers the caller has to lay itself out against.
+--
+-- `longest` is the most one tab may measure along the strip, and it is not
+-- decoration. A tab is as long as its own label, a zone is called Eastern
+-- Plaguelands, and ten of those down the side of a tracker is thirteen hundred
+-- pixels of strip on a screen that has nine hundred. So the caller works out
+-- how much room it has, divides it by how many tabs there are, and hands the
+-- answer down; a label that does not fit is given that width and clipped by the
+-- client rather than allowed to push the strip off the bottom of the monitor.
+--
+-- Nothing wraps onto a second column. A strip is one column by definition and a
+-- second one would be a rail.
+function Side:Resize(longest)
+	local across, y = 0, 0
+	for index = 1, self.shown do
+		local button = self.buttons[index]
+		local words = button.text:GetStringWidth() or 0
+		local room = longest and (longest - SIDEPAD * 2) or nil
+		if room and room > 0 and words > room then
+			-- Along the text rather than across it, whichever way the label is
+			-- turned: a font string's own width is measured in the direction it
+			-- reads, and the turn happens after.
+			button.text:SetWidth(room)
+			words = room
+		else
+			button.text:SetWidth(0)
+		end
+
+		local tall, wide
+		if self:Turned() then
+			tall = UI.Round(self.frame, words + SIDEPAD * 2)
+			wide = UI.Round(self.frame, self.size + SIDEEDGE * 2)
+		else
+			tall = UI.Round(self.frame, self.size + SIDEEDGE * 2)
+			wide = UI.Round(self.frame, words + SIDEPAD * 2)
+		end
+		button:SetSize(math.max(wide, 1), math.max(tall, 1))
+		button:ClearAllPoints()
+		button:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, -y)
+		button:Show()
+		y = y + tall
+		across = math.max(across, wide)
+	end
+	self.frame:SetSize(math.max(across, 1), math.max(y, 1))
+	return across, y
+end
+
+function Side:Select(key)
+	if key ~= nil and not self.keys[key] then
+		return false
+	end
+	self.selected = key
+	for index = 1, self.shown do
+		local button = self.buttons[index]
+		button.selected = (button.key == key)
+		PaintSide(button)
+	end
+	if self.onSelect then
+		self.onSelect(key)
+	end
+	return true
+end
+
+-- Whether the tabs answer the pointer at all. The same question UI.List's rows
+-- answer, and the tracker is why: a tab that took the press would swallow the
+-- drag that is the point of unlocking a placeable frame.
+function Side:Mouse(on)
+	for index = 1, #self.buttons do
+		self.buttons[index]:EnableMouse(on and true or false)
+	end
+end
+
+--------------------------------------------------------------------------
 -- The list
 --
 -- A column of rows down the left of a window, where the rows change while the
