@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2AA3VA88D6PG6P2CESXSVHG
 type: task
-status: todo
+status: doing
 title: Zone tabs down the side of the tracker
 ---
 
