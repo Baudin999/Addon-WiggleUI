@@ -30,6 +30,14 @@ check(perch ~= nil and perch[2] == targetAnchor and perch[1] == "TOPRIGHT"
 	and perch[3] == "BOTTOMRIGHT" and perch[5] < 0,
 	"target of target is not parked under the target block by their shared edge")
 
+-- Beside the player's block on the portrait's side, top edges on one line: the
+-- pet's right edge against the player's left, pulled left by the gap.
+local petAnchor, petButton = _G.WarriorKitPetFrame, _G.WarriorKitPetButton
+local flank = petAnchor.points and petAnchor.points[1]
+check(flank ~= nil and flank[2] == playerAnchor and flank[1] == "TOPRIGHT"
+	and flank[3] == "TOPLEFT" and flank[4] < 0 and flank[5] == 0,
+	"the pet is not parked left of the player block with the two tops on one line")
+
 local built = {}
 for _, block in ipairs(blocks) do
 	built[block[1]] = { block[3]:GetWidth(), block[3]:GetHeight() }
@@ -61,7 +69,8 @@ for _, block in ipairs(blocks) do
 		("%s: the second layout came out %.0f x %.0f, the first %.0f x %.0f")
 			:format(key, button:GetWidth(), button:GetHeight(), built[key][1], built[key][2]))
 end
-check(_G.UnitWatchRegistered(targetButton) and _G.UnitWatchRegistered(totButton),
+check(_G.UnitWatchRegistered(targetButton) and _G.UnitWatchRegistered(totButton)
+	and _G.UnitWatchRegistered(petButton),
 	"the frames went back on and the buttons are not back on the client's unit watch")
 
 -- The four aura rows, which are the one thing on a block that a second part
@@ -149,6 +158,13 @@ do
 		check(math.abs(under - 3) < 1e-6,
 			("at ui scale %.2f target of target sits %.2f pixels under the target"
 				.. " block and belongs 3 under it"):format(scale, under))
+		local beside = apart(playerButton, "GetLeft", petButton, "GetRight")
+		check(math.abs(beside - 3) < 1e-6,
+			("at ui scale %.2f the pet sits %.2f pixels left of the player block"
+				.. " and belongs 3 left of it"):format(scale, beside))
+		local level = apart(playerButton, "GetTop", petButton, "GetTop")
+		check(math.abs(level) < 1e-6,
+			("at ui scale %.2f the pet's top is %.2f pixels off the player block's"):format(scale, level))
 	end
 	_G.UIParent:SetScale(shipped)
 	fire("UI_SCALE_CHANGED")

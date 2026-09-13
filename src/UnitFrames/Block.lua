@@ -33,14 +33,15 @@ ns.FrameBlock = Block
 -- three hairlines: one along the top, one along the bottom, one between.
 local HEALTH_SHARE = 0.70
 
--- The gap between the target block and target of target under it, in pixels.
+-- The gap between a small block and the block it is parked against, in pixels:
+-- target of target under the target, and the pet beside the player.
 --
--- A constant rather than the third pair of settings. The two blocks stand side
--- by side and the number between them is a corridor somebody wants to choose;
--- target of target is stacked under the target and reads as one unit with it,
--- and three pixels is the hairline that keeps two adjacent outlines from
--- reading as one thick edge. There is no second value anyone would type.
-local TOT_GAP = 3
+-- A constant rather than the third pair of settings. The two big blocks stand
+-- side by side and the number between them is a corridor somebody wants to
+-- choose; a small block reads as one unit with the block it is parked on, and
+-- three pixels is the hairline that keeps two adjacent outlines from reading
+-- as one thick edge. There is no second value anyone would type.
+local PARK_GAP = 3
 
 -- How far the target's top edge drops below the player's. The range one may
 -- land in, shared with `/wk skin level` through Skin.LinkRange so the slash
@@ -519,7 +520,7 @@ end
 -- draw and the button is down.
 --
 -- Written on every pass rather than only when the switch moves, for Link's
--- third reason: TOT_GAP is three pixels and what three pixels cost in this
+-- third reason: PARK_GAP is three pixels and what three pixels cost in this
 -- frame's units moves with the screen.
 function Block.Perch(entry, host)
 	if ns.Blocked(entry.frame) then
@@ -528,7 +529,7 @@ function Block.Perch(entry, host)
 	local anchor = entry.anchor
 	local side = host.spec.mirror and "RIGHT" or "LEFT"
 	anchor:ClearAllPoints()
-	anchor:SetPoint("TOP" .. side, host.anchor, "BOTTOM" .. side, 0, -TOT_GAP * ns.Pixel(anchor))
+	anchor:SetPoint("TOP" .. side, host.anchor, "BOTTOM" .. side, 0, -PARK_GAP * ns.Pixel(anchor))
 	entry.perched = true
 	-- What the host's aura rows now hang from. This frame is parked on exactly
 	-- the corner they hang off, so without being told, the first row would be
@@ -537,6 +538,29 @@ function Block.Perch(entry, host)
 	-- shown. Told rather than worked out over there, because whether this frame
 	-- is under that block is this function's answer and nobody else's.
 	ns.FrameAuras.Under(host, entry.styled and entry.frame or nil)
+	return true
+end
+
+-- The pet, parked beside the player block on the side its portrait is on.
+--
+-- Top edges on one line and PARK_GAP pixels between the pet's gauge end and
+-- the player's square. The side is read off the host's mirror for Facing's
+-- reason: a player block that stopped being mirrored takes the pet round with
+-- it. Off the host's anchor and written on every pass, both for Perch's
+-- reasons. Nothing hangs a row off the side the pet is on, so unlike Perch
+-- there is no aura row to tell.
+function Block.Flank(entry, host)
+	if ns.Blocked(entry.frame) then
+		return false
+	end
+	local anchor = entry.anchor
+	local portrait = host.spec.mirror and "RIGHT" or "LEFT"
+	local gauge = host.spec.mirror and "LEFT" or "RIGHT"
+	local away = host.spec.mirror and 1 or -1
+	anchor:ClearAllPoints()
+	anchor:SetPoint("TOP" .. gauge, host.anchor, "TOP" .. portrait,
+		away * PARK_GAP * ns.Pixel(anchor), 0)
+	entry.flanked = true
 	return true
 end
 
@@ -567,7 +591,8 @@ function Block.Probe(entry)
 		tostring(point), against, tostring(relativePoint),
 		math.floor((x or 0) + 0.5), math.floor((y or 0) + 0.5),
 		entry.linked and "hung off the player block" or
-			(entry.perched and "parked under the target block" or "on its own point"),
+			(entry.perched and "parked under the target block"
+				or (entry.flanked and "parked beside the player block" or "on its own point")),
 		entry.frame:IsShown() and ", on screen" or ", not drawn",
 		row)
 end

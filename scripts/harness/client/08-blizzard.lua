@@ -57,6 +57,11 @@ local playerFrame = unitFrame("PlayerFrame", 232, 100, nil,
 	{ "PlayerRestIcon", "PlayerAttackIcon", "PlayerPVPIcon" })
 playerFrame:SetPoint("TOPLEFT", _G.UIParent, "TOPLEFT", -19, -4)
 child("fontstring", playerFrame, "PlayerLevelText")
+-- The pet's frame, on UIParent rather than under PlayerFrame where the XML
+-- declares it. In the game it stayed on the screen with PlayerFrame caged, and
+-- a fixture that hid it along with its parent would pass a hide list that
+-- never names it.
+unitFrame("PetFrame", 128, 53, nil, {})
 -- The combat feedback number, which is a font string and so is invisible to a
 -- walk over textures. Blizzard draws it centred on a portrait twice the size
 -- of the block, so left alone it lands across the level and the power gauge.

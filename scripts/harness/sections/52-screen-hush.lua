@@ -83,6 +83,7 @@ local ROWS = {
 -- carries SecureUnitButtonTemplate or it does not.
 local BLOCKS = {
 	{ anchor = "WarriorKitPlayerFrame", button = "WarriorKitPlayerButton" },
+	{ anchor = "WarriorKitPetFrame", button = "WarriorKitPetButton" },
 	{ anchor = "WarriorKitTargetFrame", button = "WarriorKitTargetButton" },
 	{ anchor = "WarriorKitTargetOfTargetFrame", button = "WarriorKitTargetOfTargetButton" },
 }

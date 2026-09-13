@@ -288,7 +288,7 @@ end
 
 local function Frames(ui)
 	ui.Section("Player and target frames", "Frames")
-	ui.Lede("Our own player, target and target of target frames, in your class colour.")
+	ui.Lede("Our own player, pet, target and target of target frames, in your class colour.")
 
 	ui.Check("our own frames in your class colour",
 		function() return ns.db.skin end,
@@ -299,6 +299,7 @@ local function Frames(ui)
 	ui.Hint("Left click targets, right click opens the menu, hover for the tooltip. Unlock the frames to drag the player and the target.")
 
 	for _, frame in ipairs({ { "player", "the player frame" },
+		{ "pet", "your pet, left of the player frame" },
 		{ "target", "the target frame" },
 		{ "tot", "target of target, under the target frame" } }) do
 		ui.Check("draw " .. frame[2],

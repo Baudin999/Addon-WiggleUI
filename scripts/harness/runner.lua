@@ -45,10 +45,11 @@ local events = H.events
 local function fire(event, ...)
 	-- What the client's unit watch does before any Lua hears about it: a
 	-- secure frame watching a unit is shown or hidden as the unit comes and
-	-- goes. Modelled in 03-player.lua and run here on the two events that say
-	-- a unit changed, so a section that changes a target and fires the event
-	-- sees the frame move the way the game moves it.
-	if H.unitWatch and (event == "PLAYER_TARGET_CHANGED" or event == "UNIT_TARGET") then
+	-- goes. Modelled in 03-player.lua and run here on the three events that
+	-- say a unit changed, so a section that changes a target or a pet and
+	-- fires the event sees the frame move the way the game moves it.
+	if H.unitWatch and (event == "PLAYER_TARGET_CHANGED" or event == "UNIT_TARGET"
+		or event == "UNIT_PET") then
 		H.unitWatch()
 	end
 	local list = events[event]

@@ -298,6 +298,7 @@ local SkinWord = ns.Command.Word({
 	  end },
 
 	FrameEntry("player", "player frame"),
+	FrameEntry("pet", "pet frame"),
 	FrameEntry("target", "target frame"),
 	FrameEntry("tot", "target of target"),
 
@@ -639,7 +640,7 @@ ns.Register({
 		-- One switch per frame under that one, because they do not fail
 		-- together. Target of target is the one to reach for: Blizzard parks
 		-- it across the target's aura row, so ours lands there too.
-		skinFrames = { player = true, target = true, tot = true },
+		skinFrames = { player = true, pet = true, target = true, tot = true },
 
 		-- The block's shape, as a setting rather than a constant, because the
 		-- first shipped guess was a square as tall as Blizzard's portrait and
@@ -1041,7 +1042,7 @@ ns.Register({
 		ns.db.skin = ns.DefaultCopy("skin")
 		-- A fresh table, not ns.DefaultFor: the default is handed out by
 		-- reference and every toggle since has been writing into it.
-		ns.db.skinFrames = { player = true, target = true, tot = true }
+		ns.db.skinFrames = { player = true, pet = true, target = true, tot = true }
 		ns.db.skinHeight = ns.DefaultCopy("skinHeight")
 		ns.db.skinWidth = ns.DefaultCopy("skinWidth")
 		ns.db.skinHeals = ns.DefaultCopy("skinHeals")

@@ -21,11 +21,14 @@ local PLAYER_CLASS, guids = H.PLAYER_CLASS, H.guids
 local ns, check, fire = H.ns, H.check, H.fire
 local own, inCombat, pvpUnits = H.own, H.inCombat, H.pvpUnits
 
--- Units for the three frames, added now rather than at login so the enemy bar
--- figures above are measured against two mobs and not three. The event is
--- what the client fires, and it is what puts the target's button up.
+-- Units for the four frames, added now rather than at login so the enemy bar
+-- figures above are measured against two mobs and not three. The events are
+-- what the client fires, and they are what put the target's and the pet's
+-- buttons up.
 guids.player, guids.target, guids.targettarget = "Player-1", "Creature-9", "Creature-8"
+guids.pet = "Pet-1"
 fire("PLAYER_TARGET_CHANGED")
+fire("UNIT_PET", "player")
 -- Apply rather than a tick, because that is what a settings change does and it
 -- is the path that has to leave a frame fully painted: a fifth of a second of
 -- a white gauge reads as a bug.
@@ -33,6 +36,7 @@ ns.FrameSkin.Apply()
 
 local blocks = {
 	{ "player", _G.WarriorKitPlayerFrame, _G.WarriorKitPlayerButton, "player" },
+	{ "pet", _G.WarriorKitPetFrame, _G.WarriorKitPetButton, "pet" },
 	{ "target", _G.WarriorKitTargetFrame, _G.WarriorKitTargetButton, "target" },
 	{ "tot", _G.WarriorKitTargetOfTargetFrame, _G.WarriorKitTargetOfTargetButton, "targettarget" },
 }
@@ -73,12 +77,14 @@ end
 ----------------------------------------------------------------------
 
 check(ns.db.hideBlizzUnitFrames == true, "the switch that takes Blizzard's frames down ships off")
-for _, name in ipairs({ "PlayerFrame", "TargetFrame", "TargetFrameToT" }) do
+for _, name in ipairs({ "PlayerFrame", "PetFrame", "TargetFrame", "TargetFrameToT" }) do
 	check(_G[name]:IsVisible() == false,
 		("Blizzard's %s is still on the screen under ours"):format(name))
 end
 check(ns.Attic.Held(_G.PlayerFrame) and ns.Attic.Held(_G.TargetFrame),
 	"Blizzard's player and target frames are hidden but not caged, so a Show puts them back")
+check(ns.Attic.Held(_G.PetFrame),
+	"Blizzard's pet frame is not caged, so the client's own UNIT_PET Show puts it back unstyled")
 
 ----------------------------------------------------------------------
 -- Up and down with the unit
@@ -111,6 +117,19 @@ guids.target, guids.targettarget = "Creature-9", "Creature-8"
 fire("PLAYER_TARGET_CHANGED")
 check(targetButton:IsShown() and totButton:IsShown(),
 	"a target picked up again did not put both buttons back")
+
+-- The pet, on the event the client fires against your own unit when the pet
+-- token changes creature.
+local petButton = _G.WarriorKitPetButton
+check(_G.UnitWatchRegistered(petButton),
+	"the pet button is not on the client's unit watch, so a pet called in a fight draws nothing")
+check(petButton:IsShown(), "you have a pet and its button is not on the screen")
+guids.pet = nil
+fire("UNIT_PET", "player")
+check(not petButton:IsShown(), "the pet was dismissed and its button is still on the screen")
+guids.pet = "Pet-1"
+fire("UNIT_PET", "player")
+check(petButton:IsShown(), "a pet called again did not put its button back")
 ns.FrameSkin.Apply()
 
 ----------------------------------------------------------------------
@@ -126,6 +145,7 @@ local TRACK, EDGE_DIM = ns.Unit.Color.track, 0.60
 local HOSTILE = ns.Unit.Color.reaction.hostile
 local TINT = {
 	player = ns.Unit.Color.Class(PLAYER_CLASS),
+	pet = HOSTILE,
 	target = HOSTILE,
 	tot = HOSTILE,
 }

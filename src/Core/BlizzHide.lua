@@ -168,12 +168,14 @@ local SWITCHES = {
 -- the frame you are targeting with, and the sweep in UnitFrames/Auras.lua is the
 -- only handle.
 local FRAMES = {
-	-- Two names for three frames: target of target is a child of the target
-	-- frame on both clients, so it goes down with its parent. Both are secure
-	-- unit buttons, which is the same shape the four party frames below are
-	-- and takes the same road: caged out of combat, refused in it, and the
-	-- refusal picked up at PLAYER_REGEN_ENABLED.
-	{ needs = { "hideBlizzUnitFrames" }, names = { "PlayerFrame", "TargetFrame" } },
+	-- Three names for four frames: target of target is a child of the target
+	-- frame on both clients, so it goes down with its parent. PetFrame is
+	-- declared as PlayerFrame's child too and was still on the screen with
+	-- PlayerFrame caged, so it is named. All three are secure unit buttons,
+	-- which is the same shape the four party frames below are and takes the
+	-- same road: caged out of combat, refused in it, and the refusal picked up
+	-- at PLAYER_REGEN_ENABLED.
+	{ needs = { "hideBlizzUnitFrames" }, names = { "PlayerFrame", "PetFrame", "TargetFrame" } },
 	{ needs = { "hideBlizzBuffs", "hideBlizzDebuffs" }, names = { "BuffFrame" } },
 	{ needs = { "hideBlizzBuffs" }, names = { "TemporaryEnchantFrame" } },
 	{ needs = { "hideBlizzDebuffs" }, names = { "DebuffFrame" } },

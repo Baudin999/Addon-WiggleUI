@@ -56,9 +56,9 @@ local Paint = ns.FramePaint
 local REFRESH = 0.2
 local VERIFY = 1
 
--- Target of target against the other two. It is a glance, not a frame you
--- read, so it is the one that has to stay out of the way.
-local TOT_SCALE = 0.62
+-- Target of target and the pet against the other two. Both are a glance, not a
+-- frame you read, so they are the two that have to stay out of the way.
+local GLANCE_SCALE = 0.62
 
 -- The client's unit watch, taken at load. It is the one mechanism that can put
 -- a secure frame up and take it down in a fight: RegisterUnitWatch hands the
@@ -70,7 +70,7 @@ local RegisterUnitWatch = _G.RegisterUnitWatch
 local UnregisterUnitWatch = _G.UnregisterUnitWatch
 
 --------------------------------------------------------------------------
--- The three frames
+-- The four frames
 --
 -- key      the setting, the slash word and the panel line
 -- unit     the token the button targets and the block reads
@@ -87,6 +87,8 @@ local UnregisterUnitWatch = _G.UnregisterUnitWatch
 -- beside   the key of the frame this one hangs off sideways, gauge edge to
 --          gauge edge, while the link is on
 -- under    the key of the frame this one is parked beneath
+-- flank    the key of the frame this one is parked beside, on the side that
+--          frame's portrait is on, top edges on one line
 --------------------------------------------------------------------------
 
 local SPECS = {
@@ -105,10 +107,18 @@ local SPECS = {
 		title = "WarriorKit target", point = "skinTargetPoint",
 	},
 	{
-		key = "tot", unit = "targettarget", mirror = false, scale = TOT_SCALE,
+		key = "tot", unit = "targettarget", mirror = false, scale = GLANCE_SCALE,
 		badges = { "marker" }, under = "target", watch = true,
 		global = "WarriorKitTargetOfTargetFrame",
 		button = "WarriorKitTargetOfTargetButton",
+	},
+	{
+		-- Your pet, off the left of your own block. Not mirrored, so the row
+		-- reads the same way round twice: its square, its gauge, your square,
+		-- your gauge.
+		key = "pet", unit = "pet", mirror = false, scale = GLANCE_SCALE,
+		badges = { "marker" }, flank = "player", watch = true,
+		global = "WarriorKitPetFrame", button = "WarriorKitPetButton",
 	},
 }
 
@@ -216,6 +226,10 @@ local function Hang(entry)
 		return Block.Link(entry, host)
 	end
 	entry.linked = false
+	local flank = EntryFor(spec.flank)
+	if flank then
+		return Block.Flank(entry, flank)
+	end
 	local under = EntryFor(spec.under)
 	if under then
 		return Block.Perch(entry, under)
@@ -553,7 +567,7 @@ function Skin.Describe()
 			off[#off + 1] = entry.spec.key
 		end
 	end
-	local line = "our own player, target and target of target frames, " .. Skin.DescribeLink()
+	local line = "our own player, pet, target and target of target frames, " .. Skin.DescribeLink()
 	if ns.db.skinHeals then
 		line = line .. (ns.HasHealPrediction() and ", incoming heals on the gauge"
 			or ", incoming heals asked for and this client has no prediction api")
@@ -610,8 +624,11 @@ end
 -- "target" and "targettarget" are both a different creature now and the client
 -- fires nothing against either token to say so. All three are marked rather
 -- than the two, because your own block draws nothing that moved and a pass
--- over it is a handful of comparisons that all hold.
+-- over it is a handful of comparisons that all hold. UNIT_PET is the pet token
+-- turning into a different creature, and the client fires it against your own
+-- unit rather than the pet's, so the pet block's own filter never hears it.
 local MARKS = {
+	UNIT_PET = true,
 	PLAYER_TARGET_CHANGED = true,
 	PLAYER_UPDATE_RESTING = true,
 	PLAYER_REGEN_DISABLED = true,
