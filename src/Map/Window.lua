@@ -55,7 +55,7 @@ local Chart, Zones, Pins, Mates = UI.Chart, ns.MapZones, ns.MapPins, ns.MapMates
 -- like any other map, and the right button on any zone goes to the one it is
 -- on. Left goes in, right goes out, which is the client's own gesture.
 --
--- **Your group is on the picture, in their own class colours.** Map/Mates.lua
+-- **Your group is on the picture, as the client's party pin.** Map/Mates.lua
 -- carries that in full. The short of it is that the client will say where a
 -- party member is standing on any map you hand it, so the marks cost one call
 -- each and nothing is worked out here.

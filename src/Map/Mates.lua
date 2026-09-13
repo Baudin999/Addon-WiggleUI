@@ -46,24 +46,23 @@ ns.MapMates = Mates
 -- "this client would not say", because those look identical on the map and are
 -- not the same fault.
 --
--- **Class colour, because the question is which one of them.** A row of five
--- identical dots says the party is spread out, which you knew. The colour is
--- what makes the mark answer "the healer has not moved", and it is the same
--- colour the party frames, the meter and the chat use for the same person.
+-- **Blizzard's party pin, and the class colour on the hover.** The client's
+-- own map draws everybody in your group as Interface\WorldMap\WorldMapPartyIcon
+-- at sixteen pixels and untinted, in UnitPositionFrameTemplates.lua and
+-- GroupMembersDataProvider.lua. That dot has meant "one of mine" since the
+-- first client, and the class-coloured square this file drew instead read as a
+-- quest camp in a colour nobody had picked. Which of them it is sits on the
+-- hover: the name, in the colour the party frames, the meter and the chat use
+-- for the same person.
 --------------------------------------------------------------------------
 
 local Chart = ns.UI.Chart
 local Color = ns.Unit.Color
 
--- How big a person is drawn.
---
--- Two pixels over the nine a quest camp gets. A camp is one of forty things on
--- a busy zone and a person is one of four, and the two want different weights:
--- the point of a party mark is that you find it without looking for it. Still
--- well under Questie's fourteen pixel icons, because a mark that is bigger than
--- the art it is standing on is a mark that hides the place it is answering
--- about.
-local FRIEND = 11
+-- What a person is drawn as, and how big. Both are the client's: the texture
+-- UnitPositionFrameMixin sets for "party" and "raid", and the sixteen pixels
+-- GroupMembersDataProvider sizes both at.
+local PARTY, FRIEND = "Interface\\WorldMap\\WorldMapPartyIcon", 16
 
 -- The most people one map is drawn with. A full raid, which is the most the
 -- client will ever answer for.
@@ -84,7 +83,7 @@ local function Take(into, unit, map)
 	local x, y = Chart.Spot(map, unit)
 	into[#into + 1] = {
 		x = x, y = y, kind = Chart.MATE, unit = unit,
-		tint = Color.OfUnit(unit), size = FRIEND,
+		icon = PARTY, size = FRIEND, color = Color.OfUnit(unit),
 		name = UnitName(unit) or "somebody in your group",
 		-- The coordinate, for the reason every other mark on this map carries
 		-- one rather than a distance: a distance is the number that goes stale

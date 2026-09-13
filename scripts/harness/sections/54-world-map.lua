@@ -682,10 +682,14 @@ do
 		check(mate.name ~= "Tusksfirst", "you were drawn twice, as the arrow and as a square")
 	end
 
-	-- Their own colours, which is what makes a mark answer "the healer has not
-	-- moved" rather than "somebody is over there".
-	check(mates[1].tint and mates[2].tint and mates[1].tint ~= mates[2].tint,
-		"a rogue and a priest are drawn in the same colour")
+	-- Blizzard's party pin, untinted, and the class colour on the hover's title,
+	-- which is what makes a mark answer "the healer has not moved".
+	check(mates[1].icon == "Interface\\WorldMap\\WorldMapPartyIcon" and mates[1].size == 16
+		and mates[1].tint == nil,
+		("a party member is drawn as %s at %s rather than the client's party pin")
+			:format(tostring(mates[1].icon), tostring(mates[1].size)))
+	check(mates[1].color and mates[2].color and mates[1].color ~= mates[2].color,
+		"a rogue and a priest are named in the same colour")
 
 	Window.Paint()
 	local _, count = Window.Says()
@@ -718,6 +722,14 @@ do
 	check(select(2, Mates.On(KINGDOMS)) == 2,
 		("%d of the group were placed on the continent and both are on it")
 			:format(select(2, Mates.On(KINGDOMS))))
+
+	-- And from a client that answers the continent with the zone underfoot,
+	-- where the zone's rectangle carries them onto the continent instead.
+	worldmap.Ignore(true)
+	check(select(2, Mates.On(KINGDOMS)) == 2,
+		("%d of the group were placed on the continent by way of their zones")
+			:format(select(2, Mates.On(KINGDOMS))))
+	worldmap.Ignore(false)
 
 	check(Mates.Describe() == "2 with you, 1 of them on the zone you are in",
 		("the reading says %q"):format(Mates.Describe()))

@@ -235,6 +235,11 @@ end
 -- The map asked for, and the place on it, where the yards are on that map's
 -- continent and the map answers for the zone they are in. Nothing otherwise,
 -- which is the documented shape: the call may return nothing.
+--
+-- A section can make it ignore the override and answer for the zone underfoot,
+-- which is the client the continent picture's second ask is written for.
+local ignored = false
+
 api.GetMapPosFromWorldPos = function(continent, world, override)
 	if type(world) ~= "table" or type(world.x) ~= "number" then
 		return nil
@@ -244,11 +249,21 @@ api.GetMapPosFromWorldPos = function(continent, world, override)
 	if continent ~= continentOf(map) then
 		return nil
 	end
-	local target = override or map
+	local target = (not ignored and override) or map
 	if not answers({ map = map }, target) then
 		return nil
 	end
 	return target, { GetXY = function() return x / 100, y / 100 end }
+end
+
+-- Where a zone lies on a map over it. The whole of it, because the fixture's
+-- coordinates are the same on a zone and on its continent; nothing for a map
+-- the zone is not inside.
+api.GetMapRectOnMap = function(zone, map)
+	if not answers({ map = zone }, map) then
+		return 0, 0, 0, 0
+	end
+	return 0, 1, 0, 1
 end
 
 --------------------------------------------------------------------------
@@ -526,6 +541,12 @@ H.worldmap = {
 	-- on a zone, walk one of them out of it and take them all away again. A map
 	-- of nothing forgets them, which is what leaving the group looks like to
 	-- everything that reads a position.
+	-- Whether the position call ignores the map it is handed and answers for
+	-- the zone underfoot.
+	Ignore = function(on)
+		ignored = on and true or false
+		return ignored
+	end,
 	Stand = function(unit, map, x, y)
 		placed[unit] = map and { map = map, x = x, y = y } or nil
 		return placed[unit]

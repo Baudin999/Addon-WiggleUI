@@ -144,7 +144,7 @@ Chart.TODO = "todo" -- something you still have to go and do
 Chart.BACK = "back" -- who the thing goes back to
 Chart.YOU  = "you"  -- where you are standing, which no database knows
 Chart.MARK = "mark" -- a numbered place, which the dungeon log's bosses are
-Chart.MATE = "mate" -- somebody else in your group, in their own class colour
+Chart.MATE = "mate" -- somebody else in your group, as the client's party pin
 Chart.DEAD = "dead" -- your corpse, which only the client knows the way back to
 
 -- One dot, and the pale square behind it.
@@ -434,10 +434,37 @@ local world = type(_G.CreateVector2D) == "function"
 -- yard. Swapped, every mark lands mirrored about the diagonal and reads as
 -- being placed, which is the failure this order is written down to prevent.
 --
--- The map that comes back is checked against the one asked for. A client
--- that ignored the override and answered against the best map for that spot
--- would hand back a fraction of some other zone, and a fraction of the wrong
--- map is a mark in the wrong place rather than no mark.
+-- A place on one map carried onto a map it sits inside, which is a zone onto
+-- its continent. GetMapRectOnMap answers where the zone's rectangle lies on the
+-- continent's, as fractions, and HereBeDragons in Questie asks it the same way.
+-- A zone that is not inside the map comes back as no rectangle, or an empty
+-- one, and places nobody.
+local function Across(api, map, ok, zone, at)
+	if not ok or type(zone) ~= "number" or type(api.GetMapRectOnMap) ~= "function" then
+		return nil
+	end
+	local x, y = Placed(true, at)
+	if not x then
+		return nil
+	end
+	local read, left, right, top, bottom = pcall(api.GetMapRectOnMap, zone, map)
+	if not read or type(left) ~= "number" or type(right) ~= "number"
+		or type(top) ~= "number" or type(bottom) ~= "number"
+		or right <= left or bottom <= top then
+		return nil
+	end
+	return left * 100 + x * (right - left), top * 100 + y * (bottom - top)
+end
+
+-- The map that comes back is checked against the one asked for, because a
+-- fraction of the wrong map is a mark in the wrong place rather than no mark.
+--
+-- When it is not that map, the member is asked for again with no override and
+-- the zone that answers is carried onto the map by its rectangle. That is the
+-- continent picture: a client that answers a continent override with the zone
+-- underfoot, or with nothing, would otherwise draw the party on every zone and
+-- on no continent. The second ask is a second call per person per tick, and
+-- only for somebody the first ask would not place.
 local function Standing(api, map, unit)
 	if type(api.GetMapPosFromWorldPos) ~= "function"
 		or type(_G.UnitPosition) ~= "function" then
@@ -450,10 +477,10 @@ local function Standing(api, map, unit)
 	end
 	world.x, world.y = north, east
 	local asked, found, at = pcall(api.GetMapPosFromWorldPos, continent, world, map)
-	if not asked or found ~= map then
-		return nil
+	if asked and found == map then
+		return Placed(true, at)
 	end
-	return Placed(true, at)
+	return Across(api, map, pcall(api.GetMapPosFromWorldPos, continent, world))
 end
 
 function Chart.Spot(map, unit)
@@ -720,7 +747,7 @@ local function Pin(board, index)
 		if type(note) == "function" then
 			note = note()
 		end
-		return { kind = "note", title = self.name,
+		return { kind = "note", title = self.name, color = self.color,
 			lines = (type(note) == "table") and note or { note },
 			place = ns.UI.Tooltip.BESIDE, above = true }
 	end)
@@ -1277,7 +1304,9 @@ local function Place(board, pin, point, wide, high)
 		pin.tag:SetText(point.label)
 	end
 	pin:SetSize(size, size)
-	pin.name, pin.note = point.name, point.note
+	-- The title's colour where the point has one, which is a person's class, and
+	-- the tooltip's own heading gold where it has none.
+	pin.name, pin.note, pin.color = point.name, point.note, point.color
 	pin:EnableMouse(point.name and true or false)
 	-- A point with no place is a mark that is not drawn, rather than one drawn
 	-- in the corner. Only a point that names a unit can be in that state: the
