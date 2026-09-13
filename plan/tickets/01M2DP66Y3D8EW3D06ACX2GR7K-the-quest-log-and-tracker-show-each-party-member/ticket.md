@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2DP66Y3D8EW3D06ACX2GR7K
 type: task
-status: doing
+status: done
 title: The quest log and tracker show each party member's progress
 ---
 
