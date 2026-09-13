@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2DRRZGVB29DF7AFM00HPDK7
 type: task
-status: todo
+status: doing
 title: "Party members on the map as Blizzard's party pin, named in class colour"
 ---
 
