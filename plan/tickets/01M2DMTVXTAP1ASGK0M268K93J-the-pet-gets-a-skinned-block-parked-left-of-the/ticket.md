@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2DMTVXTAP1ASGK0M268K93J
 type: task
-status: todo
+status: done
 title: "The pet gets a skinned block, parked left of the player portrait"
 ---
 
