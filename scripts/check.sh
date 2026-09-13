@@ -821,7 +821,7 @@ probe_list PROBED_ALLOWED "$PROBED_ALLOWED"
 # path:sorts in that file:what it puts in order and why that is not a route
 QUEST_SORT_ALLOWED="
 Quests/Drops.lua:2:a hover's lines by quest id and its objectives by Questie's own index, so the same mob draws the same tooltip twice running
-Quests/Party.lua:1:the names on a hover alphabetically, so the same party draws the same tooltip twice running
+Quests/Party.lua:1:the members on a quest alphabetically, so the same party draws the same hover and the same tracker lines twice running
 "
 
 quest_sorts() {
@@ -1541,8 +1541,8 @@ sections/05-action-bars.lua:1061:one subject, five bars; splits at the keys, the
 sections/55-bags.lua:806:one subject, the bag window; what it draws, what a square answers and where the window sits are one window and one bag fixture
 sections/39-party-raid.lua:950:one subject, two lists, two directions each; the party line and the raid grid share a tile, a roster fixture and a header model, and splitting them copies all three
 sections/42-cooldown-row.lua:734:one subject, the cooldown row; what is on it, what a square draws, when the row is up and what the tick costs are four readings of one row and every one of them moves when an entry does
+sections/85-quest-column.lua:830:one subject, the tracker over the world; its scope, its rows, the party under a quest, the zone plates and the click through to the window are readings of one column under one log fixture and one standing position, and a file of their own would carry the frame walkers and the standing position twice
 sections/54-world-map.lua:809:one subject, the world map; the column, the picture, Questie's markers and the gestures over them are one window under one zone fixture, and splitting them copies the map tree, the standing position and the icon frames three ways
-client/12-questlog.lua:810:one subject, the client's quest log; the rows, the cursor every reading borrows, what a quest pays, what you can do to one and where its spawns are are five faces of one log, and the last of them cannot leave: the map column draws Questie's spawns through the same standing position, the same map art table and the same H.quests handle the rows are read through, so a file of its own would carry all three twice
 client/05-quests.lua:830:one subject, what Questie answers; the item rows, the drop rates, the public API and the icon table are four faces of one addon under one loader stub, and a file of their own would carry the loader and the quest table twice
 sections/80-floating-numbers.lua:872:one subject, the floating numbers; which column a blow or a miss comes off, its colour, its envelope, the merge and the client's own text put away are readings of one stream under one combat log fixture, and a file of their own would carry the line builders and the anchors twice
 sections/40-loot-feed.lua:908:one subject, the loot feed; what it is dressed in, how a chip filters it, what a hover on a row says, the arithmetic of folding a repeat onto a row and why a row matters are readings of one column under one feed instance, one item fixture and one clock, and a file of their own would carry all three twice

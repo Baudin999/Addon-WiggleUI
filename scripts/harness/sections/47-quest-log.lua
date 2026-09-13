@@ -419,6 +419,54 @@ do
 		("the group came back as %s, which is either the wrong people or an order that moves")
 			:format(table.concat(names, ", ")))
 
+	-- How far along, which only Questie can say. Sneaky has spoken to Baros and
+	-- Ironhide has not; Lightwell is on it by the client's word alone and carries
+	-- no steps, because a line under the objective for somebody nobody has heard
+	-- from would read as somebody who has done none of it.
+	local diplomat = Log.Quest(Log.Key({ id = 102 }))
+	local by = {}
+	for _, member in ipairs(diplomat.party) do
+		by[member.name] = member
+	end
+	check(by.Sneaky and by.Sneaky.class == "ROGUE",
+		"Sneaky came back without the class his name is drawn in")
+	local said, done = ns.QuestParty.Step(by.Sneaky, 1)
+	check(said and said:find("Sneaky", 1, true) and done == true,
+		("Sneaky's line under the objective is %q, done %s, where he has spoken to Baros")
+			:format(tostring(said), tostring(done)))
+	said, done = ns.QuestParty.Step(by.Ironhide, 1)
+	check(said and done == false,
+		("Ironhide's line under the objective is %q, done %s, where he has not")
+			:format(tostring(said), tostring(done)))
+	check(ns.QuestParty.Step(by.Lightwell, 1) == nil,
+		"Lightwell drew a line under the objective and Questie never heard from her")
+
+	-- A count, on a member made here: the fixture's one objective wants one of
+	-- something, and a fraction of one is a tick written out.
+	said = ns.QuestParty.Step({ name = "Sneaky", class = "ROGUE",
+		steps = { [1] = { fulfilled = 3, required = 8, done = false } } }, 1)
+	check(said and said:find("3/8", 1, true),
+		("a member three wolves into eight reads %q"):format(tostring(said)))
+
+	-- A packet landing. Nothing of the client's fires for it, so the only way the
+	-- window hears Ironhide finish is the repaint hung on Questie's own call, and
+	-- that repaint is a fresh read of the log.
+	check(Window.Shown(), "the window is shut, so a packet landing has nothing to repaint")
+	local was = quests.heard[102].Ironhide
+	quests.heard[102].Ironhide = { [1] = { index = 1, fulfilled = 1, required = 1, finished = true } }
+	local ran = quests.marks.calls
+	quests.marks:ScheduleUpdate(102)
+	check(quests.marks.calls == ran + 1,
+		"the hang on Questie's redraw swallowed the call it wraps")
+	for _, member in ipairs(Log.Quest(Log.Key({ id = 102 })).party) do
+		if member.name == "Ironhide" then
+			local _, finished = ns.QuestParty.Step(member, 1)
+			check(finished == true,
+				"Ironhide finished, Questie heard it, and the log still says he has not")
+		end
+	end
+	quests.heard[102].Ironhide = was
+
 	-- The row, which is where a player reads it. A number and not a count of
 	-- rows: the quest nobody else is on draws nothing at all, because nobody
 	-- having it and nothing being able to say are the same picture and only one

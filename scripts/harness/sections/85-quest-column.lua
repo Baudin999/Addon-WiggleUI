@@ -269,6 +269,57 @@ check(#drawn() == 4,
 seen[#seen + 1] = ("%s over %d rows"):format(Column.Describe(), #drawn())
 
 ----------------------------------------------------------------------
+-- The group on the tracker
+----------------------------------------------------------------------
+
+-- The same party 47-quest-log stands up, read off the same list the window
+-- draws. The Missing Diplomat gains a line naming who is on it, and a line per
+-- member Questie has heard from under its one objective: Ironhide and Sneaky.
+-- Lightwell is on it by the client's word alone, so she is named and gets no
+-- line under the objective. Seven rows where there were four.
+do
+	H.group.Set({
+		{ token = "player", you = true, guid = "Player-Tusksfirst",
+			name = "Tusksfirst", class = "WARRIOR" },
+		{ token = "party1", guid = "Player-Sneaky", name = "Sneaky", class = "ROGUE" },
+		{ token = "party2", guid = "Player-Bramblefoot",
+			name = "Bramblefoot", class = "DRUID" },
+		{ token = "party3", guid = "Player-Lightwell",
+			name = "Lightwell", class = "PRIEST" },
+		{ token = "party4", guid = "Player-Ironhide",
+			name = "Ironhide", class = "WARRIOR" },
+	}, false)
+	H.fire("GROUP_ROSTER_UPDATE")
+	Column.Refresh()
+
+	local lines = drawn()
+	local with, under = nil, 0
+	for _, line in ipairs(lines) do
+		if line:find("^with ") then
+			with = line
+		elseif line:find("Sneaky", 1, true) or line:find("Ironhide", 1, true) then
+			under = under + 1
+		end
+	end
+	check(with and with:find("Ironhide", 1, true) and with:find("Lightwell", 1, true)
+		and with:find("Sneaky", 1, true) and not with:find("Wanderer", 1, true),
+		("the tracker names the group on The Missing Diplomat as %q"):format(tostring(with)))
+	check(under == 2,
+		("%d member lines under the objective, where Questie heard from two of the group")
+			:format(under))
+	check(#lines == 7,
+		("the column drew %d rows in Elwynn Forest with the group on one quest, where it is seven")
+			:format(#lines))
+
+	H.group.Forget()
+	H.fire("GROUP_ROSTER_UPDATE")
+	Column.Refresh()
+	check(#drawn() == 4,
+		("the column drew %d rows after the group left, where it drew four before it came")
+			:format(#drawn()))
+end
+
+----------------------------------------------------------------------
 -- A header that is not a place
 ----------------------------------------------------------------------
 

@@ -210,6 +210,10 @@ end
 
 -- The ticked list: what the client draws in its own log, the kind of thing each
 -- line counts, and whether that line is done.
+--
+-- Each line keeps the client's own number for it. A blank line is skipped, so
+-- the position in this list is not always that number, and the number is what
+-- Questie files a party member's progress on the same objective under.
 function Client.Objectives(index)
 	return Client.Borrow(index, function()
 		local count = Call("GetNumQuestLeaderBoards") or 0
@@ -218,6 +222,7 @@ function Client.Objectives(index)
 			local text, kind, finished = Call("GetQuestLogLeaderBoard", at)
 			if type(text) == "string" and text ~= "" then
 				lines[#lines + 1] = {
+					index = at,
 					text = text,
 					kind = kind,
 					done = finished and true or false,

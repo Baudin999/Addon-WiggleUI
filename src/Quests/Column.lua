@@ -7,6 +7,7 @@ local UI = ns.UI
 local C = ns.UI.Color
 local M = ns.UI.Metric
 local Log = ns.QuestLog
+local Party = ns.QuestParty
 
 --------------------------------------------------------------------------
 -- The addon's own quest tracker
@@ -606,8 +607,30 @@ end
 -- Drawing
 --------------------------------------------------------------------------
 
+-- One line under a quest's name. The text is pointed at its indent on every
+-- paint rather than once when the row was made, because a pooled row that was a
+-- party member's line last paint may be an objective this one.
+local function Beneath(quest, line, text, shade, indent)
+	line = line + 1
+	local under = Take(lines, line, LINE_TEXT, indent)
+	under.quest = quest.id
+	under.text:SetPoint("LEFT", indent, 0)
+	under.text:SetText(text or "")
+	under.text:SetTextColor(shade[1], shade[2], shade[3])
+	under:Show()
+	stack:Add(under, { height = LINE })
+	return line
+end
+
 -- One quest's name and a row under it per thing the quest still wants. Answers
 -- the two counts it moved on, because the pools are trimmed on them.
+--
+-- The group is drawn off the quest's `party`, which Quests/Log.lua read through
+-- Quests/Party.lua: the same list the quest window draws, so the tracker and
+-- the window cannot name different people. Who is on it goes under the name,
+-- because the client can say who when Questie cannot say how far. How far goes
+-- under each objective, a line per member Questie has heard from, which is
+-- Questie's own tooltip on the column you are already reading.
 local function Quest(quest, head, line)
 	head = head + 1
 	local row = Take(heads, head, TITLE_TEXT, LEAD)
@@ -619,15 +642,20 @@ local function Quest(quest, head, line)
 	row:Show()
 	stack:Add(row, { height = TITLE })
 
-	for _, step in ipairs(Log.Objectives(quest.key) or {}) do
-		line = line + 1
-		local under = Take(lines, line, LINE_TEXT, LEAD + M.indent)
-		local shade = step.done and C.quiet or C.dim
-		under.quest = quest.id
-		under.text:SetText(step.text or "")
-		under.text:SetTextColor(shade[1], shade[2], shade[3])
-		under:Show()
-		stack:Add(under, { height = LINE })
+	local party = quest.party or {}
+	local with = Party.With(party)
+	if with then
+		line = Beneath(quest, line, with, C.quiet, LEAD + M.indent)
+	end
+
+	for at, step in ipairs(Log.Objectives(quest.key) or {}) do
+		line = Beneath(quest, line, step.text, step.done and C.quiet or C.dim, LEAD + M.indent)
+		for _, member in ipairs(party) do
+			local said, done = Party.Step(member, step.index or at)
+			if said then
+				line = Beneath(quest, line, said, done and C.quiet or C.dim, LEAD + M.indent * 2)
+			end
+		end
 	end
 	return head, line
 end
@@ -995,6 +1023,10 @@ events:RegisterEvent("ZONE_CHANGED_NEW_AREA")
 events:RegisterEvent("PLAYER_REGEN_DISABLED")
 events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:SetScript("OnEvent", OnEvent)
+
+-- A party member's count landing in Questie, which none of the client's events
+-- says. Quests/Party.lua says why it arrives after them.
+ns.QuestParty.OnHeard(Column.Refresh)
 
 -- A resolution change moves every size in this file at once, the same way it
 -- moves the experience rails and the swing bars.

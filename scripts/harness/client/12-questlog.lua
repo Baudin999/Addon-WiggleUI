@@ -593,24 +593,6 @@ knows.QueryItemSingle = function(id, field)
 	return asked(id, field)
 end
 
--- Questie's comms, which is the other half of who else is on a quest.
---
--- It hears from party members running Questie and nobody else, so it knows one
--- name the client's call does not know here and misses one the client has. The
--- window must end up with three and not four: Sneaky is in both answers and is
--- one person.
---
--- Tusksfirst is you in the party scripts/harness/sections/39-party-raid.lua
--- stands up. Questie hands your own name back with everyone else's, and a row
--- that counted it would say one party member is on every quest in your log.
-local talking = questie:ImportModule("QuestieComms")
-local HEARD = {
-	[102] = { Sneaky = {}, Tusksfirst = {}, Ironhide = {} },
-}
-talking.GetQuest = function(_, questId)
-	return HEARD[questId]
-end
-
 -- Questie's tracker, and the one function every route into the client's quest
 -- log goes through: the click on a tracked quest and the "Show in Quest Log"
 -- line of its right-click menu both land here. Counted rather than acted on, so
@@ -792,7 +774,6 @@ H.quests = {
 	-- How many times AddQuestWatch or RemoveQuestWatch has been called.
 	WatchCalls = function() return watchCalls end,
 	company = COMPANY,
-	heard = HEARD,
 	-- Put the cursor somewhere and record where, so a section can take a
 	-- reading through the window and then prove it came back.
 	Park = function(index)

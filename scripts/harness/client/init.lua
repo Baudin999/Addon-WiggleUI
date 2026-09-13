@@ -228,6 +228,11 @@ for _, part in ipairs({
 	-- file wraps nothing. It asks for one frame through the region helper and
 	-- installs plain functions on _G beside it.
 	"12-questlog",
+	-- After 12-questlog, because it adds two handles to the H.quests that file
+	-- builds and answers the quest ids that file's log holds. It installs
+	-- Questie's copy of the party's logs over 05-quests' loader stub, which is
+	-- the half of who else is on a quest the client's own call cannot say.
+	"12-quest-party",
 	-- Last, and it reads what 03-player and 04-hands left: the item table it
 	-- adds four pieces of gear to, and the worn table 04-hands answers every
 	-- slot that is not a hand out of. One GetInventoryItemLink in this client

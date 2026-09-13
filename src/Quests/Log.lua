@@ -84,10 +84,11 @@ local UNSORTED = "Elsewhere"
 -- draws a share mark on the rows that can take one, and that is a question per
 -- quest on every rebuild.
 --
--- Who else in the group is on it comes off Quests/Party.lua, which asks the
--- client and Questie and merges what both say. Both are read here rather than
--- in Detail, because both belong to the row in the left column and Detail is
--- only ever asked about the one quest you are reading.
+-- Who else in the group is on it, and how far along, comes off
+-- Quests/Party.lua, which asks the client and Questie and merges what both say.
+-- Both are read here rather than in Detail, because the row in the left column
+-- and every quest on the tracker draw it, and Detail is only ever asked about
+-- the one quest you are reading. This is the one read both drawings share.
 local function Company(quests)
 	local indices = {}
 	for at = 1, #quests do
@@ -98,7 +99,7 @@ local function Company(quests)
 	for at = 1, #quests do
 		local quest = quests[at]
 		quest.shareable = pushable[quest.index] and true or false
-		quest.party = Party.On(quest.id, quest.index)
+		quest.party = Party.Members(quest.id, quest.index)
 	end
 	return quests
 end

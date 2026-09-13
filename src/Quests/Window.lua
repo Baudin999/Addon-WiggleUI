@@ -6,6 +6,7 @@ ns.QuestWindow = Window
 local UI = ns.UI
 local C, M = UI.Color, UI.Metric
 local Log, Where, Chart = ns.QuestLog, ns.QuestWhere, UI.Chart
+local Party = ns.QuestParty
 
 --------------------------------------------------------------------------
 -- The quest log
@@ -222,26 +223,30 @@ end
 -- opts.icon     a texture in the left column, at SLOT wide
 -- opts.mark     a character in the left column, at MARK wide
 -- opts.markColor  what that character is drawn in
+-- opts.indent   air left of the mark, for a line that belongs to the one above
 -- opts.link     an item link, which turns the line into a hover
 -- opts.name     the title that hover carries
 local function Line(column, opts)
 	column.at = column.at + 1
 	local row = Cell(column, column.at)
 	local size = opts.size or M.font
-	local left = 0
+	local indent = opts.indent or 0
+	local left = indent
 
 	row.icon:SetShown(opts.icon and true or false)
 	if opts.icon then
 		row.icon:SetTexture(opts.icon)
-		left = SLOT + M.rowGap
+		left = indent + SLOT + M.rowGap
 	end
 
 	row.mark:SetShown(opts.mark and true or false)
 	if opts.mark then
 		local color = opts.markColor or C.quiet
+		row.mark:ClearAllPoints()
+		row.mark:SetPoint("TOPLEFT", indent, 0)
 		row.mark:SetText(opts.mark)
 		row.mark:SetTextColor(color[1], color[2], color[3])
-		left = MARK + M.rowGap
+		left = indent + MARK + M.rowGap
 	end
 
 	row.text:ClearAllPoints()
@@ -475,13 +480,13 @@ end
 -- correct: a hover that said "nobody" would be inventing the reading.
 local function Company(row)
 	local quest = Log.Quest(row.id)
-	local names = quest and quest.party or nil
-	if not names or #names == 0 then
+	local members = quest and quest.party or nil
+	if not members or #members == 0 then
 		return nil
 	end
 	local lines = {}
-	for at = 1, #names do
-		lines[at] = { names[at] }
+	for at = 1, #members do
+		lines[at] = { members[at].name }
 	end
 	return { kind = "note", title = quest.title, lines = lines }
 end
@@ -528,16 +533,37 @@ end
 -- ticked list at all. One or the other, never both: the summary is the same
 -- sentence the objectives spell out, so a quest with objectives that also drew
 -- it would be saying the thing twice under one heading.
+--
+-- Under each objective, a line per party member Questie has heard from on it:
+-- their name in their class colour and their count, ticked the same way yours
+-- is. That is Questie's own tooltip, drawn where you read the objective rather
+-- than over a boar. The members come off the log's read through
+-- Quests/Party.lua, the same list the tracker draws, and are matched on the
+-- client's objective number rather than the line's place in this list.
 local function Ticks(detail)
 	if #detail.objectives > 0 then
+		local party = detail.quest.party or {}
 		local lines = {}
-		for _, line in ipairs(detail.objectives) do
+		for at, line in ipairs(detail.objectives) do
 			lines[#lines + 1] = {
 				text = line.text,
 				color = line.done and C.dim or C.text,
 				mark = line.done and TICK or "-",
 				markColor = line.done and C.tick or C.quiet,
 			}
+			for _, member in ipairs(party) do
+				local said, done = Party.Step(member, line.index or at)
+				if said then
+					lines[#lines + 1] = {
+						text = said,
+						size = M.small,
+						color = done and C.dim or C.text,
+						mark = done and TICK or "-",
+						markColor = done and C.tick or C.quiet,
+						indent = MARK + M.rowGap,
+					}
+				end
+			end
 		end
 		return lines
 	end
@@ -545,6 +571,20 @@ local function Ticks(detail)
 		return { { text = detail.summary } }
 	end
 	return {}
+end
+
+-- Who else in the group is on this quest, a name a line in their class colour.
+--
+-- Every member rather than the ones Questie heard from, because the lines under
+-- the objectives are only ever those, and the party member with no addons is
+-- on the quest all the same: the client said so. It is the row's number and its
+-- hover, said in the column you are reading.
+local function Along(quest)
+	local lines = {}
+	for _, member in ipairs(quest.party or {}) do
+		lines[#lines + 1] = { text = Party.Named(member), size = M.small }
+	end
+	return lines
 end
 
 local function DrawPage(detail)
@@ -568,6 +608,7 @@ local function DrawPage(detail)
 	})
 
 	Block(page, "objectives", Ticks(detail))
+	Block(page, "your party", Along(detail.quest))
 	Block(page, "the quest",
 		detail.description ~= "" and { { text = detail.description, color = C.dim } } or {})
 
@@ -1448,3 +1489,6 @@ events:SetScript("OnEvent", function(_, event)
 	Window.Refresh()
 end)
 
+-- A party member's count landing in Questie, which none of the four events
+-- above says. Quests/Party.lua says why it arrives after them.
+Party.OnHeard(Window.Refresh)
