@@ -176,7 +176,7 @@ local UNIT_FRAMES = {
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("PLAYER_TARGET_CHANGED")
-events:SetScript("OnEvent", function(_, event, arg1)
+events:SetScript("OnEvent", function(_, event)
 	if event == "PLAYER_LOGIN" then
 		for _, name in ipairs(UNIT_FRAMES) do
 			Hook(_G[name])

@@ -728,14 +728,10 @@ _G.C_NamePlate = {
 			if p.namePlateUnitToken == unit then return p end
 		end
 	end,
-	-- The client resizes every enemy plate it has when told, and that is not a
-	-- detail: the bars read a plate's width to size themselves, so a stub that
-	-- only records the call cannot see a bar sizing itself off its own last
-	-- answer. Plates put up later start at the size in force, the same way.
-	--
-	-- SetNamePlateSize, the name 2.5.6 and 1.15.9 both document. This stub
-	-- carried the retail SetNamePlateEnemySize, so the size check passed
-	-- against a call neither client has while no plate in the game was sized.
+	-- Every plate is resized when told and later ones start at the size in
+	-- force, because the bars size themselves off a plate's width. The name is
+	-- the one 2.5.6 and 1.15.9 document: the retail SetNamePlateEnemySize this
+	-- stub carried passed a size check against a call neither client has.
 	SetNamePlateSize = function(w, h)
 		plateSize[1], plateSize[2] = w, h
 		for _, p in ipairs(plates) do

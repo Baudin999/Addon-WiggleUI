@@ -3,30 +3,20 @@
 -- Four questions no amount of reading Quests/Column.lua will answer.
 --
 -- Does the scope move when you walk. The tracker is the quests the client filed
--- under the place you are standing in, and the whole of that is one string
--- compared against another. Both come off this client, so a comparison that had
--- drifted onto an area id, a map id or Questie's name for the zone would still
--- draw a column: it would draw the wrong one, in the one place a reader has no
--- way to check it, and only ever in a zone nobody wrote the fixture for.
+-- under where you stand, one string compared against another, and a comparison
+-- that drifted onto an area id, a map id or Questie's zone name would still draw
+-- a column: the wrong one, in a zone nobody wrote the fixture for.
 --
--- Does a header that is not a place take everything off it. The client's log
--- header is a sort category rather than a zone, so standing somewhere no header
--- names has to leave an empty tracker rather than the last zone's quests, and
--- an empty tracker is hidden rather than drawn as a rectangle of shade.
+-- Does a header that is not a place take everything off it. Standing where no
+-- log header names leaves an empty tracker, hidden rather than drawn as shade.
 --
--- Does the drawing follow the model. Column.Quests answering two quests and the
--- column drawing one is a whole class of bug that reads correctly from inside
--- the file, so the rows are counted off the frames rather than off the list.
+-- Does the drawing follow the model. The rows are counted off the frames rather
+-- than off Column.Quests, because two quests answered and one drawn reads
+-- correctly from inside the file.
 --
--- And does a click reach the window. Clicking a row is Quests/Tracker.lua's
--- existing swap arriving from this addon's own frame instead of Questie's, and
--- the failure worth catching is the one that already shipped once: the gesture
--- going to Blizzard's log in the attic rather than to the window that is
--- actually on the screen.
---
--- Everything this moves is put back at the foot of the file: where you are
--- standing, the tracker switch, the lock, the pin on one quest and the whole of
--- the log.
+-- And does a click reach the window on the screen rather than Blizzard's log in
+-- the attic, which already shipped once. Everything this moves, from where you
+-- stand to the log itself, is put back at the foot of the file.
 
 local H = ...
 local ns, check = H.ns, H.check
@@ -85,17 +75,10 @@ local function canvas()
 	return nil
 end
 
--- What the column is drawing, top down, as one string per quest row on the
--- screen.
---
--- Off the frames rather than off Column.Quests, which is the point: a scope
--- that answered correctly and a paint that drew last zone's rows would pass
--- every assertion made against the model.
---
--- Quest rows only. A harmonica puts a plate per zone in the same stack, and a
--- count of rows that swept those in would be counting the control along with
--- the thing it controls. A row carrying a quest id is a quest's name or one of
--- its objectives, which is exactly what every count in this file is about.
+-- What the column is drawing, top down, one string per quest row. Off the
+-- frames rather than off Column.Quests, so a right scope with a stale paint
+-- fails here. Quest rows only: a harmonica plate per zone sits in the same
+-- stack, and a row carrying a quest id is a name or an objective.
 local function drawn()
 	local out = {}
 	for _, row in ipairs(canvas().children) do
@@ -534,18 +517,12 @@ end
 ----------------------------------------------------------------------
 -- The zones
 --
--- Five questions the file cannot answer. Are the zones your log has quests in
--- the ones drawn, rather than the zones the client has maps of. Does pressing
--- one draw that zone from anywhere. Does walking somewhere new take the choice
--- back, and does walking somewhere with no quests in it leave it alone.
---
--- Is the shape the setting's. There are two and only one is on the screen at a
--- time: the harmonica draws a plate per zone into the same stack the quests are
--- in, and the turned strip draws a tab per zone beside it. The failure worth
--- catching is both at once, which reads from inside either file as correct.
---
--- And is the label turned when it is a strip, because one that fell back to
--- upright labels is fifteen pixels wide in the file and a hundred and ten on
+-- Are the zones drawn the ones your log has quests in, rather than the ones the
+-- client has maps of. Does pressing one draw that zone from anywhere, does
+-- walking somewhere new take the choice back, and does walking somewhere with
+-- no quests leave it alone. Is only the setting's shape on the screen, the
+-- harmonica's plates or the turned strip's tabs and never both. And is a
+-- strip's label turned, since an upright one is 15 px in the file and 110 on
 -- the screen.
 ----------------------------------------------------------------------
 
@@ -735,20 +712,13 @@ do
 	ns.QuestWindow.Hide()
 	ns.QuestWindow.Showing(Log.Zones()[1].quests[1].key)
 
-	-- Two halves, and the press is not aimed at a point on the screen.
-	--
-	-- Which frame the client hands a press to is a fact about everything on the
-	-- screen, and the fixtures put a cloned action bar over the corner this
-	-- tracker ships in. That is a fact about the harness's scene rather than
-	-- about the tracker, and a section that moved the frame until nothing was
-	-- over it would be asserting where the other fixtures stand.
-	--
-	-- So the hit test is asked of the tracker alone, which is the question worth
-	-- asking here: the wash is a texture, the stack's frame takes no mouse, and
-	-- the row is what a press inside this column lands on. Both of those are
-	-- true until somebody changes one. Then the press itself goes through
-	-- Region:Click, which is the client's own call and runs the registration,
-	-- the pass-through and both edges the way a real press does.
+	-- Two halves, and the press is not aimed at a point on the screen. The
+	-- fixtures put a cloned action bar over the corner this tracker ships in,
+	-- which is a fact about the harness's scene, so the hit test is asked of the
+	-- tracker alone: the wash is a texture, the stack takes no mouse, and the row
+	-- is what a press inside the column lands on. The press itself then goes
+	-- through Region:Click, which runs the registration, the pass-through and
+	-- both edges the way a real press does.
 	local target = row("The Defias Brotherhood")
 	local x, y = mouse.Point(target)
 	check(mouse.Within(frame, x, y, "LeftButton") == target,

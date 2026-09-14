@@ -191,7 +191,17 @@ end
 -- runs the driver's whole options pass from addon code and taints every plate
 -- it touches. Only while a size of ours is in force: with the bars off the
 -- driver's figure is the right one.
+--
+-- Named rather than written into the hook, because Plates.Apply is on a tick
+-- path and a closure built there is an allocation check.sh refuses, early
+-- return or not.
 local hooked
+local function Resized()
+	if sizeApplied and not ApplySize() then
+		pending = true -- refused in combat, and PLAYER_REGEN_ENABLED flushes it
+	end
+end
+
 local function HookDriver()
 	if hooked or type(hooksecurefunc) ~= "function" then
 		return
@@ -201,11 +211,7 @@ local function HookDriver()
 		return
 	end
 	hooked = true
-	hooksecurefunc(driver, "UpdateNamePlateSize", function()
-		if sizeApplied and not ApplySize() then
-			pending = true -- refused in combat, and PLAYER_REGEN_ENABLED flushes it
-		end
-	end)
+	hooksecurefunc(driver, "UpdateNamePlateSize", Resized)
 end
 
 -- Only on the fallback path. Where the size call took, the driver already knows

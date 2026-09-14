@@ -524,23 +524,25 @@ check(ns.MeterThreat.Soonest() == nil, "a member whose threat is falling was pro
 -- A pet is sampled on its own. Its damage lands on its owner, but the mob it
 -- pulls is pulled by the pet, so it is ranked under its own name in its
 -- owner's colour.
-threatPct.partypet1 = 60
-ns.MeterThreat.Update()
-local withPet = ns.MeterThreat.Rank()
-check(#withPet == 4, ("%d rows with the pet on the mob, expected 4"):format(#withPet))
-local petRow
-for _, slot in ipairs(withPet) do
-	if slot.guid == PET then
-		petRow = slot
+do
+	threatPct.partypet1 = 60
+	ns.MeterThreat.Update()
+	local withPet = ns.MeterThreat.Rank()
+	check(#withPet == 4, ("%d rows with the pet on the mob, expected 4"):format(#withPet))
+	local petRow
+	for _, slot in ipairs(withPet) do
+		if slot.guid == PET then
+			petRow = slot
+		end
 	end
+	check(petRow ~= nil and petRow.pct == 60, "the hunter's pet has threat on the mob and no row")
+	local petName, petClass = ns.Unit.Roster.Who(PET)
+	check(petName == "Wolf" and petClass == "HUNTER",
+		("the pet's row is %s the %s"):format(tostring(petName), tostring(petClass)))
+	threatPct.partypet1 = nil
+	ns.MeterThreat.Update()
+	check(#ns.MeterThreat.Rank() == 3, "a pet with no threat left kept its row")
 end
-check(petRow ~= nil and petRow.pct == 60, "the hunter's pet has threat on the mob and no row")
-local petName, petClass = ns.Unit.Roster.Who(PET)
-check(petName == "Wolf" and petClass == "HUNTER",
-	("the pet's row is %s the %s"):format(tostring(petName), tostring(petClass)))
-threatPct.partypet1 = nil
-ns.MeterThreat.Update()
-check(#ns.MeterThreat.Rank() == 3, "a pet with no threat left kept its row")
 
 ----------------------------------------------------------------------
 -- What ends up on the rows
