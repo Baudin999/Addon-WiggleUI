@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GEPTX2BXPETY7D4E843HDD
 type: task
-status: todo
+status: doing
 title: The loot feed's filter strip is ugly and has no reset
 ---
 
