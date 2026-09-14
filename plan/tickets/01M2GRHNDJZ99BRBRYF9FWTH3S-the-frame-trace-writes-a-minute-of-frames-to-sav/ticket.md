@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GRHNDJZ99BRBRYF9FWTH3S
 type: task
-status: doing
+status: done
 title: The frame trace writes a minute of frames to saved variables
 ---
 
