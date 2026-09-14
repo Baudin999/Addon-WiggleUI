@@ -54,6 +54,13 @@ local known = {}
 -- and the enemy bars can walk it without pairs and without building anything.
 local order = {}
 
+-- The same walk with each member's pet straight after them. Threat is the one
+-- question a pet answers for itself: its damage is its owner's, but the mob it
+-- pulls is pulled by the pet, and a meter that folds it into the hunter cannot
+-- show you the wolf about to take the boss. Kept apart from `order` because the
+-- party frames and the quest party walk that one, and a pet there is a tile.
+local fighters = {}
+
 local UnitClass = UnitClass
 local UnitGUID = UnitGUID
 local UnitName = UnitName
@@ -85,6 +92,7 @@ local function Add(unit, petUnit)
 
 	units[guid] = unit
 	order[#order + 1] = unit
+	fighters[#fighters + 1] = unit
 	local _, class = UnitClass(unit)
 	Note(guid, UnitName(unit), class)
 
@@ -93,6 +101,10 @@ local function Add(unit, petUnit)
 		if petGuid then
 			owners[petGuid] = guid
 			units[petGuid] = petUnit
+			fighters[#fighters + 1] = petUnit
+			-- The owner's class, not the pet's, so the row is drawn in the
+			-- hunter's colour and reads as the hunter's rather than a stranger's.
+			Note(petGuid, UnitName(petUnit), class)
 		end
 	end
 end
@@ -111,6 +123,9 @@ function Roster.Build()
 	wipe(owners)
 	for index = #order, 1, -1 do
 		order[index] = nil
+	end
+	for index = #fighters, 1, -1 do
+		fighters[index] = nil
 	end
 
 	Add("player", "pet")
@@ -147,6 +162,12 @@ end
 -- than copied, because the only two callers walk it and neither writes to it.
 function Roster.Units()
 	return order
+end
+
+-- The units in the group and their pets, player first and each pet after its
+-- owner. Handed out the same way and for the same reason as Units.
+function Roster.Fighters()
+	return fighters
 end
 
 function Roster.UnitFor(guid)

@@ -11,7 +11,8 @@ ns.MeterThreat = ThreatMeter
 -- whoever is holding it: 100 means this player pulls, and the client has
 -- already folded in the melee and ranged thresholds, the tank's own total and
 -- every talent that moves either. Nothing here recomputes any of that. It
--- samples that one number per member and does two things the client will not.
+-- samples that one number per member and per pet, and does two things the
+-- client will not.
 --
 -- It sorts, so the pane is a list rather than five separate questions.
 --
@@ -155,7 +156,7 @@ function ThreatMeter.Update()
 
 	local now = GetTime()
 	tanking = nil
-	local units = ns.Unit.Roster.Units()
+	local units = ns.Unit.Roster.Fighters()
 	for index = 1, #units do
 		Sample(units[index], now)
 	end
@@ -176,7 +177,7 @@ end
 -- Meter.Rank: an array this file already owns, filled and sorted in place.
 function ThreatMeter.Rank()
 	local count = 0
-	local units = ns.Unit.Roster.Units()
+	local units = ns.Unit.Roster.Fighters()
 	for index = 1, #units do
 		local slot = slots[UnitGUID(units[index]) or ""]
 		if slot and slot.live then

@@ -183,7 +183,7 @@ local TOTEM = "Creature-0-0000-000-totem"
 
 guids.player, unitClass.player, unitName.player = BAUDIN, "WARRIOR", "Baudin"
 guids.party1, unitClass.party1, unitName.party1 = SNEAKY, "HUNTER", "Sneakyman"
-guids.partypet1 = PET
+guids.partypet1, unitName.partypet1 = PET, "Wolf"
 guids.party2, unitClass.party2, unitName.party2 = FROST, "PRIEST", "Frostbite"
 realPlayers.party1, realPlayers.party2 = true, true
 fire("GROUP_ROSTER_UPDATE")
@@ -521,6 +521,27 @@ threatPct.party1 = 20
 ns.MeterThreat.Update()
 check(ns.MeterThreat.Soonest() == nil, "a member whose threat is falling was projected to pull")
 
+-- A pet is sampled on its own. Its damage lands on its owner, but the mob it
+-- pulls is pulled by the pet, so it is ranked under its own name in its
+-- owner's colour.
+threatPct.partypet1 = 60
+ns.MeterThreat.Update()
+local withPet = ns.MeterThreat.Rank()
+check(#withPet == 4, ("%d rows with the pet on the mob, expected 4"):format(#withPet))
+local petRow
+for _, slot in ipairs(withPet) do
+	if slot.guid == PET then
+		petRow = slot
+	end
+end
+check(petRow ~= nil and petRow.pct == 60, "the hunter's pet has threat on the mob and no row")
+local petName, petClass = ns.Unit.Roster.Who(PET)
+check(petName == "Wolf" and petClass == "HUNTER",
+	("the pet's row is %s the %s"):format(tostring(petName), tostring(petClass)))
+threatPct.partypet1 = nil
+ns.MeterThreat.Update()
+check(#ns.MeterThreat.Rank() == 3, "a pet with no threat left kept its row")
+
 ----------------------------------------------------------------------
 -- What ends up on the rows
 ----------------------------------------------------------------------
@@ -665,6 +686,7 @@ print(("meters %d rows, %.0f x %.0f px, %d damage and %d threat, %.2f KB per 50 
 
 state.threatReader = nil
 guids.player, guids.party1, guids.partypet1, guids.party2, guids.target = nil, nil, nil, nil, nil
+unitName.partypet1 = nil
 unitClass.player, unitClass.party1, unitClass.party2 = nil, nil, nil
 unitName.player, unitName.party1, unitName.party2 = nil, nil, nil
 realPlayers.party1, realPlayers.party2 = nil, nil
