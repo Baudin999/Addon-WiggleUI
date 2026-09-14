@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GHRV0P20TPXTHQQ5A5SKZB
 type: bug
-status: todo
+status: doing
 title: A pet has no row in the threat meter
 ---
 
