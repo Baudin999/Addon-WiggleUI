@@ -86,6 +86,7 @@ ns.Tip = Tip
 local READS = {
 	item      = { "link" },
 	action    = { "slot" },
+	pet       = { "slot" },
 	spell     = { "spell" },
 	buff      = { "unit", "index" },
 	debuff    = { "unit", "index" },
@@ -97,7 +98,7 @@ local READS = {
 -- Every kind a subject may name. `note` is here and not above because it is a
 -- real kind that a source can register against; it simply has no client text.
 local KINDS = {
-	note = true, item = true, action = true, spell = true,
+	note = true, item = true, action = true, pet = true, spell = true,
 	buff = true, debuff = true, inventory = true, unit = true,
 	talent = true,
 }

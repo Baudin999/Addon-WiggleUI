@@ -637,3 +637,41 @@ _G.CombatTextTypeInfo = {
 	COMBO_POINTS = { r = 0.1, g = 0.1, b = 1, cvar = "floatingCombatTextComboPoints_v2" },
 	ENERGIZE = { r = 0.1, g = 0.1, b = 1, cvar = "floatingCombatTextEnergyGains_v2" },
 }
+
+--------------------------------------------------------------------------
+-- The pet bar
+--
+-- PetActionBar with its ten PetActionButtonN, named and nested the way
+-- Blizzard_ActionBar/Shared/ActionBar.lua names them on classic_anniversary,
+-- and the four calls Buttons/Pet.lua reads a slot with. A slot is a record in
+-- H.petSlots and nil is an empty slot. The returns are in the order
+-- Shared/PetActionBar.lua reads them, nine of them with the spell id seventh.
+--------------------------------------------------------------------------
+
+do
+	local petBar = region("frame", _G.UIParent, "PetActionBar")
+	for index = 1, 10 do
+		region("button", petBar, "PetActionButton" .. index)
+	end
+
+	local petSlots = {}
+	H.petSlots = petSlots
+
+	_G.GetPetActionInfo = function(slot)
+		local s = petSlots[slot]
+		if not s then
+			return nil
+		end
+		return s.name, s.texture, s.token, s.active, s.autoAllowed, s.autoOn,
+			nil, s.checksRange, s.inRange
+	end
+	_G.GetPetActionCooldown = function(slot)
+		local s = petSlots[slot]
+		return s and s.start or 0, s and s.duration or 0, 1
+	end
+	_G.GetPetActionSlotUsable = function(slot)
+		local s = petSlots[slot]
+		return s ~= nil and s.usable ~= false
+	end
+	_G.PickupPetAction = function() end
+end

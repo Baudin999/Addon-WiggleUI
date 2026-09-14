@@ -30,6 +30,7 @@ local ROWS = {
 	{ key = "swing", label = "swing timer", hz = 60, rate = "every frame" },
 	{ key = "icon", label = "charge icon", hz = 10 },
 	{ key = "action", label = "action bars", hz = 10 },
+	{ key = "pet", label = "pet bar", hz = 10 },
 	{ key = "bars", label = "enemy bars", hz = 1 },
 	{ key = "cast", label = "enemy cast fills", hz = 60, rate = "every frame" },
 	{ key = "playercast", label = "your cast bar", hz = 60, rate = "every frame" },

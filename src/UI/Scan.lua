@@ -85,10 +85,15 @@ local NAME = "WarriorKitTooltipScan"
 -- after it on that one. Talents/Read.lua asks both ways once and keeps the
 -- one that wrote the talent's name on its first line, which is why this entry
 -- says nothing about what the two values are.
+--
+-- `pet` is a slot on the pet bar, one to ten, which is a numbering of its own
+-- and not an action slot. SetPetAction is what Blizzard's own pet button hovers
+-- with in Blizzard_ActionBar/Shared/PetActionBar.lua.
 local KINDS = {
 	item      = { method = "SetHyperlink",     args = 1 },
 	bag       = { method = "SetBagItem",       args = 2 },
 	action    = { method = "SetAction",        args = 1 },
+	pet       = { method = "SetPetAction",     args = 1 },
 	spell     = { method = "SetSpellByID",     args = 1 },
 	buff      = { method = "SetUnitBuff",      args = 2 },
 	debuff    = { method = "SetUnitDebuff",    args = 2 },

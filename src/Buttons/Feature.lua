@@ -58,6 +58,11 @@ end
 local function SetBars(value)
 	ns.db.actionBars = value and true or false
 	local complete = ns.Bars.Apply()
+	-- The pet bar follows the same switch. Buttons/Pet.lua says why it is not
+	-- a sixth bar in the plan.
+	if not ns.PetBar.Apply() then
+		complete = false
+	end
 	ns.Print("action bars " .. (ns.db.actionBars and "cloned" or "handed back")
 		.. ": " .. ns.Bars.Describe() .. ".")
 	if not complete then
@@ -483,6 +488,11 @@ ns.Register({
 		-- drops it again once you have.
 		barPoints = {},
 
+		-- Where the pet bar stands until it is dragged: centred, on top of the
+		-- bottom right bar, which Buttons/Which.lua puts at 150 and which is 33
+		-- high with its pad.
+		petBarPoint = { "BOTTOM", "UIParent", "BOTTOM", 0, 184 },
+
 		-- What each bar looks like and when it is up, keyed by the plan's bar
 		-- key: the rows the twelve fold into, the colour and the opacity of the
 		-- ground under them, whether the bar goes down in combat and which key
@@ -527,6 +537,7 @@ ns.Register({
 	-- bars are the one part of the addon you cannot drag.
 	lock = function()
 		ns.Bars.ApplyLock()
+		ns.PetBar.Lock()
 	end,
 
 	-- The options window, opened and closed. The page above marks whichever bar
@@ -570,6 +581,7 @@ ns.Register({
 						dropped, dropped == 1 and "" or "s"))
 			else
 				ns.Print("action bars: " .. ns.Bars.Describe() .. ".")
+				ns.Print("pet bar: " .. ns.PetBar.Describe() .. ".")
 				ns.Print("actionbars on clones every bar you have, with its keys, and hides Blizzard's. actionbars off gives them back.")
 				ns.Print("tick bars one at a time in the panel, or actionbars match to follow your own again.")
 				ns.Print("/wk unlock to drag them, actionbars where to print what you dragged, actionbars reset to undo it.")
@@ -620,6 +632,7 @@ ns.Register({
 	status = function()
 		local ranks = ("%d slots holding an older rank"):format(#ns.Ranks.Stale())
 		local bars = "bars " .. ns.Bars.Describe()
+			.. " | pet bar " .. ns.PetBar.Describe()
 		-- The reaction windows are here because the only way to check their
 		-- length against the live client is to read the seconds off a status
 		-- line while something is dodging you. Nothing else in the addon can

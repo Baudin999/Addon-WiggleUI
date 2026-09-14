@@ -289,6 +289,8 @@ read_globals = {
 	-- confirmed to exist on 2.5.6 by an installed addon calling it, so Layout
 	-- probes for them before it writes anything.
 	"PickupSpell", "PickupMacro", "PickupItem", "PlaceAction", "PickupAction",
+	-- the pet bar's slot, its cooldown, whether the pet can act on it, and the drag
+	"GetPetActionInfo", "GetPetActionCooldown", "GetPetActionSlotUsable", "PickupPetAction",
 	"ClearCursor", "GetCursorInfo", "GetActionInfo",
 	"CreateMacro", "DeleteMacro", "EditMacro", "GetMacroInfo",
 	"GetMacroIndexByName", "GetNumMacros", "GetBonusBarOffset",

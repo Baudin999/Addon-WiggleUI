@@ -95,6 +95,10 @@ local PER_BAR = 12
 local GAP = 2
 local PAD = 3
 
+-- Handed out for Buttons/Pet.lua, so the pet bar is spaced as one of these bars
+-- rather than by a second copy of the two numbers.
+Bars.GAP, Bars.PAD = GAP, PAD
+
 
 --------------------------------------------------------------------------
 -- State

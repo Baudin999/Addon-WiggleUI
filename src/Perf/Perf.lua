@@ -64,7 +64,7 @@ local SAMPLE_RATE = 1.0
 -- the two most expensive shapes a tick can have were invisible on the tab
 -- written to find them. scripts/check.sh compares this list against every
 -- ns.UI.Ticker call in the addon now, in both directions.
-local ORDER = { "marker", "swing", "icon", "action", "bars", "cast", "playercast",
+local ORDER = { "marker", "swing", "icon", "action", "pet", "bars", "cast", "playercast",
 	"castsweep", "tip", "settle", "fresh", "chart", "skin", "skinread", "party",
 	"partyread", "meter",
 	"buffs", "cooldowns", "standing", "stream", "world", "trace", "hide", "clock", "bagstack",

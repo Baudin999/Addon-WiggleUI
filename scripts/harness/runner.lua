@@ -237,6 +237,9 @@ local SECTIONS = {
 	-- a pass of their ticker costs, which is a different question from whether
 	-- the squares are right.
 	"05-bars-tick",
+	-- After the bars, and it stands the pet bar up beside them under the same
+	-- switch. It puts the switch and the slots back the way it found them.
+	"05-pet-bar",
 	"06-debuff-row",
 	"07-tracked-debuff",
 	"08-bars-zoom",

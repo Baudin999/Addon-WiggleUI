@@ -439,6 +439,7 @@ Buttons\Which.lua
 # rather than a setting the addon can act on itself.
 Buttons\Look.lua
 Buttons\Bars.lua
+Buttons\Pet.lua
 
 # The trace, before the squares that print through it. Read only and off unless
 # asked for: what the client says is under the cursor, and every gesture a
