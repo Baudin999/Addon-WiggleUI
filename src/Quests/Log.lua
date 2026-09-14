@@ -67,6 +67,39 @@ function Log.Key(quest)
 	return ("t%s"):format(quest.title or "")
 end
 
+-- One quest's words. The level first, because a column grouped by zone is still
+-- read down the level: what you can do now and what you came back for later is
+-- the first cut anybody makes over a quest log.
+--
+-- An elite quest carries a "+" inside the brackets, which is the same suffix
+-- Unit/Level.lua puts on an elite mob's level and is read the same way: a level
+-- you cannot take alone. The tag is ns.QuestWhere.Tag's answer and is handed in
+-- rather than asked here, because Where loads after this file and the window
+-- reads the same tag again for its tagline.
+--
+-- Here rather than in the window because the tracker draws the same quest, and
+-- a tracker that spelled it differently was a quest read two ways.
+function Log.Label(quest, tag)
+	local elite = tag ~= nil and tag == ns.QuestWhere.Elite
+	return ("[%d%s] %s"):format(quest.level or 0, elite and "+" or "", quest.title or "")
+end
+
+-- The colour a quest is drawn in. Green for a quest you can hand in, red for one
+-- that has failed, and the client's own XP ladder for everything else, which is
+-- the same ladder the enemy bars colour a mob's level with. A quest that says
+-- "this one is finished" and "this one will kill you" in colour is a quest you
+-- can read without reading it. The window and the tracker both draw this.
+function Log.Tint(quest)
+	local C = ns.UI.Color
+	if quest.complete then
+		return C.tick
+	end
+	if quest.failed then
+		return C.loss
+	end
+	return ns.Unit.Level.WorthOf(quest.level)
+end
+
 -- The heading a quest with no header above it goes under.
 --
 -- The client does not produce one on either of these builds, so this is the

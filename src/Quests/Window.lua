@@ -371,35 +371,6 @@ local function MarkTint(quest)
 	return C.quiet
 end
 
--- One row's words. The level first, because a column grouped by zone is still
--- read down the level: what you can do now and what you came back for later is
--- the first cut anybody makes over a quest log.
---
--- An elite quest carries a "+" inside the brackets, which is the same suffix
--- Unit/Level.lua puts on an elite mob's level and is read the same way: a level
--- you cannot take alone. It goes on the row rather than only in the line under
--- the title because the question it answers is asked while scanning the column,
--- not after clicking. Every other tag is a word and is left to Tagline, which
--- has room for words.
-local function Label(quest, tag)
-	return ("[%d%s] %s"):format(quest.level, tag == Where.Elite and "+" or "", quest.title)
-end
-
--- The colour a row is drawn in. Green for a quest you can hand in, red for one
--- that has failed, and the client's own XP ladder for everything else, which is
--- the same ladder the enemy bars colour a mob's level with. A quest log that
--- says "this one is finished" and "this one will kill you" in colour is a quest
--- log you can read without reading it.
-local function Tint(quest)
-	if quest.complete then
-		return C.tick
-	end
-	if quest.failed then
-		return C.loss
-	end
-	return ns.Unit.Level.WorthOf(quest.level)
-end
-
 -- One quest's row, wherever it is drawn. A pinned quest is drawn twice and both
 -- drawings are the same row: same id, same colour, same marks. That is what
 -- makes the duplicate harmless to the list, which keeps its selection by id and
@@ -414,8 +385,8 @@ local function Row(quest)
 	local tag = Where.Tag(quest.id)
 	return {
 		id = quest.key,
-		label = Label(quest, tag),
-		color = Tint(quest),
+		label = Log.Label(quest, tag),
+		color = Log.Tint(quest),
 		mark = Mark(quest),
 		markColor = MarkTint(quest),
 		-- How many of the people you are playing with are on this one. Absent

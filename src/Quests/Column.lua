@@ -276,19 +276,6 @@ local function Pinned(quest)
 	return quest.pinned and true or false
 end
 
--- What colour a quest's name is drawn in. Ready to hand in and about to kill
--- you are the two things a tracker is read for at a glance, so both of them get
--- a colour and everything else is body text.
-local function Tone(quest)
-	if quest.complete then
-		return C.heading
-	end
-	if quest.failed then
-		return C.loss
-	end
-	return C.text
-end
-
 -- The area a zone's quests are filed under, or nothing.
 --
 -- Off the first quest, because a zone is one header and every quest under it
@@ -634,9 +621,9 @@ end
 local function Quest(quest, head, line)
 	head = head + 1
 	local row = Take(heads, head, TITLE_TEXT, LEAD)
-	local tone = Tone(quest)
+	local tone = Log.Tint(quest)
 	row.quest = quest.id
-	row.text:SetText(quest.title or "")
+	row.text:SetText(Log.Label(quest, ns.QuestWhere.Tag(quest.id)))
 	row.text:SetTextColor(tone[1], tone[2], tone[3])
 	row.mark:SetShown(Pinned(quest))
 	row:Show()

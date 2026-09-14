@@ -139,6 +139,15 @@ local function plate(said)
 	return nil, nil
 end
 
+-- Whether a line on the column is the one a check names. A quest's name is
+-- drawn behind its level tag, the way the log draws it, and the tag is not what
+-- these checks are about: whether the "+" is on it depends on Questie having
+-- been asked about the quest once already. So a name matches with or without
+-- the brackets in front, and the one check that is about the tag reads it whole.
+local function is(line, said)
+	return line == said or line:sub(-(#said + 2)) == "] " .. said
+end
+
 -- One row of the column by the string it is drawing, so a click can be aimed at
 -- the quest it is meant for rather than at whichever frame the pool happens to
 -- have put first.
@@ -146,7 +155,7 @@ local function row(said)
 	for _, kid in ipairs(canvas().children) do
 		if kid.shown and kid.quest then
 			for _, text in ipairs(kid.regions) do
-				if text.kind == "fontstring" and text.text == said then
+				if text.kind == "fontstring" and is(text.text, said) then
 					return kid
 				end
 			end
@@ -170,7 +179,7 @@ local seen = {}
 
 local function says(said)
 	for _, line in ipairs(drawn()) do
-		if line == said then
+		if is(line, said) then
 			return true
 		end
 	end
@@ -213,6 +222,22 @@ check(says("The Defias Brotherhood"),
 	"the quest the client filed under Westfall is not on the tracker in Westfall")
 check(says("Defias Trapper slain: 5/12") and says("Trapper's Rope: 3/3"),
 	"a quest is on the tracker without the objectives it still wants")
+
+-- The name is drawn the way the quest log draws it: the level in brackets in
+-- front and the XP ladder's colour on the words. Both are asked of
+-- ns.QuestLog, which is where the window gets them, so a tracker that spelled
+-- its own again would fail here rather than read differently in game.
+do
+	local defias = row("The Defias Brotherhood")
+	local words = defias and defias.text:GetText() or ""
+	check(words == Log.Label(Log.Quest("q202"), ns.QuestWhere.Tag(202))
+		and words:sub(1, 3) == "[22",
+		("the tracker names the quest %q, not the way the log names it"):format(words))
+	local r, g, b = defias.text:GetTextColor()
+	local want = ns.Unit.Level.WorthOf(22)
+	check(r == want[1] and g == want[2] and b == want[3],
+		"the tracker draws a level 22 quest off the log's XP ladder colour")
+end
 check(not says("The Missing Diplomat"),
 	"a quest filed under another zone is on the tracker in Westfall")
 
@@ -476,7 +501,7 @@ do
 
 	-- The zone first and the pin under it. What is under your feet is what you
 	-- can act on now, and five pins above it would push it off the top.
-	check(drawn()[1] == "The Defias Brotherhood",
+	check(is(drawn()[1] or "", "The Defias Brotherhood"),
 		("the tracker leads with %s rather than with the quest you are standing in")
 			:format(tostring(drawn()[1])))
 	check(row("The Missing Diplomat").mark:IsShown(),
