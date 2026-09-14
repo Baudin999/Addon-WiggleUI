@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GB3HN7BW3ZHTDYP7W8A0SB
 type: bug
-status: todo
+status: doing
 title: Bag tooltip keeps the equipped item after the slot changes under it
 ---
 
