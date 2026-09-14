@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GJFFWMRPSZZ4QGKZ5HVVAP
 type: bug
-status: doing
+status: done
 title: The pet block draws no buffs or debuffs
 ---
 
