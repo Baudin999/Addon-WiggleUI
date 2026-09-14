@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GNJ6Q87QB5XG05QAG2AG60
 type: task
-status: todo
+status: doing
 title: The pet bar is still Blizzard's; draw it as our own squares
 ---
 
