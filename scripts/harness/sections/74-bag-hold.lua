@@ -3,11 +3,11 @@
 -- Two claims about the bag window, both about what it does not do.
 --
 -- A square's box does not open on the way in. The pointer crosses a dozen
--- squares to reach the one you want, so the box waits for the hand to stop:
--- it is armed on entering, a move past the drift starts the wait again, and
+-- squares to reach the one you want, so the box waits a moment on the square:
+-- it is armed on entering, a move inside the square leaves the count alone, and
 -- it opens on the frame the wait runs out. Leaving before that opens nothing.
 -- What is asserted is each of those frames, driven one at a time through the
--- tick's own function with the stub's pointer moved between them.
+-- tick's own function.
 --
 -- And the squares do not move while you sell. The first paint at a vendor is
 -- held, a sale leaves an empty square where the item was, and every other
@@ -121,19 +121,25 @@ check(Tip.Waiting() > 0, "no wait was armed on the way in")
 Tip.Settling(0.02)
 check(not Tooltip.IsShown(), "twenty milliseconds in, the box is up before the wait ran out")
 
--- The hand is still moving. Ten units is well past the drift, so the count
--- starts again from nought and from where the pointer is now.
+-- The hand moves inside the square. That is not a new arrival, so the count
+-- carries on: a wait that restarted on every small move was a box that never
+-- came while a hand rested on the mouse.
 cursor.x = cursor.x + 10
 Tip.Settling(0.02)
-check(not Tooltip.IsShown() and math.abs(Tip.Waiting() - 0.05) < 1e-6,
-	("the pointer moved and the wait reads %.3f rather than starting again at 0.050")
+check(not Tooltip.IsShown() and math.abs(Tip.Waiting() - 0.01) < 1e-6,
+	("the pointer moved inside the square and the wait reads %.3f rather than 0.010")
 		:format(Tip.Waiting()))
 
-Tip.Settling(0.03)
-check(not Tooltip.IsShown(), "thirty milliseconds after a move, the box is up")
-Tip.Settling(0.03)
+-- The square entered again mid-wait, which a repaint under a still pointer
+-- does. The same owner, so the count is kept.
+enter(tusk)
+check(not Tooltip.IsShown() and math.abs(Tip.Waiting() - 0.01) < 1e-6,
+	("entering the same square again mid-wait left the wait at %.3f rather than 0.010")
+		:format(Tip.Waiting()))
+
+Tip.Settling(0.02)
 check(Tooltip.IsShown() and Tooltip.Owner() == tusk,
-	"the pointer held still for the wait and the box did not open on the square")
+	"the wait ran out and the box did not open on the square")
 check(Tip.Waiting() == 0, "the box opened and the wait is still armed")
 
 -- The template's own refresh: OnEnter again with the box already up on this
