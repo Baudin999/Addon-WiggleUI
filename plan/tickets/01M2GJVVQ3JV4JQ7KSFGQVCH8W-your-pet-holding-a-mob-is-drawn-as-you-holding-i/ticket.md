@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GJVVQ3JV4JQ7KSFGQVCH8W
 type: bug
-status: doing
+status: done
 title: Your pet holding a mob is drawn as you holding it
 ---
 
