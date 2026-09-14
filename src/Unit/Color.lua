@@ -278,8 +278,9 @@ Color.text = {
 -- draws it, and a colour the game has already taught beats a prettier one.
 Color.heal = { 0.42, 0.86, 0.52, 0.55 }
 
--- Tanking colours key off how close the nearest challenger is. Not tanking is
--- always red, because the mob is on the wrong person.
+-- As the tank, the colour keys off how close the nearest challenger is, and a
+-- mob on anybody else is red. Behind the tank it inverts: a mob on you is red,
+-- and one on the tank keys off how close you are to pulling it.
 Color.threat = {
 	safe   = HUE.green,
 	close  = HUE.amber,

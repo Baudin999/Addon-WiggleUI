@@ -681,6 +681,58 @@ print(("meters %d rows, %.0f x %.0f px, %d damage and %d threat, %.2f KB per 50 
 		#ns.Meter.Rank("dps"), #ns.MeterThreat.Rank(), meterKb, CHURN.meter))
 
 ----------------------------------------------------------------------
+-- The enemy bar colours behind the tank
+--
+-- Unit/Threat.lua reads the colours from the tank's side only when you are
+-- the tank. Here because this is the one section with a group in it, and a
+-- group of one always reads as the tank. The role is typed rather than read
+-- off talents, because check.sh runs this as every warrior spec.
+----------------------------------------------------------------------
+
+do
+	local Threat, Shade, Role = ns.Unit.Threat, ns.Unit.Color.threat, ns.Unit.Role
+	local unitAlias = H.unitAlias
+	local readerWas, targetWas = state.threatReader, guids.target
+	-- Your scaled percent, or nil for holding the mob. Sneakyman sits at 60
+	-- either way, which is the tank's number or the nearest challenger's.
+	local mine
+	state.threatReader = function(source)
+		if source == "player" then
+			return mine == nil, 3, mine or 100
+		elseif source == "party1" then
+			return false, 1, 60
+		end
+		return nil
+	end
+	guids.target = "Creature-0-0000-000-boss"
+
+	Role.Set("Baudin", Role.DPS)
+	mine = 45
+	local tone, percent, nearest = Threat.State("target")
+	check(tone == Shade.safe and percent == 45 and nearest == nil,
+		"behind the tank at 45% is not green with your own number")
+	mine = 80
+	check(Threat.State("target") == Shade.close, "behind the tank at 80% is not amber")
+	mine = nil
+	tone, percent, nearest = Threat.State("target")
+	check(tone == Shade.off and percent == 60 and nearest == "party1",
+		"a mob on you when you are not the tank is not red with the tank's number")
+
+	guids.targettarget, unitAlias.targettarget = BAUDIN, { player = true }
+	check(Threat.Swinging("target") == Shade.off, "a mob swinging at a damage dealer is not red")
+	guids.targettarget, unitAlias.targettarget = SNEAKY, nil
+	check(Threat.Swinging("target") == Shade.safe, "a mob swinging at somebody else is not green")
+
+	Role.Set("Baudin", Role.TANK)
+	check(Threat.Swinging("target") == Shade.off, "the tank sees a mob on somebody else as anything but red")
+	check(Threat.State("target") == Shade.safe, "the tank at 60% from the nearest is not green")
+
+	Role.Set("Baudin", nil)
+	guids.targettarget = nil
+	state.threatReader, guids.target = readerWas, targetWas
+end
+
+----------------------------------------------------------------------
 -- Put the client back the way the sections after this one expect it.
 ----------------------------------------------------------------------
 

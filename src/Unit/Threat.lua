@@ -3,6 +3,7 @@ local ADDON, ns = ...
 local Unit = ns.Unit
 local Color = Unit.Color
 local Roster = Unit.Roster
+local Role = Unit.Role
 local Threat = {}
 Unit.Threat = Threat
 
@@ -83,6 +84,14 @@ function Threat.Shade(percent)
 	return Color.threat.safe
 end
 
+-- Whether the colours read from the tank's side. Your role, through
+-- Unit/Role.lua, so a typed override beats what your talents say. A group of
+-- one is always the tank: alone, every mob you fight is on you and a bar that
+-- drew that red would be red all day.
+local function Tanking()
+	return Roster.Size() < 2 or Role.Of("player") == Role.TANK
+end
+
 -- Where you stand on one mob, in the three pieces a bar draws.
 --
 --   colour       one of the threat palette's five, always
@@ -108,6 +117,18 @@ function Threat.State(unit)
 		return Color.threat.idle, nil, nil
 	end
 
+	if not Tanking() then
+		-- Behind the tank, which inverts the scale. The mob on you is red whoever
+		-- is nearest, and the number beside it is whoever that is, because that
+		-- is who takes it back. On the tank, the shade is how close your own
+		-- threat is to pulling it.
+		if isTanking then
+			local percent, challenger = Threat.Top(unit)
+			return Color.threat.off, percent, challenger
+		end
+		return Threat.Shade(yours or 0), yours or 0, nil
+	end
+
 	if isTanking then
 		local percent, challenger = Threat.Top(unit)
 		if not challenger then
@@ -116,8 +137,8 @@ function Threat.State(unit)
 		return Threat.Shade(percent), percent, challenger
 	end
 
-	-- On somebody else, which is always red: the mob is on the wrong person and
-	-- how far behind you are does not change that.
+	-- On somebody else while you are the tank, which is always red: the mob is
+	-- on the wrong person and how far behind you are does not change that.
 	return Color.threat.off, yours or 0, nil
 end
 
@@ -129,15 +150,15 @@ end
 -- rather than a formatted line, because how a bar words it is the bar's
 -- business and shortening a name is presentation.
 --
--- Green when it is on you: this is a warrior addon and the mob being on you is
--- the state you were trying to reach.
+-- Green when it is on the tank, which is you or somebody else by Tanking above.
 function Threat.Swinging(unit)
 	local victim = Unit.TargetToken(unit)
 	if not UnitExists(victim) then
 		return Color.threat.idle, nil, false
 	end
+	local tanking = Tanking()
 	if UnitIsUnit(victim, "player") then
-		return Color.threat.safe, victim, true
+		return tanking and Color.threat.safe or Color.threat.off, victim, true
 	end
-	return Color.threat.off, victim, false
+	return tanking and Color.threat.off or Color.threat.safe, victim, false
 end
