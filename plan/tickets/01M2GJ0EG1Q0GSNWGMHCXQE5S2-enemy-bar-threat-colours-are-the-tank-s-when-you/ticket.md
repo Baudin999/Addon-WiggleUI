@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GJ0EG1Q0GSNWGMHCXQE5S2
 type: bug
-status: todo
+status: doing
 title: Enemy bar threat colours are the tank's when you are not tanking
 ---
 
