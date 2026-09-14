@@ -195,6 +195,11 @@ local RETIRED = {
 	barsClickThrough = true,
 	barsMouseThrough = true,
 	barsCamera = true,
+	-- 1.9: where the pet bar was dragged to, while UI.Placeable moved it and
+	-- only /wk unlock reached it. It moves with the action bars' handles now
+	-- and a drag is written to barPoints.pet with theirs. It lived one commit
+	-- and nobody could grab it, so nothing in it is worth carrying across.
+	petBarPoint = true,
 }
 
 -- A key lives in exactly one scope. Checking both tables on every insert is

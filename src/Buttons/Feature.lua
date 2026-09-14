@@ -488,11 +488,6 @@ ns.Register({
 		-- drops it again once you have.
 		barPoints = {},
 
-		-- Where the pet bar stands until it is dragged: centred, on top of the
-		-- bottom right bar, which Buttons/Which.lua puts at 150 and which is 33
-		-- high with its pad.
-		petBarPoint = { "BOTTOM", "UIParent", "BOTTOM", 0, 184 },
-
 		-- What each bar looks like and when it is up, keyed by the plan's bar
 		-- key: the rows the twelve fold into, the colour and the opacity of the
 		-- ground under them, whether the bar goes down in combat and which key
@@ -534,10 +529,10 @@ ns.Register({
 
 	-- /wk unlock reaches the bars through here, the same way it reaches the
 	-- charge icon and the meters. Without it the handles never show and the
-	-- bars are the one part of the addon you cannot drag.
+	-- bars are the one part of the addon you cannot drag. The pet bar is joined
+	-- to the same handles in Buttons/Placing.lua, so this reaches it too.
 	lock = function()
 		ns.Bars.ApplyLock()
-		ns.PetBar.Lock()
 	end,
 
 	-- The options window, opened and closed. The page above marks whichever bar

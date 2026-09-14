@@ -216,13 +216,16 @@ function Place.Handle(entry)
 		Place.Put(entry)
 	end)
 
+	-- A bar in the plan says its shape and its hours. A joined frame has
+	-- neither setting, so its def carries the lines it says instead.
 	ns.Tip.Hang(handle, function()
+		local def = entry.def
 		return {
 			kind = "note",
-			title = entry.def.label,
-			lines = {
-				{ ns.BarLook.Shape(entry.def) },
-				{ ns.BarLook.Hours(entry.def) },
+			title = def.label,
+			lines = def.note and def.note() or {
+				{ ns.BarLook.Shape(def) },
+				{ ns.BarLook.Hours(def) },
 			},
 		}
 	end)
@@ -238,17 +241,36 @@ end
 -- what is held here cannot go stale.
 local placed = {}
 
+-- Frames placed like a bar that are not a bar in the plan, which is the pet bar.
+-- Buttons/Pet.lua joins it once, at build, and every walk below takes it with
+-- the bars: the handles, the shift watcher, `actionbars where` and `actionbars
+-- reset`. Held apart from `placed` because Buttons/Bars.lua empties and
+-- refills that table, and a pet bar written into it would last until the next
+-- apply.
+local joined = {}
+
+function Place.Join(entry)
+	joined[#joined + 1] = entry
+	Place.Handle(entry)
+end
+
+-- Not on a bar the client has taken off the screen. A handle over a bar that is
+-- only up while a key is held would be a rectangle you can drag with nothing
+-- inside it.
+local function Raise(entry, loose)
+	if entry.handle then
+		entry.handle:SetShown(loose and entry.frame:IsShown())
+	end
+end
+
 function Place.Lock(order)
 	placed = order
 	local loose = Place.Loose()
 	for index = 1, #order do
-		local entry = order[index]
-		if entry.handle then
-			-- Not on a bar the client has taken off the screen. A handle over a
-			-- bar that is only up while a key is held would be a rectangle you
-			-- can drag with nothing inside it.
-			entry.handle:SetShown(loose and entry.frame:IsShown())
-		end
+		Raise(order[index], loose)
+	end
+	for index = 1, #joined do
+		Raise(joined[index], loose)
 	end
 end
 
@@ -269,25 +291,31 @@ keys:SetScript("OnEvent", function(_, _, key)
 	end
 end)
 
--- The plan lines for wherever the bars are standing now, ready to paste over
--- the geometry in Buttons/Bars.lua.
+-- The plan line for wherever one bar is standing now, ready to paste over its
+-- geometry in Buttons/Which.lua, or in Buttons/Pet.lua for the pet bar.
 --
 -- This is the whole reconciliation between dragging a thing and keeping the
 -- answer in git. Feel your way to it with the mouse, then promote it, then drop
 -- the override so a fresh clone of this repo puts the bar in the same place
 -- with no saved variables involved at all.
+local function Line(entry)
+	local def = entry.def
+	local saved = ns.db.barPoints[def.key]
+	local point = saved and saved[1] or def.point
+	local to = saved and saved[3] or def.to
+	local x = saved and saved[4] or def.x
+	local y = saved and saved[5] or def.y
+	return ("  %s: point = %q, to = %q, x = %d, y = %d%s"):format(
+		def.key, point, to, x, y, saved and "  (dragged)" or "")
+end
+
 function Place.Where(order)
 	local lines = {}
 	for index = 1, #order do
-		local entry = order[index]
-		local def = entry.def
-		local saved = ns.db.barPoints[def.key]
-		local point = saved and saved[1] or def.point
-		local to = saved and saved[3] or def.to
-		local x = saved and saved[4] or def.x
-		local y = saved and saved[5] or def.y
-		lines[#lines + 1] = ("  %s: point = %q, to = %q, x = %d, y = %d%s"):format(
-			def.key, point, to, x, y, saved and "  (dragged)" or "")
+		lines[#lines + 1] = Line(order[index])
+	end
+	for index = 1, #joined do
+		lines[#lines + 1] = Line(joined[index])
 	end
 	return lines
 end
@@ -301,6 +329,9 @@ function Place.Reset(order)
 	end
 	for index = 1, #order do
 		Place.Put(order[index])
+	end
+	for index = 1, #joined do
+		Place.Put(joined[index])
 	end
 	return dropped
 end

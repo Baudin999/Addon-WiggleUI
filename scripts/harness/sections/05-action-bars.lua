@@ -350,8 +350,12 @@ do
 	-- And it comes back in the plan's own shape, so it can be pasted into
 	-- Buttons/Bars.lua and stop depending on saved variables at all. That is
 	-- the whole reconciliation between a plan in git and a bar you drag.
+	-- One line a bar, and one for the pet bar, which Buttons/Placing.lua walks
+	-- with them.
 	local printed = ns.Bars.Where()
-	check(#printed == #bars, ("where printed %d lines for %d bars"):format(#printed, #bars))
+	local lines = #bars + (ns.PetBar.Frame() and 1 or 0)
+	check(#printed == lines, ("where printed %d lines for %d bars and the pet bar")
+		:format(#printed, #bars))
 	check(printed[1]:find("x = 40") and printed[1]:find("y = 260") and printed[1]:find("dragged"),
 		"the printed plan line does not carry what the drag recorded: " .. tostring(printed[1]))
 

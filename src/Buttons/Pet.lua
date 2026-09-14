@@ -38,9 +38,10 @@ local Ability, Flow = UI.Ability, UI.Flow
 -- drawn and takes no mouse, whatever it calls on itself.
 --
 -- The client decides when the bar is up, through a state driver, because a pet
--- dies and is summoned in a fight. It is placed with UI.Placeable like the unit
--- frames rather than by Buttons/Placing.lua, which holds one list of bars on
--- plan positions and would hand its shift watcher this bar instead of theirs.
+-- dies and is summoned in a fight. It is placed by Buttons/Placing.lua with the
+-- action bars, so shift and a drag moves it the way it moves them. It joins that
+-- file rather than standing in Buttons/Bars.lua's list, which is the plan's
+-- bars and is emptied and refilled on every apply.
 --------------------------------------------------------------------------
 
 -- NUM_PET_ACTION_SLOTS, the first line of Shared/PetActionBar.lua.
@@ -68,7 +69,21 @@ local AUTO_ON, AUTO_OFF = 1, 0.35
 -- that number stays in one file.
 local LOOK = { key = "pet" }
 
-local bar, place
+-- Where the bar ships, in the shape of a bar in Buttons/Which.lua's plan, so
+-- `actionbars where` prints a dragged pet bar as a line to paste over this one.
+-- Centred on top of the bottom right bar, which the plan puts at 150 and which
+-- is 33 high with its pad.
+local DEF = {
+	key = "pet", label = "pet bar",
+	point = "BOTTOM", to = "BOTTOM", x = 0, y = 184,
+}
+
+-- What the drag handle says, where a bar in the plan says its shape and hours.
+function DEF.note()
+	return { { "ten squares, up while you have a pet" } }
+end
+
+local bar, entry
 local squares = {}
 local live = false     -- the clone is on and the tick should draw
 local driven = false   -- the client holds the bar's visibility
@@ -162,10 +177,6 @@ local function Arrange()
 	Flow.Arrange(bar, { direction = "column", gap = gap, pad = ns.Bars.PAD, row })
 end
 
-local function Moved(point)
-	ns.db.petBarPoint = point
-end
-
 -- Built once, at the first apply that wants it. Ten secure buttons cannot be
 -- destroyed and must never be made twice, so the off switch hides this and
 -- keeps it.
@@ -176,16 +187,20 @@ local function Build()
 	bar = UI.Box(UIParent, UI.Color.window, UI.Color.hairline)
 	UI.Adopt(bar, 1)
 	bar:Hide()
+	bar:SetMovable(true)
+	bar:SetClampedToScreen(true)
+	entry = { frame = bar, def = DEF }
 	-- The depth the action bars stand at, for Buttons/Placing.lua's reason.
-	ns.BarPlace.Stand({ frame = bar })
+	ns.BarPlace.Stand(entry)
 
 	for index = 1, SLOTS do
 		squares[index] = Square(index)
 	end
 
-	-- Refused in combat: the bar holds secure buttons, and moving their parent
-	-- in a lockdown is what the client raises on.
-	place = UI.Placeable(bar, { name = "pet bar", combat = false, moved = Moved })
+	-- The action bars' handle, which refuses a drag in combat for their reason:
+	-- the bar holds secure buttons, and moving their parent in a lockdown is
+	-- what the client raises on.
+	ns.BarPlace.Join(entry)
 	Arrange()
 end
 
@@ -239,14 +254,6 @@ function Pet.Bind()
 	end
 end
 
--- /wk unlock, through the buttons feature's `lock`. Refused in combat, because
--- the rim takes the mouse on a frame holding ten secure buttons.
-function Pet.Lock()
-	if place and not InCombatLockdown() then
-		place:Lock(not ns.db.locked)
-	end
-end
-
 -- Follows the action bar switch. Returns false when combat deferred the work.
 function Pet.Apply()
 	if not ns.db then
@@ -263,16 +270,19 @@ function Pet.Apply()
 		if bar then
 			Release()
 			bar:Hide()
+			entry.handle:Hide()
 		end
 		return Cage(false)
 	end
 
 	Build()
 	live = true
-	place:Place(ns.db.petBarPoint)
+	ns.BarPlace.Put(entry)
 	Drive()
 	Pet.Bind()
-	Pet.Lock()
+	-- Through the bars' own call, which walks the joined frames too, so a bar
+	-- that comes up while the frames are unlocked comes up with its handle.
+	ns.Bars.ApplyLock()
 	return Cage(true)
 end
 
@@ -357,6 +367,10 @@ end
 
 function Pet.Squares()
 	return squares
+end
+
+function Pet.Handle()
+	return entry and entry.handle
 end
 
 -- A rescale moves the grid under the bar, and on a client with no
