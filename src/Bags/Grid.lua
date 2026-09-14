@@ -405,8 +405,8 @@ end
 -- Equipping a sword off a square is the case this exists for: the old sword
 -- lands in the slot, the repaint writes it onto a square, and the pointer has
 -- not moved, so no OnEnter is coming. The template's own refresh does not cover
--- it either, because the client only calls UpdateTooltip on a button that
--- GameTooltip owns and this box is not GameTooltip.
+-- it either, because the client only calls UpdateTooltip on a button that owns
+-- the client's own tooltip, and this box is not that tooltip.
 --
 -- Run once the whole layout is down rather than per square in Paint. A relayout
 -- moves squares, and the square under the pointer after it is not always the

@@ -650,11 +650,9 @@ end
 -- Your group
 ----------------------------------------------------------------------
 
--- Two people, one of them here. Every member of the group is handed over and
--- the ones the client will not place are drawn nowhere, which is what lets the
--- board put a mark up on its own tick when somebody walks into the zone: a list
--- of only the people who were here when the map was painted makes leaving work
--- and arriving wait for a repaint.
+-- Two people, one of them here. The whole group is handed over and whoever the
+-- client will not place is drawn nowhere, so somebody walking into the zone gets
+-- a mark on the board's own tick instead of waiting for a repaint.
 do
 	local Mates = ns.MapMates
 	H.group.Set({
@@ -667,8 +665,7 @@ do
 	H.fire("GROUP_ROSTER_UPDATE")
 
 	local mates, placed = Mates.On(WESTFALL)
-	check(#mates == 2,
-		("%d of the group came back where two of them are with you"):format(#mates))
+	check(#mates == 2, ("%d of the group came back where two are with you"):format(#mates))
 	check(placed == 1,
 		("%d of them were placed on Westfall and one is standing in it"):format(placed))
 	check(mates[1] and mates[1].name == "Sneaky" and mates[1].x == 20,
@@ -676,14 +673,11 @@ do
 	check(mates[2] and mates[2].x == nil,
 		"the one standing in another zone was given a place on this one")
 
-	-- You are not one of them. You are already the client's own arrow, and a
-	-- square under it would only say where the arrow is.
-	for _, mate in ipairs(mates) do
-		check(mate.name ~= "Tusksfirst", "you were drawn twice, as the arrow and as a square")
-	end
+	-- You are not one of them. You are already the client's own arrow.
+	check((mates[1] or {}).name ~= "Tusksfirst" and (mates[2] or {}).name ~= "Tusksfirst",
+		"you were drawn twice, as the arrow and as a party pin")
 
-	-- Blizzard's party pin, untinted, and the class colour on the hover's title,
-	-- which is what makes a mark answer "the healer has not moved".
+	-- Blizzard's party pin, untinted, with the class colour on the hover's title.
 	check(mates[1].icon == "Interface\\WorldMap\\WorldMapPartyIcon" and mates[1].size == 16
 		and mates[1].tint == nil,
 		("a party member is drawn as %s at %s rather than the client's party pin")
@@ -699,10 +693,8 @@ do
 		("the board is showing %d marks: two markers, you, and one of the group")
 			:format(Window.Drawn()))
 
-	-- Somebody walks in, and the mark arrives on the tick rather than on a
-	-- repaint. Nothing here paints the window: this is the board taking every
-	-- point that names a unit again, which is the same tick that turns the
-	-- arrow.
+	-- Somebody walks in, and the mark arrives on the board's own tick, the one
+	-- that turns the arrow, with nothing here painting the window.
 	worldmap.Stand("party2", WESTFALL, 60, 70)
 	check(Window.Locate(), "the board would not take the people on it again")
 	check(Window.Drawn() == 5,
@@ -717,18 +709,14 @@ do
 			:format(Window.Drawn()))
 
 	-- The continent answers for both of them, because it answers for anybody
-	-- standing anywhere on it. This is the one reading that says the party is on
-	-- the continent picture and not only on the zone one.
-	check(select(2, Mates.On(KINGDOMS)) == 2,
-		("%d of the group were placed on the continent and both are on it")
-			:format(select(2, Mates.On(KINGDOMS))))
-
-	-- And from a client that answers the continent with the zone underfoot,
-	-- where the zone's rectangle carries them onto the continent instead.
-	worldmap.Ignore(true)
-	check(select(2, Mates.On(KINGDOMS)) == 2,
-		("%d of the group were placed on the continent by way of their zones")
-			:format(select(2, Mates.On(KINGDOMS))))
+	-- standing anywhere on it, and so does a client that answers the continent
+	-- with the zone underfoot, where the zone's rectangle carries them on.
+	for _, ignored in ipairs({ false, true }) do
+		worldmap.Ignore(ignored)
+		local onIt = select(2, Mates.On(KINGDOMS))
+		check(onIt == 2, ("%d of the group were placed on the continent%s, and both are on it")
+			:format(onIt, ignored and " by way of their zones" or ""))
+	end
 	worldmap.Ignore(false)
 
 	check(Mates.Describe() == "2 with you, 1 of them on the zone you are in",
