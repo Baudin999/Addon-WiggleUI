@@ -84,6 +84,100 @@ local sinceMark = 0     -- seconds since Perf/Cause.lua took its baseline
 local loadingUntil = 0  -- the client's clock, up to which frames are a load
 
 --------------------------------------------------------------------------
+-- A minute of frames, kept past the reload
+--
+-- The ring above holds four seconds, the dip log holds frames over 20 ms, and a
+-- reload empties both. None of that can see a session that gets slower. On a
+-- 100 Hz panel with vsync on, the frames that pull the rate down are 10 to 20 ms
+-- ones missing a deadline, and the question is whether minute sixty has more of
+-- them than minute five. So each minute is summed into one row of
+-- WarriorKitDB.perfLog, and the client writes it to disk on a reload or a
+-- logout.
+--
+-- The row is a set of parallel columns made full length at login and written in
+-- place. Roll is reached from Beat, and Beat allocates nothing. Three hours of
+-- rows, the oldest overwritten.
+--------------------------------------------------------------------------
+
+local MINUTE = 60
+local MINUTES = 180
+
+-- Twelve is a frame that missed a 100 Hz deadline, twenty one that missed 60 Hz,
+-- fifty a stall.
+local SLOW, SLOWER, STALL = 12, 20, 50
+
+-- at      the wall clock the minute ended, from time()
+-- up      minutes since this session started watching
+-- lua     milliseconds of Lua, or -1 with the profiler off
+-- heap    every addon's Lua heap in KB at the end of the minute
+-- freed   KB the collector gave back during it
+local COLUMNS = { "at", "up", "frames", "avg", "worst", "over12", "over20",
+	"over50", "lua", "ours", "events", "heap", "freed" }
+
+local minute = {
+	span = 0, frames = 0, total = 0, worst = 0, slow = 0, slower = 0, stall = 0,
+	lua = 0, profiled = false, ours = 0, events = 0, freed = 0,
+}
+local saved             -- WarriorKitDB.perfLog once Ready has made it whole
+local startedAt = 0     -- the client's clock when watching began
+
+local function Empty()
+	minute.span, minute.frames, minute.total, minute.worst = 0, 0, 0, 0
+	minute.slow, minute.slower, minute.stall = 0, 0, 0
+	minute.lua, minute.profiled, minute.ours, minute.events, minute.freed = 0, false, 0, 0, 0
+end
+
+-- The saved log with every column at full length. A missing log, or one written
+-- at another size, is started again rather than resized.
+local function Ready()
+	local log = ns.db.perfLog
+	if type(log) ~= "table" or log.size ~= MINUTES then
+		log = { size = MINUTES, head = 0, filled = 0 }
+		ns.db.perfLog = log
+	end
+	for index = 1, #COLUMNS do
+		local name = COLUMNS[index]
+		if type(log[name]) ~= "table" then
+			log[name] = {}
+		end
+		local column = log[name]
+		for row = #column + 1, MINUTES do
+			column[row] = 0
+		end
+	end
+	saved = log
+	return log
+end
+
+local function Hundredths(value)
+	return math.floor(value * 100 + 0.5) / 100
+end
+
+-- One row written over the oldest, then the minute started again.
+local function Roll(log)
+	local row = log.head % MINUTES + 1
+	log.head = row
+	if log.filled < MINUTES then
+		log.filled = log.filled + 1
+	end
+	local now = GetTime and GetTime() or 0
+	log.at[row] = time and time() or 0
+	log.up[row] = math.floor((now - startedAt) / MINUTE + 0.5)
+	log.frames[row] = minute.frames
+	log.avg[row] = Hundredths(minute.frames > 0 and minute.total / minute.frames or 0)
+	log.worst[row] = Hundredths(minute.worst)
+	log.over12[row] = minute.slow
+	log.over20[row] = minute.slower
+	log.over50[row] = minute.stall
+	log.lua[row] = minute.profiled and Hundredths(minute.lua) or -1
+	log.ours[row] = Hundredths(minute.ours)
+	log.events[row] = minute.events
+	log.heap[row] = math.floor((lastHeap or 0) + 0.5)
+	log.freed[row] = math.floor(minute.freed + 0.5)
+	Empty()
+end
+
+--------------------------------------------------------------------------
 
 -- What counts as a dip on this machine, in milliseconds. The setting, floored
 -- at a number below which every reading is noise.
@@ -165,6 +259,38 @@ local function Beat(since)
 	local loading = (GetTime and GetTime() or 0) < loadingUntil
 	if took >= Threshold() and not loading then
 		Record(took, ourMs, ourKey, count, event, most, freed)
+	end
+
+	-- The minute. A loading frame moves the clock on and is not counted, for the
+	-- reason it is not a dip.
+	if not loading then
+		minute.frames = minute.frames + 1
+		minute.total = minute.total + took
+		if took > minute.worst then
+			minute.worst = took
+		end
+		if took >= SLOW then
+			minute.slow = minute.slow + 1
+			if took >= SLOWER then
+				minute.slower = minute.slower + 1
+				if took >= STALL then
+					minute.stall = minute.stall + 1
+				end
+			end
+		end
+		if luaMs then
+			minute.lua = minute.lua + luaMs
+			minute.profiled = true
+		end
+		minute.ours = minute.ours + ourMs
+		minute.events = minute.events + count
+		if freed > 0 then
+			minute.freed = minute.freed + freed
+		end
+	end
+	minute.span = minute.span + since
+	if minute.span >= MINUTE and saved then
+		Roll(saved)
 	end
 end
 
@@ -257,6 +383,9 @@ function Trace.Forget()
 	end
 	at, filled, dips = 0, 0, 0
 	lastHeap = nil
+	-- The minute in progress, and not the saved rows: those are the log of
+	-- sessions gone, and clearing counters is about this one.
+	Empty()
 	ns.Cause.Forget()
 	ns.Census.Forget()
 end
@@ -292,6 +421,9 @@ function Trace.Watch(on)
 		lastHeap = nil
 		lastLines = ns.CombatLog.Lines()
 		sinceMark = 0
+		Ready()
+		Empty()
+		startedAt = GetTime and GetTime() or 0
 		ns.Cause.Forget()
 		ns.Cause.Mark()
 		ns.Census.Watch(true)

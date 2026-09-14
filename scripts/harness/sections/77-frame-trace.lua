@@ -117,6 +117,49 @@ check(why:match("COMBAT_LOG_EVENT_UNFILTERED"),
 	("a frame filled with combat log lines reads %q"):format(why))
 
 ----------------------------------------------------------------------
+-- A minute of frames, written where a reload keeps it
+--
+-- A session that gets slower is 12 to 20 ms frames arriving more often by the
+-- hour, and none of them is a dip. So the recorder sums each minute into a row
+-- of the saved log. Driven here with a hundred 25 ms frames and 9 ms ones, a
+-- frame that makes a 100 Hz deadline, to fill the minute. The collector is
+-- stopped, because the roll is reached from the tick and has to allocate nothing
+-- either.
+----------------------------------------------------------------------
+
+local log = ns.db.perfLog
+check(type(log) == "table" and log.size == 180, "the saved minute log was not made at login")
+Trace.Forget()
+local head, rows = log.head, log.filled
+
+collectgarbage("collect")
+collectgarbage("stop")
+local heldKB = collectgarbage("count")
+local spent = 0
+for _ = 1, 100 do
+	frame:Beat(0.025)
+	spent = spent + 0.025
+end
+while spent < 60 do
+	frame:Beat(0.009)
+	spent = spent + 0.009
+end
+local rolledKB = collectgarbage("count") - heldKB
+collectgarbage("restart")
+
+check(rolledKB < 0.05, ("a minute of frames and its roll allocated %.2f KB"):format(rolledKB))
+local row = log.head
+check(row == head % 180 + 1, ("a minute of frames moved the log head from %d to %d"):format(head, row))
+check(log.filled == math.min(rows + 1, 180), ("the log holds %d rows after one more minute"):format(log.filled))
+check(log.over12[row] == 100 and log.over20[row] == 100,
+	("100 frames of 25 ms were counted as %d over 12 and %d over 20"):format(log.over12[row], log.over20[row]))
+check(log.over50[row] == 0, ("a minute with no stall counted %d"):format(log.over50[row]))
+check(log.worst[row] == 25, ("the worst frame of the minute reads %s ms"):format(tostring(log.worst[row])))
+check(log.avg[row] > 9 and log.avg[row] < 10,
+	("a minute of mostly 9 ms frames averages %s ms"):format(tostring(log.avg[row])))
+check(log.lua[row] == -1, ("with the profiler off the minute claims %s ms of Lua"):format(tostring(log.lua[row])))
+
+----------------------------------------------------------------------
 -- The profiler on, which is the only way an addon gets named
 ----------------------------------------------------------------------
 
