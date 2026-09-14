@@ -286,6 +286,7 @@ local SECTIONS = {
 	-- the way that section left it: empty.
 	"39-party-told",
 	"40-loot-feed",
+	"40-loot-strip",
 	"41-voice",
 	"42-cooldown-row",
 	"43-blizzard-hide",

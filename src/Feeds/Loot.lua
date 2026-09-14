@@ -72,13 +72,13 @@ local QUEST_CLASS = 12
 -- marker you have to work out. This is the only orange in the addon.
 local QUEST = { 0.98, 0.55, 0.15 }
 
--- The four letters the glyph face draws the chips' marks on. A gem for the
--- thing that grades an item, the quest bang, a stack of coins, and the circle
--- for the ring an item wears when the addon has a reason for it. Named rather
+-- The three letters the glyph face draws the chips' marks on. A gem for the
+-- thing that grades an item, the quest bang and a stack of coins. The fourth
+-- chip draws the ring an item wears rather than a glyph for it. Named rather
 -- than written at the call site because scripts/bake-glyphs.sh is what decides
 -- which letter carries which mark, and a literal `*` sitting in a table would
 -- give nobody reading this file a way to find that out.
-local GEM, BANG, COINS, RING = "*", "!", "$", "o"
+local GEM, BANG, COINS = "*", "!", "$"
 
 -- What the client calls each quality in its own language. ITEM_QUALITY0_DESC
 -- and its siblings are the strings the client's own tooltips use, so a player
@@ -163,7 +163,8 @@ local TRASH = "trash"
 --
 -- It wears none of the three reason colours, because it stands for all three
 -- and a chip in the orange would be claiming the quest chip's job. The mark is
--- the ring itself, which is the thing on the row this switch decides about.
+-- the ring itself, a hollow square, which is the thing on the row this switch
+-- decides about.
 --
 -- The five qualities are one saved number rather than five saved booleans. A
 -- table of five would be five keys the defaults have to backfill and five
@@ -247,7 +248,7 @@ local function Chips()
 	}
 	chips[#chips + 1] = {
 		color = C.text,
-		mark = RING,
+		ring = true,
 		tip = "Anything this addon has a reason for, whatever its quality chip"
 			.. " says: an objective in your log, a reagent one of your"
 			.. " professions uses, and something your loot filter would have"

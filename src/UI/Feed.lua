@@ -108,20 +108,26 @@ local PAD = 4       -- one text column to the next
 -- panel page and a second copy of the range is a second thing to keep in step.
 UI.FEED_ICON, UI.FEED_ICON_LOW, UI.FEED_ICON_HIGH = ICON, 16, 40
 
--- One filter chip: a small square of the addon's own furniture with a mark on
--- it, in the strip over the rows. Sixteen units inside a twenty unit header,
--- which is the same two units of air the heading text gets.
+-- One filter chip: a cell of a bar in the strip over the rows. Sixteen units
+-- inside a twenty unit header, which is the same two units of air the heading
+-- text gets.
 local CHIP = 16
-local CHIP_GAP = 3
-local CHIP_MARK = 14
--- The air that separates one run of chips from the next. Three units says
--- nothing; most of a chip's width says these two are different questions.
-local CHIP_BREAK = 10
+-- The mark inside a cell. It was fourteen, which put a gem against the hairline
+-- of its own square; eleven leaves it two and a half units of bar on each side.
+local CHIP_MARK = 11
+-- The hollow square the reason chip draws. Even, so it centres on whole units
+-- in a sixteen unit cell and its one pixel edge does not land between two.
+local CHIP_RING = 10
+-- The air between one bar and the next, and the only air on the strip. The
+-- cells inside a bar are flush, so six units is enough to say two questions.
+local CHIP_BREAK = 6
 -- What the mark on a chip that is switched off is painted at. Not hidden and
 -- not greyed: the colour and the shape are what say which chip it is, so an off
 -- chip keeps both and loses its light. Low enough to read as off across the
 -- room and high enough to still find with a cursor.
-local CHIP_OFF = 0.3
+local CHIP_OFF = 0.25
+-- The xmark, which is the letter scripts/bake-glyphs.sh put it on.
+local CLEAR = "x"
 
 -- The number column, fixed rather than grown to fit. A string that sizes itself
 -- puts every number at a different distance from the edge, which is a ragged
@@ -433,6 +439,10 @@ function UI.Feed(parent, opts)
 		-- walked per read, because Room, Sync and the tally all ask.
 		matching = nil,
 		chips = {},
+		-- The ground under each run of chips, and the button that turns them all
+		-- back on. Built by BuildChips and shown by Chrome.
+		bars = {},
+		reset = nil,
 		-- What ShapeRow is told, filled in by every resize and never rebuilt.
 		geom = {},
 		-- How strongly the ground under a row is painted. Full until somebody
@@ -507,10 +517,21 @@ end
 -- and Sync read it rather than each deciding again.
 --------------------------------------------------------------------------
 
+local function ShowAll(list, on)
+	for index = 1, #list do
+		if on then
+			list[index]:Show()
+		else
+			list[index]:Hide()
+		end
+	end
+end
+
 function Feed:Chrome(titled, chipped)
 	titled = (titled and self.heading) and true or false
 	chipped = (chipped and #self.chips > 0) and true or false
 	self.head = (titled or chipped) and (HEADER + RULE) or 0
+	self.chipped = chipped
 
 	if self.heading then
 		if titled then
@@ -519,13 +540,9 @@ function Feed:Chrome(titled, chipped)
 			self.heading:Hide()
 		end
 	end
-	for index = 1, #self.chips do
-		if chipped then
-			self.chips[index]:Show()
-		else
-			self.chips[index]:Hide()
-		end
-	end
+	ShowAll(self.chips, chipped)
+	ShowAll(self.bars, chipped)
+	self:PaintReset()
 
 	-- The tally and the hairline are the strip rather than things on it, so
 	-- they go with it entirely. A count floating over the first row with no
@@ -570,14 +587,25 @@ end
 -- without being told; a word on each would be five words of English in a feed
 -- whose rows are localised.
 --
--- The first version of this drew each chip as a rectangle of flat quality
--- colour and nothing else, and it was wrong in a way that is obvious the moment
--- you look at a screenshot rather than at the geometry: seven hard-edged colour
--- swatches in a row is a colour picker, and it looked like something that had
--- been left on the screen by mistake. Nothing else in this addon that you click
--- is a bare colour. An ability square, an aura square, a button in the panel
--- are all the same thing, a dark square with a hairline and a mark on it, and a
--- chip is that at chip size.
+-- **A run of chips is one bar.** Two grounds were wrong before this one. The
+-- first drew each chip as a rectangle of flat quality colour, and seven swatches
+-- in a row was a colour picker left on the screen by mistake. The second gave
+-- each chip its own dark square and hairline, the way an ability square is
+-- drawn, and eight of those with a fourteen unit mark in each read as a row of
+-- emoji: every square the same weight, every mark touching its edge, and the
+-- break between the two runs lost among the gaps inside them. So a run is one
+-- surface under one hairline, its cells are flush and its marks are bare. The
+-- break between two bars is the only air on the strip, which makes it the one
+-- thing the spacing says.
+--
+-- **The reason chip draws the ring.** It was the circle glyph, which at chip
+-- size is a filled white disc and names nothing. What it switches is the hollow
+-- square a row draws round its icon, so that square is its mark.
+--
+-- **The reset is up only while it would do something.** A cross after the last
+-- bar turns every chip back on, and it is there while one of them is off. It
+-- sits after the chips rather than before them, so its coming and going moves
+-- nothing else on the strip.
 --
 -- **Off is a dim mark, not a gone one.** A chip that hid itself would leave a
 -- strip whose chips move about as you click them, and a chip that went grey
@@ -593,7 +621,10 @@ end
 -- The caller hands over one table per chip, in the order they are drawn:
 --
 --   { color = , mark = , tip = , get = function() end, set = function(on) end }
---   { gap = true }   air, for the break between one run of chips and the next
+--   { color = , ring = true, tip = , get = , set = }   the hollow square
+--   { gap = true }   air, for the break between one bar of chips and the next
+--
+-- On is the chip's resting state: the reset sets every chip back to it.
 --
 -- `mark` is the letter the glyph face draws its mark on. See
 -- scripts/bake-glyphs.sh for which letter is which mark and why the letter
@@ -609,90 +640,157 @@ local function PaintChip(chip)
 		return false
 	end
 	chip.lit = on
-	-- The mark, not the square. The ground and its hairline are furniture and
-	-- stay exactly where they are, so a strip of chips keeps its rhythm however
-	-- many of them are off; what goes out is the coloured thing on top.
+	-- The mark, not the cell. The bar and its hairline are furniture and stay
+	-- exactly where they are, so a strip of chips keeps its rhythm however many
+	-- of them are off; what goes out is the coloured thing on top.
 	chip.mark:SetAlpha(on and 1 or CHIP_OFF)
 	return true
 end
 
+-- Where a thing on the strip sits, x units in from the left and centred on the
+-- header's height.
+local function Place(feed, region, x)
+	region:SetPoint("TOPLEFT", feed.frame, "TOPLEFT", x * feed.unit,
+		-math.floor((HEADER - CHIP) / 2) * feed.unit)
+end
+
+-- One cell of a bar.
+local function BuildChip(feed, spec, bar, x)
+	local unit = feed.unit
+	-- A child of its bar, which puts it a level over the bar and makes the bar's
+	-- surface the ground its mark is read on.
+	local chip = CreateFrame("Button", nil, bar)
+	chip:SetSize(CHIP * unit, CHIP * unit)
+	Place(feed, chip, x)
+
+	-- The hover, inset a pixel so it lights the cell and leaves the bar's
+	-- hairline standing where the cell meets it.
+	local px = ns.Pixel(chip)
+	chip.glow = ns.Fill(chip, "BACKGROUND", C.hover[1], C.hover[2], C.hover[3], 1)
+	chip.glow:SetPoint("TOPLEFT", px, -px)
+	chip.glow:SetPoint("BOTTOMRIGHT", -px, px)
+	chip.glow:Hide()
+
+	if spec.ring then
+		chip.mark = UI.Box(chip, nil, spec.color)
+		chip.mark:SetSize(CHIP_RING * unit, CHIP_RING * unit)
+	else
+		-- The glyph face, and the size raw rather than in units: inside a frame
+		-- ns.UI.Adopt has taken onto the grid a font size already is a pixel
+		-- height. Multiplied, SetFont was asked for 26.25, refused the fraction
+		-- and the chip drew nothing at all.
+		chip.mark = UI.Glyph(chip, CHIP_MARK, spec.color, "CENTER")
+		chip.mark:SetText(spec.mark)
+	end
+	chip.mark:SetPoint("CENTER")
+
+	chip.get, chip.set, chip.tip = spec.get, spec.set, spec.tip
+	chip:SetScript("OnClick", function(this)
+		this.set(not this.get())
+		PaintChip(this)
+		feed:Refilter()
+		feed:PaintReset()
+	end)
+	chip:SetScript("OnEnter", function(this)
+		this.glow:Show()
+		-- Opened above rather than beside: the pointer's hotspot is its top left
+		-- corner, so a box hung off the right of a sixteen pixel square lands
+		-- under the arrow that opened it. Called where the caller gave a
+		-- function, because a quality's name is a client global that is not
+		-- reliably in place while the addon's files are still loading.
+		local tip = this.tip
+		ns.Tip.Settle(this, { kind = "note",
+			lines = { type(tip) == "function" and tip() or tip } }, true, nil, ns.Tip.HOLD)
+	end)
+	chip:SetScript("OnLeave", function(this)
+		this.glow:Hide()
+		ns.Tip.Close()
+	end)
+	UI.PassCamera(chip)
+	PaintChip(chip)
+	return chip
+end
+
+-- The cross after the last bar. The addon's own button, the one the bag window
+-- clears with, at cell size and with its mark dimmed: it is the quietest
+-- control on the strip and only up while there is something to undo.
+local function BuildReset(feed, x)
+	local unit = feed.unit
+	local reset = UI.Button(feed.frame, { label = CLEAR, glyph = true, size = CHIP_MARK,
+		width = CHIP * unit, height = CHIP * unit,
+		tip = "Every chip back on. The column draws everything it holds again.",
+		onClick = function() feed:Reset() end })
+	Place(feed, reset, x)
+	reset.text:SetTextColor(C.dim[1], C.dim[2], C.dim[3])
+	UI.PassCamera(reset)
+	reset:Hide()
+	return reset
+end
+
 function Feed:BuildChips(specs)
-	local unit = self.unit
-	local x = INSET
-
-	for index = 1, #specs do
+	local x, from, bar = INSET, INSET, nil
+	for index = 1, #specs + 1 do
 		local spec = specs[index]
-		if spec.gap then
+		-- A gap or the end of the list closes the bar that is open, which is
+		-- when its width is known.
+		if bar and (not spec or spec.gap) then
+			bar:SetSize((x - from) * self.unit, CHIP * self.unit)
+			Place(self, bar, from)
+			bar = nil
+		end
+		if spec and spec.gap then
 			x = x + CHIP_BREAK
-		else
-			local chip = CreateFrame("Button", nil, self.frame)
-			chip:SetSize(CHIP * unit, CHIP * unit)
-			chip:SetPoint("TOPLEFT", self.frame, "TOPLEFT", x * unit,
-				-math.floor((HEADER - CHIP) / 2) * unit)
-
-			-- A square of the addon's own furniture with a mark on it, which is
-			-- what every other thing in here you can click looks like: an
-			-- ability square, an aura square, a button in the panel. It was a
-			-- rectangle of flat quality colour, and seven of those in a row read
-			-- as a colour picker somebody had left on the screen.
-			chip.bg = ns.Fill(chip, "BACKGROUND", C.control[1], C.control[2], C.control[3], 1)
-			chip.bg:SetAllPoints()
-			chip.edges = ns.Outline(chip, C.edge[1], C.edge[2], C.edge[3], 1)
-			ns.EdgeSize(chip.edges, ns.Pixel(chip))
-
-			-- The glyph face, so the mark is a gem or a quest bang rather than a
-			-- shape this file drew out of rectangles. UI/Text.lua falls the
-			-- whole thing back to Arial Narrow on a client that refuses the
-			-- font, and scripts/bake-glyphs.sh picked the three letters so that
-			-- what comes back is still a mark: `*`, `!` and `$`.
-			-- The size raw, not in units. Every measurement in this file is a
-			-- design pixel multiplied up by the zoom, and a font size is the one
-			-- thing that is not: inside a frame ns.UI.Adopt has taken onto the
-			-- grid, a font size already is a pixel height. Multiplied, this
-			-- asked UI.GlyphFont for 26.25, SetFont refused the fraction,
-			-- GetFont came back nil and the chip drew nothing at all. Every
-			-- other caller of UI.Glyph in the addon passes ns.UI.Metric.glyph
-			-- and this one now reads like them.
-			chip.mark = UI.Glyph(chip, CHIP_MARK, spec.color, "CENTER")
-			chip.mark:SetPoint("CENTER")
-			chip.mark:SetText(spec.mark)
-
-			chip.get, chip.set, chip.tip = spec.get, spec.set, spec.tip
-			chip:SetScript("OnClick", function(this)
-				this.set(not this.get())
-				PaintChip(this)
-				self:Refilter()
-			end)
-			chip:SetScript("OnEnter", function(this)
-				UI.Tint(this.bg, C.hover)
-				-- Opened above rather than beside. A tooltip hung off the right
-				-- of a sixteen pixel square lands underneath the cursor that
-				-- opened it, because the pointer's hotspot is its top left
-				-- corner and the arrow itself hangs down and to the right. On a
-				-- feed row, which is the width of the window, the same anchor
-				-- is fine and this would throw the box up over the rows.
-				-- Called rather than read where the caller gave a function. A
-				-- chip that names a quality names it in the client's own
-				-- language, and the client's own language is a global that is
-				-- not reliably in place while the addon's files are still
-				-- loading, which is the same trap Feeds/Loot.lua builds its
-				-- loot patterns at login to avoid.
-				local tip = this.tip
-				ns.Tip.Settle(this, { kind = "note",
-					lines = { type(tip) == "function" and tip() or tip } }, true, nil, ns.Tip.HOLD)
-			end)
-			chip:SetScript("OnLeave", function(this)
-				UI.Tint(this.bg, C.control)
-				ns.Tip.Close()
-			end)
-			UI.PassCamera(chip)
-			PaintChip(chip)
-
-			self.chips[#self.chips + 1] = chip
-			x = x + CHIP + CHIP_GAP
+		elseif spec then
+			if not bar then
+				bar = UI.Box(self.frame, C.control, C.edge)
+				self.bars[#self.bars + 1] = bar
+				from = x
+			end
+			self.chips[#self.chips + 1] = BuildChip(self, spec, bar, x)
+			x = x + CHIP
 		end
 	end
+	if #self.chips > 0 then
+		self.reset = BuildReset(self, x + CHIP_BREAK)
+	end
 	return #self.chips
+end
+
+-- The reset is up while the strip is and a chip on it is off. Read off the
+-- chips' own answers rather than their paint, so a setting moved from the panel
+-- is seen whichever order the repaint happens in.
+function Feed:PaintReset()
+	if not self.reset then
+		return false
+	end
+	local off = false
+	for index = 1, #self.chips do
+		off = off or not self.chips[index].get()
+	end
+	if self.chipped and off then
+		self.reset:Show()
+	else
+		self.reset:Hide()
+	end
+	return off
+end
+
+-- Every chip back to on, which is what the reset is pressed for and what a
+-- macro can call. The button goes under the cursor that pressed it, so its
+-- hover and its box are put away here rather than left to a leave that a hidden
+-- frame is not promised.
+function Feed:Reset()
+	for index = 1, #self.chips do
+		local chip = self.chips[index]
+		if not chip.get() then
+			chip.set(true)
+		end
+	end
+	if self.reset then
+		UI.Tint(self.reset.bg, self.reset.tone)
+		ns.Tip.Close()
+	end
+	return self:Chipped()
 end
 
 -- One chip, for scripts/harness.lua and for a macro. Handed out for the reason
@@ -709,6 +807,7 @@ function Feed:Chipped()
 	for index = 1, #self.chips do
 		PaintChip(self.chips[index])
 	end
+	self:PaintReset()
 	return self:Refilter()
 end
 
@@ -1269,6 +1368,9 @@ function Feed:MouseRows()
 	-- the button somebody turned the setting off to get back.
 	for index = 1, #self.chips do
 		self.chips[index]:EnableMouse(self.mouse and true or false)
+	end
+	if self.reset then
+		self.reset:EnableMouse(self.mouse and true or false)
 	end
 end
 
