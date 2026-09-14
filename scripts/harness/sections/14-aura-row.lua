@@ -35,13 +35,14 @@ local skinTicker, fire = H.carry.skinTicker, H.fire
 --
 -- Both halves, because the rows are told rather than polled now: UNIT_AURA is
 -- one of the four events that mark a block, and a pass with nothing marked
--- draws nothing at all. Firing it against both units rather than working out
--- which of the four rows a given check is about, since every one of them is a
--- row on one of these two frames. REFRESH is a fifth of a second, so a quarter
--- of one is exactly one pass and never two.
+-- draws nothing at all. Firing it against every unit rather than working out
+-- which of the six rows a given check is about, since every one of them is a
+-- row on one of these three frames. REFRESH is a fifth of a second, so a
+-- quarter of one is exactly one pass and never two.
 local function tick()
 	fire("UNIT_AURA", "player")
 	fire("UNIT_AURA", "target")
+	fire("UNIT_AURA", "pet")
 	skinTicker:Beat(0.25)
 end
 
@@ -467,6 +468,53 @@ do
 	tick()
 	check(not yours[1]:IsShown() and not mine[1]:IsShown(),
 		"a square is still lit with nothing on you")
+end
+
+--------------------------------------------------------------------------
+-- The pet's two rows
+--
+-- Reported as "I cannot see if I have Mend Pet on the pet": the pet block
+-- shipped with no rows and PetFrame, which drew its debuffs, is hidden whole.
+-- The pet is not mirrored, so its pair starts on its right edge like yours,
+-- and a row as wide as the pet block cannot run under your own.
+--------------------------------------------------------------------------
+do
+	local petBox = _G.WarriorKitPetButton
+	local petD, petB = _G.WarriorKitPetDebuffs, _G.WarriorKitPetBuffs
+	check(petD ~= nil and petB ~= nil,
+		"the skin built no aura rows on the pet block")
+
+	local dp, dr, drp = anchor(petD)
+	check(dp == "TOPRIGHT" and dr == petBox and drp == "BOTTOMRIGHT",
+		("the pet's debuff row is anchored %s to %s and belongs under the block"
+			.. " on its gauge end"):format(tostring(dp), tostring(drp)))
+	local bp, br, brp = anchor(petB)
+	check(bp == "BOTTOMRIGHT" and br == petBox and brp == "TOPRIGHT",
+		("the pet's buff row is anchored %s to %s and belongs over the block")
+			:format(tostring(bp), tostring(brp)))
+	check(math.abs(petB:GetWidth() - petBox:GetWidth()) < 1e-6,
+		("the pet's buff row is %.2f wide on a %.2f block, so it wraps under"
+			.. " your own"):format(petB:GetWidth(), petBox:GetWidth()))
+
+	buffs.pet = {
+		{ name = "Mend Pet", icon = "mend", expires = now + 15, source = "player" },
+	}
+	debuffs.pet = {
+		{ name = "Crippling Poison", icon = "poison", expires = now + 8,
+			source = "target" },
+	}
+	tick()
+	local mend, poison = squares(petB)[1], squares(petD)[1]
+	check(mend ~= nil and mend:IsShown() and mend.shownIcon == "mend"
+		and mend.shownState == "mine",
+		"Mend Pet on your pet is not drawn as yours on the pet's buff row")
+	check(poison ~= nil and poison:IsShown() and poison.shownIcon == "poison",
+		"the debuff on your pet is not drawn under the pet block")
+
+	buffs.pet, debuffs.pet = nil, nil
+	tick()
+	check(not mend:IsShown() and not poison:IsShown(),
+		"a square is still lit on the pet with nothing on it")
 end
 
 -- An aura the client answers with no art at all.

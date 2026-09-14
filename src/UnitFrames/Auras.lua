@@ -127,7 +127,9 @@ local TIMER_CEILING, COUNT_CEILING = 14, 11
 -- the switch that takes the rows off is `/wk skin auras`.
 --
 --   filter    what the client calls this half of the aura list
---   head      the client's own button names, which are what gets hidden
+--   head      the client's own button names, which are what gets hidden. The
+--             pet's rows have none: the client's pet debuffs are children of
+--             PetFrame, and Core/BlizzHide.lua takes that down whole
 --   max       what the client calls its own ceiling, asked of the client
 --             first so a backport that raised it is followed rather than
 --             argued with
@@ -163,6 +165,16 @@ local ROWS = {
 		{ key = "buffs", filter = "HELPFUL", head = "TargetFrameBuff", below = false,
 			max = "MAX_TARGET_BUFFS", ceiling = 32, hides = "hideBlizzTargetAuras",
 			global = "WarriorKitTargetBuffs" },
+	},
+	-- Mend Pet and whatever the mob put on it. The same pair off the same mirror,
+	-- so both run leftward from the pet's gauge end, which is the edge three
+	-- pixels off your own square, and a row wraps against the pet's width
+	-- rather than spilling under your block.
+	pet = {
+		{ key = "debuffs", filter = "HARMFUL", below = true, ceiling = 16,
+			global = "WarriorKitPetDebuffs" },
+		{ key = "buffs", filter = "HELPFUL", below = false, ceiling = 32,
+			global = "WarriorKitPetBuffs" },
 	},
 }
 
@@ -436,7 +448,7 @@ end
 -- the tick as well as on a style, so a switch that moves shows up within one
 -- pass and nothing has to work out which one moved.
 local function Groom(row)
-	if ns.db[row.hides] then
+	if row.hides and ns.db[row.hides] then
 		return Sweep(row)
 	end
 	return Unsweep(row)
@@ -670,10 +682,13 @@ function Auras.Build(entry)
 		-- One run per name the client counts from 1. Your buff row replaces
 		-- two of them, because the sharpening stone it leads with is drawn by
 		-- the client under a name of its own.
-		local ceiling = _G[spec.max] or spec.ceiling
-		local runs = { Run(spec.head, ceiling) }
+		local ceiling = spec.max and _G[spec.max] or spec.ceiling
+		local runs = {}
+		if spec.head then
+			runs[1] = Run(spec.head, ceiling)
+		end
 		if spec.enchants then
-			runs[2] = Run(ENCHANT_HEAD, ENCHANT_COUNT)
+			runs[#runs + 1] = Run(ENCHANT_HEAD, ENCHANT_COUNT)
 		end
 
 		list[index] = {
@@ -933,11 +948,12 @@ end
 
 function Auras.Describe()
 	if not ns.db.skinAuras then
-		return "no aura rows on the player or the target: each frame is its"
-			.. " block, so a row would land inside the gauge"
+		return "no aura rows on the player, the target or the pet: each frame is"
+			.. " its block, so a row would land inside the gauge"
 	end
-	return ("aura rows on both blocks at %dpx, every debuff and buff the client"
-		.. " reports, wrapping away from the block"):format(ns.db.skinAuraSize)
+	return ("aura rows on the player, target and pet at %dpx, every debuff and"
+		.. " buff the client reports, wrapping away from the block")
+		:format(ns.db.skinAuraSize)
 end
 
 -- What the size may be set to, so the slash word and the panel offer the same
