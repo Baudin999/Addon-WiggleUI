@@ -163,6 +163,34 @@ check(Tooltip.IsShown() and Tooltip.Owner() == cloth,
 	"with the wait off the box did not open as the pointer arrived")
 leave(cloth)
 H.tipSettle()
+
+-- Something else lands in the slot under a pointer that has not moved, which
+-- is what equipping off a square does: the old piece goes where the new one
+-- was. The box follows the square, so it names whatever the repaint put there.
+do
+	H.mouse.Place(H.mouse.Point(tusk))
+	enter(tusk)
+	check(Tooltip.IsShown() and Tooltip.Text(1) == "Chipped Boar Tusk",
+		("the box over the tusk reads %q"):format(tostring(Tooltip.Text(1))))
+	local bag, slot = tusk.bag, tusk.slot
+	CARRIED[bag][slot] = "Linen Cloth"
+	Window.Refresh()
+	-- Either the tusk's own square now holds something else, or the relayout
+	-- slid another square under the pointer. Both are a change the old box
+	-- does not describe, and the scene carries more than one tusk, so the name
+	-- alone cannot say which happened.
+	local under = ns.MouseFocus()
+	check(under ~= nil and (under ~= tusk or tusk.name ~= "Chipped Boar Tusk"),
+		"nothing under the pointer changed when the tusk left its slot")
+	check(Tooltip.IsShown() and Tooltip.Owner() == under and Tooltip.Text(1) == under.name,
+		("the square under the pointer holds %s and the box still reads %q")
+			:format(tostring(under and under.name), tostring(Tooltip.Text(1))))
+	leave(under)
+	H.tipSettle()
+	CARRIED[bag][slot] = "Chipped Boar Tusk"
+	Window.Refresh()
+	check(find("Chipped Boar Tusk") == tusk, "putting the tusk back laid it on another square")
+end
 ns.db.bagHover = 50
 
 -- The slash word and the panel share one ruler: a stop is taken, and a number

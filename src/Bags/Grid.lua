@@ -313,6 +313,7 @@ local function Give()
 end
 
 local function Enter(button)
+	button.told, button.toldCount = button.link, button.count
 	UI.Tint(button.bg, C.control)
 	-- The pointer says what the click would do, which at a vendor is sell this.
 	-- The window already dims what the merchant refuses, and dimming is a fact
@@ -334,6 +335,7 @@ local function Enter(button)
 end
 
 local function Leave(button)
+	button.told, button.toldCount = nil, nil
 	UI.Tint(button.bg, C.sunken)
 	if paying == button then
 		Give()
@@ -391,9 +393,37 @@ local function Square(index)
 	local button = squares[index]
 	if not button then
 		button = Build(index)
+		button.index = index
 		squares[index] = button
 	end
 	return button
+end
+
+-- The box over the square under the pointer, brought up to date with the
+-- square.
+--
+-- Equipping a sword off a square is the case this exists for: the old sword
+-- lands in the slot, the repaint writes it onto a square, and the pointer has
+-- not moved, so no OnEnter is coming. The template's own refresh does not cover
+-- it either, because the client only calls UpdateTooltip on a button that
+-- GameTooltip owns and this box is not GameTooltip.
+--
+-- Run once the whole layout is down rather than per square in Paint. A relayout
+-- moves squares, and the square under the pointer after it is not always the
+-- one that was under it before: asked before the move, the answer is a square
+-- that is about to be somewhere else.
+--
+-- What the square last told the box is written in Enter and wiped in Leave, so
+-- a square that slid under a still pointer has told nothing and is entered, and
+-- a refresh that changed nothing asks the client once and does nothing.
+local function Follow()
+	local under = ns.MouseFocus()
+	if type(under) ~= "table" or squares[under.index] ~= under then
+		return
+	end
+	if under.told ~= under.link or under.toldCount ~= under.count then
+		Enter(under)
+	end
 end
 
 --------------------------------------------------------------------------
@@ -708,6 +738,7 @@ function Grid.Paint(state, columns)
 	-- zoom cannot change inside one layout.
 	local side = Snap(SLOT)
 	if held and Hold(state, columns, side, selling) then
+		Follow()
 		return held.height
 	end
 	folded = nil
@@ -743,6 +774,7 @@ function Grid.Paint(state, columns)
 		left = here + UI.SlotSpan(width) + Gap()
 	end
 	Trim(at, named, subs)
+	Follow()
 	local height = math.max(line + tall, 1)
 	-- The first paint at a vendor, or the one after a hold broke, is the one
 	-- the squares are held at from here until the vendor closes.
