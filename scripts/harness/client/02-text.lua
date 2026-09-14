@@ -732,7 +732,11 @@ _G.C_NamePlate = {
 	-- detail: the bars read a plate's width to size themselves, so a stub that
 	-- only records the call cannot see a bar sizing itself off its own last
 	-- answer. Plates put up later start at the size in force, the same way.
-	SetNamePlateEnemySize = function(w, h)
+	--
+	-- SetNamePlateSize, the name 2.5.6 and 1.15.9 both document. This stub
+	-- carried the retail SetNamePlateEnemySize, so the size check passed
+	-- against a call neither client has while no plate in the game was sized.
+	SetNamePlateSize = function(w, h)
 		plateSize[1], plateSize[2] = w, h
 		for _, p in ipairs(plates) do
 			p:SetSize(w, h)

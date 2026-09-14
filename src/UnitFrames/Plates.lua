@@ -33,7 +33,7 @@ ns.Plates = Plates
 --                     bar is a child of a plate, so the range the bars work at
 --                     is this CVar's and nothing else's.
 --
--- SetNamePlateEnemySize tells it the real figure. Where that call is missing,
+-- SetNamePlateSize tells it the real figure. Where that call is missing,
 -- nameplateOverlapV multiplies the height the driver uses instead, which gets
 -- the spacing right and leaves the click target where it was.
 --
@@ -140,8 +140,22 @@ end
 -- SetFootprint rather than by the combat flush. Reporting either as unfinished
 -- leaves pending set for the session and re-runs the whole apply on every
 -- combat drop for nothing.
+-- The call that tells the client how big a plate is. Both clients this addon
+-- ships for name it SetNamePlateSize, and it is the one Blizzard's own driver
+-- makes in UpdateNamePlateSize. This file used to ask only for
+-- SetNamePlateEnemySize, the retail name, which neither client has. The size
+-- was never sent, the plate stayed Blizzard's, and a click on most of a bar
+-- landed on the world. The retail name stays as the fallback.
+local function SizeCall()
+	if not C_NamePlate then
+		return nil
+	end
+	return C_NamePlate.SetNamePlateSize or C_NamePlate.SetNamePlateEnemySize
+end
+
 local function ApplySize()
-	if not (C_NamePlate and C_NamePlate.SetNamePlateEnemySize) then
+	local call = SizeCall()
+	if not call then
 		return true
 	end
 	local width = footprintWidth or naturalWidth
@@ -149,7 +163,7 @@ local function ApplySize()
 	if not width or not height then
 		return true
 	end
-	local ok = pcall(C_NamePlate.SetNamePlateEnemySize, width, height)
+	local ok = pcall(call, width, height)
 	if ok then
 		sizeApplied = true
 	end
@@ -157,17 +171,43 @@ local function ApplySize()
 end
 
 local function RestoreSize()
-	if not sizeApplied or not (C_NamePlate and C_NamePlate.SetNamePlateEnemySize) then
+	local call = SizeCall()
+	if not sizeApplied or not call then
 		return true
 	end
 	if not naturalWidth or not naturalHeight then
 		return true
 	end
-	local ok = pcall(C_NamePlate.SetNamePlateEnemySize, naturalWidth, naturalHeight)
+	local ok = pcall(call, naturalWidth, naturalHeight)
 	if ok then
 		sizeApplied = false
 	end
 	return ok
+end
+
+-- The driver sends its own size on every display change and on every
+-- nameplate option CVar, and the last write wins. Without this a resized
+-- window put Blizzard's small box back under every bar until the next reload.
+--
+-- A post hook rather than the driver's SetBaseNamePlateSize, because that one
+-- runs the driver's whole options pass from addon code and taints every plate
+-- it touches. Only while a size of ours is in force: with the bars off the
+-- driver's figure is the right one.
+local hooked
+local function HookDriver()
+	if hooked or type(hooksecurefunc) ~= "function" then
+		return
+	end
+	local driver = _G.NamePlateDriverFrame
+	if type(driver) ~= "table" or type(driver.UpdateNamePlateSize) ~= "function" then
+		return
+	end
+	hooked = true
+	hooksecurefunc(driver, "UpdateNamePlateSize", function()
+		if sizeApplied and not ApplySize() then
+			pending = true -- refused in combat, and PLAYER_REGEN_ENABLED flushes it
+		end
+	end)
 end
 
 -- Only on the fallback path. Where the size call took, the driver already knows
@@ -340,6 +380,7 @@ function Plates.Apply()
 	-- The range and the click target, which belong to the bars being drawn at
 	-- all rather than to how they are spaced.
 	if ns.db.bars then
+		HookDriver()
 		done = ApplyDistance() and done
 		done = ApplySize() and done
 	else
@@ -428,7 +469,7 @@ function Plates.Describe()
 			footprintWidth or 0, footprintHeight or 0)
 	end
 	if overlapApplied then
-		return "stacking, spaced by nameplateOverlapV because this client has no SetNamePlateEnemySize"
+		return "stacking, spaced by nameplateOverlapV because this client has no SetNamePlateSize"
 	end
 	return "stacking, and nothing has measured a plate yet"
 end

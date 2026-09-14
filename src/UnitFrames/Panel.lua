@@ -105,9 +105,9 @@ local function EnemyBars(ui)
 	ui.Hint("A plate swallows every button that lands on it, and the right button drag that turns the camera is one of them. Handing one back costs whatever that button did.")
 
 	ui.Check("plates pass the mouse through (camera turns, no click targeting)",
-		function() return ns.db.barsClickThrough end,
+		function() return ns.db.barsMouseThrough end,
 		function(value)
-			ns.db.barsClickThrough = value
+			ns.db.barsMouseThrough = value
 			ns.EnemyBars.Rebuild()
 		end)
 	ui.Hint("Unlock the frames and each plate outlines the region that takes the mouse in red. Our bar is anchored to it, so the two should agree.")

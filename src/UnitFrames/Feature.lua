@@ -82,7 +82,7 @@ local BarsWord = ns.Command.Word({
 			"camera pass-through: " .. ns.EnemyBars.CameraState() .. "."
 	  end },
 
-	{ "clickthrough", toggle = true, key = "barsClickThrough", apply = BarsRebuild,
+	{ "clickthrough", toggle = true, key = "barsMouseThrough", apply = BarsRebuild,
 	  say = function(on)
 		return on
 			and "plates pass the mouse through. The camera turns over a bar again, and clicking a plate no longer targets or marks."
@@ -566,13 +566,18 @@ ns.Register({
 		-- and nothing else. Off hands the job back to Blizzard's own plate cast
 		-- bar, which `replace` style stops hiding at the same moment.
 		barsCast = true,
-		barsClickThrough = true, -- the camera, at the price of click targeting and marking on a plate
+		-- Off, so a left click on a bar targets and ctrl-click marks. It
+		-- shipped on as barsClickThrough, which took the mouse off every plate:
+		-- nobody could click a bar to target, and the key is retired in
+		-- Core/Core.lua so the shipped `true` does not survive in a saved file.
+		-- The camera drag it was bought for is barsCamera's job below.
+		barsMouseThrough = false,
 		-- Which buttons a plate hands back to the world while keeping the
 		-- rest. "right" is the default because it buys the camera drag and
 		-- costs only right-click-to-interact and ctrl-right-click cross
 		-- marking on a plate, both of which have somewhere else to happen.
 		-- "left" or "both" give up click targeting, which is what
-		-- barsClickThrough already does more plainly. "off" is the old
+		-- barsMouseThrough already does more plainly. "off" is the old
 		-- all-or-nothing behaviour.
 		barsCamera = "right",
 		barsMax = 8,
@@ -999,7 +1004,7 @@ ns.Register({
 		return ("bars %s, mode %s (%s), style %s, up to %d, plates %s, camera %s%s; screen %s; %s; font %s; skin %s")
 			:format(ns.db.bars and "on" or "off", ns.db.barsMode,
 				ns.EnemyBars.Mode(), ns.db.barsStyle, ns.db.barsMax,
-				ns.db.barsClickThrough and "click through" or "clickable",
+				ns.db.barsMouseThrough and "click through" or "clickable",
 				ns.EnemyBars.CameraState(),
 				ns.HasThreat() and "" or ", no threat api so colour is who each mob is hitting",
 				ns.UI.Describe(), ns.Plates.Describe(), ns.UI.FontName(),

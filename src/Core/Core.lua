@@ -184,6 +184,14 @@ local RETIRED = {
 	-- did not gets the new defaults, which is what they wanted either way.
 	hitsMinePoint = true,
 	hitsTheirsPoint = true,
+	-- 1.9: whether a nameplate ignored the mouse, shipped on. On, it took the
+	-- mouse off every plate, so a click on a bar never targeted the mob or the
+	-- player under it, and nothing on the bar said why. It starts off now under
+	-- barsMouseThrough. Wiped rather than carried, because a saved `true` is
+	-- the shipped default in nearly every file and carrying it keeps the bug.
+	-- The camera drag it was on for is barsCamera's, which hands the right
+	-- button back and leaves the left one to target.
+	barsClickThrough = true,
 }
 
 -- A key lives in exactly one scope. Checking both tables on every insert is

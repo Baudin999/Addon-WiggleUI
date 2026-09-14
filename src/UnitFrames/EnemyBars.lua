@@ -1150,7 +1150,7 @@ end
 -- clickthrough on there is none: the plate has no mouse and nothing is being
 -- taken, so an outline would be claiming something that is not true.
 local function ShowHitbox(widget)
-	widget.hitbox:SetShown(widget.hitbox.hosted and not ns.db.locked and not ns.db.barsClickThrough) -- unguarded: run when a plate appears and when the lock or the clickthrough setting moves, never from a tick
+	widget.hitbox:SetShown(widget.hitbox.hosted and not ns.db.locked and not ns.db.barsMouseThrough) -- unguarded: run when a plate appears and when the lock or the clickthrough setting moves, never from a tick
 end
 
 -- What the client needs to know to stop two bars landing on each other, and
@@ -1949,7 +1949,7 @@ end
 -- Whether the pass-through path is doing anything on this client, for the
 -- status line. "off" is a setting, "unavailable" is a client.
 function EnemyBars.CameraState()
-	if ns.db.barsClickThrough then
+	if ns.db.barsMouseThrough then
 		return "moot" -- the plate has no mouse at all, so every button is through
 	end
 	if not CAMERA_BUTTONS[ns.db.barsCamera] then
@@ -2002,7 +2002,7 @@ local function PlateMouse(plate, enabled, buttons)
 end
 
 local function StripPlate(plate)
-	local complete = PlateMouse(plate, not ns.db.barsClickThrough, CAMERA_BUTTONS[ns.db.barsCamera])
+	local complete = PlateMouse(plate, not ns.db.barsMouseThrough, CAMERA_BUTTONS[ns.db.barsCamera])
 	local replacing = ns.db.barsStyle == "replace"
 	-- Asked for only in the style that takes them, and walked only when there
 	-- is a list. The `or {}` that used to stand in the loop header built an

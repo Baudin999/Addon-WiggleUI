@@ -153,6 +153,41 @@ do
 		"the plate is narrower than the bar on it, so a click near either end misses")
 end
 
+-- A click on a bar targets, which takes two things and had neither. The plate
+-- keeps the mouse by default: clickthrough shipped on and took it off every
+-- plate. And the size survives Blizzard's driver, which sends its own on every
+-- display change and nameplate option CVar, last write winning.
+--
+-- hooksecurefunc and the driver are installed for this block alone, for the
+-- reason 43-blizzard-hide.lua gives: left in the fixture, the hook switches on
+-- code in other files that every other section measures without.
+do
+	check(ns.db.barsMouseThrough == false, "nameplates ship ignoring the mouse, so a click on a bar never targets")
+	check(not ns.EnemyBars.WidgetFor("nameplate1").plate.UnitFrame.wkMouseOff,
+		"the plate under nameplate1's bar has had its mouse taken away")
+
+	local wanted = { plateSize[1], plateSize[2] }
+	_G.hooksecurefunc = function(target, name, post)
+		local original = target[name]
+		target[name] = function(...)
+			original(...)
+			post(...)
+		end
+	end
+	_G.NamePlateDriverFrame = {
+		UpdateNamePlateSize = function()
+			_G.C_NamePlate.SetNamePlateSize(H.PLATE_W, H.PLATE_H)
+		end,
+	}
+	ns.Plates.Apply()
+	_G.NamePlateDriverFrame:UpdateNamePlateSize()
+	_G.hooksecurefunc, _G.NamePlateDriverFrame = nil, nil
+
+	check(plateSize[1] == wanted[1] and plateSize[2] == wanted[2],
+		("the driver put the plate back to %s by %s and nothing sized it to the bar again")
+			:format(tostring(plateSize[1]), tostring(plateSize[2])))
+end
+
 -- Allocation. Every ticker but the bars' is somebody else's measurement, so the
 -- two the bars arm are named and nothing else on the driver frame is driven.
 check(ns.UI.Ticking("cast") ~= nil and ns.UI.Ticking("bars") ~= nil,
