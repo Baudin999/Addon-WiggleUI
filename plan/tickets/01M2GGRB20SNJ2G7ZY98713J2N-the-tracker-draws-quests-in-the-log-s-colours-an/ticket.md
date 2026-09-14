@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GGRB20SNJ2G7ZY98713J2N
 type: task
-status: todo
+status: doing
 title: The tracker draws quests in the log's colours and level tag
 ---
 
