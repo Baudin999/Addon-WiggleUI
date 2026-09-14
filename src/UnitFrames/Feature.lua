@@ -59,35 +59,14 @@ end
 
 -- The words the enemy bars answer to.
 --
--- The first four are about the plate under the bar rather than about the bar:
--- which buttons it hands back, whether it takes the mouse at all, how the
--- driver spaces two of them and how far out it puts one up. They are first and
--- they are together because they are one subject: every one of them ends in a
--- Plates call or a sentence about the client's own nameplate driver, and none
--- of them touches the widget.
+-- The first two are about the plate under the bar rather than about the bar:
+-- how the driver spaces two of them and how far out it puts one up. They are
+-- first and together because they are one subject: both end in a Plates call
+-- or a sentence about the client's own nameplate driver, and neither touches
+-- the widget.
 local BarsWord = ns.Command.Word({
 	name = "bars",
 	finally = function() ns.EnemyBars.Update() end,
-
-	{ "camera", choice = { "right", "left", "both", "off" }, key = "barsCamera",
-	  apply = BarsRebuild,
-	  say = function(value)
-		return value == "off"
-			and "plates keep every button. The camera will not turn over a bar."
-			or ("plates hand the %s button back to the world, so the camera turns over a bar. %s")
-				:format(value == "both" and "left and right" or value,
-					value == "right"
-						and "Click targeting and ctrl-click marking still work."
-						or "Click targeting on a plate is gone with it."),
-			"camera pass-through: " .. ns.EnemyBars.CameraState() .. "."
-	  end },
-
-	{ "clickthrough", toggle = true, key = "barsMouseThrough", apply = BarsRebuild,
-	  say = function(on)
-		return on
-			and "plates pass the mouse through. The camera turns over a bar again, and clicking a plate no longer targets or marks."
-			or "plates take the mouse. Click targeting and ctrl-click marking work, and the camera will not turn over a bar."
-	  end },
 
 	{ "stack", toggle = true, key = "barsStack",
 	  apply = function() ns.Plates.Apply() end,
@@ -566,20 +545,6 @@ ns.Register({
 		-- and nothing else. Off hands the job back to Blizzard's own plate cast
 		-- bar, which `replace` style stops hiding at the same moment.
 		barsCast = true,
-		-- Off, so a left click on a bar targets and ctrl-click marks. It
-		-- shipped on as barsClickThrough, which took the mouse off every plate:
-		-- nobody could click a bar to target, and the key is retired in
-		-- Core/Core.lua so the shipped `true` does not survive in a saved file.
-		-- The camera drag it was bought for is barsCamera's job below.
-		barsMouseThrough = false,
-		-- Which buttons a plate hands back to the world while keeping the
-		-- rest. "right" is the default because it buys the camera drag and
-		-- costs only right-click-to-interact and ctrl-right-click cross
-		-- marking on a plate, both of which have somewhere else to happen.
-		-- "left" or "both" give up click targeting, which is what
-		-- barsMouseThrough already does more plainly. "off" is the old
-		-- all-or-nothing behaviour.
-		barsCamera = "right",
 		barsMax = 8,
 		-- Pixels, like every other size in the bars, and one figure for both
 		-- modes. A bar on a plate used to take the plate's own width, which
@@ -959,7 +924,6 @@ ns.Register({
 	help = {
 		"bars on|off, bars mode auto|plates|list, bars style replace|attach",
 		"bars offset <-60-60>, bars marker on|off, bars level on|off, bars quest on|off",
-		"bars clickthrough on|off, bars camera right|left|both|off",
 		"bars cast on|off, the cast row under each bar",
 		"bars max <1-15>, bars width <120-400>, bars zoom <1-3>",
 		"bars debuff list|reset, bars debuff add|remove <spell id>, what the icon row tracks",
@@ -1001,11 +965,9 @@ ns.Register({
 	},
 
 	status = function()
-		return ("bars %s, mode %s (%s), style %s, up to %d, plates %s, camera %s%s; screen %s; %s; font %s; skin %s")
+		return ("bars %s, mode %s (%s), style %s, up to %d%s; screen %s; %s; font %s; skin %s")
 			:format(ns.db.bars and "on" or "off", ns.db.barsMode,
 				ns.EnemyBars.Mode(), ns.db.barsStyle, ns.db.barsMax,
-				ns.db.barsMouseThrough and "click through" or "clickable",
-				ns.EnemyBars.CameraState(),
 				ns.HasThreat() and "" or ", no threat api so colour is who each mob is hitting",
 				ns.UI.Describe(), ns.Plates.Describe(), ns.UI.FontName(),
 				ns.FrameSkin.Describe())
@@ -1030,7 +992,6 @@ ns.Register({
 		ns.db.barsPoint = ns.DefaultCopy("barsPoint")
 		ns.db.barsWidth = ns.DefaultCopy("barsWidth")
 		ns.db.barsOffset = ns.DefaultCopy("barsOffset")
-		ns.db.barsCamera = ns.DefaultCopy("barsCamera")
 		ns.db.barsZoom = ns.DefaultCopy("barsZoom")
 		ns.db.barsStack = ns.DefaultCopy("barsStack")
 		ns.db.barsIconSize = ns.DefaultCopy("barsIconSize")

@@ -166,21 +166,20 @@ local UNIT_FRAMES = {
 	"PetFrame",
 }
 
+-- No nameplate is on the list, and one used to be hooked on every
+-- NAME_PLATE_UNIT_ADDED. That hook is what made a click on a bar target
+-- nothing. Blizzard_NamePlateUnitFrame.lua turns the plate's mouse off in
+-- OnLoad, because the client hit-tests a plate click in C++. A mouse script
+-- turns a frame's mouse back on, so the hooked UnitFrame took every click and
+-- did nothing with it. Ctrl-click on a plate marks through Keys.lua's override
+-- binding on `mouseover`, the same way it does in the world.
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("PLAYER_TARGET_CHANGED")
-if C_NamePlate then
-	events:RegisterEvent("NAME_PLATE_UNIT_ADDED")
-end
 events:SetScript("OnEvent", function(_, event, arg1)
 	if event == "PLAYER_LOGIN" then
 		for _, name in ipairs(UNIT_FRAMES) do
 			Hook(_G[name])
-		end
-	elseif event == "NAME_PLATE_UNIT_ADDED" then
-		local plate = C_NamePlate.GetNamePlateForUnit(arg1)
-		if plate then
-			Hook(plate.UnitFrame or plate)
 		end
 	elseif event == "PLAYER_TARGET_CHANGED" then
 		-- The fallback for a client that will not take the ctrl-click override.

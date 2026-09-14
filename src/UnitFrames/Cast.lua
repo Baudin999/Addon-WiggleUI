@@ -282,9 +282,8 @@ function Cast.Fit(widget, unit, px, onPlate)
 	return height
 end
 
--- How many cast events have reached a bar. Counted rather than inferred, for
--- the reason EnemyBars.CameraState counts: nothing installed on these clients
--- proves UNIT_SPELLCAST_START fires for a `nameplateN` token, and the honest
+-- How many cast events have reached a bar. Counted rather than inferred:
+-- nothing installed on these clients proves UNIT_SPELLCAST_START fires for a `nameplateN` token, and the honest
 -- answers are "none yet" and a number, not a claim either way. Losing the
 -- events costs a second and nothing else, so this is a line in the status
 -- rather than a warning.

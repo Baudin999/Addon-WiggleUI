@@ -184,14 +184,17 @@ local RETIRED = {
 	-- did not gets the new defaults, which is what they wanted either way.
 	hitsMinePoint = true,
 	hitsTheirsPoint = true,
-	-- 1.9: whether a nameplate ignored the mouse, shipped on. On, it took the
-	-- mouse off every plate, so a click on a bar never targeted the mob or the
-	-- player under it, and nothing on the bar said why. It starts off now under
-	-- barsMouseThrough. Wiped rather than carried, because a saved `true` is
-	-- the shipped default in nearly every file and carrying it keeps the bug.
-	-- The camera drag it was on for is barsCamera's, which hands the right
-	-- button back and leaves the left one to target.
+	-- 1.9: how a plate took the mouse. barsClickThrough turned the plate's
+	-- UnitFrame mouse off, barsCamera handed buttons back through
+	-- SetPassThroughButtons, and barsMouseThrough was a rename of the first
+	-- that lived one commit. All three assumed a plate arrives mouse enabled.
+	-- It does not: Blizzard_NamePlateUnitFrame.lua turns the mouse off in
+	-- OnLoad and the client hit-tests the click in C++. What took clicks was
+	-- Marking's OnMouseDown hook on the plate, and with the hook gone a plate
+	-- stays as Blizzard left it and there is nothing to choose.
 	barsClickThrough = true,
+	barsMouseThrough = true,
+	barsCamera = true,
 }
 
 -- A key lives in exactly one scope. Checking both tables on every insert is
@@ -575,9 +578,8 @@ end
 
 -- nil until a cast has been read, false once one has been read and the client
 -- left that slot empty, true once one has come back with the flag in it.
--- Reported and never inferred, the same as EnemyBars.CameraState: "this client
--- does not say" and "nothing has said yet" are two different answers and the
--- second one is not a claim.
+-- Reported and never inferred: "this client does not say" and "nothing has
+-- said yet" are two different answers and the second one is not a claim.
 local immuneKnown
 
 function ns.CastImmuneKnown()

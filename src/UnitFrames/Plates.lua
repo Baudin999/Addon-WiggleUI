@@ -47,9 +47,6 @@ ns.Plates = Plates
 -- plate is that holds the whole bar. `bars stack` keeps the two CVars, which
 -- are the half that is really about spacing.
 --
--- A bigger plate does swallow more of a camera drag, which is the trade `bars
--- camera` and `bars clickthrough` manage.
---
 -- All four are the player's, borrowed, and so is the friendly player plate the
 -- bars need to reach your own side. Turning a setting off puts back what
 -- was there, the same way Targeting/Aim.lua hands its own CVars back.
@@ -134,24 +131,25 @@ function Plates.SetFootprint(width, height)
 	return true
 end
 
--- Returns whether there is nothing left owing, not whether it wrote. A client
--- with no such call and a plate nobody has measured yet are both settled: the
--- first will never be able to, and the second is retried by Measure and
--- SetFootprint rather than by the combat flush. Reporting either as unfinished
--- leaves pending set for the session and re-runs the whole apply on every
--- combat drop for nothing.
 -- The call that tells the client how big a plate is. Both clients this addon
 -- ships for name it SetNamePlateSize, and it is the one Blizzard's own driver
 -- makes in UpdateNamePlateSize. This file used to ask only for
 -- SetNamePlateEnemySize, the retail name, which neither client has. The size
--- was never sent, the plate stayed Blizzard's, and a click on most of a bar
--- landed on the world. The retail name stays as the fallback.
+-- was never sent, so the client hit-tested Blizzard's small plate under a bar
+-- twice its height. The retail name stays as the fallback.
 local function SizeCall()
 	if not C_NamePlate then
 		return nil
 	end
 	return C_NamePlate.SetNamePlateSize or C_NamePlate.SetNamePlateEnemySize
 end
+
+-- Returns whether there is nothing left owing, not whether it wrote. A client
+-- with no such call and a plate nobody has measured yet are both settled: the
+-- first will never be able to, and the second is retried by Measure and
+-- SetFootprint rather than by the combat flush. Reporting either as unfinished
+-- leaves pending set for the session and re-runs the whole apply on every
+-- combat drop for nothing.
 
 local function ApplySize()
 	local call = SizeCall()

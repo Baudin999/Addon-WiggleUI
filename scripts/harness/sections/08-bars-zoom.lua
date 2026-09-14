@@ -153,18 +153,29 @@ do
 		"the plate is narrower than the bar on it, so a click near either end misses")
 end
 
--- A click on a bar targets, which takes two things and had neither. The plate
--- keeps the mouse by default: clickthrough shipped on and took it off every
--- plate. And the size survives Blizzard's driver, which sends its own on every
+-- A click on a bar targets, which takes two things and had neither.
+--
+-- The plate keeps Blizzard's mouse, which is none: the client hit-tests a plate
+-- click in C++. Marking hooked OnMouseDown on every plate's UnitFrame, a mouse
+-- script turns the mouse on, and the UnitFrame then took every click and
+-- targeted nothing. So no plate may carry a script of ours or have its mouse on.
+--
+-- And the size survives Blizzard's driver, which sends its own on every
 -- display change and nameplate option CVar, last write winning.
 --
 -- hooksecurefunc and the driver are installed for this block alone, for the
 -- reason 43-blizzard-hide.lua gives: left in the fixture, the hook switches on
 -- code in other files that every other section measures without.
 do
-	check(ns.db.barsMouseThrough == false, "nameplates ship ignoring the mouse, so a click on a bar never targets")
-	check(not ns.EnemyBars.WidgetFor("nameplate1").plate.UnitFrame.wkMouseOff,
-		"the plate under nameplate1's bar has had its mouse taken away")
+	for _, plate in ipairs(H.plates) do
+		local unitFrame = plate.UnitFrame
+		check(unitFrame:GetScript("OnMouseDown") == nil and plate:GetScript("OnMouseDown") == nil,
+			("%s carries an OnMouseDown script, which turns its mouse on and eats the click that targets")
+				:format(plate.namePlateUnitToken))
+		check(not unitFrame:IsMouseEnabled(),
+			("%s's UnitFrame takes the mouse, so a click on its bar never reaches the world")
+				:format(plate.namePlateUnitToken))
+	end
 
 	local wanted = { plateSize[1], plateSize[2] }
 	_G.hooksecurefunc = function(target, name, post)

@@ -1965,11 +1965,12 @@ Clique also proves the key binds at all on this client: its global branch skips
 button binding would eat plain targeting, and takes every modified one.
 
 The right button is never claimed in the world. A binding on it swallows the
-camera drag, which is the trade `bars camera` and `bars clickthrough` exist to
-manage on a plate.
-Nameplates and unit frames are ordinary UI frames and take their own clicks
-before the binding system does, so ctrl-right-click still marks a cross there,
-through the OnMouseDown hook.
+camera drag.
+Unit frames are ordinary UI frames and take their own clicks before the binding
+system does, so ctrl-right-click still marks a cross there, through the
+OnMouseDown hook. A nameplate is not hooked. Its click is hit-tested in C++ and
+reaches the binding like any world click, and a hook would turn its mouse on
+and stop the click targeting.
 
 PLAYER_TARGET_CHANGED with ctrl held survives as a fallback for a client that
 refuses the override, and only runs while the keys are not held. Holding both
@@ -3667,72 +3668,25 @@ every glyph and every icon inside it drawn across two rows. `PlaceOnPlate` used
 to round that away and give up half a pixel of centring in exchange. An even bar
 gives up nothing and there is nothing left to round.
 
-**A plate is a hole in the camera, and the hole is not ours.** The widget calls
-`EnableMouse(false)` on itself and none of its children ever take the mouse, so
-what swallows a button over a bar is `plate.UnitFrame` underneath it: a mouse
-enabled secure button, which is exactly how a click on a plate targets and where
-ctrl-click marking gets its unit.
+**A plate takes no mouse, and nothing here gives it one.**
+`Blizzard_NamePlateUnitFrame.lua` calls `EnableMouse(false)` on the plate's
+UnitFrame in `OnLoad`, under the comment "Nothing in the nameplate is
+clickable. Hit testing is done at the C++ level". A left click on a bar reaches
+the world and the client targets the unit under it. A right drag turns the
+camera for the same reason. `C_NamePlate.SetNamePlateSize` sizes the frame the
+client tests against, which is why `Plates.lua` sends the bar's footprint
+through it.
 
-This section used to say 2.5.6 had no `SetMouseClickEnabled` and no way to keep
-one button while handing back another. Both halves were wrong, and they were
-inference rather than a probe. `SetPassThroughButtons` is here: Details calls it
-unguarded in `functions/slash.lua`, which `Details_TBC.toc` loads at Interface
-20506, for its own click-through options. `SetMouseClickEnabled` is here too,
-called unguarded in `OPie/UI/Widgets.lua`, whose TOC lists 20506. Questie
-replaces `SetPassThroughButtons` with a no-op on its world map pin under the
-comment "hack to avoid in-combat error", which is what says it is protected.
+This section used to document `bars clickthrough` and `bars camera`, which
+assumed the UnitFrame arrived mouse enabled and swallowed buttons. It did
+swallow them, and the cause was ours: `Marking.lua` hooked `OnMouseDown` on
+every plate, a mouse script turns the mouse on, and the UnitFrame then took
+every click and targeted nothing. The hook, both settings and `PlateMouse` are
+gone, and their keys are in `RETIRED`.
 
-So a plate can keep the mouse and hand one button back. `bars camera` is that
-setting and it defaults to `right`.
-
-    right   the default. Right button reaches the world, so the camera turns
-            over a bar. Left still targets and ctrl-left still marks. The cost
-            is Blizzard's right-click-to-interact and ctrl-right-click cross
-            marking on a plate.
-    left    camera orbit over a bar, at the price of click targeting, since the
-            click that targets is a left click on the frame and a button that
-            passes through never reaches the frame at all.
-    both    click-through by another name. Prefer `bars clickthrough`.
-    off     the plate keeps every button. What every version before this did.
-
-`bars clickthrough on` is still there and still calls `EnableMouse(false)` on the
-button, which gives the whole plate back to the world. With it on, `bars camera`
-is moot and `CameraState()` says so. It ships on: the camera turning wherever the
-cursor happens to be is worth more all evening than click targeting on a plate
-is, and marking has the keys in `markBinds` and the target fallback either way.
-It is a trade rather than a fix, which is why it stayed a setting.
-
-`PlateMouse` tracks the mouse state and the pass-through state separately. A
-plate arrives mouse enabled, so the `EnableMouse` call is never made in the
-default configuration and one shared guard would have skipped the pass-through
-along with it. Both halves are idempotent, both refuse under lockdown, and both
-finish through the same `pending` flush on PLAYER_REGEN_ENABLED.
-
-`EnemyBars.CameraState()` reports which path is live and never infers it:
-`unproven` until a call has been made, `unavailable` on a client without the
-method, `moot` when clickthrough already took the plate, and otherwise the
-setting.
-
-**The hit box is Blizzard's and cannot be resized, so it is drawn instead.** The
-widget in `replace` mode is around fifty pixels tall counting the debuff row and
-the threat line, and `plate.UnitFrame` is its own size underneath. When those two
-rectangles do not line up, part of a bar takes the mouse and part of it does not,
-with nothing on screen saying where the boundary is. That reads as the addon
-being flaky.
-
-Two things about it. `PlaceOnPlate` anchors the widget to `plate.UnitFrame`
-rather than to the plate, so the bar sits on the frame that actually takes the
-mouse by construction instead of by a constant that happened to line up; where
-the two are coincident, which is the usual shape, it places identically. And
-each widget carries a `hitbox` frame outlined in red that is shown only while the
-frames are unlocked and only when there is a hit box to draw, so the boundary can
-be checked by eye in two seconds rather than inferred from behaviour.
-
-Untried avenue: `CameraOrSelectOrMoveStart` and `CameraOrSelectOrMoveStop` are
-public, and a right button `OnMouseDown` on the plate could hand the drag back to
-the camera by hand. It needs a script on a secure nameplate button, which taints
-it. `SetPassThroughButtons` does the same job with no taint, so this stays
-unattempted.
+**The plate is outlined while unlocked.** Each widget carries a `hitbox` frame
+outlined in red on `plate.UnitFrame`, shown only while the frames are unlocked,
+so where a bar sits on its plate can be checked by eye.
 
 `barsMode` defaults to `auto`, which reads
 `nameplateShowEnemies` and runs the attached version when nameplates are on and

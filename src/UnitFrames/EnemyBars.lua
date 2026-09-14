@@ -1130,14 +1130,10 @@ local function CreateWidget()
 
 	widget.targetedBy = Text(widget, PLATE_TEXT, HEALTH_TEXT, "CENTER")
 
-	-- The outline of what actually takes the mouse, drawn only while the frames
-	-- are unlocked.
-	--
-	-- The hit box is Blizzard's UnitFrame and the addon cannot resize it, so
-	-- the honest thing is to show where it is. Without this the boundary is
-	-- invisible, and a drag that turns the camera over one part of a bar and
-	-- refuses over another reads as the addon being flaky rather than as two
-	-- rectangles that do not line up.
+	-- The outline of the plate's UnitFrame, drawn only while the frames are
+	-- unlocked. The click itself is hit-tested in C++ against a frame no addon
+	-- can see, placed where the plate is and sized by SetNamePlateSize, so the
+	-- outline is where to look first when one edge of a bar does not target.
 	local hitbox = CreateFrame("Frame", nil, widget)
 	hitbox.edges = ns.Outline(hitbox, 0.95, 0.35, 0.35, 0.9)
 	hitbox:Hide()
@@ -1146,11 +1142,9 @@ local function CreateWidget()
 	return widget
 end
 
--- Shown while unlocked, and only when there is a hit box to draw. With
--- clickthrough on there is none: the plate has no mouse and nothing is being
--- taken, so an outline would be claiming something that is not true.
+-- Shown while unlocked, and only on a plate that has a UnitFrame to outline.
 local function ShowHitbox(widget)
-	widget.hitbox:SetShown(widget.hitbox.hosted and not ns.db.locked and not ns.db.barsMouseThrough) -- unguarded: run when a plate appears and when the lock or the clickthrough setting moves, never from a tick
+	widget.hitbox:SetShown(widget.hitbox.hosted and not ns.db.locked) -- unguarded: run when a plate appears and when the lock moves, never from a tick
 end
 
 -- What the client needs to know to stop two bars landing on each other, and
@@ -1886,123 +1880,17 @@ local function PlateCage(plate, every)
 	return unitFrame.castBar
 end
 
--- A plate is a hole in the camera, and the hole is not ours. Our widget calls
--- EnableMouse(false) on itself and none of its children ever take the mouse,
--- so what swallows a button over a bar is the UnitFrame underneath: a mouse
--- enabled secure button, which is exactly how a click on a plate targets and
--- where ctrl-click marking gets its unit.
---
--- A mouse enabled frame takes every button that lands on it, so the only lever
--- here used to be the whole plate or none of it, and the camera drag was the
--- price of click targeting. SetPassThroughButtons is the lever the client
--- actually offers: the frame keeps the mouse, and the buttons named in the
--- call fall through to whatever is underneath, which for a nameplate is the
--- world and the camera.
---
--- Details calls it unguarded in `functions/slash.lua`, which its 20506 TOC
--- loads, for exactly this, its own click-through options. That is what proves
--- it is here. Questie replaces it with a no-op on its world map pin with the
--- comment "hack to avoid in-combat error", which is what proves it is
--- protected, so it goes through the same pending queue as everything else
--- combat refuses.
---
--- Left cannot be the one handed back. The click that targets a plate is a left
--- click on the frame, and a button that passes through never reaches the frame
--- at all, so handing left back is click-through by another name. Right is the
--- one worth giving away: it costs Blizzard's right-click-to-interact and
--- ctrl-right-click cross marking on a plate, and it buys the camera.
-local CAMERA_BUTTONS = {
-	right = { "RightButton" },
-	left = { "LeftButton" },
-	both = { "LeftButton", "RightButton" },
-}
-
--- nil until the call has been tried, false on a client without the method,
--- true once one has gone through. Reported by Describe, never inferred.
-local passThrough
-
--- Buttons is one of the CAMERA_BUTTONS tables or nil for "hand nothing back".
--- unpack is avoided because there are at most two and a spread would need a
--- guard of its own on a client that renamed it.
-local function PlatePassThrough(unitFrame, buttons)
-	if type(unitFrame.SetPassThroughButtons) ~= "function" then
-		passThrough = false
-		return true -- nothing to apply and nothing to undo
-	end
-	if ns.Blocked(unitFrame) then
-		return false
-	end
-	local ok
-	if not buttons then
-		ok = pcall(unitFrame.SetPassThroughButtons, unitFrame)
-	elseif buttons[2] then
-		ok = pcall(unitFrame.SetPassThroughButtons, unitFrame, buttons[1], buttons[2])
-	else
-		ok = pcall(unitFrame.SetPassThroughButtons, unitFrame, buttons[1])
-	end
-	if ok then
-		passThrough = true
-	end
-	return ok
-end
-
--- Whether the pass-through path is doing anything on this client, for the
--- status line. "off" is a setting, "unavailable" is a client.
-function EnemyBars.CameraState()
-	if ns.db.barsMouseThrough then
-		return "moot" -- the plate has no mouse at all, so every button is through
-	end
-	if not CAMERA_BUTTONS[ns.db.barsCamera] then
-		return "off"
-	end
-	if passThrough == false then
-		return "unavailable"
-	end
-	if passThrough == nil then
-		return "unproven"
-	end
-	return ns.db.barsCamera
-end
-
--- Both halves are idempotent and neither touches a plate that is already where
--- it should be. EnableMouse on a secure frame taints it, and a taint on the
--- button that targets is worth carrying only when a setting has asked for it.
---
--- The pass-through state is tracked separately from the mouse state, because a
--- plate arrives mouse enabled and therefore never needs the EnableMouse call,
--- and the old single guard would have skipped the pass-through with it.
-local function PlateMouse(plate, enabled, buttons)
-	local unitFrame = plate.UnitFrame
-	if not unitFrame or not unitFrame.EnableMouse then
-		return true
-	end
-	local complete = true
-
-	if (not unitFrame.wkMouseOff) ~= enabled then
-		if ns.Blocked(unitFrame) then
-			complete = false
-		else
-			unitFrame:EnableMouse(enabled)
-			unitFrame.wkMouseOff = (not enabled) or nil
-		end
-	end
-
-	-- Only meaningful while the plate still has the mouse. A plate with no
-	-- mouse passes every button already.
-	local wanted = enabled and buttons or nil
-	if unitFrame.wkPassThrough ~= wanted then
-		if PlatePassThrough(unitFrame, wanted) then
-			unitFrame.wkPassThrough = wanted
-		else
-			complete = false
-		end
-	end
-
-	return complete
-end
+-- Nothing here touches a plate's mouse. Blizzard_NamePlateUnitFrame.lua turns
+-- it off in OnLoad, "Nothing in the nameplate is clickable. Hit testing is done
+-- at the C++ level", so a left click on a bar reaches the world and targets,
+-- and a right drag turns the camera. This file used to switch the UnitFrame's
+-- mouse and hand buttons back with SetPassThroughButtons, to work around a
+-- plate that swallowed clicks. The plate swallowed them because Marking hooked
+-- OnMouseDown on it, and a mouse script turns the mouse on. The hook is gone
+-- and so is the workaround.
 
 local function StripPlate(plate)
-	local complete = PlateMouse(plate, not ns.db.barsMouseThrough, CAMERA_BUTTONS[ns.db.barsCamera])
+	local complete = true
 	local replacing = ns.db.barsStyle == "replace"
 	-- Asked for only in the style that takes them, and walked only when there
 	-- is a list. The `or {}` that used to stand in the loop header built an
@@ -2030,7 +1918,7 @@ end
 -- Unconditional, because the setting that put a plate in this state may have
 -- changed since. Both halves no-op on a plate that was never touched.
 local function RestorePlate(plate)
-	local complete = PlateMouse(plate, true, nil)
+	local complete = true
 	for _, region in ipairs(PlateRegions(plate, true) or {}) do
 		if not ns.Unstrip(region) then
 			complete = false

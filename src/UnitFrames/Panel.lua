@@ -96,22 +96,6 @@ local function EnemyBars(ui)
 		end)
 	ui.Hint("Replace takes over the nameplate's look. Attach rides above Blizzard's and leaves it where it is.")
 
-	ui.Cycle("button a plate hands back to the camera", { "right", "left", "both", "off" },
-		function() return ns.db.barsCamera end,
-		function(value)
-			ns.db.barsCamera = value
-			ns.EnemyBars.Rebuild()
-		end)
-	ui.Hint("A plate swallows every button that lands on it, and the right button drag that turns the camera is one of them. Handing one back costs whatever that button did.")
-
-	ui.Check("plates pass the mouse through (camera turns, no click targeting)",
-		function() return ns.db.barsMouseThrough end,
-		function(value)
-			ns.db.barsMouseThrough = value
-			ns.EnemyBars.Rebuild()
-		end)
-	ui.Hint("Unlock the frames and each plate outlines the region that takes the mouse in red. Our bar is anchored to it, so the two should agree.")
-
 	ui.Check("mob level inside the bar, coloured by XP value",
 		function() return ns.db.barsLevel end,
 		function(value)
@@ -196,7 +180,6 @@ local function EnemyBars(ui)
 		end)
 	ui.Hint("Every size here is a count of screen pixels, so a bar is the same physical size on any monitor. Zoom multiplies that by a whole number, which keeps the grid.")
 
-	ui.Reading("the camera", ns.EnemyBars.CameraState)
 	ui.Reading("nameplate spacing", ns.Plates.Describe)
 	ui.Reading("cast bars", function()
 		if not ns.HasCastInfo() then
