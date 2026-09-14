@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GT5W76HRA4GYGCY8B1RHKJ
 type: task
-status: todo
+status: doing
 title: The pet bar does not move with shift like the action bars
 ---
 
