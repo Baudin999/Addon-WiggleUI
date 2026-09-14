@@ -207,6 +207,11 @@ local HUE = {
 	-- something else. A cast bar in any of them would read as a third opinion
 	-- about the mob's health.
 	violet = { 0.62, 0.45, 0.95 },
+
+	-- Your pet holding the mob. Not on the green through red scale, because that
+	-- scale is about you and the pet is neither you nor the wrong person. Cyan
+	-- rather than blue, which Color.progress spends on the rested pool.
+	cyan   = { 0.22, 0.70, 0.82 },
 }
 
 Color.hue = HUE
@@ -280,13 +285,15 @@ Color.heal = { 0.42, 0.86, 0.52, 0.55 }
 
 -- As the tank, the colour keys off how close the nearest challenger is, and a
 -- mob on anybody else is red. Behind the tank it inverts: a mob on you is red,
--- and one on the tank keys off how close you are to pulling it.
+-- and one on the tank keys off how close you are to pulling it. A mob on your
+-- own pet is its own colour in either view.
 Color.threat = {
 	safe   = HUE.green,
 	close  = HUE.amber,
 	losing = HUE.orange,
 	off    = HUE.red,
 	idle   = HUE.slate,
+	pet    = HUE.cyan,
 }
 
 -- What a unit thinks of you, which is the fallback for anything with no class.

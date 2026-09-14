@@ -727,6 +727,32 @@ do
 	check(Threat.Swinging("target") == Shade.off, "the tank sees a mob on somebody else as anything but red")
 	check(Threat.State("target") == Shade.safe, "the tank at 60% from the nearest is not green")
 
+	-- Your own pet holding it is neither view's green or red. Only the reader's
+	-- answer for the pet moves, so the roster is not rebuilt and the pet adds no
+	-- row to anything above.
+	local petHolds
+	local groupReader = state.threatReader
+	state.threatReader = function(source, unit)
+		if source == "pet" then
+			return petHolds, 3, 100
+		end
+		return groupReader(source, unit)
+	end
+	guids.pet, petHolds, mine = "Pet-0-00000001", true, 30
+	for _, role in ipairs({ Role.TANK, Role.DPS }) do
+		Role.Set("Baudin", role)
+		tone, percent, nearest = Threat.State("target")
+		check(tone == Shade.pet and percent == 30 and nearest == nil,
+			("a mob on your pet as %s is not the pet's colour with your number"):format(role))
+		guids.targettarget, unitAlias.targettarget = guids.pet, { pet = true }
+		check(Threat.Swinging("target") == Shade.pet,
+			("a mob swinging at your pet as %s is not the pet's colour"):format(role))
+		guids.targettarget, unitAlias.targettarget = SNEAKY, nil
+	end
+	petHolds = false
+	check(Threat.State("target") ~= Shade.pet, "a pet that is not holding the mob still draws the pet's colour")
+	guids.pet, state.threatReader = nil, groupReader
+
 	Role.Set("Baudin", nil)
 	guids.targettarget = nil
 	state.threatReader, guids.target = readerWas, targetWas

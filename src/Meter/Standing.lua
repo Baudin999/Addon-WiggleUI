@@ -62,6 +62,12 @@ local function Standing(unit)
 	if tone == Shade.idle then
 		return { "Threat", "nothing on it yet", tone = C.quiet }
 	end
+	if tone == Shade.pet then
+		if not percent then
+			return { "Threat", "your pet's", tone = tone }
+		end
+		return { "Threat", ("your pet's, you are at %d%%"):format(percent), tone = tone }
+	end
 	if not percent then
 		return { "Threat", "yours, and nobody is close", tone = tone }
 	end

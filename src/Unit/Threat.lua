@@ -94,7 +94,7 @@ end
 
 -- Where you stand on one mob, in the three pieces a bar draws.
 --
---   colour       one of the threat palette's five, always
+--   colour       one of the threat palette's six, always
 --   percent      the number worth printing beside it, or nil for none
 --   challenger   whose percent that is, or nil when it is yours or nobody's
 --
@@ -113,6 +113,15 @@ function Threat.State(unit)
 	-- foot of this function, which asked the client the same question twice per
 	-- mob per tick and threw the first answer away.
 	local isTanking, status, yours = ns.Threat("player", unit)
+
+	-- Your pet holding it, in either view and before the check for no threat of
+	-- your own: a hunter who sends the pet in first has nothing on the mob yet.
+	-- The number is yours, because you are who takes it off the pet. Asked only
+	-- with a pet out, so a warrior pays nothing for it.
+	if UnitExists("pet") and ns.Threat("pet", unit) then
+		return Color.threat.pet, yours, nil
+	end
+
 	if status == nil then
 		return Color.threat.idle, nil, nil
 	end
@@ -150,11 +159,15 @@ end
 -- rather than a formatted line, because how a bar words it is the bar's
 -- business and shortening a name is presentation.
 --
--- Green when it is on the tank, which is you or somebody else by Tanking above.
+-- Green when it is on the tank, which is you or somebody else by Tanking above,
+-- and the pet's own colour when it is on your pet.
 function Threat.Swinging(unit)
 	local victim = Unit.TargetToken(unit)
 	if not UnitExists(victim) then
 		return Color.threat.idle, nil, false
+	end
+	if UnitIsUnit(victim, "pet") then
+		return Color.threat.pet, victim, false
 	end
 	local tanking = Tanking()
 	if UnitIsUnit(victim, "player") then
