@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GG59ZYMZ7AJAM6V6VS3DHB
 type: bug
-status: todo
+status: doing
 title: Clicking the bar over a mob or player does not target it
 ---
 
