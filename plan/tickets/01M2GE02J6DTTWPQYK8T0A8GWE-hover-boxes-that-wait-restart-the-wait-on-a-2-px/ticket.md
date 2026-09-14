@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GE02J6DTTWPQYK8T0A8GWE
 type: bug
-status: doing
+status: done
 title: Hover boxes that wait restart the wait on a 2 px pointer drift
 ---
 
