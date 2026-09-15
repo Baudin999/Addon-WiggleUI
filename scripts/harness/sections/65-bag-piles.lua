@@ -1,21 +1,21 @@
--- The sub-piles and the quest lanes
+-- The order inside a pile, and the quest lanes
 --
--- Three claims. A pile the client files too much under is cut at the subclass,
--- one sub-pile per subclass under the client's own word for it, and the items
--- in one run by their level. The quest pile is drawn in two lanes on a fact
--- that is not the binding: what a quest in your log wants on the left, in the
--- order the log lists the quests, and what nothing in your log wants on the
--- right. And a session with no Questie in it gets the quest pile in one lane,
--- because "cannot say" is never a suggestion to throw something away.
+-- Three claims. A pile is sorted by what an item is before how good it is:
+-- subclass ahead of level and the highest level first, so the cloth sits
+-- together ahead of the ore and silk leads wool, whatever bag either is in.
+-- The quest pile is drawn in two lanes on a fact that is not the binding: what
+-- a quest in your log wants on the left, in the order the log lists the
+-- quests, and what nothing in your log wants on the right. And a session with
+-- no Questie in it gets the quest pile in one lane, because "cannot say" is
+-- never a suggestion to throw something away.
 --
 -- Its own section rather than part of 62-bag-lanes.lua because the subject is
 -- not the same. That file asks where a square landed when the pile splits on
--- the tooltip; this one asks what the rows are, which is the one thing about
--- the window that used to be exactly the pile list and is not any more.
+-- the tooltip; this one asks what order a pile comes out in.
 --
 -- **The fifth bag.** Every scene before this one is written against the four
 -- bags 55-bags.lua describes, and the piles those hold are each one subclass
--- wide, which is the case where nothing here is reachable. So a fifth bag is
+-- wide, which is the case where the subclass decides nothing. So a fifth bag is
 -- stood up with two kinds of cloth, an ore, two totems, a pet and one more
 -- quest item, and taken down again at the end.
 
@@ -32,11 +32,12 @@ local Bags, Grid, Window = ns.Bags, ns.BagsGrid, ns.BagsWindow
 refill()
 refillQuests()
 CARRIED[3] = { false, false, false }
--- Silk before wool and air before earth, on purpose: the bag order is the
--- wrong order for every claim below, so a pile that kept it fails.
+-- Ore before cloth, wool before silk, the pet before the totems and earth
+-- before air, on purpose: the bag order is the wrong order for every claim
+-- below, so a pile that kept it fails.
 CARRIED[4] = {
-	"Silk Cloth", "Tin Ore", "Wool Cloth",
-	"Air Totem", "Snake Basket", "Earth Totem",
+	"Tin Ore", "Wool Cloth", "Silk Cloth",
+	"Snake Basket", "Earth Totem", "Air Totem",
 	"Trapper's Rope",
 }
 
@@ -64,57 +65,34 @@ local function names(row)
 end
 
 ----------------------------------------------------------------------
--- The cut
+-- The order
 ----------------------------------------------------------------------
 
+-- One row per pile, however many subclasses are in it.
 local trade = rows("trade")
-check(#trade == 4,
-	("the trade goods came out as %d rows and three subclasses cut to a heading and three")
-		:format(#trade))
-check(trade[1] and not trade[1].under and #trade[1].entries == 0,
-	"the first trade row is not the pile's own heading with nothing under it")
-check(trade[1] and trade[1].name == "Trade Goods",
-	("the trade heading reads %q"):format(tostring(trade[1] and trade[1].name)))
-check(trade[2] and trade[2].under and trade[2].name == "Cloth",
-	("the second trade row is %q and it is the cloth"):format(tostring(trade[2] and trade[2].name)))
-check(trade[3] and trade[3].under and trade[3].name == "Metal & Stone",
-	("the third trade row is %q and it is the ore"):format(tostring(trade[3] and trade[3].name)))
+check(#trade == 1,
+	("the trade goods came out as %d rows and a pile is one row"):format(#trade))
 
--- Wool is fifteen and silk is twenty five, and the bag holds them the other
--- way round.
-check(trade[2] and names(trade[2]) == "Wool Cloth, Silk Cloth",
-	("the cloth runs %s and it runs by level"):format(trade[2] and names(trade[2]) or "?"))
-check(trade[3] and names(trade[3]) == "Tin Ore",
-	("the ore runs %s"):format(trade[3] and names(trade[3]) or "?"))
--- Emerald Pigment is the trade good every earlier scene carries and it has no
--- subclass, which no item on the real client lacks. It is the sub-pile of
--- things the client did not file further: last, under the pile's own word.
-check(trade[4] and trade[4].under and trade[4].name == "Trade Goods"
-		and names(trade[4]) == "Emerald Pigment",
-	("the fourth trade row is %q holding %s"):format(tostring(trade[4] and trade[4].name),
-		trade[4] and names(trade[4]) or "?"))
+-- Cloth is subclass 5 and ore is 7, so the cloth comes first. Silk is level 25
+-- and wool 15, so silk leads. Emerald Pigment is the trade good every earlier
+-- scene carries and it has no subclass, which no item on the real client
+-- lacks; it goes last, although it sits in an earlier bag than all three.
+check(trade[1] and names(trade[1]) == "Silk Cloth, Wool Cloth, Tin Ore, Emerald Pigment",
+	("the trade goods run %s"):format(trade[1] and names(trade[1]) or "?"))
 
+-- Both totems are subclass 1 and the basket is 2. Air is level 30 and earth 4.
 local misc = rows("misc")
-check(#misc == 3,
-	("the miscellany came out as %d rows and two subclasses cut to three"):format(#misc))
-check(misc[2] and misc[2].name == "Reagent" and names(misc[2]) == "Earth Totem, Air Totem",
-	("the totems are under %q as %s, and they are Reagent, earth before air")
-		:format(tostring(misc[2] and misc[2].name), misc[2] and names(misc[2]) or "?"))
-check(misc[3] and misc[3].name == "Pet" and names(misc[3]) == "Snake Basket",
-	("the pet is under %q as %s"):format(tostring(misc[3] and misc[3].name),
-		misc[3] and names(misc[3]) or "?"))
+check(#misc == 1 and names(misc[1]) == "Air Totem, Earth Totem, Snake Basket",
+	("the miscellany came out as %d rows running %s")
+		:format(#misc, misc[1] and names(misc[1]) or "?"))
 
 check(ns.Piles.Of(H.itemLink("Bold Living Ruby")) == "gem",
 	("a gem is filed under %q and it has a pile of its own")
 		:format(tostring(ns.Piles.Of(H.itemLink("Bold Living Ruby")))))
 
--- The one trade good the earlier scenes carry is the only trade good they
--- carry, so their pile is one subclass wide and must come out as it always
--- did: one row, under its own heading, with the squares in it. That is the
--- shape 55-bags.lua measures the window's height against.
 local junk = rows("junk")
-check(#junk == 1 and not junk[1].under and #junk[1].entries == 3,
-	"a pile that is not cut came out as more than one row")
+check(#junk == 1 and #junk[1].entries == 3,
+	"the three greys did not come out as one row of three")
 
 ----------------------------------------------------------------------
 -- The quest lanes
@@ -213,57 +191,36 @@ check(offset(quest[1], "Hogger's Claw") == lane,
 
 ----------------------------------------------------------------------
 -- The captions
+--
+-- One heading per pile. The cloth and the ore used to carry sub-captions of
+-- their own under Trade Goods, most of them over one square, and neither word
+-- is drawn in either pool any more.
 ----------------------------------------------------------------------
 
-local headers, subs = Grid.Headers(), Grid.Subs()
-
-local function caption(pool, text)
-	for index = 1, #pool do
-		if pool[index]:IsShown() and pool[index]:GetText() == text then
-			return pool[index]
-		end
-	end
-	return nil
-end
-
-check(caption(headers, "Trade Goods") ~= nil, "no heading reads Trade Goods")
-check(caption(subs, "Cloth") ~= nil and caption(subs, "Metal & Stone") ~= nil,
-	"the two trade sub-captions were not both drawn")
-check(caption(subs, "Reagent") ~= nil and caption(subs, "Pet") ~= nil,
-	"the two miscellany sub-captions were not both drawn")
-check(caption(headers, "Cloth") == nil,
-	"a sub-caption was drawn in the heading pool")
-
--- The sub-caption sits on the same line as the heading, to its right, and
--- dropped so that its squares start where every other block's do: one
--- heading line under the top of the line. The cloth is beside the words
--- "Trade Goods" rather than under them, because a heading with nothing under
--- it on a line of its own was the column this window used to be.
 do
-	local heading, cloth = caption(headers, "Trade Goods"), caption(subs, "Cloth")
-	local _, _, _, hx, hy = heading:GetPoint(1)
-	local _, _, _, cx, cy = cloth:GetPoint(1)
-	check(cx > hx, ("the cloth caption is at %.2f and the trade heading at %.2f, so it is not beside it")
-		:format(cx, hx))
-	check(math.abs((hy - cy) - (ns.UI.SLOT_HEADER - ns.UI.SLOT_SUBHEADER)) < 0.001,
-		("the cloth caption is %.2f under the trade heading and the drop is %d")
-			:format(hy - cy, ns.UI.SLOT_HEADER - ns.UI.SLOT_SUBHEADER))
-	-- Snapped as a whole rather than as a distance, because the grid snaps
-	-- every origin to the pixel it is nearest and the heading is not on one.
-	local wx, wy = offset(trade[2], "Wool Cloth")
-	local under = ns.UI.Round(canvas, -hy + ns.UI.SLOT_HEADER)
-	check(-wy == under,
-		("the first cloth square is %.2f down and the heading line ends at %.2f")
-			:format(-wy, under))
-	check(wx == cx, ("the first cloth square is %.2f in and its caption %.2f"):format(wx, cx))
+	local function count(pool, text)
+		local found = 0
+		for index = 1, #pool do
+			if pool[index]:IsShown() and pool[index]:GetText() == text then
+				found = found + 1
+			end
+		end
+		return found
+	end
+
+	local headers, subs = Grid.Headers(), Grid.Subs()
+	check(count(headers, "Trade Goods") == 1,
+		("%d headings read Trade Goods and one should"):format(count(headers, "Trade Goods")))
+	check(count(headers, "Cloth") + count(subs, "Cloth") == 0
+			and count(headers, "Metal & Stone") + count(subs, "Metal & Stone") == 0,
+		"a subclass caption is still drawn over the trade goods")
 end
 
 ----------------------------------------------------------------------
 -- The height
 --
--- 55-bags.lua's reading, with the sub-captions in it: the body is the lowest
--- edge of anything drawn plus the padding, within the unit the pixel snap
--- moves a square by.
+-- 55-bags.lua's reading: the body is the lowest edge of anything drawn plus the
+-- padding, within the unit the pixel snap moves a square by.
 ----------------------------------------------------------------------
 
 do
@@ -316,8 +273,9 @@ do
 	_G.QuestieLoader = loader
 end
 
-print(("piles  %d trade rows, %d misc rows, the quest pile in two lanes of %d and %d")
-	:format(#trade, #misc, mine, #quest[1].entries - mine))
+print(("piles  trade runs %s; misc runs %s; the quest pile in two lanes of %d and %d")
+	:format(trade[1] and names(trade[1]) or "?", misc[1] and names(misc[1]) or "?",
+		mine, #quest[1].entries - mine))
 
 -- The fifth bag down and the window shut, the way 55-bags.lua found them.
 CARRIED[4] = nil

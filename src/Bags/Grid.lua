@@ -56,13 +56,6 @@ ns.BagsGrid = Grid
 -- the entry as `yours`; how wide a lane is and where the second one starts
 -- are here, because they are drawing.
 --
--- **Two piles are cut into sub-piles.** Trade goods and miscellany arrive as
--- a heading row with nothing under it and then a row per subclass, each with
--- its own smaller caption: Trade Goods, then Cloth over the cloth, then
--- Metal & Stone over the ore. Which piles cut and where is Core/Piles.lua's
--- too; what a sub-caption looks like is UI/Slot.lua's; that a heading with
--- nothing under it takes its own line and no air after it is here.
---
 -- Every other pile is one lane of the full width and spends the same half square
 -- as air at its right edge. That is deliberate and it is what Grid.Width adds:
 -- a window as wide as the widest pile in it is a window that changes width when
@@ -79,11 +72,7 @@ ns.BagsGrid = Grid
 -- block that would fit if it were narrower is narrowed and its squares wrap
 -- inside it, down to half of what it wanted, so a big pile beside a small one
 -- shares the line rather than starting a new one under a square of nothing.
--- A split pile takes a whole line, because its two lanes are the width. A cut
--- pile's heading is a block with no squares, and its sub-piles flow after it
--- on the same line with their captions dropped to the same height, so "Trade
--- Goods" reads once at the left and the cloth, the leather and the meat sit in
--- one row beside it.
+-- A split pile takes a whole line, because its two lanes are the width.
 --
 -- **At a merchant the layout holds still.** Selling a grey takes it out of its
 -- pile, and a pile that closes the gap moves every square after it, so a grid
@@ -661,9 +650,9 @@ end
 
 -- How many squares a block wants, and the fewest it will take. A split pile
 -- wants the whole width and takes nothing less, because the width is what its
--- two lanes divide. A cut pile's heading has no squares and is as wide as its
--- words. Everything else wants one square per entry up to the width, and will
--- take half of that, or its name, whichever is more.
+-- two lanes divide. A block with no squares is as wide as its words.
+-- Everything else wants one square per entry up to the width, and will take
+-- half of that, or its name, whichever is more.
 local function Wants(group, columns, words)
 	if Splits(group, columns) then
 		return columns, columns
@@ -716,11 +705,9 @@ end
 -- One line at a time. `line` is where the line being filled starts, `left` is
 -- where the next block on it goes, and `tall` is the tallest block on it so
 -- far, which is what the next line starts under. A block's caption sits at
--- the top of the line whatever kind it is, with a sub-caption dropped so its
--- squares start where every other block's do, and its squares hang under
--- that inside its own width.
+-- the top of the line and its squares hang under that inside its own width.
 function Grid.Paint(state, columns)
-	local at, named, subs = 0, 0, 0
+	local at, named = 0, 0
 	local line, left, tall = 0, 0, 0
 	-- Asked once for the whole pass rather than per square. It cannot change
 	-- inside one layout, and a hundred and fifty squares asking the same
@@ -744,11 +731,7 @@ function Grid.Paint(state, columns)
 	folded = nil
 	for index = 1, state.shown do
 		local group = state.groups[index]
-		-- A sub-pile's caption is the smaller one, and both pools are counted
-		-- separately because they are two pools.
-		local sub = group.under == true
-		local slot = sub and (subs + 1) or (named + 1)
-		local want, least = Wants(group, columns, headings:Width(slot, group.name, sub))
+		local want, least = Wants(group, columns, headings:Width(named + 1, group.name))
 		local here, width = Fit(want, least, columns, left)
 		if not here then
 			line = line + tall + BREAK
@@ -756,13 +739,8 @@ function Grid.Paint(state, columns)
 		end
 
 		local top = line + UI.SLOT_HEADER
-		if sub then
-			subs = subs + 1
-			headings:Sub(subs, group.name, top - UI.SLOT_SUBHEADER, Snap(here))
-		else
-			named = named + 1
-			headings:Name(named, group.name, line, Snap(here))
-		end
+		named = named + 1
+		headings:Name(named, group.name, line, Snap(here))
 
 		local high = UI.SLOT_HEADER
 		if #group.entries > 0 then
@@ -773,7 +751,7 @@ function Grid.Paint(state, columns)
 		tall = math.max(tall, high)
 		left = here + UI.SlotSpan(width) + Gap()
 	end
-	Trim(at, named, subs)
+	Trim(at, named)
 	Follow()
 	local height = math.max(line + tall, 1)
 	-- The first paint at a vendor, or the one after a hold broke, is the one

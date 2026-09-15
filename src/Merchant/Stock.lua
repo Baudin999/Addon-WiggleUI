@@ -106,6 +106,16 @@ local function Fill(index)
 	entry.usable = usable and true or false
 	entry.extended = extended and true or false
 	entry.quality = link and ns.ItemValue(link) or nil
+	-- What a rack sorts on, the same four fields Bags/Bags.lua writes for a bag
+	-- slot, so a vendor's helms sit together the way yours do. See Before in
+	-- Core/Piles.lua.
+	entry.class, entry.subclass, entry.equip, entry.level = nil, nil, nil, nil
+	if link then
+		local _, class, subclass = ns.ItemKind(link)
+		entry.class, entry.subclass = class, subclass
+		entry.equip = select(3, ns.ItemInfo(link))
+		entry.level = ns.ItemLevel(link)
+	end
 	-- The most the client will sell in one call, in items. Read per entry
 	-- rather than worked out from the batch size, because it is the item's own
 	-- stack and the two are unrelated: water is five a batch and twenty a

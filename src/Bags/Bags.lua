@@ -178,23 +178,24 @@ local function Fill(index, bag, slot)
 	entry.at, entry.bag, entry.slot, entry.link = index, bag, slot, link
 	entry.name, entry.icon, entry.quality, entry.count = nil, nil, nil, 1
 	entry.price, entry.level = nil, nil
+	entry.class, entry.subclass, entry.equip = nil, nil, nil
 	if link then
-		entry.name, entry.icon = ns.ItemInfo(link)
+		-- The picture, and the equip slot Core/Piles.lua sorts on, out of one
+		-- call.
+		entry.name, entry.icon, entry.equip = ns.ItemInfo(link)
 		-- Both halves of one call. The grade decides the pile and the price
 		-- decides whether the square wears a coin and whether it goes dim at a
 		-- merchant, and asking for the second one separately would be a second
 		-- cache lookup per slot for a number the first one already handed back.
 		entry.quality, entry.price = ns.ItemValue(link)
-		-- The item's own level, which is what orders a sub-pile: linen before
-		-- wool before silk. Read for every slot rather than only the two piles
-		-- that sort on it, because the pile is not known until the line after
-		-- this and a cache lookup per slot is what every other field costs.
+		-- The class, the subclass and the level are the rest of what a pile
+		-- sorts on. See Before in Core/Piles.lua.
+		local _, class, subclass = ns.ItemKind(link)
+		entry.class, entry.subclass = class, subclass
 		entry.level = ns.ItemLevel(link)
 		entry.count = ns.ContainerItem(bag, slot) or 1
 	end
-	-- The pile, and for a pile that is cut into sub-piles, which one. Both from
-	-- the one call, so `sub` is never a subclass the pile does not cut on.
-	entry.group, entry.sub = ns.Piles.Of(link)
+	entry.group = ns.Piles.Of(link)
 	-- The session pile overrules the class, and it is the only thing that does.
 	-- What you picked up in the last hour is not a fact about the item, so it
 	-- cannot be a rule in Core/Piles.lua and it must not reach the merchant

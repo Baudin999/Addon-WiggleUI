@@ -121,13 +121,13 @@ for index = 1, read.shown do
 end
 check(ordered, "the piles came out in an order the shipped list does not hold")
 
--- Grade first inside a pile, which is what puts the one thing worth seeing at
--- the front of it. Both weapons are in bag 0 and the orange one is second there,
--- so a pile that kept the order it found them in would fail this.
+-- The equip slot before the grade inside a pile. Bloodspiller is a blue one-hander
+-- and Arcanite Reaper an orange two-hander, so a pile still sorted on grade
+-- first would put the reaper in front, and this fails.
 local weapon = pile("weapon")
 if weapon and #weapon.entries > 1 then
-	check(weapon.entries[1].name == "Arcanite Reaper",
-		("the best weapon is not first in its pile; %s is"):format(tostring(weapon.entries[1].name)))
+	check(weapon.entries[1].name == "Bloodspiller",
+		("the one-hander is not first in its pile; %s is"):format(tostring(weapon.entries[1].name)))
 end
 
 ----------------------------------------------------------------------
