@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JN4F1SFN5CXCY5HPRQ2QNE
 type: task
-status: doing
+status: done
 title: "Pack a line by balancing its piles, with sections and dividers"
 parent: 01M2JN4ESP53ET2Q080EAA8RJD
 ---
