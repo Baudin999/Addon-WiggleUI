@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JN4ESP53ET2Q080EAA8RJD
 type: feature
-status: todo
+status: done
 title: "The bag window sorts, packs and holds the way Baganator's does"
 ---
 
