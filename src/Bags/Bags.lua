@@ -54,7 +54,14 @@ local SOULBOUND = _G.ITEM_SOULBOUND or "Soulbound"
 -- objects for a stack of cloth. The entries are a pool keyed by how far into
 -- the walk they are, which is stable because the walk is: bag zero slot one is
 -- entry one whatever is in it.
-local state = { groups = {}, entries = {}, shown = 0, free = 0, slots = 0 }
+--
+-- `free` and `slots` are the ordinary bags only, which is what the footer says.
+-- `carried` is every slot holding an item and `walked` every slot, special bags
+-- included. `vacant` is the empty count of each empty pile, keyed by the pile.
+local state = {
+	groups = {}, entries = {}, shown = 0, free = 0, slots = 0,
+	carried = 0, walked = 0, vacant = {},
+}
 
 -- Where each bag's slots begin in the walk, so a square can find the entry for
 -- its own slot by arithmetic rather than by searching a hundred and fifty.
@@ -91,8 +98,10 @@ end
 --
 -- The free count in the footer is not read from here. Sweep counts it off the
 -- slots themselves, so folding the pile cannot change the number.
+--
+-- A special bag's empty slots fold the same way, each bag into its own square.
 local function Consolidate(key, held)
-	if key ~= ns.Piles.EMPTY or #held < 2 then
+	if not ns.Piles.Vacant(key) or #held < 2 then
 		return false
 	end
 	held[1].count = #held
@@ -215,22 +224,54 @@ local function Fill(index, bag, slot)
 	return entry
 end
 
+-- The pile a bag's empty slots go in when the bag takes one kind of thing, or
+-- nil for a bag that takes anything. The pile is renamed after the bag you are
+-- wearing there, and goes back to its fallback name where the client has not
+-- cached the bag's name.
+local function Special(bag)
+	local key = ns.Piles.BAGS[bag]
+	if not key or ns.BagFamily(bag) == 0 then
+		return nil
+	end
+	local id = ns.BagSlot(bag)
+	local link = id and GetInventoryItemLink("player", id) or nil
+	ns.Piles.Rename(key, link and (ns.ItemInfo(link)) or nil)
+	return key
+end
+
 -- Every slot in the five bags, into the pooled entries, and the two numbers
--- along the bottom counted off the slots themselves.
+-- along the bottom counted off the slots themselves. A special bag's slots are
+-- walked and drawn but left out of both numbers, and its empty slots go in the
+-- bag's own pile rather than the Empty one.
 local function Sweep()
-	local used, free, slots = 0, 0, 0
+	local used, free, slots, carried = 0, 0, 0, 0
 	for bag = FIRST_BAG, LAST_BAG do
 		local count = ns.ContainerSlots(bag)
-		slots = slots + count
+		local pile = Special(bag)
+		local empties = 0
+		if not pile then
+			slots = slots + count
+		end
 		starts[bag] = used
 		for slot = 1, count do
 			used = used + 1
-			if not Fill(used, bag, slot).link then
+			local entry = Fill(used, bag, slot)
+			if entry.link then
+				carried = carried + 1
+			elseif pile then
+				entry.group = pile
+				empties = empties + 1
+			else
 				free = free + 1
 			end
 		end
+		if ns.Piles.BAGS[bag] then
+			state.vacant[ns.Piles.BAGS[bag]] = empties
+		end
 	end
+	state.vacant[ns.Piles.EMPTY] = free
 	state.free, state.slots = free, slots
+	state.carried, state.walked = carried, used
 	return used
 end
 
@@ -255,7 +296,7 @@ end
 -- keeps entries past the end of a walk that has shrunk.
 function Bags.Entry(bag, slot)
 	local start = starts[bag]
-	if not start or start + slot > state.slots then
+	if not start or start + slot > state.walked then
 		return nil
 	end
 	local entry = state.entries[start + slot]

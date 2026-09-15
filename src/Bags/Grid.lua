@@ -442,7 +442,7 @@ local function Sweep(button, entry)
 end
 
 -- `counted` is the number drawn in the middle of the square, or nothing. It is
--- written on one square in the window, the one the empty pile folded into, and
+-- written on the squares an empty pile folded into, and
 -- it is a number of free slots rather than a number of items: the caller says
 -- which square that is, because on a held layout it is the square that was the
 -- fold when the hold began and not whichever slot the scan sorted first.
@@ -532,9 +532,9 @@ end
 -- partitioned into two lists and walked twice, and that is two tables per
 -- pile per bag update for an answer a running count already has.
 --
--- The square the empty pile folded into is written down as it is laid, for the
--- hold below: it is the one square whose number is not about the item on it.
-local folded
+-- A square an empty pile folded into is marked as it is laid, for the hold
+-- below: it is a square whose number is not about the item on it. There is one
+-- for the Empty pile and one for each special bag with room in it.
 
 -- The pass being laid out: how many squares, captions and rules it has used,
 -- where the line being filled starts, how many blocks are on it and how many
@@ -551,19 +551,16 @@ local function Lay(group, lane, rest, left, top)
 	local entries = group.entries
 	local split = lane > 0 and rest > 0
 	local shift = left + lane * (SLOT + GAP) + Gap()
-	local empty = group.key == ns.Bags.EMPTY
+	local empty = ns.Piles.Vacant(group.key)
 	local at, mine, theirs = flow.at, 0, 0
 	for index = 1, #entries do
 		at = at + 1
 		local entry = entries[index]
 		local button = Square(at)
-		if empty then
-			folded = at
-		end
 		Paint(button, entry, flow.selling, empty and (entry.count or 1) or nil)
 		-- The pile the square was laid for and the lane fact it was laid on,
-		-- which the hold compares against.
-		button.laid, button.laidYours = group.key, entry.yours
+		-- which the hold compares against, and whether it is a fold.
+		button.laid, button.laidYours, button.fold = group.key, entry.yours, empty
 		if split and not entry.yours then
 			Place(button, top, theirs % rest, math.floor(theirs / rest), shift, flow.side)
 			theirs = theirs + 1
@@ -581,7 +578,7 @@ end
 -- The hold
 --
 -- What the first paint after the window opened laid out, kept until the window
--- shuts: how many squares, which of them is the fold, the columns and the side
+-- shuts: how many squares, the columns and the side
 -- they were laid at, and the height they came to. Nil while nothing is held,
 -- which is every moment the window is shut.
 --
@@ -600,7 +597,7 @@ local held
 
 local function Keep(count, columns, side, height)
 	held = held or {}
-	held.count, held.fold = count, folded
+	held.count = count
 	held.columns, held.side, held.height = columns, side, height
 end
 
@@ -610,10 +607,11 @@ end
 --
 -- Every held square asks for the entry on its own slot and is painted from it
 -- where it stands. A slot that emptied paints as an empty square with nothing
--- on it. The fold keeps counting the free slots, off the scan's total rather
--- than the entry's count, because the entry that carries the count after a
+-- on it. A fold keeps counting its pile's empty slots, off the scan's count
+-- rather than the entry's, because the entry that carries the count after a
 -- sale is whichever empty slot sorted first and that is now a hole somewhere
--- else in the grid.
+-- else in the grid. A fold whose slot moved to another pile, which is a bag
+-- swapped for one of another kind, ends the hold.
 local function Hold(state, columns, side, selling)
 	if held.columns ~= columns or held.side ~= side then
 		return false
@@ -625,16 +623,17 @@ local function Hold(state, columns, side, selling)
 		if not entry then
 			return false
 		end
-		if entry.link and (entry.group ~= button.laid or entry.yours ~= button.laidYours) then
+		if (entry.link or button.fold)
+			and (entry.group ~= button.laid or entry.yours ~= button.laidYours) then
 			return false
 		end
 		if entry.link then
 			carrying = carrying + 1
 		end
-		local counted = (index == held.fold and not entry.link) and state.free or nil
+		local counted = (button.fold and not entry.link) and state.vacant[button.laid] or nil
 		Paint(button, entry, selling, counted)
 	end
-	return carrying == state.slots - state.free
+	return carrying == state.carried
 end
 
 --------------------------------------------------------------------------
@@ -880,7 +879,6 @@ function Grid.Paint(state, columns)
 		Follow()
 		return held.height
 	end
-	folded = nil
 	flow.at, flow.named, flow.captions, flow.rules = 0, 0, 0, 0
 	flow.top, flow.count, flow.rows = 0, 0, 1
 	flow.columns, flow.side, flow.selling = columns, side, selling

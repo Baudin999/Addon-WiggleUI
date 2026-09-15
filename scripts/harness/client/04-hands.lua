@@ -312,6 +312,20 @@ end
 _G.GetItemSubClassInfo = itemSubClassInfo
 _G.C_Item.GetItemSubClassInfo = itemSubClassInfo
 _G.GetContainerNumSlots = function(bag) return CARRIED[bag] and #CARRIED[bag] or 0 end
+-- How many slots in a bag are free, and what the bag takes. The family is
+-- nought, a bag that takes anything, unless a section writes FAMILY[bag], which
+-- is how a section carries a quiver.
+local FAMILY = {}
+_G.GetContainerNumFreeSlots = function(bag)
+	local free = 0
+	for slot = 1, CARRIED[bag] and #CARRIED[bag] or 0 do
+		if not carrying(bag, slot) then
+			free = free + 1
+		end
+	end
+	return free, FAMILY[bag] or 0
+end
+H.FAMILY = FAMILY
 _G.GetContainerItemLink = function(bag, slot)
 	local held = carrying(bag, slot)
 	return held and itemLink(held) or nil

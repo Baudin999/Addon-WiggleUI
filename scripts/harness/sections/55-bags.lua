@@ -96,11 +96,28 @@ check(empty and empty.entries[1].count == 3,
 check(empty and empty.entries[1].bag == 3 and not empty.entries[1].link,
 	"the folded empty square does not point at a free slot in the empty bag")
 
+-- A quiver's empty slots are no room for anything but arrows. Two of them go in
+-- the quiver's own pile, folded to one square, and the free count and the slot
+-- count along the bottom do not move.
+do
+	local before = CARRIED[4]
+	CARRIED[4], H.FAMILY[4] = { false, false }, 1
+	Bags.Read()
+	local quiver = pile("bag4")
+	check(read.free == 3 and read.slots == slots,
+		("a quiver moved the footer to %d free of %d"):format(read.free, read.slots))
+	check(quiver ~= nil and #quiver.entries == 1 and quiver.entries[1].count == 2
+		and quiver.entries[1].bag == 4,
+		"the quiver's two empty slots did not fold into one square of their own")
+	CARRIED[4], H.FAMILY[4] = before, nil
+	Bags.Read()
+end
+
 -- The piles come out in the shipped order, which is a subsequence of it rather
 -- than the whole list: a pile with nothing in it is not drawn at all.
 local ORDER = { "session", "hearthstone", "consumable", "quest", "weapon", "armor",
 	"gem", "reagent", "trade", "recipe", "projectile", "container", "quiver",
-	"key", "misc", "other", "junk", "empty" }
+	"key", "misc", "other", "junk", "empty", "bag1", "bag2", "bag3", "bag4" }
 
 local at, ordered = 0, true
 for index = 1, read.shown do

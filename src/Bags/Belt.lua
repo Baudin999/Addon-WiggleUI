@@ -34,7 +34,7 @@ ns.BagsBelt = Belt
 -- grid to come off.
 --
 -- **The number on a square is the bag's size**, in the corner a stack count
--- takes. The footer already counts the free slots in all five; the number you
+-- takes. The footer already counts the free slots in the ordinary bags; the number you
 -- want while choosing which bag to replace is which one is smallest.
 --
 -- Nothing here listens for anything. A bag going on or coming off changes the

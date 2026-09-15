@@ -97,11 +97,21 @@ local ORDER = {
 	{ key = "misc",        name = "Miscellaneous", classId = 15 },
 	{ key = "other",       name = "Other" },
 	{ key = "junk",        name = "Junk",         rule = true },
-	{ key = "empty",       name = "Empty" },
+	{ key = "empty",       name = "Empty",        vacant = true },
+	-- The empty slots of a bag that takes one kind of thing, one pile per bag
+	-- and headed with the bag's own name. A quiver's free slots are no room for
+	-- a sword, so they are neither in the Empty pile nor in the free count. Only
+	-- the bag window fills these, and it renames them on every scan.
+	{ key = "bag1",        name = "Special bag",  vacant = true },
+	{ key = "bag2",        name = "Special bag",  vacant = true },
+	{ key = "bag3",        name = "Special bag",  vacant = true },
+	{ key = "bag4",        name = "Special bag",  vacant = true },
 }
 
 Piles.EMPTY, Piles.JUNK, Piles.OTHER = "empty", "junk", "other"
 Piles.SESSION = "session"
+-- Bag number to the pile its empty slots go in. The backpack takes anything.
+Piles.BAGS = { "bag1", "bag2", "bag3", "bag4" }
 
 -- The three piles that are drawn in two lanes, and why the flag is here.
 --
@@ -142,6 +152,13 @@ end
 local BY_KEY = {}
 for index = 1, #ORDER do
 	BY_KEY[ORDER[index].key] = ORDER[index]
+end
+
+-- Whether a pile holds empty slots rather than items: the Empty pile, or the
+-- empty slots of one special bag.
+function Piles.Vacant(key)
+	local group = BY_KEY[key]
+	return group ~= nil and group.vacant == true
 end
 
 -- Class number to pile, built off the list above so the two cannot drift.
@@ -316,10 +333,10 @@ end
 -- Empty slots sort by where they are instead, because they have none of the
 -- rest and because a bag emptying should not renumber the squares.
 local function Before(a, b)
-	if a.group == Piles.EMPTY then
+	local group = BY_KEY[a.group]
+	if group and group.vacant then
 		return (a.at or 0) < (b.at or 0)
 	end
-	local group = BY_KEY[a.group]
 	if group and group.split == "quest" then
 		local ahead = Quest(a, b)
 		if ahead ~= nil then

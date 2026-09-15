@@ -357,7 +357,7 @@ read_globals = {
 	-- here.
 	"GetInventoryItemLink", "GetInventoryItemTexture",
 	"GetInventoryItemID", "GetInventoryItemCount",
-	"GetContainerNumSlots", "GetContainerItemLink",
+	"GetContainerNumSlots", "GetContainerItemLink", "GetContainerNumFreeSlots",
 	"GetContainerItemInfo", "UseContainerItem",
 	"GetItemInfo", "GetItemInfoInstant", "C_Container",
 	-- the empty-slot art each hand draws when nothing is set. Baganator calls

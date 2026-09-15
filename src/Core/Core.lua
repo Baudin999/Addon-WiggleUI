@@ -1485,6 +1485,21 @@ function ns.ContainerSlots(bag)
 	return 0
 end
 
+-- What a bag will take, as the client's bit field: nought for a bag that takes
+-- anything, and a bit set for a quiver, an ammo pouch, a soul bag or a herb bag.
+-- It is the second answer of the free slot call, which is where Baganator reads
+-- it too (Sorting/BagUsageChecks.lua). Nought where the client has neither API,
+-- so every bag counts as an ordinary one rather than none of them counting.
+function ns.BagFamily(bag)
+	local count = C_Container and C_Container.GetContainerNumFreeSlots
+		or _G.GetContainerNumFreeSlots
+	if type(count) ~= "function" then
+		return 0
+	end
+	local _, family = count(bag)
+	return family or 0
+end
+
 function ns.ContainerItemLink(bag, slot)
 	if C_Container and C_Container.GetContainerItemLink then
 		return C_Container.GetContainerItemLink(bag, slot)
