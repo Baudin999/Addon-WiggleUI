@@ -343,6 +343,9 @@ read_globals = {
 	-- the spellbook, read by Buttons/Ranks.lua to find the best rank you know
 	"GetNumSpellTabs", "GetSpellTabInfo",
 	"GetSpellBookItemInfo", "GetSpellBookItemName",
+	-- the pet's own book and family, read by Talents/Training.lua to say what
+	-- the pet out already knows
+	"GetSpellBookItemTexture", "HasPetSpells", "UnitCreatureFamily",
 	"GetSpellInfo", "GetSpellTexture", "GetSpellCooldown", "IsUsableSpell",
 	"IsSpellInRange", "IsSpellKnown",
 	"GetTime", "GetRaidTargetIndex", "SetRaidTarget",
