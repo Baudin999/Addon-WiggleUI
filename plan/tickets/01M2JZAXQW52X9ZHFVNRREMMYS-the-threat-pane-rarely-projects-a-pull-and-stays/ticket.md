@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JZAXQW52X9ZHFVNRREMMYS
 type: bug
-status: todo
+status: doing
 title: The threat pane rarely projects a pull and stays blank with no reason
 ---
 
