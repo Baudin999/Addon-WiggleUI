@@ -63,13 +63,9 @@ local VALUE_FLOOR = 9
 local HAIRLINES = 3
 local TEXT_PAD = 4
 
--- The ammo pill: the space round its number inside the outline, the gap
--- between its icon and its number, and the widest number it is sized for, all
--- in pixels but the last. Sized once for four digits rather than to the number on it, so
--- the pill keeps its width as the count falls and the tick decides no
--- rectangle. Paint caps the count at four digits for the same reason.
+-- The ammo pill: the space between its outline and its number, and the gap
+-- between its icon and its number, in pixels.
 local AMMO_PAD, AMMO_GAP = 1, 2
-local AMMO_WIDEST = "0000"
 
 -- Font sizes are taken off the bar heights, because the same code draws a 34
 -- pixel player frame and a 21 pixel target of target and one size cannot serve
@@ -192,22 +188,22 @@ local function PlaceBadges(entry, px, side, portraitEdge)
 	end
 end
 
--- Docked under the portrait: the pill's top corner on the gauge side is pinned
--- to the portrait square's bottom corner on the same side, so it hangs below
--- the block like a tab and moves with it. The one pixel up is the shared
--- hairline, so the pill's top outline is the block's bottom outline rather
--- than a second line under it. That corner is the one nothing else uses: the
+-- Docked under the portrait by both top corners: each is pinned to the
+-- portrait square's bottom corner on the same side, one pixel up so the pill's
+-- top outline is the block's bottom hairline. The pill is as wide as the
+-- square because the two docks say so, and it moves and resizes with the block
+-- with no width worked out here. That corner is the one nothing else uses: the
 -- badges sit on the portrait's outer corners and the aura rows start at the
 -- gauge end.
 --
--- It sat on the portrait first, then hung half over the edge off a computed
--- drop, and both read as floating. A dock has no number in it to get wrong.
+-- It sat on the portrait first, then hung off a computed drop, then docked by
+-- one corner at a measured width. All three were a number standing in for an
+-- edge.
 --
--- The icon is a square as tall as the inside of the outline, and the number
--- is centred in what is left. The height is an even number of pixels, because
--- half of it is the drop and a half pixel drop blurs the outline. The number
--- the tick last drew is forgotten, because the font it was measured in may
--- have just changed.
+-- Only the height is set: the small font and its padding, even, so the icon
+-- and the number land on whole pixels either side of the middle. The icon is a
+-- square inside the outline on the portrait side, and the number is anchored
+-- between the icon and the far edge and centred there.
 local function PlaceAmmo(entry, px, level, small, font, gaugeEdge, pull)
 	local pill = entry.ammo
 	if not pill then
@@ -216,24 +212,20 @@ local function PlaceAmmo(entry, px, level, small, font, gaugeEdge, pull)
 	pill:SetFrameLevel(level + 4)
 	ns.EdgeSize(pill.edges, px)
 	pill.text:SetFontObject(font)
-	pill.text:SetText(AMMO_WIDEST)
-	local digits = math.ceil(pill.text:GetStringWidth() / px)
-	pill.text:SetText("")
 	local tall = small + 2 * (AMMO_PAD + 1)
 	tall = tall + tall % 2
-	local icon = tall - 2
-	local number = digits + 2 * AMMO_PAD
-	number = number + number % 2
-	pill:SetSize((1 + icon + AMMO_GAP + number + 1) * px, tall * px)
+	pill:SetHeight(tall * px)
 
 	local near = gaugeEdge == "RIGHT" and "LEFT" or "RIGHT"
 	pill.icon:ClearAllPoints()
-	pill.icon:SetSize(icon * px, icon * px)
+	pill.icon:SetSize((tall - 2) * px, (tall - 2) * px)
 	pill.icon:SetPoint(near, pill, near, -pull * px, 0)
 	pill.text:ClearAllPoints()
-	pill.text:SetPoint("CENTER", pill, gaugeEdge, pull * (1 + number / 2) * px, 0)
+	pill.text:SetPoint(near, pill.icon, gaugeEdge, -pull * AMMO_GAP * px, 0)
+	pill.text:SetPoint(gaugeEdge, pill, gaugeEdge, pull * (AMMO_PAD + 1) * px, 0)
 
 	pill:ClearAllPoints()
+	pill:SetPoint("TOP" .. near, entry.slot, "BOTTOM" .. near, 0, px)
 	pill:SetPoint("TOP" .. gaugeEdge, entry.slot, "BOTTOM" .. gaugeEdge, 0, px)
 	entry.shownAmmo, entry.ammoIcon = nil, nil
 end

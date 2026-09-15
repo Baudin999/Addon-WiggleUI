@@ -77,7 +77,7 @@ if pill then
 	reads("40", SHORT, "ammo", "forty arrows left")
 
 	wear("Rusted Gun", "Sharp Arrow", 12000)
-	reads("9999", PLENTY, "ammo", "a gun and more shots than the pill has digits for")
+	reads("12000", PLENTY, "ammo", "a gun and twelve thousand shots")
 
 	wear("Balanced Throwing Axe")
 	check(not pill:IsShown(), "a thrown weapon that does not stack drew a pill, and it never runs out")
@@ -89,24 +89,28 @@ if pill then
 	check(not pill:IsShown(), "a wand drew an ammo pill")
 
 	local px = player.pixel
-	for _, side in ipairs({ { "wide", pill:GetWidth() }, { "tall", pill:GetHeight() } }) do
-		local pixels = side[2] / px
-		local whole = math.floor(pixels + 0.5)
-		check(math.abs(pixels - whole) < 1e-6 and whole > 0 and whole % 2 == 0,
-			("the pill is %.4f pixels %s, not an even whole number"):format(pixels, side[1]))
-	end
-	-- Docked, not offset: the pill's top corner on the gauge side pinned to the
-	-- portrait square's bottom corner, one pixel up so the two outlines share
-	-- the block's bottom hairline.
-	local point, anchor, relative, across, up = pill:GetPoint(1)
-	check(point == "TOPRIGHT" and anchor == player.slot and relative == "BOTTOMRIGHT",
-		("the pill docks %s to %s of %s and belongs TOPRIGHT to BOTTOMRIGHT of the portrait's square")
-			:format(tostring(point), tostring(relative), tostring(anchor)))
-	check(across == 0 and up == px,
-		("the dock is offset %s across and %s up, and should be 0 and one pixel")
-			:format(tostring(across), tostring(up)))
+	local pixels = pill:GetHeight() / px
+	local whole = math.floor(pixels + 0.5)
+	check(math.abs(pixels - whole) < 1e-6 and whole > 0 and whole % 2 == 0,
+		("the pill is %.4f pixels tall, not an even whole number"):format(pixels))
 	check(pill.icon:GetHeight() == pill:GetHeight() - 2 * px,
 		"the icon is not as tall as the inside of the pill's outline")
+
+	-- Docked by both top corners to the portrait square's bottom corners, one
+	-- pixel up so the outlines share the block's bottom hairline. The width is
+	-- the dock's, so no width is asserted as a number.
+	local docks = { TOPLEFT = "BOTTOMLEFT", TOPRIGHT = "BOTTOMRIGHT" }
+	check(pill:GetNumPoints() == 2, ("the pill has %d points and docks by two"):format(pill:GetNumPoints()))
+	for index = 1, pill:GetNumPoints() do
+		local point, anchor, relative, across, up = pill:GetPoint(index)
+		check(docks[point] ~= nil and anchor == player.slot and relative == docks[point],
+			("the pill docks %s to %s of %s and belongs to the portrait square's matching bottom corner")
+				:format(tostring(point), tostring(relative), tostring(anchor)))
+		check(across == 0 and up == px,
+			("the %s dock is offset %s across and %s up, and should be 0 and one pixel")
+				:format(tostring(point), tostring(across), tostring(up)))
+		docks[point] = nil
+	end
 
 	wear(nil)
 	check(not pill:IsShown(), "the ranged slot emptied and the pill stayed up")

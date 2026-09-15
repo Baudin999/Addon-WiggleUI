@@ -234,9 +234,8 @@ end
 --
 -- Under AMMO_LOW the number turns red, and zero is under it: a bow with an
 -- empty ammo slot is the reading the pill is for. A hundred arrows is about
--- four minutes of auto shot. Above four digits the number stops at 9999,
--- because Block sized the pill for four.
-local AMMO_LOW, AMMO_MOST = 100, 9999
+-- four minutes of auto shot.
+local AMMO_LOW = 100
 local AMMO_SHORT, AMMO_PLENTY = Color.text.short, Color.text.value
 
 local function PaintAmmo(entry)
@@ -246,9 +245,6 @@ local function PaintAmmo(entry)
 	end
 	local count, icon = ns.Ammo()
 	count = count or -1
-	if count > AMMO_MOST then
-		count = AMMO_MOST
-	end
 	-- Guarded apart from the count, because a quiver swapped for another kind
 	-- of arrow can leave the number where it was and change only the art.
 	if entry.ammoIcon ~= icon then
