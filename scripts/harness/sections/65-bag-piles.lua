@@ -104,6 +104,10 @@ check(misc[3] and misc[3].name == "Pet" and names(misc[3]) == "Snake Basket",
 	("the pet is under %q as %s"):format(tostring(misc[3] and misc[3].name),
 		misc[3] and names(misc[3]) or "?"))
 
+check(ns.Piles.Of(H.itemLink("Bold Living Ruby")) == "gem",
+	("a gem is filed under %q and it has a pile of its own")
+		:format(tostring(ns.Piles.Of(H.itemLink("Bold Living Ruby")))))
+
 -- The one trade good the earlier scenes carry is the only trade good they
 -- carry, so their pile is one subclass wide and must come out as it always
 -- did: one row, under its own heading, with the squares in it. That is the

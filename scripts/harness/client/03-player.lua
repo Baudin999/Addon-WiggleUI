@@ -591,6 +591,9 @@ local ITEMS = {
 	-- A quest item wanted by a quest further down the log than the diplomat's,
 	-- so the quest lane has two ranked items to put in log order.
 	["Trapper's Rope"]    = { id = 3008, classId = 12, quality = 1, price = 0 },
+	-- A gem, in no bag. The id is this table's own; the class is Blizzard's,
+	-- Enum.ItemClass.Gem in the 2.5.6 API documentation.
+	["Bold Living Ruby"]  = { id = 2009, classId = 3, quality = 3, price = 30000 },
 }
 
 local BAG = { "Bloodspiller", "Aegis", "Arcanite Reaper" }

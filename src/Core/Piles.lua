@@ -76,6 +76,9 @@ local ORDER = {
 	{ key = "consumable",  name = "Consumable",   classId = 0 },
 	{ key = "weapon",      name = "Weapon",       classId = 2, split = "bound" },
 	{ key = "armor",       name = "Armor",        classId = 4, split = "bound" },
+	-- Class 3 is Enum.ItemClass.Gem on 2.5.6. Without this pile every gem you
+	-- carry lands in Other, which is the pile nobody reads.
+	{ key = "gem",         name = "Gem",          classId = 3 },
 	{ key = "container",   name = "Container",    classId = 1 },
 	{ key = "quiver",      name = "Quiver",       classId = 11 },
 	{ key = "projectile",  name = "Projectile",   classId = 6 },

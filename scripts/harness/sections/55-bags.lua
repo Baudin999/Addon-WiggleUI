@@ -98,7 +98,7 @@ check(empty and empty.entries[1].bag == 3 and not empty.entries[1].link,
 
 -- The piles come out in the shipped order, which is a subsequence of it rather
 -- than the whole list: a pile with nothing in it is not drawn at all.
-local ORDER = { "hearthstone", "consumable", "weapon", "armor", "container",
+local ORDER = { "hearthstone", "consumable", "weapon", "armor", "gem", "container",
 	"quiver", "projectile", "trade", "reagent", "recipe", "quest", "key",
 	"misc", "other", "junk", "empty" }
 
