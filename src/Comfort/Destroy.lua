@@ -42,11 +42,9 @@ local skipped = {}
 -- is this plus whatever is still in the queue, which is always true.
 local answered = 0
 
--- The last destroy, so a second click landing on the card that just replaced
--- the one you meant cannot destroy it. Cheaper than a ticker and it is the
--- whole of the double-click problem.
-local DEBOUNCE = 0.4
-local lastTake = 0
+-- A second click landing on the card that just replaced the one you meant
+-- cannot destroy it. UI.Debounce is the guard and says why.
+local ready = UI.Debounce()
 
 --------------------------------------------------------------------------
 -- The queue
@@ -195,11 +193,9 @@ function Destroy.Take()
 		return
 	end
 
-	local now = GetTime()
-	if now - lastTake < DEBOUNCE then
+	if not ready() then
 		return
 	end
-	lastTake = now
 
 	local ok, why = Take(entry)
 	if not ok then

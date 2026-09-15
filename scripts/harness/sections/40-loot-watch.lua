@@ -84,6 +84,26 @@ do
 		("the cross on a row of two left a stack of %d from five, %d deletes")
 			:format(counted(4, 1), #destroyed - before))
 
+	-- A bounced click. The first press takes the row out and the next row moves
+	-- up under the same button, so a second press inside the guard would
+	-- destroy an item nobody pointed at.
+	advance(1)
+	bags("Linen Cloth", false, false)
+	counted(4, 1, 5)
+	loot(LINEN)
+	advance(61)
+	loot(LINEN)
+	before = #destroyed
+	press(1, "cross")
+	press(1, "cross")
+	check(#destroyed == before + 1 and counted(4, 1) == 4 and feed:Count() == 1,
+		("a double click destroyed %d and left %d rows"):format(#destroyed - before, feed:Count()))
+	advance(1)
+	press(1, "cross")
+	check(counted(4, 1) == 3 and feed:Count() == 0,
+		"a press after the guard ran out did not take the next row")
+
+	advance(1)
 	bags("Aegis", false, false)
 	loot(AEGIS)
 	before = #destroyed

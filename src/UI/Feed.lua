@@ -252,7 +252,9 @@ local function RowButton(feed, row, mark, right, tip, press)
 	local button = UI.Button(row, { label = mark, glyph = true, size = CHIP_MARK,
 		width = CHIP * unit, height = CHIP * unit, tip = tip,
 		onClick = function()
-			if row.shownEntry then
+			-- One guard for every button on every row of this feed. A bounce lands
+			-- on the same button with the next entry already under it.
+			if row.shownEntry and feed.ready() then
 				press(row.shownEntry)
 			end
 		end })
@@ -275,6 +277,7 @@ end
 
 -- The buttons a row carries, for a feed that asked for them.
 local function RowButtons(feed, row)
+	feed.ready = feed.ready or UI.Debounce()
 	if feed.removable then
 		row.cross = RowButton(feed, row, CLEAR, INSET,
 			feed.removeTip or "Take this row out of the feed.",

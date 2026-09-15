@@ -100,6 +100,37 @@ local function Enable(frame, enabled)
 end
 
 --------------------------------------------------------------------------
+-- A press that counts once
+--
+-- A mouse button that bounces clicks twice. On a button whose first press
+-- replaces what it acts on, the second press lands on something nobody looked
+-- at: the clutter window's next card, the loot feed's next row. So a guard
+-- answers true once and then false for DEBOUNCE. One is built per thing that
+-- can be pressed twice and asked inside the press, so a macro calling the same
+-- function is held to it too.
+--
+-- Nil until the first press rather than nought, because GetTime counts from
+-- when the client started and a press in its first 0.4 seconds is still a press.
+--------------------------------------------------------------------------
+
+-- Longer than any bounce and shorter than a deliberate second press. It was
+-- Comfort/Destroy.lua's own number when that window was the only caller.
+local DEBOUNCE = 0.4
+
+function UI.Debounce(seconds)
+	seconds = seconds or DEBOUNCE
+	local last
+	return function()
+		local now = GetTime()
+		if last and now - last < seconds then
+			return false
+		end
+		last = now
+		return true
+	end
+end
+
+--------------------------------------------------------------------------
 -- A push button
 --
 -- Public, because the window chrome needs one for its close box and anything

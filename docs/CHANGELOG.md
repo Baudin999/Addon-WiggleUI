@@ -19,7 +19,8 @@ loot feed page has the same button.
 
 Point at a row in the loot feed and a cross comes up over its count. Press it
 and what the row counted is destroyed from your bags, then the row goes and the
-rows under it move up one. If you have scrolled back,
+rows under it move up one. A second click inside 0.4 seconds is ignored, so a
+mouse button that bounces cannot destroy the row that moved up under it. If you have scrolled back,
 taking out a row above the view does not move the row you are reading.
 
 The tally of what reached the feed still counts it. The combat feed has no
