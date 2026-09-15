@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JHR5T8NH1087QV3AT6XBV5
 type: task
-status: todo
+status: doing
 title: "Ammo pill: dock both corners so it is as wide as the portrait"
 parent: 01M2JFZRDAXDJT8RD2809SDK6S
 ---
