@@ -285,14 +285,17 @@ end
 -- The tooltip
 --------------------------------------------------------------------------
 
--- What the client's tooltip setter wants to be handed, decided once.
+-- What the client's tooltip setter wants to be handed, decided the first time
+-- one of the two ways answers.
 --
 -- SetTalent took a tab and an index on every client until the anniversary
 -- build, which keys it by the talent's id instead. Neither is documented for
 -- 2.5.6 and a wrong guess is a box describing the wrong talent, so the first
 -- hover asks both ways and keeps whichever one wrote this talent's own name on
--- its first line. False once both have been tried and neither did, which is a
--- box that carries the addon's lines and no description under them.
+-- its first line. Nothing is kept while neither has. A hover that lands before
+-- the client has fetched the talent's text reads as no answer both ways, and
+-- keeping that answer was every talent in the window without a description for
+-- the rest of the session.
 local shape
 
 function Read.TipArgs(tab, index, id, name)
@@ -303,9 +306,9 @@ function Read.TipArgs(tab, index, id, name)
 			shape = "index"
 		elseif id and id > 0 then
 			lines = Scan.Read("talent", id, false)
-			shape = (lines and lines[1] and lines[1][1] == name) and "id" or false
-		else
-			shape = false
+			if lines and lines[1] and lines[1][1] == name then
+				shape = "id"
+			end
 		end
 	end
 	if shape == "index" then

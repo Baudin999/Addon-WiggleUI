@@ -137,6 +137,8 @@ do
 		("the first board's points read %s"):format(tostring(arms.points:GetText())))
 	check(Window.Board(PROT).points:GetText() == "no points",
 		("an empty tree's points read %s"):format(tostring(Window.Board(PROT).points:GetText())))
+	local _, stop = arms.name:GetPoint(2)
+	check(stop == arms.points, "a tree's name is not stopped at its points, so a long one runs under them")
 
 	local drawn = 0
 	for index = 1, #model.trees[1] do
@@ -296,6 +298,37 @@ do
 		"a talent whose requirement is empty does not name it")
 	howl:GetScript("OnLeave")(howl)
 	H.tipSettle()
+end
+
+----------------------------------------------------------------------
+-- The description that lands after the pointer
+--
+-- A talent's description is spell text the client fetches on the first ask.
+-- The first hover of a session settled SetTalent's shape on a scan with
+-- nothing in it and kept that answer, and nothing drew the box again when the
+-- text arrived, so the sentence showed on the second hover and not the first.
+----------------------------------------------------------------------
+
+do
+	local arms = Window.Board(ARMS)
+	local square = arms:At(1, 1)
+	local key = H.tooltipKey(ARMS, square.index)
+	local kept = H.tooltips.talent[key]
+	H.tooltips.talent[key] = nil
+	Read.ForgetTipShape()
+	square:GetScript("OnEnter")(square)
+	check(BoxText():find("Reduces the cost", 1, true) == nil,
+		"a talent drew a description the client had not sent")
+
+	H.tooltips.talent[key] = kept
+	fire("SPELL_DATA_LOAD_RESULT", 12282, true)
+	check(BoxText():find("Reduces the cost", 1, true) ~= nil,
+		"a talent's description never came up after the client sent it")
+
+	square:GetScript("OnLeave")(square)
+	H.tipSettle()
+	fire("SPELL_DATA_LOAD_RESULT", 12282, true)
+	check(not ns.UI.Tooltip.IsShown(), "a spell landing opened a box on a talent the pointer had left")
 end
 
 ----------------------------------------------------------------------

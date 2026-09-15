@@ -55,9 +55,12 @@ local Read = ns.TalentRead
 -- One square, the air between two, and how many across. Thirty one is the bag
 -- window's square and the argument for it is in UI/Slot.lua: twenty seven
 -- pixels of picture inside a two pixel inset is one of the two sizes an icon
--- is drawn at exactly. Sixteen between them is room for a line and for the
--- lines not to read as a rim on the square below.
-local SQUARE, GAP, COLUMNS = UI.SLOT, 16, 4
+-- is drawn at exactly. Twenty eight between them is what the heading needs:
+-- four squares and three gaps make two hundred and eight pixels, which holds
+-- the icon, Marksmanship at the heading size and "41 points" with air between.
+-- At sixteen the board was a hundred and seventy two and Beast Mastery ran
+-- under its own points.
+local SQUARE, GAP, COLUMNS = UI.SLOT, 28, 4
 local PITCH = SQUARE + GAP
 
 -- The heading row: the tree's icon, at the other exact icon size, and the name
@@ -141,14 +144,41 @@ local function Subject(square)
 	return { kind = "talent", tab = first, index = second, title = square.name, lines = lines }
 end
 
+-- The square the pointer is on, so the box can be built again when the
+-- client's text for it lands.
+local hovered
+
 local function OnEnter(square)
+	hovered = square
 	UI.Tint(square.bg, C.hover)
 	ns.Tip.Open(square, Subject(square), nil, UI.Tooltip.BESIDE)
 end
 
 local function OnLeave(square)
+	if hovered == square then
+		hovered = nil
+	end
 	UI.Tint(square.bg, C.sunken)
 	ns.Tip.Close()
+end
+
+-- A talent's description is spell text, and the client fetches it the first
+-- time something asks. The hover that asked gets a box with the name and the
+-- rank and nothing under them, and a second hover gets the sentence. So the
+-- square under the pointer is hovered again when the client says a spell has
+-- landed. The arguments are worked out again with it, which is the half
+-- UI/Tip.lua's own rebuild cannot do: it keeps the subject the first hover
+-- built, and that subject was built before the client could answer.
+--
+-- Registered through pcall because a client that does not know the event
+-- raises on it rather than ignoring it.
+local fetched = CreateFrame("Frame")
+if pcall(fetched.RegisterEvent, fetched, "SPELL_DATA_LOAD_RESULT") then
+	fetched:SetScript("OnEvent", function()
+		if hovered and hovered:IsVisible() then
+			OnEnter(hovered)
+		end
+	end)
 end
 
 -- A press spends a point, and only where one would land. Everything the
@@ -185,6 +215,11 @@ function Board.New(parent)
 	board.points = UI.Label(frame, M.font, C.dim, "RIGHT", UI.FLAT)
 	UI.Wrap(board.points, false)
 	board.points:SetPoint("RIGHT", frame, "TOPRIGHT", 0, -math.floor(HEAD / 2))
+
+	-- The name stops where the points start. A tree name longer than the width
+	-- above, in a locale this was not measured in, is clipped rather than
+	-- written over the number.
+	board.name:SetPoint("RIGHT", board.points, "LEFT", -M.gutter, 0)
 
 	board.grid = CreateFrame("Frame", nil, frame)
 	board.grid:SetPoint("TOPLEFT", 0, -(HEAD + M.gutter))
