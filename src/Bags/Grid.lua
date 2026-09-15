@@ -561,8 +561,9 @@ local function Lay(group, lane, rest, left, top)
 			folded = at
 		end
 		Paint(button, entry, flow.selling, empty and (entry.count or 1) or nil)
-		-- The pile the square was laid for, which the hold compares against.
-		button.laid = group.key
+		-- The pile the square was laid for and the lane fact it was laid on,
+		-- which the hold compares against.
+		button.laid, button.laidYours = group.key, entry.yours
 		if split and not entry.yours then
 			Place(button, top, theirs % rest, math.floor(theirs / rest), shift, flow.side)
 			theirs = theirs + 1
@@ -584,12 +585,14 @@ end
 -- they were laid at, and the height they came to. Nil while nothing is held,
 -- which is every moment the window is shut.
 --
--- Four things end a hold early, and each is a layout the held one cannot
+-- Five things end a hold early, and each is a layout the held one cannot
 -- describe. Something landing in a slot no held square points at, which is a
 -- loot or a purchase going into a free slot the fold was not drawn on. A held
 -- square's slot holding an item from a different pile than the one it was laid
 -- for, which is two items swapped, a session started, or a grey the client
--- graded at last. The column setting moving. And the zoom moving, which changes
+-- graded at last. A held square's item changing lane, which is a quest taken
+-- or abandoned, Questie gone, or a sword bound in place. The column setting
+-- moving. And the zoom moving, which changes
 -- what a square's side is and is only ever written in Place.
 --------------------------------------------------------------------------
 
@@ -622,7 +625,7 @@ local function Hold(state, columns, side, selling)
 		if not entry then
 			return false
 		end
-		if entry.link and entry.group ~= button.laid then
+		if entry.link and (entry.group ~= button.laid or entry.yours ~= button.laidYours) then
 			return false
 		end
 		if entry.link then
