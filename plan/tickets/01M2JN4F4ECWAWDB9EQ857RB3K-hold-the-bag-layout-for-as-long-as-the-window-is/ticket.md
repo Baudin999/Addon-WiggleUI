@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JN4F4ECWAWDB9EQ857RB3K
 type: task
-status: todo
+status: doing
 title: Hold the bag layout for as long as the window is open
 parent: 01M2JN4ESP53ET2Q080EAA8RJD
 ---
