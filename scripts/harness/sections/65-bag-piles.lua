@@ -264,7 +264,7 @@ end
 
 do
 	local window = Window.Frame()
-	local bottom = H.carry.bagBottom()
+	local bottom = H.carry.bagBottom() + ns.BagsBelt.Height()
 	check(window and math.abs(window:Body() - (bottom + ns.UI.Metric.pad * 2)) < 1,
 		("the window's body is %d and what it draws comes to %.2f")
 			:format(window and window:Body() or -1, bottom + ns.UI.Metric.pad * 2))

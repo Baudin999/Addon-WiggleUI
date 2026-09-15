@@ -1056,7 +1056,8 @@ Map\Feature.lua
 # ours. Merchant.lua is the row of buttons that is
 # only there while a vendor is open, and it does neither job itself: the sale is
 # Comfort\Vendor.lua's and the mending is Comfort\Repair.lua's, both of them
-# loaded far above this line. Window.lua is the window and the free count along
+# loaded far above this line. Belt.lua is the four bags you wear, the one place
+# left where a bag goes on or comes off. Window.lua is the window and the free count along
 # the bottom of it, Blizzard.lua takes the nine calls the client opens and shuts
 # a bag through so B opens this one, and Feature.lua last, as everywhere else.
 #
@@ -1068,6 +1069,7 @@ Bags\Stack.lua
 Bags\Session.lua
 Bags\Grid.lua
 Bags\Merchant.lua
+Bags\Belt.lua
 Bags\Window.lua
 Bags\Blizzard.lua
 Bags\Feature.lua

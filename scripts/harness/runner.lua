@@ -460,6 +460,8 @@ local SECTIONS = {
 	"64-console",
 	"65-bag-piles",
 	"66-bag-drop",
+	-- After the drop, from the same scene, and it puts that scene back.
+	"67-bag-belt",
 	"67-talents",
 	-- After the talent window's own section, whose window it opens on the pet's
 	-- tab. It opens a beast training session and closes it again, and puts the

@@ -230,13 +230,13 @@ do
 		return bottom
 	end
 
-	local drawn = H.carry.bagBottom() + ns.UI.Metric.pad * 2
+	local drawn = H.carry.bagBottom() + ns.UI.Metric.pad * 2 + ns.BagsBelt.Height()
 	check(window and math.abs(window:Body() - drawn) < 1,
 		("the window's body is %d and what it draws comes to %.2f")
 			:format(window and window:Body() or -1, drawn))
-	check(window and window:Body() < tall + ns.UI.Metric.pad * 2,
-		("the window's body is %d and the piles stacked would come to %d, so nothing flowed")
-			:format(window and window:Body() or -1, tall + ns.UI.Metric.pad * 2))
+	tall = tall + ns.UI.Metric.pad * 2 + ns.BagsBelt.Height()
+	check(window and window:Body() < tall, ("the window's body is %d and the piles"
+		.. " stacked would come to %d, so nothing flowed"):format(window and window:Body() or -1, tall))
 end
 
 -- One square per slot you are using, plus the one the empty pile folds into,

@@ -1,8 +1,8 @@
 local ADDON, ns = ...
 
 -- Everything Core and the panel need to know about the bag window. Bags.lua,
--- Stack.lua, Session.lua, Grid.lua, Merchant.lua, Window.lua and Blizzard.lua
--- hold the behaviour, and this and Window.lua are the only two files in the
+-- Stack.lua, Session.lua, Grid.lua, Merchant.lua, Belt.lua, Window.lua and
+-- Blizzard.lua hold the behaviour, and this and Window.lua are the only two files in the
 -- folder that name anything outside it. Window.lua reaches two things: the
 -- clutter window, which its clear button opens, and the pickup filter's
 -- switch, which its filter button presses. It says why at both.

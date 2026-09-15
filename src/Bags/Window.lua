@@ -9,9 +9,10 @@ ns.BagsWindow = Window
 --------------------------------------------------------------------------
 -- The bag window
 --
--- One window, one scroll view, five marks along the top and the two numbers
--- along the bottom. Bags.lua answers what is in there and Grid.lua draws it;
--- this file owns when to ask and how big the answer is allowed to be.
+-- One window, one scroll view, five marks along the top, the four bags you
+-- wear along the foot and the two numbers under them. Bags.lua answers what is
+-- in there, Grid.lua draws it and Belt.lua draws the bags themselves; this file
+-- owns when to ask and how big the answer is allowed to be.
 --
 -- **The free count is in the footer and it is half the reason the window
 -- exists.** Every bag interface in the game makes you count the empty squares
@@ -186,7 +187,8 @@ local function Fit(content)
 	end
 	local width = Width()
 	local room = ns.BagsMerchant.Height()
-	local height = M.pad * 2 + room + math.max(piles, FLOOR) + Chrome()
+	local belt = ns.BagsBelt.Height()
+	local height = M.pad * 2 + room + math.max(piles, FLOOR) + belt + Chrome()
 	-- Only when the number is about to move, and only once a scan has said what
 	-- the height is. A bag update arrives five times for one loot and four of
 	-- them come to the same height, and re-anchoring a window that is not
@@ -205,7 +207,7 @@ local function Fit(content)
 	end
 	-- Body again rather than the number just asked for, because Resize clamps
 	-- and the view has to be told the height the window actually got.
-	view:Resize(width - M.pad * 2, window:Body() - M.pad * 2 - room)
+	view:Resize(width - M.pad * 2, window:Body() - M.pad * 2 - room - belt)
 	if content then
 		scanned = true
 	end
@@ -316,6 +318,10 @@ local function Build()
 	-- the top of a list that changes height every time you loot.
 	ns.BagsMerchant.Attach(window.content)
 
+	-- Under the piles, at the edge of the window that does not move, for the
+	-- reason the footer's two numbers are there. See Bags/Belt.lua.
+	ns.BagsBelt.Attach(window.content)
+
 	free = UI.Label(window.footer, M.font, C.text, "LEFT", UI.FLAT)
 	free:SetPoint("LEFT")
 	UI.Wrap(free, false)
@@ -362,6 +368,7 @@ function Window.Refresh()
 	-- and how tall the window comes to.
 	ns.BagsMerchant.Paint(state)
 	local content = ns.BagsGrid.Paint(state, ns.db.bagColumns)
+	ns.BagsBelt.Paint()
 	Fit(content)
 	view:Update(content)
 	free:SetText(("%d free of %d"):format(state.free, state.slots))

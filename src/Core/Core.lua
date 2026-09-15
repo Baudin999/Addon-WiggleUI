@@ -1574,6 +1574,50 @@ function ns.SplitContainerItem(bag, slot, amount)
 	return false
 end
 
+-- The worn slot a carried bag sits in, which is the number every call that puts
+-- a bag on or takes one off wants. Bag one is the slot after the nineteen you
+-- wear. Nil where the client has no call for the arithmetic, so a caller aims
+-- nothing rather than aiming at slot nil.
+function ns.BagSlot(bag)
+	local numbered = C_Container and C_Container.ContainerIDToInventoryID
+		or _G.ContainerIDToInventoryID
+	if type(numbered) ~= "function" then
+		return nil
+	end
+	local ok, id = pcall(numbered, bag)
+	return ok and id or nil
+end
+
+-- Whatever is on the cursor onto one worn bag slot. A bag swaps with the one
+-- worn there; anything else goes into that bag if it has room. It is what the
+-- client's own bag button and Baganator's bag row both call. False where there
+-- is no slot or no call, so the caller does not believe a move happened.
+function ns.PutInBagSlot(id)
+	if not id or type(_G.PutItemInBag) ~= "function" then
+		return false
+	end
+	return pcall(_G.PutItemInBag, id)
+end
+
+-- The bag worn in one slot onto the cursor. Whether it may come off is the
+-- client's rule: a bag with anything in it goes nowhere but another bag slot.
+function ns.PickupBagSlot(id)
+	if not id or type(_G.PickupBagFromSlot) ~= "function" then
+		return false
+	end
+	return pcall(_G.PickupBagFromSlot, id)
+end
+
+-- Whether the client holds a worn slot locked, which is what a bag on the
+-- cursor looks like from its square.
+function ns.InventoryLocked(id)
+	if not id or type(_G.IsInventoryItemLocked) ~= "function" then
+		return false
+	end
+	local ok, locked = pcall(_G.IsInventoryItemLocked, id)
+	return (ok and locked) and true or false
+end
+
 -- Whatever is on the cursor into the first bag with room for it. True once it
 -- has landed, false while it is still on the cursor.
 --
@@ -1604,16 +1648,8 @@ function ns.Stow()
 	if not _G.GetCursorInfo() then
 		return true
 	end
-	local numbered = C_Container and C_Container.ContainerIDToInventoryID
-		or _G.ContainerIDToInventoryID
-	if type(_G.PutItemInBag) ~= "function" or type(numbered) ~= "function" then
-		return false
-	end
 	for bag = 1, _G.NUM_BAG_SLOTS or 4 do
-		local ok, id = pcall(numbered, bag)
-		if ok and id then
-			pcall(_G.PutItemInBag, id)
-		end
+		ns.PutInBagSlot(ns.BagSlot(bag))
 		if not _G.GetCursorInfo() then
 			return true
 		end
