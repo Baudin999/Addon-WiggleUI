@@ -233,8 +233,11 @@ local SECTIONS = {
 	"04-ability-square",
 	"04-aimed-square",
 	"05-action-bars",
-	-- Straight after it, and it reads the bars that section left standing: what
-	-- a pass of their ticker costs, which is a different question from whether
+	-- The enemy bars on two plates, straight after the action bars where they
+	-- always ran, and before anything that reads H.carry.widget.
+	"05-enemy-plates",
+	-- After those, and it reads the bars 05-action-bars left standing: what a
+	-- pass of their ticker costs, which is a different question from whether
 	-- the squares are right.
 	"05-bars-tick",
 	-- After the bars, and it stands the pet bar up beside them under the same

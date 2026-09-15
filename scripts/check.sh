@@ -1537,7 +1537,7 @@ HARNESS_LINE_LIMIT=800
 HARNESS_LINE_ALLOWED="
 sections/29-social.lua:817:one subject, the chat window; the rooms, what routes into them, what is unread in them and what each one draws are four readings of the same scene
 client/02-text.lua:776:one class, the Region stub; every line is a method of the client's own frame, and a frame API split across two files is two halves of one object
-sections/05-action-bars.lua:1061:one subject, five bars; splits at the keys, the paging and the churn
+sections/05-action-bars.lua:884:one subject, the cloned bars, in one do block over one Bars handle and one slot fixture; the keys, the paging and the churn all read the same five bars
 sections/55-bags.lua:806:one subject, the bag window; what it draws, what a square answers and where the window sits are one window and one bag fixture
 sections/39-party-raid.lua:950:one subject, two lists, two directions each; the party line and the raid grid share a tile, a roster fixture and a header model, and splitting them copies all three
 sections/42-cooldown-row.lua:734:one subject, the cooldown row; what is on it, what a square draws, when the row is up and what the tick costs are four readings of one row and every one of them moves when an entry does
