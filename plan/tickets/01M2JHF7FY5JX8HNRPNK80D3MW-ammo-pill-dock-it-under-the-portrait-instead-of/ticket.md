@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JHF7FY5JX8HNRPNK80D3MW
 type: task
-status: doing
+status: done
 title: "Ammo pill: dock it under the portrait instead of offsetting it"
 parent: 01M2JFZRDAXDJT8RD2809SDK6S
 ---
