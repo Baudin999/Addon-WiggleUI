@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JSR4HCEHFSEQHNKZZK6V1Q
 type: task
-status: todo
+status: doing
 title: A delete button on a loot feed row removes that entry
 ---
 
