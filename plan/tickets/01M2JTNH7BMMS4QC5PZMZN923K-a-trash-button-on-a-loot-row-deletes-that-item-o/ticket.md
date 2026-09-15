@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JTNH7BMMS4QC5PZMZN923K
 type: task
-status: doing
+status: done
 title: A trash button on a loot row deletes that item on every future drop
 ---
 
