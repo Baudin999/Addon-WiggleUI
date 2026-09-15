@@ -1959,6 +1959,10 @@ end
 -- Zero, not nil, for a bow with nothing in the ammo slot, because that is the
 -- reading the count is for.
 --
+-- The second return is the art to draw beside the count: the ammo's own, the
+-- thrown stack's, and the weapon's for a bow with an empty ammo slot, so the
+-- pill still says what is out of shots.
+--
 -- Slot 0 is asked by id, because the client hands no link for the ammo slot.
 -- Narcissus reads it that way on this client, and TitanAmmo splits bow, gun,
 -- crossbow and thrown on the same four subclasses.
@@ -2000,11 +2004,13 @@ function ns.Ammo()
 	local kind = ShotKind(link)
 	if kind == "ammo" then
 		if not GetInventoryItemID("player", AMMO_SLOT) then
-			return 0
+			return 0, GetInventoryItemTexture("player", RANGED_SLOT)
 		end
-		return GetInventoryItemCount("player", AMMO_SLOT) or 0
+		return GetInventoryItemCount("player", AMMO_SLOT) or 0,
+			GetInventoryItemTexture("player", AMMO_SLOT)
 	elseif kind == "stack" then
-		return GetInventoryItemCount("player", RANGED_SLOT)
+		return GetInventoryItemCount("player", RANGED_SLOT),
+			GetInventoryItemTexture("player", RANGED_SLOT)
 	end
 	return nil
 end

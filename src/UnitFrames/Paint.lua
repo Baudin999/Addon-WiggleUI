@@ -244,9 +244,16 @@ local function PaintAmmo(entry)
 	if not pill then
 		return
 	end
-	local count = ns.Ammo() or -1
+	local count, icon = ns.Ammo()
+	count = count or -1
 	if count > AMMO_MOST then
 		count = AMMO_MOST
+	end
+	-- Guarded apart from the count, because a quiver swapped for another kind
+	-- of arrow can leave the number where it was and change only the art.
+	if entry.ammoIcon ~= icon then
+		entry.ammoIcon = icon
+		pill.icon:SetTexture(icon)
 	end
 	if entry.shownAmmo == count then
 		return
@@ -356,5 +363,5 @@ function Paint.Forget(entry)
 	entry.portraitGuid, entry.portraitDirty = nil, true
 	entry.marker, entry.state, entry.pvp = nil, nil, nil
 	entry.healSpan = nil
-	entry.shownAmmo, entry.ammoTint = nil, nil
+	entry.shownAmmo, entry.ammoTint, entry.ammoIcon = nil, nil, nil
 end

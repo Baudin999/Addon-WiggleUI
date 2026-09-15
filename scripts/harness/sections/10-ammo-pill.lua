@@ -5,7 +5,8 @@
 -- bow and a gun count the ammo slot, a thrown weapon that stacks counts
 -- itself, and a thrown weapon with durability, a wand and an empty slot draw
 -- no pill at all. Under a hundred the number is red, and a bow with nothing in
--- the ammo slot is a red zero rather than no pill.
+-- the ammo slot is a red zero rather than no pill. The art beside the number
+-- is the ammo's, the stack's, or the bow's while the ammo slot is empty.
 --
 -- What this cannot prove is that the client files a bow under subclass 2 and
 -- hands no link for the ammo slot. Both are read off Narcissus and TitanAmmo
@@ -49,8 +50,10 @@ check(pill ~= nil, "your own block carries no ammo pill")
 check(target == nil or target.ammo == nil, "the target block carries an ammo pill, and the count is yours")
 
 if pill then
-	local function reads(text, tint, what)
+	local function reads(text, tint, art, what)
 		check(pill:IsShown(), what .. ": no pill")
+		check(pill.icon:GetTexture() == art,
+			("%s: the pill draws %s and should draw %s"):format(what, tostring(pill.icon:GetTexture()), art))
 		check(pill.text:GetText() == text,
 			("%s: the pill says %s and should say %s"):format(what, tostring(pill.text:GetText()), text))
 		local r, g, b = pill.text:GetTextColor()
@@ -61,26 +64,26 @@ if pill then
 	check(not pill:IsShown(), "the pill is up with nothing in the ranged slot")
 
 	wear("Worn Longbow")
-	reads("0", SHORT, "a bow with an empty ammo slot")
+	reads("0", SHORT, "hand18", "a bow with an empty ammo slot")
 
 	wear("Worn Longbow", "Sharp Arrow", 1200)
-	reads("1200", PLENTY, "a bow and twelve hundred arrows")
+	reads("1200", PLENTY, "ammo", "a bow and twelve hundred arrows")
 
 	-- A shot spends an arrow out of a bag, and the bag is what the client says
 	-- moved.
 	shots.ammoCount = 40
 	fire("BAG_UPDATE", 3)
 	skinPass:Beat(0.25)
-	reads("40", SHORT, "forty arrows left")
+	reads("40", SHORT, "ammo", "forty arrows left")
 
 	wear("Rusted Gun", "Sharp Arrow", 12000)
-	reads("9999", PLENTY, "a gun and more shots than the pill has digits for")
+	reads("9999", PLENTY, "ammo", "a gun and more shots than the pill has digits for")
 
 	wear("Balanced Throwing Axe")
 	check(not pill:IsShown(), "a thrown weapon that does not stack drew a pill, and it never runs out")
 
 	wear("Keen Throwing Knife", nil, 0, 150)
-	reads("150", PLENTY, "a stack of a hundred and fifty throwing knives")
+	reads("150", PLENTY, "hand18", "a stack of a hundred and fifty throwing knives")
 
 	wear("Ember Wand")
 	check(not pill:IsShown(), "a wand drew an ammo pill")
@@ -92,10 +95,18 @@ if pill then
 		check(math.abs(pixels - whole) < 1e-6 and whole > 0 and whole % 2 == 0,
 			("the pill is %.4f pixels %s, not an even whole number"):format(pixels, side[1]))
 	end
-	local point, anchor = pill:GetPoint(1)
+	local point, anchor, _, _, drop = pill:GetPoint(1)
 	check(point == "BOTTOMRIGHT" and anchor == player.portrait,
 		("the pill hangs off %s of %s and belongs in the portrait's bottom corner on the gauge side")
 			:format(tostring(point), tostring(anchor)))
+	-- Centred on the block's bottom edge: dropped half its height, less the
+	-- pixel the portrait sits inside the outline.
+	local want = -(pill:GetHeight() / 2 - px)
+	check(type(drop) == "number" and math.abs(drop - want) < 1e-6,
+		("the pill drops %s below the portrait and belongs %s, centred on the block's edge")
+			:format(tostring(drop), tostring(want)))
+	check(pill.icon:GetHeight() == pill:GetHeight() - 2 * px,
+		"the icon is not as tall as the inside of the pill's outline")
 
 	wear(nil)
 	check(not pill:IsShown(), "the ranged slot emptied and the pill stayed up")

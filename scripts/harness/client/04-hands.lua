@@ -138,6 +138,17 @@ _G.GetInventoryItemCount = function(unit, slot)
 	return slot == 18 and shots.ranged or 1
 end
 
+-- The ammo slot's art, which the client answers by slot like every other
+-- worn item even though it hands no link for it. Everything else is the art
+-- the hands already answer with.
+local wornArt = _G.GetInventoryItemTexture
+_G.GetInventoryItemTexture = function(unit, slot)
+	if unit == "player" and slot == 0 then
+		return shots.ammo and "ammo" or nil
+	end
+	return wornArt(unit, slot)
+end
+
 -- Two returns, and the second is nil with an empty off hand or a shield in it,
 -- which is the answer the client gives and the one the addon branches on.
 _G.UnitAttackSpeed = function(unit)

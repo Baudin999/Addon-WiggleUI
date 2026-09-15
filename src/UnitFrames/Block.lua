@@ -64,11 +64,11 @@ local HAIRLINES = 3
 local TEXT_PAD = 4
 
 -- The ammo pill: the space round its number inside the outline, its gap from
--- the portrait's edge, and the widest number it is sized for, all in pixels
--- but the last. Sized once for four digits rather than to the number on it, so
+-- the portrait's edge, the gap between its icon and its number, and the widest
+-- number it is sized for, all in pixels but the last. Sized once for four digits rather than to the number on it, so
 -- the pill keeps its width as the count falls and the tick decides no
 -- rectangle. Paint caps the count at four digits for the same reason.
-local AMMO_PAD, AMMO_INSET = 1, 2
+local AMMO_PAD, AMMO_INSET, AMMO_GAP = 1, 2, 2
 local AMMO_WIDEST = "0000"
 
 -- Font sizes are taken off the bar heights, because the same code draws a 34
@@ -157,8 +157,10 @@ end
 
 -- The shots left in your ranged slot, on the frame whose spec asks for it.
 -- A frame of its own rather than regions on the text frame, because an outline
--- is four textures pinned to a frame's edges. Hidden until the tick has a
--- number, and what the number is and when it shows is UnitFrames/Paint.lua's.
+-- is four textures pinned to a frame's edges. The icon is the ammo's art, on
+-- the portrait side, and the number beside it on the gauge side. Hidden until
+-- the tick has a number, and what the number and the art are is
+-- UnitFrames/Paint.lua's.
 local function BuildAmmo(entry)
 	if not entry.spec.ammo then
 		return
@@ -167,8 +169,8 @@ local function BuildAmmo(entry)
 	pill:EnableMouse(false)
 	ns.Fill(pill, "BACKGROUND", BACKDROP[1], BACKDROP[2], BACKDROP[3], 1):SetAllPoints()
 	pill.edges = ns.Outline(pill, IDLE[1], IDLE[2], IDLE[3], 1)
+	pill.icon = ns.UI.Icon(pill, "ARTWORK")
 	pill.text = ns.UI.Label(pill, SMALL_MAX, VALUE_TEXT, "CENTER", ns.UI.FLAT)
-	pill.text:SetPoint("CENTER", pill, "CENTER", 0, 0)
 	pill:Hide()
 	entry.ammo = pill
 end
@@ -190,15 +192,18 @@ local function PlaceBadges(entry, px, side, portraitEdge)
 	end
 end
 
--- In the portrait's bottom corner on the gauge side, inside the block. That is
--- the one corner nothing else uses: the badges sit on the portrait's outer
--- corners and the aura rows hang off the gauge end above and below, so the
--- pill covers the portrait's chin and nothing you read.
+-- In the portrait's bottom corner on the gauge side, centred on the block's
+-- bottom edge so half of it hangs below. That corner is the one nothing else
+-- uses: the badges sit on the portrait's outer corners and the aura rows hang
+-- off the gauge end, so the pill covers the portrait's chin, the edge under it
+-- and nothing you read. Inside the block it sat over the face; on the edge it
+-- reads as a tag on the frame.
 --
--- Both sides are an even number of pixels, because the number is centred on
--- the pill and half of an odd side is a glyph on a half pixel. The number the
--- tick last drew is forgotten, because the font it was measured in may have
--- just changed.
+-- The icon is a square as tall as the inside of the outline, and the number
+-- is centred in what is left. The height is an even number of pixels, because
+-- half of it is the drop and a half pixel drop blurs the outline. The number
+-- the tick last drew is forgotten, because the font it was measured in may
+-- have just changed.
 local function PlaceAmmo(entry, px, level, small, font, gaugeEdge, pull)
 	local pill = entry.ammo
 	if not pill then
@@ -208,14 +213,29 @@ local function PlaceAmmo(entry, px, level, small, font, gaugeEdge, pull)
 	ns.EdgeSize(pill.edges, px)
 	pill.text:SetFontObject(font)
 	pill.text:SetText(AMMO_WIDEST)
-	local wide = math.ceil(pill.text:GetStringWidth() / px) + 2 * (AMMO_PAD + 1)
-	local tall = small + 2 * (AMMO_PAD + 1)
+	local digits = math.ceil(pill.text:GetStringWidth() / px)
 	pill.text:SetText("")
-	pill:SetSize((wide + wide % 2) * px, (tall + tall % 2) * px)
+	local tall = small + 2 * (AMMO_PAD + 1)
+	tall = tall + tall % 2
+	local icon = tall - 2
+	local number = digits + 2 * AMMO_PAD
+	number = number + number % 2
+	pill:SetSize((1 + icon + AMMO_GAP + number + 1) * px, tall * px)
+
+	local near = gaugeEdge == "RIGHT" and "LEFT" or "RIGHT"
+	pill.icon:ClearAllPoints()
+	pill.icon:SetSize(icon * px, icon * px)
+	pill.icon:SetPoint(near, pill, near, -pull * px, 0)
+	pill.text:ClearAllPoints()
+	pill.text:SetPoint("CENTER", pill, gaugeEdge, pull * (1 + number / 2) * px, 0)
+
+	-- Anchored to the portrait for the corner and dropped by half the pill,
+	-- less the pixel the portrait sits inside the outline, so the pill's middle
+	-- row is the block's bottom edge.
 	pill:ClearAllPoints()
 	pill:SetPoint("BOTTOM" .. gaugeEdge, entry.portrait, "BOTTOM" .. gaugeEdge,
-		pull * AMMO_INSET * px, AMMO_INSET * px)
-	entry.shownAmmo = nil
+		pull * AMMO_INSET * px, -(tall / 2 - 1) * px)
+	entry.shownAmmo, entry.ammoIcon = nil, nil
 end
 
 -- Three frame levels, and they are the whole z-order:
