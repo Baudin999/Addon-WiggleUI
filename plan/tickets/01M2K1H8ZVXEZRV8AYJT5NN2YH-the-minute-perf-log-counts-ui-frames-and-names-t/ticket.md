@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2K1H8ZVXEZRV8AYJT5NN2YH
 type: task
-status: todo
+status: doing
 title: The minute perf log counts UI frames and names the addon that grew
 ---
 
