@@ -99,9 +99,9 @@ UI.SLOT_DIM = 0.4
 -- tick box in it, and there is no control here. The break is one row gap rather
 -- than two: what separates two piles is the heading under the air, not the air.
 UI.SLOT_HEADER, UI.SLOT_BREAK = M.heading + 3, M.rowGap
--- The line a sub-pile's caption sits on: Cloth under Trade Goods. The small
--- face plus the same three, for the same reason, and dim rather than the
--- heading colour so the pile's own heading is still the thing the eye lands
+-- The line a section's caption sits on: Equipment over the weapons and armour.
+-- The small face plus the same three, for the same reason, and dim rather than
+-- the heading colour so a pile's own heading is still the thing the eye lands
 -- on.
 UI.SLOT_SUBHEADER = M.small + 3
 

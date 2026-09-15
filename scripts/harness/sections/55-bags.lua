@@ -98,13 +98,13 @@ check(empty and empty.entries[1].bag == 3 and not empty.entries[1].link,
 
 -- The piles come out in the shipped order, which is a subsequence of it rather
 -- than the whole list: a pile with nothing in it is not drawn at all.
-local ORDER = { "hearthstone", "consumable", "weapon", "armor", "gem", "container",
-	"quiver", "projectile", "trade", "reagent", "recipe", "quest", "key",
-	"misc", "other", "junk", "empty" }
+local ORDER = { "session", "hearthstone", "consumable", "quest", "weapon", "armor",
+	"gem", "reagent", "trade", "recipe", "projectile", "container", "quiver",
+	"key", "misc", "other", "junk", "empty" }
 
 local at, ordered = 0, true
 for index = 1, read.shown do
-	local found = nil
+	local found = read.groups[index].kind and at or nil
 	for step = at + 1, #ORDER do
 		if ORDER[step] == read.groups[index].key then
 			found = step

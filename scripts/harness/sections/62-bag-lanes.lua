@@ -123,9 +123,11 @@ local function offset(name)
 	return nil
 end
 
--- Half the columns of squares and gaps, and then half a square of air. That
--- last term is the whole of the split: without it the second lane is just the
--- sixth column and there is nothing to see.
+-- The block's own left edge, its left lane's squares and gaps, and then half a
+-- square of air. That last term is the whole of the split: without it the
+-- second lane is just the next column and there is nothing to see. How many
+-- squares across the left lane is comes off the layout, because it depends on
+-- what shares the line with the pile.
 --
 -- Half a square is half a pixel at this window's zoom, and half a pixel puts
 -- the second lane on a different fraction of a pixel from the first, which is
@@ -133,7 +135,14 @@ end
 -- falls between. So the air is a whole number of pixels and the arithmetic here
 -- says so: the square's own frame is what knows how many units that is.
 local gap = ns.UI.Round(squares[1]:GetParent(), ns.UI.SLOT_LANE)
-local lane = math.ceil(ns.db.bagColumns / 2) * (ns.UI.SLOT + ns.UI.SLOT_GAP) + gap
+local weaponLeft, lane = 0, 0
+for index = 1, read.shown do
+	if read.groups[index] == weapon then
+		local left, _, across = Grid.Block(index)
+		weaponLeft = left
+		lane = left + across * (ns.UI.SLOT + ns.UI.SLOT_GAP) + gap
+	end
+end
 
 -- And the claim that makes it worth rounding: the second lane starts a whole
 -- number of pixels along, so every square in it falls on the fraction of a
@@ -143,9 +152,9 @@ check(math.abs(gap / px - math.floor(gap / px + 0.5)) < 0.001,
 	("the air between the lanes is %.3f pixels and it has to be a whole number")
 		:format(gap / px))
 
-check(offset("Arcanite Reaper") == 0,
-	("the bound weapon is %s pixels in and the left lane starts at nought")
-		:format(tostring(offset("Arcanite Reaper"))))
+check(offset("Arcanite Reaper") == ns.UI.Round(squares[1]:GetParent(), weaponLeft),
+	("the bound weapon is %s units in and the weapon block starts at %.3f")
+		:format(tostring(offset("Arcanite Reaper")), weaponLeft))
 -- Snapped once more as a whole, because the left lane's own columns are not
 -- on whole pixels either: a column pitch of thirty-three units is a fraction at
 -- this zoom, and five of them is half a pixel. The grid puts every origin on the

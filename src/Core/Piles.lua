@@ -58,38 +58,45 @@ local HEARTHSTONE = 6948
 
 -- Every pile, in the order they are drawn, and the class each one takes.
 --
--- The order is the order Baganator ships on this client, because it is right
--- and because it was arrived at by people using it: what you press is at the
--- top, what you wear is under that, what you carry for a reason is under that,
--- and what you are about to be rid of is at the bottom. A pile with nothing in
--- it is not drawn at all, so the list being long costs an empty bag nothing,
--- and costs a vendor who sells one class of thing nothing either.
+-- The order is the one Baganator ships for this client: the session, a rule,
+-- what you press, what quests want, what you wear, what you craft with, what
+-- holds other things, a rule, and what you are about to be rid of. A pile with
+-- nothing in it is not drawn at all, so the list being long costs an empty bag
+-- nothing, and costs a vendor who sells one class of thing nothing either.
+--
+-- `section` puts a pile under a caption, Equipment or Crafting, and the piles
+-- that share one start a line of their own under it. `rule` draws a rule above
+-- a pile, or above the next pile drawn when this one is empty, and only when
+-- something is drawn above it. Both are for the bag window alone: the merchant's
+-- rack asks Piles.Collect for no marks and gets none.
 --
 -- `name` is the fallback, in English. What is actually drawn is the client's
 -- own word for the class where it will say one, resolved once at the first
--- scan, so a German client reads Handwerkswaren rather than Trade Goods.
+-- scan, so a German client reads Handwerkswaren rather than Trade Goods. A
+-- section's caption is English everywhere, because the client has no word for
+-- it.
 local ORDER = {
 	-- First, above even the hearthstone. It is what you pressed a button to
 	-- start recording, so it is the reason the window is open.
 	{ key = "session",     name = "Session" },
-	{ key = "hearthstone", name = "Hearthstone" },
+	{ key = "hearthstone", name = "Hearthstone", rule = true },
 	{ key = "consumable",  name = "Consumable",   classId = 0 },
-	{ key = "weapon",      name = "Weapon",       classId = 2, split = "bound" },
-	{ key = "armor",       name = "Armor",        classId = 4, split = "bound" },
+	{ key = "quest",       name = "Quest",        classId = 12, split = "quest" },
+	{ key = "weapon",      name = "Weapon",       classId = 2, split = "bound", section = "Equipment" },
+	{ key = "armor",       name = "Armor",        classId = 4, split = "bound", section = "Equipment" },
 	-- Class 3 is Enum.ItemClass.Gem on 2.5.6. Without this pile every gem you
 	-- carry lands in Other, which is the pile nobody reads.
-	{ key = "gem",         name = "Gem",          classId = 3 },
+	{ key = "gem",         name = "Gem",          classId = 3, section = "Equipment" },
+	{ key = "reagent",     name = "Reagent",      classId = 5, section = "Crafting" },
+	{ key = "trade",       name = "Trade Goods",  classId = 7, section = "Crafting" },
+	{ key = "recipe",      name = "Recipe",       classId = 9, section = "Crafting" },
+	{ key = "projectile",  name = "Projectile",   classId = 6 },
 	{ key = "container",   name = "Container",    classId = 1 },
 	{ key = "quiver",      name = "Quiver",       classId = 11 },
-	{ key = "projectile",  name = "Projectile",   classId = 6 },
-	{ key = "trade",       name = "Trade Goods",  classId = 7 },
-	{ key = "reagent",     name = "Reagent",      classId = 5 },
-	{ key = "recipe",      name = "Recipe",       classId = 9 },
-	{ key = "quest",       name = "Quest",        classId = 12, split = "quest" },
 	{ key = "key",         name = "Key",          classId = 13 },
 	{ key = "misc",        name = "Miscellaneous", classId = 15 },
 	{ key = "other",       name = "Other" },
-	{ key = "junk",        name = "Junk" },
+	{ key = "junk",        name = "Junk",         rule = true },
 	{ key = "empty",       name = "Empty" },
 }
 
@@ -376,8 +383,43 @@ local function Row(state, shown, group, held)
 		state.groups[shown] = row
 	end
 	row.key, row.name, row.entries = group.key, Word(group), held
-	row.split = group.split ~= nil
+	row.split, row.kind = group.split ~= nil, nil
 	return shown
+end
+
+-- A row that is not a pile: a section caption, a rule, or a break where a
+-- section ends. `kind` says which, and `entries` is one shared empty table that
+-- nothing writes to, so a reader walking the squares walks past it.
+local NONE = {}
+
+local function Mark(state, shown, kind, name)
+	shown = shown + 1
+	local row = state.groups[shown]
+	if not row then
+		row = {}
+		state.groups[shown] = row
+	end
+	row.key, row.name, row.entries = nil, name, NONE
+	row.split, row.kind = false, kind
+	return shown
+end
+
+-- The marks due in front of a pile about to be drawn, and the section that
+-- pile is in. A rule only ever falls between two drawn piles, and a break only
+-- where a section ends and the next pile is in none.
+local function Marks(state, shown, group, ruled, section)
+	if ruled and shown > 0 then
+		shown = Mark(state, shown, "rule")
+	end
+	if group.section == section then
+		return shown, section
+	end
+	if group.section then
+		shown = Mark(state, shown, "section", group.section)
+	elseif shown > 0 then
+		shown = Mark(state, shown, "break")
+	end
+	return shown, group.section
 end
 
 -- The piles that have anything in them, sorted, in drawing order, written into
@@ -387,20 +429,29 @@ end
 -- caller passes one: the bag window folds its empty pile into the single square
 -- that says how many free slots there are. Nothing else has an equivalent, and
 -- a hook is cheaper than the alternative, which is this loop written twice.
-function Piles.Collect(owner, state, fold)
+--
+-- `marks` asks for the section captions, the rules and the breaks between the
+-- piles as rows of their own. The bag window asks; the merchant's rack does not.
+function Piles.Collect(owner, state, fold, marks)
 	local buckets = sets[owner]
 	local shown = 0
 	if not buckets then
 		state.shown = 0
 		return 0
 	end
+	local ruled, section = false, nil
 	for index = 1, #ORDER do
 		local group = ORDER[index]
 		local held = buckets[group.key]
+		ruled = ruled or group.rule == true
 		if #held > 0 then
 			table.sort(held, Before)
 			if fold then
 				fold(group.key, held)
+			end
+			if marks then
+				shown, section = Marks(state, shown, group, ruled, section)
+				ruled = false
 			end
 			shown = Row(state, shown, group, held)
 		end

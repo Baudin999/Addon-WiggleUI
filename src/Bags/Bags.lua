@@ -242,7 +242,7 @@ end
 function Bags.Read()
 	local used = Sweep()
 	ns.Piles.Fill(Bags, state.entries, used)
-	ns.Piles.Collect(Bags, state, Consolidate)
+	ns.Piles.Collect(Bags, state, Consolidate, true)
 	return state
 end
 

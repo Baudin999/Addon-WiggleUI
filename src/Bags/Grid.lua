@@ -51,28 +51,29 @@ ns.BagsGrid = Grid
 -- The quest pile divides the same way on a different fact: what a quest in
 -- your log still wants, and what nothing in it wants. Yours on the left,
 -- not on the right, half a square of air between them, and each lane wraps
--- inside its own half of the width. Which piles split, and on what, is
+-- inside its own width. Which piles split, and on what, is
 -- Core/Piles.lua's; which lane a square is in is Bags/Bags.lua's, written on
 -- the entry as `yours`; how wide a lane is and where the second one starts
 -- are here, because they are drawing.
 --
--- Every other pile is one lane of the full width and spends the same half square
--- as air at its right edge. That is deliberate and it is what Grid.Width adds:
--- a window as wide as the widest pile in it is a window that changes width when
--- you pick up a sword.
+-- Every pile, split or not, spends the same half square of air after it, and
+-- the window carries that much air at its right edge: that is what Grid.Width
+-- adds. A window as wide as the widest pile in it is a window that changes
+-- width when you pick up a sword.
 --
--- **Piles flow across the window before they go down it.** Seventeen piles cut
--- into sub-piles came to twenty-odd captions, most of them over one square, and
--- one square under a heading on a line of its own is a heading's worth of
--- height for a square's worth of bag: the window was a column you scrolled
--- with your bag beside it, which is the thing this window exists not to be.
--- So a pile is a block, as wide as its squares or as wide as its name, and the
--- blocks are laid left to right along a line with half a square of air between
--- them, wrapping to the next line only when the next block will not fit. A
--- block that would fit if it were narrower is narrowed and its squares wrap
--- inside it, down to half of what it wanted, so a big pile beside a small one
--- shares the line rather than starting a new one under a square of nothing.
--- A split pile takes a whole line, because its two lanes are the width.
+-- **A line is balanced before it is broken.** Piles flow left to right. When
+-- the next pile will not fit beside the ones already on the line, every pile
+-- on the line is allowed one more row and the line is measured again, and the
+-- new pile only starts the next line once none of them may grow any taller. A
+-- big pile and a small one share a line as two blocks. Filling the line
+-- greedily gave the big pile a strip the width of the window and pushed the
+-- small one under it. See The flow below.
+--
+-- **Sections and rules break a line.** Core/Piles.lua hands this window three
+-- kinds of row that are not piles: a section caption, Equipment over the
+-- weapons and armour, in the small dim face; a rule, one pixel of the theme's
+-- edge under the session and over the junk; and a plain break where a section
+-- ends. Each ends the line being filled.
 --
 -- **At a merchant the layout holds still.** Selling a grey takes it out of its
 -- pile, and a pile that closes the gap moves every square after it, so a grid
@@ -131,7 +132,7 @@ local BUY = "BUY_CURSOR"
 
 local TEMPLATE = "ContainerFrameItemButtonTemplate"
 
-local squares, holders = {}, {}
+local squares, holders, rules = {}, {}, {}
 local canvas, headings
 local inherited = true
 
@@ -189,16 +190,6 @@ end
 -- pile in it -- is a window that changes width when you pick up a sword.
 function Grid.Width(columns)
 	return UI.SlotSpan(columns) + Gap()
-end
-
--- How wide the left lane of a split pile is, in squares.
---
--- Half the columns, rounded up, so an odd setting puts the spare square on the
--- left. Which side gets it is arbitrary and being decided in one place is not:
--- the layout below and the height it reports have to agree, and they agree by
--- both asking this.
-local function Lane(columns)
-	return math.ceil(columns / 2)
 end
 
 -- Whether this pile is drawn in two lanes at this width.
@@ -530,18 +521,11 @@ local function Place(button, top, column, line, shift, side)
 	button:SetPoint("TOPLEFT", parent, "TOPLEFT", x, y)
 end
 
--- Everything the pool made and this pass did not use.
-local function Trim(squaresUsed, headersUsed, subsUsed)
-	for index = squaresUsed + 1, #squares do
-		squares[index]:Hide()
-	end
-	headings:Trim(headersUsed, subsUsed)
-end
-
--- One pile's squares, in one lane or two, from `left`, `top` down inside a
--- block `width` squares across, and how many lines they took. The entries
--- arrive sorted, and dispatching them one at a time keeps each lane in the
--- order the sort put them.
+-- One pile's squares, in one lane or two, from `left`, `top` down, and how
+-- many lines they took. `lane` is how many squares across the left lane is and
+-- `rest` the right; a pile drawn in one lane has a `rest` of nought. The
+-- entries arrive sorted, and dispatching them one at a time keeps each lane in
+-- the order the sort put them.
 --
 -- The two lanes are counted rather than collected. A split pile could be
 -- partitioned into two lists and walked twice, and that is two tables per
@@ -551,14 +535,23 @@ end
 -- hold below: it is the one square whose number is not about the item on it.
 local folded
 
-local function Lay(group, width, at, left, top, side, selling)
+-- The pass being laid out: how many squares, captions and rules it has used,
+-- where the line being filled starts, how many blocks are on it and how many
+-- rows they are asked for, and what every square on it is painted with. One
+-- table for the file, reset at the top of every paint, so a pass allocates
+-- nothing.
+local flow = {
+	at = 0, named = 0, captions = 0, rules = 0,
+	top = 0, count = 0, rows = 1,
+	columns = 0, side = 0, selling = false,
+}
+
+local function Lay(group, lane, rest, left, top)
 	local entries = group.entries
-	local mine, theirs = 0, 0
-	local split = Splits(group, width)
-	local lane = split and Lane(width) or width
-	local rest = split and (width - lane) or width
+	local split = lane > 0 and rest > 0
 	local shift = left + lane * (SLOT + GAP) + Gap()
 	local empty = group.key == ns.Bags.EMPTY
+	local at, mine, theirs = flow.at, 0, 0
 	for index = 1, #entries do
 		at = at + 1
 		local entry = entries[index]
@@ -566,19 +559,18 @@ local function Lay(group, width, at, left, top, side, selling)
 		if empty then
 			folded = at
 		end
-		Paint(button, entry, selling, empty and (entry.count or 1) or nil)
+		Paint(button, entry, flow.selling, empty and (entry.count or 1) or nil)
 		if split and not entry.yours then
-			Place(button, top, theirs % rest, math.floor(theirs / rest), shift, side)
+			Place(button, top, theirs % rest, math.floor(theirs / rest), shift, flow.side)
 			theirs = theirs + 1
 		else
-			Place(button, top, mine % lane, math.floor(mine / lane), left, side)
+			Place(button, top, mine % lane, math.floor(mine / lane), left, flow.side)
 			mine = mine + 1
 		end
 		button:Show()
 	end
-	-- As tall as the taller lane. On an unsplit pile the right one is empty
-	-- and this is the count it always was.
-	return at, math.max(math.ceil(mine / lane), math.ceil(theirs / rest))
+	-- As tall as the taller lane. On a pile in one lane the right one is empty.
+	return at, math.max(math.ceil(mine / lane), split and math.ceil(theirs / rest) or 0)
 end
 
 --------------------------------------------------------------------------
@@ -637,54 +629,208 @@ end
 --------------------------------------------------------------------------
 -- The flow
 --
--- Three numbers per block: how many squares it wants, how few it will take,
--- and how many the line has left. A block is placed where the line is if it
--- fits, narrowed to what is left if that is at least half of what it wanted
--- and at least its name, and otherwise starts the next line.
+-- A block is one pile: its caption and its squares under it. A line is filled
+-- one block at a time. Every block on the line is asked for the same number of
+-- rows, `flow.rows`, and answers with the width it comes to at that many. When
+-- the line comes out wider than the window the rows go up by one and the line
+-- is measured again. A block never takes more rows than its ceiling, so once
+-- no block on the line can take another, the new block comes off, the line is
+-- laid out at the rows it last fitted at, and the new block starts the next.
+--
+-- The ceiling is the height of a golden rectangle of the block's squares,
+-- floor(sqrt(n / 1.618)): nine squares may stand two rows tall, forty may
+-- stand four. It is a ceiling on sharing a line. A pile too wide for the
+-- window at one row takes the rows it needs, alone.
 --------------------------------------------------------------------------
 
--- How many squares a caption's words cover, rounded up.
-local function Named(width)
-	return math.max(1, math.ceil((width + GAP) / (SLOT + GAP)))
+local GOLDEN = 1.618
+
+-- The blocks on the line being filled, pooled by their place on the line, and
+-- where each laid block ended up, pooled by its row in the scan's state. Both
+-- are reused every pass for the reason the squares are.
+local blocks, placed = {}, {}
+
+-- How wide this many squares are, nought for none. UI.SlotSpan counts the gaps
+-- between squares, and nought squares have minus one of those.
+local function Span(across)
+	return across > 0 and UI.SlotSpan(across) or 0
 end
 
--- How many squares a block wants, and the fewest it will take. A split pile
--- wants the whole width and takes nothing less, because the width is what its
--- two lanes divide. A block with no squares is as wide as its words.
--- Everything else wants one square per entry up to the width, and will take
--- half of that, or its name, whichever is more.
-local function Wants(group, columns, words)
-	if Splits(group, columns) then
-		return columns, columns
-	end
-	local name = Named(words)
-	local count = #group.entries
-	if count == 0 then
-		return name, name
-	end
-	local want = math.max(name, math.min(count, columns))
-	return want, math.max(name, math.ceil(want / 2))
+-- The most rows a block of this many squares takes while it shares a line.
+local function Ceiling(count)
+	return math.max(1, math.floor(math.sqrt(count / GOLDEN)))
 end
 
--- How many squares fit between `left` and the right edge of the grid. The
--- grid is SlotSpan(columns) plus the half square every line spends as air at
--- its end, and a block that ends inside that is a block on the grid.
-local function Room(columns, left)
-	return math.floor((Grid.Width(columns) - left + GAP) / (SLOT + GAP))
+-- How many of a pile's squares go in the left lane, or nought for a pile drawn
+-- in one. Counted once when the block joins a line, because the line is
+-- measured again every time its rows go up.
+local function Mine(group, columns)
+	if not Splits(group, columns) then
+		return 0
+	end
+	local mine = 0
+	for index = 1, #group.entries do
+		if group.entries[index].yours then
+			mine = mine + 1
+		end
+	end
+	return mine
 end
 
--- Where one block goes: on this line at `left`, `width` squares across, or at
--- the start of the next. Nothing is placed here; the running numbers are what
--- Grid.Paint carries from block to block, and this is the one decision in it.
-local function Fit(want, least, columns, left)
-	local room = Room(columns, left)
-	if left == 0 or want <= room then
-		return left, math.min(want, room)
+-- A block asked for at `rows` rows: the squares across its left lane and its
+-- right lane, and how wide it is. A split pile with everything on one side is
+-- drawn in one lane, because half a square of air beside nothing divides
+-- nothing. A block is never narrower than its caption's words.
+local function Shape(block, rows, columns)
+	local count, mine = #block.group.entries, block.mine
+	if mine == 0 or mine == count then
+		local across = math.min(columns, math.ceil(count / rows))
+		return across, 0, math.max(Span(across), block.words)
 	end
-	if least <= room then
-		return left, room
+	local lane = math.min(columns, math.ceil(mine / rows))
+	local rest = math.min(columns, math.ceil((count - mine) / rows))
+	return lane, rest, math.max(Span(lane) + Gap() + Span(rest), block.words)
+end
+
+-- The rows a block takes when its line asks for `rows`: no more than its
+-- ceiling, and no fewer than it needs to fit the window at all.
+local function Rows(block, rows)
+	return math.max(block.least, math.min(rows, block.ceiling))
+end
+
+-- The fewest rows at which a block fits the window on its own.
+local function Least(block, columns)
+	local most = math.max(1, #block.group.entries)
+	for rows = 1, most do
+		local _, _, width = Shape(block, rows, columns)
+		if width <= Grid.Width(columns) then
+			return rows
+		end
 	end
-	return nil, math.min(want, columns)
+	return most
+end
+
+-- Whether the line fits the window at `flow.rows`. Every block spends a lane
+-- gap after it, the last one included, which is the air Grid.Width carries.
+local function Fits()
+	local used = 0
+	for index = 1, flow.count do
+		local block = blocks[index]
+		local _, _, width = Shape(block, Rows(block, flow.rows), flow.columns)
+		used = used + width + Gap()
+	end
+	return used <= Grid.Width(flow.columns) + Gap()
+end
+
+-- Whether any block on the line would take another row if asked.
+local function Grows()
+	for index = 1, flow.count do
+		local block = blocks[index]
+		if Rows(block, flow.rows + 1) ~= Rows(block, flow.rows) then
+			return true
+		end
+	end
+	return false
+end
+
+-- The line laid out at `flow.top`, and the next one begun under it.
+local function Flush()
+	if flow.count == 0 then
+		return
+	end
+	local left, tall = 0, 0
+	for index = 1, flow.count do
+		local block = blocks[index]
+		local lane, rest, width = Shape(block, Rows(block, flow.rows), flow.columns)
+		flow.named = flow.named + 1
+		headings:Name(flow.named, block.group.name, flow.top, Snap(left))
+		local high = UI.SLOT_HEADER
+		if lane + rest > 0 then
+			local lines
+			flow.at, lines = Lay(block.group, lane, rest, left, flow.top + UI.SLOT_HEADER)
+			high = high + lines * SLOT + (lines - 1) * GAP
+		end
+		local spot = placed[block.index]
+		if not spot then
+			spot = {}
+			placed[block.index] = spot
+		end
+		spot.left, spot.top, spot.lane, spot.rest, spot.width = left, flow.top, lane, rest, width
+		tall = math.max(tall, high)
+		left = left + width + Gap()
+	end
+	flow.top = flow.top + tall + BREAK
+	flow.count, flow.rows = 0, 1
+end
+
+-- One pile onto the line being filled, or onto the next line when this one
+-- cannot make room for it. `index` is the pile's row in the scan's state.
+local function Push(group, index)
+	local count = flow.count + 1
+	local block = blocks[count]
+	if not block then
+		block = {}
+		blocks[count] = block
+	end
+	block.group, block.index = group, index
+	-- Measured on the caption this block will be drawn with: the next one after
+	-- everything already on the line.
+	block.words = headings:Width(flow.named + count, group.name)
+	block.mine = Mine(group, flow.columns)
+	block.ceiling = Ceiling(#group.entries)
+	block.least = Least(block, flow.columns)
+	flow.count = count
+	local fitted = flow.rows
+	while count > 1 and not Fits() do
+		if not Grows() then
+			flow.count, flow.rows = count - 1, fitted
+			Flush()
+			blocks[1], blocks[count] = block, blocks[1]
+			flow.count = 1
+			return
+		end
+		flow.rows = flow.rows + 1
+	end
+end
+
+-- The rule under the session and over the junk: one pixel of the theme's edge
+-- across the grid, pooled like the captions.
+local function Rule()
+	flow.rules = flow.rules + 1
+	local rule = rules[flow.rules]
+	if not rule then
+		rule = UI.Rule(canvas, C.edge)
+		rules[flow.rules] = rule
+	end
+	local px = ns.Pixel(canvas)
+	rule:ClearAllPoints()
+	rule:SetPoint("TOPLEFT", canvas, "TOPLEFT", 0, -Snap(flow.top))
+	rule:SetSize(UI.SlotSpan(flow.columns), px)
+	rule:Show()
+	flow.top = flow.top + px + BREAK
+end
+
+-- A row that is not a pile. Every one ends the line being filled; a section
+-- caption and a rule then take a line of their own.
+local function Mark(group)
+	Flush()
+	if group.kind == "section" then
+		flow.captions = flow.captions + 1
+		flow.top = headings:Sub(flow.captions, group.name, flow.top, 0)
+	elseif group.kind == "rule" then
+		Rule()
+	end
+end
+
+-- Everything the pools made and this pass did not use.
+local function Trim()
+	for index = flow.at + 1, #squares do
+		squares[index]:Hide()
+	end
+	for index = flow.rules + 1, #rules do
+		rules[index]:Hide()
+	end
+	headings:Trim(flow.named, flow.captions)
 end
 
 --------------------------------------------------------------------------
@@ -702,13 +848,9 @@ end
 -- The height is handed back rather than written anywhere, because the thing that
 -- has to know is the scroll view and the scroll view belongs to the window.
 --
--- One line at a time. `line` is where the line being filled starts, `left` is
--- where the next block on it goes, and `tall` is the tallest block on it so
--- far, which is what the next line starts under. A block's caption sits at
--- the top of the line and its squares hang under that inside its own width.
+-- One row of the scan at a time: a pile joins the line being filled, and a
+-- caption, a rule or a break ends it. See The flow.
 function Grid.Paint(state, columns)
-	local at, named = 0, 0
-	local line, left, tall = 0, 0, 0
 	-- Asked once for the whole pass rather than per square. It cannot change
 	-- inside one layout, and a hundred and fifty squares asking the same
 	-- question is a hundred and fifty answers that are the same.
@@ -729,35 +871,26 @@ function Grid.Paint(state, columns)
 		return held.height
 	end
 	folded = nil
+	flow.at, flow.named, flow.captions, flow.rules = 0, 0, 0, 0
+	flow.top, flow.count, flow.rows = 0, 0, 1
+	flow.columns, flow.side, flow.selling = columns, side, selling
 	for index = 1, state.shown do
 		local group = state.groups[index]
-		local want, least = Wants(group, columns, headings:Width(named + 1, group.name))
-		local here, width = Fit(want, least, columns, left)
-		if not here then
-			line = line + tall + BREAK
-			tall, here = 0, 0
+		if group.kind then
+			Mark(group)
+		else
+			Push(group, index)
 		end
-
-		local top = line + UI.SLOT_HEADER
-		named = named + 1
-		headings:Name(named, group.name, line, Snap(here))
-
-		local high = UI.SLOT_HEADER
-		if #group.entries > 0 then
-			local lines
-			at, lines = Lay(group, width, at, here, top, side, selling)
-			high = high + lines * SLOT + (lines - 1) * GAP
-		end
-		tall = math.max(tall, high)
-		left = here + UI.SlotSpan(width) + Gap()
 	end
-	Trim(at, named)
+	Flush()
+	Trim()
 	Follow()
-	local height = math.max(line + tall, 1)
+	-- The last line added a break under itself that nothing follows.
+	local height = math.max(flow.top - BREAK, 1)
 	-- The first paint at a vendor, or the one after a hold broke, is the one
 	-- the squares are held at from here until the vendor closes.
 	if selling then
-		Keep(at, columns, side, height)
+		Keep(flow.at, columns, side, height)
 	end
 	return height
 end
@@ -781,9 +914,26 @@ function Grid.Headers()
 	return headings:All()
 end
 
--- The sub-captions, for the harness, for the same reason.
+-- The section captions, for the harness, for the same reason.
 function Grid.Subs()
 	return headings:Subs()
+end
+
+-- The rules, for the harness, which counts the ones that are up.
+function Grid.Rules()
+	return rules
+end
+
+-- Where one pile of the last layout went, by its row in the scan's state: its
+-- left edge and the top of its caption in units, the squares across its left
+-- lane and its right lane, and its width. The harness reads a lane's start off
+-- this rather than working the flow out a second time.
+function Grid.Block(index)
+	local spot = placed[index]
+	if not spot then
+		return nil
+	end
+	return spot.left, spot.top, spot.lane, spot.rest, spot.width
 end
 
 function Grid.Describe()
