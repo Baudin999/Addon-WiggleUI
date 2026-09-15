@@ -342,6 +342,7 @@ Perf\Perf.lua
 # above it, so the load order is also the dependency order.
 Perf\Census.lua
 Perf\Cause.lua
+Perf\Held.lua
 Perf\Trace.lua
 Perf\Hud.lua
 Perf\Key.lua

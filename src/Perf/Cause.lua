@@ -54,6 +54,10 @@ local function AddOnList()
 	return count, info
 end
 
+-- Perf/Held.lua reads the same list for memory, and one spelling of the lookup
+-- is enough.
+Cause.AddOnList = AddOnList
+
 --------------------------------------------------------------------------
 -- The client's own profiler
 --------------------------------------------------------------------------

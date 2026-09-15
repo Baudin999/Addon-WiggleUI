@@ -111,8 +111,26 @@ local SLOW, SLOWER, STALL = 12, 20, 50
 -- lua     milliseconds of Lua, or -1 with the profiler off
 -- heap    every addon's Lua heap in KB at the end of the minute
 -- freed   KB the collector gave back during it
+--
+-- The rest are Perf/Held.lua's, and they are what a reload throws away that
+-- none of the columns above can see. The four ui columns are the last whole
+-- pass of the frame walk, or -1 before one has finished. A row written before
+-- these columns existed reads 0 in all of them.
+--
+-- uiFrames   frames the client holds
+-- uiShown    how many of those are visible
+-- uiRegions  textures and font strings on the visible ones
+-- uiTicking  visible frames with an OnUpdate, Lua on every frame that the
+--            profiler-off client names nobody for
+-- grower     the addon whose memory rose most across the minute, "" for none
+-- grew       by how many KB
+-- readMs     what the memory reading cost, or -1 where the client refused it
 local COLUMNS = { "at", "up", "frames", "avg", "worst", "over12", "over20",
-	"over50", "lua", "ours", "events", "heap", "freed" }
+	"over50", "lua", "ours", "events", "heap", "freed",
+	"uiFrames", "uiShown", "uiRegions", "uiTicking", "grower", "grew", "readMs" }
+
+-- The one column that holds a name rather than a number.
+local TEXT = { grower = true }
 
 local minute = {
 	span = 0, frames = 0, total = 0, worst = 0, slow = 0, slower = 0, stall = 0,
@@ -120,6 +138,7 @@ local minute = {
 }
 local saved             -- WarriorKitDB.perfLog once Ready has made it whole
 local startedAt = 0     -- the client's clock when watching began
+local reading = false   -- the roll just read addon memory, and the next frame pays for it
 
 local function Empty()
 	minute.span, minute.frames, minute.total, minute.worst = 0, 0, 0, 0
@@ -142,7 +161,7 @@ local function Ready()
 		end
 		local column = log[name]
 		for row = #column + 1, MINUTES do
-			column[row] = 0
+			column[row] = TEXT[name] and "" or 0
 		end
 	end
 	saved = log
@@ -174,6 +193,16 @@ local function Roll(log)
 	log.events[row] = minute.events
 	log.heap[row] = math.floor((lastHeap or 0) + 0.5)
 	log.freed[row] = math.floor(minute.freed + 0.5)
+
+	local pass = ns.Held.Pass()
+	log.uiFrames[row], log.uiShown[row] = pass.frames, pass.shown
+	log.uiRegions[row], log.uiTicking[row] = pass.regions, pass.ticking
+	ns.Held.Read()
+	local grower, grew, readMs = ns.Held.Grower()
+	log.grower[row] = grower
+	log.grew[row] = math.floor(grew + 0.5)
+	log.readMs[row] = (readMs >= 0) and Hundredths(readMs) or -1
+	reading = true
 	Empty()
 end
 
@@ -219,6 +248,9 @@ end
 -- One frame. Everything above is what this function is allowed to cost.
 local function Beat(since)
 	local took = since * 1000
+	local afterRead = reading
+	reading = false
+	ns.Held.Walk()
 	local ourMs, _, ourKey = ns.Perf.FrameCost()
 	local luaMs = ns.Cause.LuaSince()
 	local count, event, most = ns.Census.Take()
@@ -256,7 +288,9 @@ local function Beat(since)
 		ns.Cause.Mark()
 	end
 
-	local loading = (GetTime and GetTime() or 0) < loadingUntil
+	-- The frame after a memory reading is that reading, and it is the recorder's
+	-- own cost rather than a stall, so it is kept out the way a load is.
+	local loading = afterRead or (GetTime and GetTime() or 0) < loadingUntil
 	if took >= Threshold() and not loading then
 		Record(took, ourMs, ourKey, count, event, most, freed)
 	end

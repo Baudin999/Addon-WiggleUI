@@ -117,6 +117,46 @@ check(why:match("COMBAT_LOG_EVENT_UNFILTERED"),
 	("a frame filled with combat log lines reads %q"):format(why))
 
 ----------------------------------------------------------------------
+-- What the client holds, counted into the same minute
+--
+-- Thirty frames and three addons. The first two frames are hidden, the third
+-- is forbidden and would answer visible if asked, and the last runs an
+-- OnUpdate with four regions on it. The walk and the memory reading both run
+-- inside the minute below, so the allocation check covers them. The first
+-- reading is taken here, because it only plants the baseline.
+----------------------------------------------------------------------
+
+local Fake = {}
+Fake.__index = Fake
+function Fake:IsForbidden() return self.forbidden end
+function Fake:IsVisible() return self.visible end
+function Fake:GetNumRegions() return self.regions end
+function Fake:GetScript(name) return (name == "OnUpdate") and self.onUpdate or nil end
+
+local fakes, fakeAt = {}, {}
+for index = 1, 30 do
+	local fake = setmetatable({ visible = index >= 3, forbidden = index == 3, regions = 2 }, Fake)
+	fakes[index], fakeAt[fake] = fake, index
+end
+fakes[30].regions, fakes[30].onUpdate = 4, function() end
+_G.EnumerateFrames = function(after)
+	if after == nil then
+		return fakes[1]
+	end
+	return fakes[fakeAt[after] + 1]
+end
+
+local memoryNames, memoryKB = { "Details", "Questie", "WarriorKit" }, { 1000, 2000, 300 }
+local clientUsage, clientUpdate = _G.GetAddOnMemoryUsage, _G.UpdateAddOnMemoryUsage
+_G.UpdateAddOnMemoryUsage = function() end
+_G.GetAddOnMemoryUsage = function(index) return memoryKB[index] or 0 end
+_G.GetNumAddOns = function() return #memoryNames end
+_G.GetAddOnInfo = function(index) return memoryNames[index] end
+ns.Held.Read()
+check(ns.Held.Grower() == "", "the first memory reading named an addon with nothing to compare against")
+memoryKB[1], memoryKB[2] = memoryKB[1] + 100, memoryKB[2] + 900
+
+----------------------------------------------------------------------
 -- A minute of frames, written where a reload keeps it
 --
 -- A session that gets slower is 12 to 20 ms frames arriving more often by the
@@ -158,6 +198,24 @@ check(log.worst[row] == 25, ("the worst frame of the minute reads %s ms"):format
 check(log.avg[row] > 9 and log.avg[row] < 10,
 	("a minute of mostly 9 ms frames averages %s ms"):format(tostring(log.avg[row])))
 check(log.lua[row] == -1, ("with the profiler off the minute claims %s ms of Lua"):format(tostring(log.lua[row])))
+
+check(log.uiFrames[row] == 30 and log.uiShown[row] == 27,
+	("thirty frames with two hidden and one forbidden read as %s held and %s visible")
+		:format(tostring(log.uiFrames[row]), tostring(log.uiShown[row])))
+check(log.uiRegions[row] == 56 and log.uiTicking[row] == 1,
+	("26 visible frames of 2 regions and one of 4 read as %s regions and %s ticking")
+		:format(tostring(log.uiRegions[row]), tostring(log.uiTicking[row])))
+check(log.grower[row] == "Questie" and log.grew[row] == 900,
+	("Questie grew 900 KB and Details 100, and the row names %q at %s KB")
+		:format(tostring(log.grower[row]), tostring(log.grew[row])))
+check(log.readMs[row] >= 0, ("the memory reading was timed at %s ms"):format(tostring(log.readMs[row])))
+
+-- The frame after the roll is the memory reading, and it is not a stall.
+local dipsAtRoll = Trace.Dips()
+frame:Beat(0.120)
+check(Trace.Dips() == dipsAtRoll, "the frame the memory reading landed in was logged as a dip")
+frame:Beat(0.120)
+check(Trace.Dips() == dipsAtRoll + 1, "a slow frame after the one that paid for the reading was not logged")
 
 ----------------------------------------------------------------------
 -- The profiler on, which is the only way an addon gets named
@@ -289,6 +347,8 @@ check(ns.PerfKey.Describe():match("^CTRL%-R"),
 
 _G.GetScriptCPUUsage, _G.GetNumAddOns, _G.GetAddOnInfo = nil, nil, nil
 _G.GetAddOnCPUUsage, _G.UpdateAddOnCPUUsage = nil, nil
+_G.EnumerateFrames = nil
+_G.GetAddOnMemoryUsage, _G.UpdateAddOnMemoryUsage = clientUsage, clientUpdate
 _G.SetCVar("scriptProfile", "0")
 Cause.Forget()
 Trace.Forget()
