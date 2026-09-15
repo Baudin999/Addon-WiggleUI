@@ -128,6 +128,12 @@ local CHIP_BREAK = 6
 local CHIP_OFF = 0.25
 -- The xmark, which is the letter scripts/bake-glyphs.sh put it on.
 local CLEAR = "x"
+-- The trash can, on a row beside the cross and on the delete list's control in
+-- the strip. scripts/bake-glyphs.sh put it on `t` for the bag window's clear.
+local TRASH = "t"
+-- The delete list's control: the can, a count beside it and the inset round
+-- both. Wide enough for a two digit count at the chips' mark size.
+local LIST = 36
 
 -- The number column, fixed rather than grown to fit. A string that sizes itself
 -- puts every number at a different distance from the edge, which is a ragged
@@ -226,42 +232,62 @@ end
 -- One row
 --------------------------------------------------------------------------
 
--- The cross on a row of a feed that lets you take a row out. The strip's reset
--- again: the same button at the same cell size with its mark dimmed, laid over
--- the right end of the row and up on the row under the cursor and no other.
+-- A button on a row: the cross that takes the row out, and the can that puts
+-- its item on the delete list. The strip's reset again, the same button at the
+-- same cell size with its mark dimmed, laid over the right end of the row and up
+-- on the row under the cursor and no other.
 --
 -- Over the count rather than beside it. A row has no spare column, and a fourth
 -- one would narrow every name in the feed for a control that is up on one row
 -- at a time. The count is in the hover beside it.
 --
--- The entry is read off the row at the click rather than when the cross comes
+-- The entry is read off the row at the click rather than when the button comes
 -- up, because a drop between the two moves every row down one and an entry
 -- taken at the hover is the row that used to be there.
-local function BuildCross(feed, row)
+--
+-- `right` is how far the button's right edge sits in from the row's, in units,
+-- so the can stands beside the cross rather than on it.
+local function RowButton(feed, row, mark, right, tip, press)
 	local unit = feed.unit
-	local cross = UI.Button(row, { label = CLEAR, glyph = true, size = CHIP_MARK,
-		width = CHIP * unit, height = CHIP * unit,
-		tip = "Take this row out of the feed.",
+	local button = UI.Button(row, { label = mark, glyph = true, size = CHIP_MARK,
+		width = CHIP * unit, height = CHIP * unit, tip = tip,
 		onClick = function()
 			if row.shownEntry then
-				feed:Remove(row.shownEntry)
+				press(row.shownEntry)
 			end
 		end })
-	cross:SetPoint("RIGHT", row, "RIGHT", -INSET * unit, 0)
-	cross.text:SetTextColor(C.dim[1], C.dim[2], C.dim[3])
+	button:SetPoint("RIGHT", row, "RIGHT", -right * unit, 0)
+	button.text:SetTextColor(C.dim[1], C.dim[2], C.dim[3])
 
-	-- Off the cross and back onto the row is still the row. The other half of
+	-- Off the button and back onto the row is still the row. The other half of
 	-- this is the row's own OnLeave.
-	local leave = cross:GetScript("OnLeave")
-	cross:SetScript("OnLeave", function(self)
+	local leave = button:GetScript("OnLeave")
+	button:SetScript("OnLeave", function(self)
 		leave(self)
 		if not row:IsMouseOver() then
 			feed:Leave()
 		end
 	end)
-	UI.PassCamera(cross)
-	cross:Hide()
-	return cross
+	UI.PassCamera(button)
+	button:Hide()
+	return button
+end
+
+-- The buttons a row carries, for a feed that asked for them.
+local function RowButtons(feed, row)
+	if feed.removable then
+		row.cross = RowButton(feed, row, CLEAR, INSET, "Take this row out of the feed.",
+			function(entry) feed:Remove(entry) end)
+	end
+	if feed.watch then
+		row.trash = RowButton(feed, row, TRASH, INSET + (feed.removable and CHIP or 0),
+			feed.watch.row, function(entry) feed:Watch(entry) end)
+	end
+end
+
+-- Whether the pointer is on one of a row's own buttons, which is still the row.
+local function Under(button)
+	return button and button:IsShown() and button:IsMouseOver() or false
 end
 
 local function BuildRow(feed, index)
@@ -357,18 +383,17 @@ local function BuildRow(feed, index)
 		feed:Enter(self.index)
 	end)
 	row:SetScript("OnLeave", function()
-		-- Onto the row's own cross is still on the row. The client hands the
-		-- pointer to the child and tells the row it left, and a Leave here would
-		-- hide the cross from under the click it was reached for.
-		local cross = row.cross
-		if cross and cross:IsShown() and cross:IsMouseOver() then
+		-- Onto one of the row's own buttons is still on the row. The client hands
+		-- the pointer to the child and tells the row it left, and a Leave here
+		-- would hide the button from under the click it was reached for.
+		if Under(row.cross) or Under(row.trash) then
 			return
 		end
 		feed:Leave()
 	end)
 	UI.PassCamera(row)
 	row:EnableMouse(false)
-	row.cross = feed.removable and BuildCross(feed, row) or nil
+	RowButtons(feed, row)
 
 	row:Hide()
 	return row
@@ -413,6 +438,39 @@ end
 -- The frame is the second argument rather than a closure, because
 -- scripts/hot.lua walks out from the function ns.UI.Ticker was handed and a
 -- closure is a body it cannot name.
+-- The scroll bar down the right of the rows. Its own function because UI.Feed
+-- reached a hundred and five lines when the delete list arrived and the gate
+-- is a hundred; this is the block of it that stands alone.
+local function BuildBar(feed)
+	local bar = UI.ScrollBar(feed.frame, function(_, value)
+		-- The bar is written back to on every arrival, and that write fires
+		-- this. The latch is UI/Scroll.lua's and UI/Log.lua's, and it is here
+		-- for the same reason: without it the write and the handler chase each
+		-- other for a frame every time something drops.
+		if feed.syncing then
+			return
+		end
+		feed:ScrollTo(value)
+	end)
+	if bar then
+		bar:SetPoint("BOTTOMRIGHT")
+		bar:Hide()
+	end
+	return bar
+end
+
+-- What the strip over the rows carries beyond its heading: the chips, and the
+-- delete list's control after them. The chips first, because the control is
+-- placed after the last of them.
+local function BuildStrip(feed, opts)
+	if opts.chips then
+		feed:BuildChips(opts.chips)
+	end
+	if opts.watch then
+		feed:BuildList()
+	end
+end
+
 local function Repaint(_, frame)
 	local feed = frame.feed
 	if feed.stale then
@@ -442,6 +500,12 @@ end
 --                nothing and the second walks the ring
 -- opts.removable whether the row under the cursor carries a cross that takes
 --                its entry out of the feed
+-- opts.watch     the delete list, or nothing for a feed with none. A table:
+--                can(entry), add(entry) answering a match for Feed:Sweep,
+--                count(), subject() for the strip control's hover, clear(), and
+--                row, the sentence the can on a row says
+-- opts.onLayout  function(), called when the strip has to come up or go for the
+--                list, so whatever sized the frame can size it again
 --------------------------------------------------------------------------
 
 function UI.Feed(parent, opts)
@@ -454,6 +518,8 @@ function UI.Feed(parent, opts)
 		note = opts.note or 0,
 		onTooltip = opts.onTooltip,
 		removable = opts.removable and true or false,
+		watch = opts.watch,
+		onLayout = opts.onLayout,
 		-- The predicate as the caller wrote it, and the one the paint actually
 		-- uses. They differ while the chips are hidden, which is the only time
 		-- a feed with a filter draws everything it holds.
@@ -524,24 +590,9 @@ function UI.Feed(parent, opts)
 
 	BuildHeader(feed)
 
-	if opts.chips then
-		feed:BuildChips(opts.chips)
-	end
+	BuildStrip(feed, opts)
 
-	feed.bar = UI.ScrollBar(feed.frame, function(_, value)
-		-- The bar is written back to on every arrival, and that write fires
-		-- this. The latch is UI/Scroll.lua's and UI/Log.lua's, and it is here
-		-- for the same reason: without it the write and the handler chase each
-		-- other for a frame every time something drops.
-		if feed.syncing then
-			return
-		end
-		feed:ScrollTo(value)
-	end)
-	if feed.bar then
-		feed.bar:SetPoint("BOTTOMRIGHT")
-		feed.bar:Hide()
-	end
+	feed.bar = BuildBar(feed)
 
 	-- The strip as it was asked for: a title if there is one, chips if there
 	-- are any. Last, because it anchors the scroll bar as well as the rows, and
@@ -584,8 +635,23 @@ end
 function Feed:Chrome(titled, chipped)
 	titled = (titled and self.heading) and true or false
 	chipped = (chipped and #self.chips > 0) and true or false
-	self.head = (titled or chipped) and (HEADER + RULE) or 0
-	self.chipped = chipped
+	-- A delete list with anything on it holds the strip up on its own, because
+	-- its control is the only thing on screen saying drops are being refused.
+	local count = self.list and self.watch.count() or 0
+	local listed = count > 0
+	self.head = (titled or chipped or listed) and (HEADER + RULE) or 0
+	self.titled, self.chipped, self.listed = titled, chipped, listed
+
+	-- After the reset's cell when the chips are up, and at the strip's own
+	-- inset when the list is the only thing on it.
+	if self.list then
+		self.list.count:SetText(tostring(count))
+		self.list:ClearAllPoints()
+		self.list:SetPoint("TOPLEFT", self.frame, "TOPLEFT",
+			(chipped and self.stripAt or INSET) * self.unit,
+			-math.floor((HEADER - CHIP) / 2) * self.unit)
+		self.list:SetShown(listed)
+	end
 
 	if self.heading then
 		if titled then
@@ -806,6 +872,7 @@ function Feed:BuildChips(specs)
 	end
 	if #self.chips > 0 then
 		self.reset = BuildReset(self, x + CHIP_BREAK)
+		self.stripAt = x + CHIP_BREAK + CHIP + CHIP_BREAK
 	end
 	return #self.chips
 end
@@ -876,6 +943,94 @@ function Feed:Refilter()
 		self.offset = self:Room()
 	end
 	return self:Paint()
+end
+
+--------------------------------------------------------------------------
+-- The delete list
+--
+-- Items a player has told the feed never to draw again. The list is the
+-- caller's and so is the refusing: Feeds/Loot.lua turns a listed item away
+-- before it becomes an entry. This file owns the two controls, the can on a
+-- row that adds to the list and the control on the strip that says it exists.
+--
+-- **The strip control is loud on purpose.** A list that quietly eats drops is
+-- a feed that looks broken a week later. So it is the one thing on the strip in
+-- the danger red, it carries the count, and while the list has anything on it
+-- the strip is up even with the chips and the title both off. Pressed, it
+-- empties the list and goes.
+--------------------------------------------------------------------------
+
+function Feed:BuildList()
+	local unit = self.unit
+	local list = UI.Button(self.frame, { label = TRASH, glyph = true, size = CHIP_MARK,
+		width = LIST * unit, height = CHIP * unit, tone = C.danger,
+		onClick = function() self:Unwatch() end })
+	list.text:ClearAllPoints()
+	list.text:SetPoint("LEFT", list, "LEFT", INSET * unit, 0)
+	-- Raw rather than in units, for the reason BuildChip gives its mark.
+	list.count = UI.Label(list, CHIP_MARK + 1, C.text, "RIGHT", UI.SHADOW)
+	list.count:SetPoint("RIGHT", list, "RIGHT", -INSET * unit, 0)
+
+	-- Its own hover rather than the button's: a title over the items, and the
+	-- hotter red rather than the grey every other button goes.
+	list:SetScript("OnEnter", function(this)
+		UI.Tint(this.bg, C.dangerHover)
+		ns.Tip.Settle(this, self.watch.subject(), true, nil, ns.Tip.HOLD)
+	end)
+	list:SetScript("OnLeave", function(this)
+		UI.Tint(this.bg, this.tone)
+		ns.Tip.Close()
+	end)
+	UI.PassCamera(list)
+	list:Hide()
+	self.list = list
+	return list
+end
+
+-- The list said something different from what it last said. The count on the
+-- control is written, and the strip comes up or goes when the list starts or
+-- ends, through whatever sized the frame where there is one.
+function Feed:Watched()
+	local list = self.list
+	if not list then
+		return false
+	end
+	local count = self.watch.count()
+	list.count:SetText(tostring(count))
+	if (count > 0) ~= self.listed then
+		if self.onLayout then
+			self.onLayout()
+		else
+			self:Chrome(self.titled, self.chipped)
+			self:Resize(self.width, self.visible, self.icon)
+		end
+	end
+	return count > 0
+end
+
+-- The entry's item onto the list and every row of it out of the feed, which is
+-- what the can on a row is pressed for. Answers how many rows went.
+function Feed:Watch(entry)
+	local watch = self.watch
+	if not (watch and entry and watch.can(entry)) then
+		return 0
+	end
+	local gone = self:Sweep(watch.add(entry))
+	ns.Tip.Close()
+	self:Watched()
+	return gone
+end
+
+-- The list emptied, which is what the strip control is pressed for. The control
+-- goes from under the cursor that pressed it, so its box goes with it.
+function Feed:Unwatch()
+	if not self.watch then
+		return false
+	end
+	self.watch.clear()
+	ns.Tip.Close()
+	self:Watched()
+	return true
 end
 
 --------------------------------------------------------------------------
@@ -1146,60 +1301,61 @@ function Feed:Clear()
 	return true
 end
 
--- One entry out of the feed, and the gap it leaves closed.
+-- Every entry `match` says yes to out of the feed, and the gaps they leave
+-- closed. Answers how many went.
 --
--- The entry is the table a row is drawing, which is what the cross on that row
--- hands over. It is found by identity in one walk, which is up to four hundred
--- reads for a click: the price of a gesture rather than of a drop.
+-- One walk from the newest back sorts the ring into what stays and what goes,
+-- and both are written back in the order they were: what stays at the old end,
+-- and what went after it, where Feed:Entry wipes and hands those tables out
+-- again. So a sweep allocates two lists for a click and nothing for a drop, and
+-- the ring keeps the order it was written in. `written` steps back by what
+-- went, which keeps Feed:Held's arithmetic true, and `held` is the count.
 --
--- Every entry newer than it moves one slot older and its own table goes to the
--- end of the ring, where the next Feed:Entry wipes it and hands it out. So a
--- removal allocates nothing and the ring keeps the order it was written in.
--- `written` steps back, which is what keeps Feed:Held's arithmetic true, and
--- `held` is the count.
---
--- The offset follows an entry that was above the view and no other, for the
--- reason Feed:Push moves it: taking out a row you have scrolled past would
--- otherwise move the one you are reading.
-function Feed:Remove(entry)
-	local found, above = nil, 0
-	for back = 0, self:Count() - 1 do
+-- The offset steps back by what went from above the view, for the reason
+-- Feed:Push moves it: taking out a row you have scrolled past would otherwise
+-- move the one you are reading.
+function Feed:Sweep(match)
+	local count, filter = self:Count(), self.filter
+	local kept, gone, above, drawn = {}, {}, 0, 0
+	for back = 0, count - 1 do
 		local slot = self:Held(back)
-		if slot == entry then
-			found = back
-			break
+		local passes = not filter or filter(slot)
+		if match(slot) then
+			gone[#gone + 1] = slot
+			if passes and drawn < self.offset then
+				above = above + 1
+			end
+		else
+			kept[#kept + 1] = slot
 		end
-		if not self.filter or self.filter(slot) then
-			above = above + 1
+		if passes then
+			drawn = drawn + 1
 		end
 	end
-	if not found then
-		return false
-	end
-
-	if self.matching and self.filter(entry) then
-		self.matching = self.matching - 1
+	if #gone == 0 then
+		return 0
 	end
 
 	local ring, cap = self.ring, self.cap
-	local at = ((self.written - 1 - found) % cap) + 1
-	for _ = 1, found do
-		local newer = (at % cap) + 1
-		ring[at] = ring[newer]
-		at = newer
+	local base = self.written - count
+	for index = 1, #kept do
+		ring[((base + #kept - index) % cap) + 1] = kept[index]
 	end
-	ring[at] = entry
-	self.written = self.written - 1
-	self.held = self.held - 1
-
-	if above < self.offset then
-		self.offset = self.offset - 1
+	for index = 1, #gone do
+		ring[((base + #kept + index - 1) % cap) + 1] = gone[index]
 	end
-	if self.offset > self:Room() then
-		self.offset = self:Room()
-	end
+	self.written, self.held, self.matching = base + #kept, #kept, nil
+	self.offset = math.max(0, math.min(self.offset - above, self:Room()))
 	self:Paint()
-	return true
+	return #gone
+end
+
+-- One entry out, which is the cross on a row. By identity, so it is the entry
+-- the row was drawing rather than another one saying the same thing.
+function Feed:Remove(entry)
+	return self:Sweep(function(slot)
+		return slot == entry
+	end) > 0
 end
 
 --------------------------------------------------------------------------
@@ -1486,6 +1642,9 @@ function Feed:MouseRows()
 	if self.reset then
 		self.reset:EnableMouse(self.mouse and true or false)
 	end
+	if self.list then
+		self.list:EnableMouse(self.mouse and true or false)
+	end
 end
 
 function Feed:Mouse(on)
@@ -1583,10 +1742,15 @@ function Feed:Enter(index)
 	self.reopenedAt = GetTime()
 
 	local entry = row.shownEntry
-	-- The cross comes up on the row being read, and never on a marker, which is a
-	-- break in the timeline rather than a thing that happened to take out.
+	-- The buttons come up on the row being read, and never on a marker, which is
+	-- a break in the timeline rather than a thing that happened to take out. The
+	-- can asks the list too, because coin has no item to put on it.
+	local item = entry ~= nil and not entry.mark
 	if row.cross then
-		row.cross:SetShown(entry ~= nil and not entry.mark)
+		row.cross:SetShown(item)
+	end
+	if row.trash then
+		row.trash:SetShown(item and self.watch.can(entry) and true or false)
 	end
 	-- What the row was showing when this tooltip was filled, so Paint can tell a
 	-- repaint that moved the entry under the cursor from one that did not. Both
@@ -1612,6 +1776,9 @@ function Feed:Leave()
 			row.glow:Hide()
 			if row.cross then
 				row.cross:Hide()
+			end
+			if row.trash then
+				row.trash:Hide()
 			end
 			row.lit = nil
 			Tone(row)

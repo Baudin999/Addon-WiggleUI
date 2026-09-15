@@ -307,6 +307,10 @@ function Floats.OnLoot(text)
 	if who or not link then
 		return false
 	end
+	-- Nor an item on the loot feed's delete list. Feeds/Loot.lua says why.
+	if ns.LootFeed.Listed(link) then
+		return false
+	end
 	Floats.Show(link, count)
 	return true
 end

@@ -268,6 +268,97 @@ local function Chips()
 end
 
 --------------------------------------------------------------------------
+-- The delete list
+--
+-- Items this character has told the feed never to draw again, and grinding is
+-- the case: the tenth stack of linen off the tenth gnoll is a row you would
+-- take out every time. The can on a row puts that item here and takes every
+-- row of it out of the column, and from then on a drop of it never becomes a
+-- row at all.
+--
+-- **Refused at the door, which is the chips' argument the other way round.** A
+-- chip is "not right now" and has to bring its history back. This is "never",
+-- asked for one item at a time, and a listed item taking slots in the ring
+-- would push out the drops you do want to scroll back to. What it refused is
+-- counted, so the strip's hover can say what the list has kept off the feed.
+--
+-- **The feed's list and nothing else's.** The item goes into your bags like
+-- any other; Comfort/Loot.lua's destroy switch is a different decision on a
+-- different page. Feeds/Floats.lua asks the same list, because a message
+-- sliding across the screen for an item you deleted from the column is the
+-- same row again.
+--
+-- Per character and keyed by item id, the shape Comfort's reagent list has.
+-- The value is the link, so the hover names each item in its own colour.
+--------------------------------------------------------------------------
+
+-- The most items the strip's hover names before it says how many more.
+local LIST_SHOWN = 12
+
+local function ItemId(link)
+	return type(link) == "string" and tonumber(link:match("item:(%d+)")) or nil
+end
+
+-- How many drops the list has kept off the feed since login.
+local refused = 0
+
+local function Listed(link)
+	local id = ItemId(link)
+	return id ~= nil and ns.dbc.lootFeedDelete[id] ~= nil
+end
+
+local function ListCount()
+	local count = 0
+	for _ in pairs(ns.dbc and ns.dbc.lootFeedDelete or {}) do
+		count = count + 1
+	end
+	return count
+end
+
+local function ListSubject()
+	local lines, count = {}, 0
+	for _, link in pairs(ns.dbc.lootFeedDelete) do
+		count = count + 1
+		if count <= LIST_SHOWN then
+			local name = ns.ItemInfo(link)
+			local quality = ns.ItemValue(link)
+			lines[#lines + 1] = { name or link:match("%[(.-)%]") or link,
+				color = QUALITY[quality or 1] or QUALITY[1] }
+		end
+	end
+	if count > LIST_SHOWN then
+		lines[#lines + 1] = ("and %d more"):format(count - LIST_SHOWN)
+	end
+	lines[#lines + 1] = ("%d drops kept off the feed since you logged in."):format(refused)
+	lines[#lines + 1] = "Click to empty the list. Nothing in your bags is touched."
+	return { kind = "note", title = "Delete list", lines = lines }
+end
+
+-- What UI/Feed.lua is handed as opts.watch.
+local watch = {
+	row = "Delete this item from the feed, now and every time it drops again."
+		.. " It still goes in your bags.",
+	can = function(entry)
+		return ItemId(entry.link) ~= nil
+	end,
+	add = function(entry)
+		local id = ItemId(entry.link)
+		ns.dbc.lootFeedDelete[id] = entry.link
+		return function(slot)
+			return ItemId(slot.link) == id
+		end
+	end,
+	count = ListCount,
+	subject = ListSubject,
+	clear = function()
+		local list = ns.dbc.lootFeedDelete
+		for id in pairs(list) do
+			list[id] = nil
+		end
+	end,
+}
+
+--------------------------------------------------------------------------
 -- The tooltip
 --
 -- The item's own text where the client will hand it over, which is the whole
@@ -373,6 +464,7 @@ local stream = ns.Stream.New({
 	-- the one you have already dealt with. LootFeed.Counts still counts it,
 	-- because that number is what reached the feed.
 	removable = true,
+	watch = watch,
 	-- The strip along the bottom, which is Feeds/Purse.lua's three numbers. It
 	-- is on this feed and not on the combat one because this is the window
 	-- already answering "what did I just get", and gold was the part of that
@@ -651,6 +743,10 @@ function LootFeed.OnLoot(text)
 	if who and not ns.db.lootFeedGroup then
 		return false
 	end
+	if Listed(link) then
+		refused = refused + 1
+		return false
+	end
 	return AddItem(who, link, count)
 end
 
@@ -701,6 +797,33 @@ end
 -- itself already carries and puts in its own tally.
 function LootFeed.Counts()
 	return seen
+end
+
+-- Whether an item is on the delete list, for Feeds/Floats.lua.
+function LootFeed.Listed(link)
+	return Listed(link)
+end
+
+-- How many items are on the list and how many drops it has refused, for the
+-- panel and for scripts/harness.lua.
+function LootFeed.List()
+	return ListCount(), refused
+end
+
+-- The list emptied from the panel. Through the feed where there is one, so the
+-- strip hears about it.
+function LootFeed.Unwatch()
+	local feed = stream:Feed()
+	if feed then
+		return feed:Unwatch()
+	end
+	watch.clear()
+	return true
+end
+
+-- The list, per character, the way Comfort's reagent list is.
+function LootFeed.CharDefaults()
+	return { lootFeedDelete = {} }
 end
 
 local events = CreateFrame("Frame")

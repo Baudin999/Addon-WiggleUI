@@ -112,6 +112,7 @@ local streams = {}
 --                for a stream that draws everything it holds
 -- spec.removable whether the row under the cursor carries a cross that takes
 --                it out of the feed
+-- spec.watch     the delete list, see UI/Feed.lua's opts.watch
 -- spec.onStatus  function(), answering the three readings along the bottom and
 --                the colour of the last one, or nothing at all for a stream
 --                whose strip is switched off. Absent for a stream with no strip
@@ -129,6 +130,7 @@ function Stream.New(spec)
 		chips = spec.chips,
 		filter = spec.filter,
 		removable = spec.removable,
+		watch = spec.watch,
 		onStatus = spec.onStatus,
 		onStatusTooltip = spec.onStatusTooltip,
 		keys = { on = spec.prefix },
@@ -426,6 +428,10 @@ function Instance:Build()
 		chips = self.chips,
 		filter = self.filter,
 		removable = self.removable,
+		watch = self.watch,
+		-- The strip coming up for a delete list changes the frame's height, and
+		-- Apply is the one place that works out what that height is.
+		onLayout = function() self:Apply() end,
 	})
 	self.feed.frame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
 	-- Told here rather than left to Apply. Apply resizes before it shows, and a

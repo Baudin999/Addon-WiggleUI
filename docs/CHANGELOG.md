@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+### A delete list on the loot feed
+
+A row in the loot feed now has a trash can beside its cross. Press it and every
+row of that item goes, and the item never gets a row on this character again.
+It still goes into your bags. It no longer floats across the screen either.
+
+While the list has anything on it, a red control with a can and a count sits in
+the strip over the rows, even with the chips turned off. Hover it for the items
+and how many drops it has kept off the feed. Press it to empty the list; the
+loot feed page has the same button.
+
 ### A cross takes a row out of the loot feed
 
 Point at a row in the loot feed and a cross comes up over its count. Press it

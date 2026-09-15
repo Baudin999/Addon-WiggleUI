@@ -298,6 +298,9 @@ local SECTIONS = {
 	-- and 31-feeds.lua are both at their ceilings, and it empties the feed it
 	-- was handed.
 	"40-loot-remove",
+	-- The delete list, under the cross it stands beside. It empties the list and
+	-- the feed and puts the chips back as it found them.
+	"40-loot-watch",
 	"41-voice",
 	"42-cooldown-row",
 	"43-blizzard-hide",

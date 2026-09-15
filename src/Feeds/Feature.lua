@@ -595,6 +595,15 @@ local function Panel(ui)
 		end)
 	ui.Hint("What you carry, what the account carries between it, and gold an hour since you logged in. Hover it for the list.")
 
+	ui.Reading("the delete list", function()
+		local items, refused = ns.LootFeed.List()
+		return ("%d items, %d drops kept off the feed since login"):format(items, refused)
+	end)
+	ui.Action(function() return "empty the delete list" end, function()
+		ns.LootFeed.Unwatch()
+	end)
+	ui.Hint("The can on a row adds its item. A listed item still goes in your bags.")
+
 	ui.Divider()
 
 	FloatPage(ui)
@@ -657,6 +666,7 @@ ns.Register({
 	order = 14,
 
 	defaults = defaults,
+	charDefaults = LootFeed.CharDefaults(),
 
 	words = {
 		feed = FeedWord,
