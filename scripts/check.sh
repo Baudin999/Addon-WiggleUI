@@ -1460,9 +1460,13 @@ fi
 # does is a harness run as that spec. HUNTER stays written out because having no
 # file is the whole of what it proves.
 #
-# Everything else in the addon is asserted again on every run, which is the
-# point: a part that quietly needed a warrior fails here rather than in
-# someone's game.
+# Everything else in the addon runs once, as a warrior. Every class and spec is
+# a class run: login, which is where those asserts fire, then the sections
+# runner.lua lists in CLASS_SECTIONS and whatever they are handed. Thirteen
+# whole runs used to assert a hundred class-blind sections thirteen times, and
+# the machine this runs on could not take it. What that gives up: a class-blind
+# part that only breaks for a hunter when a window is first opened, rather than
+# at login, is no longer reached before the game.
 if [ -f ../scripts/harness.lua ]; then
 	# The token the file registers, not the file's name: what the harness is
 	# handed is what Class.Register was called with.
@@ -1495,9 +1499,13 @@ if [ -f ../scripts/harness.lua ]; then
 	# tail of what it printed when it fell over before reaching its tally.
 	harness_log=$(mktemp)
 	harness_runs=0
-	for run in $runs HUNTER; do
+	for run in WARRIOR $runs HUNTER; do
+		scope=class
+		if [ "$harness_runs" -eq 0 ]; then
+			scope=""
+		fi
 		harness_runs=$((harness_runs + 1))
-		if ! lua5.1 ../scripts/harness.lua . "$run" >"$harness_log" 2>&1; then
+		if ! lua5.1 ../scripts/harness.lua . "$run" $scope >"$harness_log" 2>&1; then
 			sed -n "s/^[[:space:]]*FAIL /harness FAIL as $run: /p" "$harness_log"
 			if ! grep -q '^harness: [0-9]* failed$' "$harness_log"; then
 				echo "harness FAIL as $run, before it finished:"
@@ -1507,7 +1515,7 @@ if [ -f ../scripts/harness.lua ]; then
 		fi
 	done
 	rm -f "$harness_log"
-	echo "harness  $harness_runs runs"
+	echo "harness  1 whole run and $((harness_runs - 1)) class runs"
 else
 	echo "scripts/harness.lua is missing"
 	status=1

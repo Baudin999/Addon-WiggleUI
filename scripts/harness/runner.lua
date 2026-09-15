@@ -589,12 +589,127 @@ local SECTIONS = {
 	"89-frame-rects",
 }
 
+-- The sections whose answer depends on who logged in, and what each one reads
+-- off the character.
+--
+-- check.sh runs the whole list once, as a warrior. Every class and spec after
+-- that is a class run: login, these sections, and the sections that hand them
+-- something through H.carry. Thirteen whole runs were thirteen copies of a
+-- hundred sections that never ask what class you are, and the machine they ran
+-- on paid for all of them.
+--
+-- A section that reads the class and is not on this list fails every run, and
+-- so does an entry whose section no longer reads it. Without the first, a new
+-- section that branches on the class would only ever be asserted as a warrior.
+local CLASS_SECTIONS = {
+	["10-unit-frame-skin"] = "the player frame is painted in the class colour",
+	["21-which-class"] = "the warrior-only parts are built or absent",
+	["26-swing-timer"] = "only a warrior is given a swing window and a Slam band",
+	["42-cooldown-row"] = "the row's entries and its refusal come off the spec",
+	["58-spec"] = "the spec resolver and what each spec swaps",
+	["78-standing-row"] = "the row is only built for a class with a plan",
+}
+
+-- What in a section's text says it reads the character. Comments are stripped
+-- before this is looked for.
+local CLASS_WORDS = { "PLAYER_CLASS", "PLAYER_SPEC", "Spec.Mine", "Spec.Token", "Class.Mine" }
+
+local HERE = debug.getinfo(1, "S").source:match("^@(.*)[/\\]") or "."
+
+-- What one section reads out of H.carry, what it leaves in it and whether it
+-- reads the character, off the file rather than off a list somebody keeps. A
+-- read the section itself answered further up is not a read from another one.
+local function Handoffs(section)
+	local reads, writes, reader = {}, {}, false
+	for line in io.lines(HERE .. "/sections/" .. section .. ".lua") do
+		local code = line:gsub("%-%-.*$", "")
+		local left, right = code:match("^%s*(H%.carry%.[%w_%s%.,]*)=([^=].*)$")
+		if left then
+			code = right
+		end
+		for key in code:gmatch("H%.carry%.([%w_]+)") do
+			if not writes[key] then
+				reads[key] = true
+			end
+		end
+		for key in (left or ""):gmatch("H%.carry%.([%w_]+)") do
+			writes[key] = true
+		end
+		for _, word in ipairs(CLASS_WORDS) do
+			if code:find(word, 1, true) then
+				reader = true
+			end
+		end
+	end
+	return reads, writes, reader
+end
+
+local known = {}
+for _, section in ipairs(SECTIONS) do
+	known[section] = true
+end
+for section in pairs(CLASS_SECTIONS) do
+	H.check(known[section], ("CLASS_SECTIONS names %s and the runner has no such section"):format(section))
+end
+
+local handoffs = {}
+for index, section in ipairs(SECTIONS) do
+	local reads, writes, reader = Handoffs(section)
+	handoffs[index] = { reads = reads, writes = writes }
+	if reader and not CLASS_SECTIONS[section] then
+		H.check(false, ("%s reads the character and is not in CLASS_SECTIONS, so only a warrior run asserts it")
+			:format(section))
+	elseif CLASS_SECTIONS[section] and not reader then
+		H.check(false, ("%s is in CLASS_SECTIONS and no longer reads the character"):format(section))
+	end
+end
+
+-- Which sections a class run loads: every class section, and walking up the
+-- list, every section that last wrote a key one of those reads. Walking upward
+-- is what makes it transitive, because a writer is always above its reader and
+-- is reached after it.
+local function ClassRun()
+	local wanted = {}
+	for index = #SECTIONS, 1, -1 do
+		if CLASS_SECTIONS[SECTIONS[index]] or wanted[index] then
+			wanted[index] = true
+			for key in pairs(handoffs[index].reads) do
+				for earlier = index - 1, 1, -1 do
+					if handoffs[earlier].writes[key] then
+						wanted[earlier] = true
+						break
+					end
+				end
+			end
+		end
+	end
+
+	-- A hand-off the text scan missed is a key some section writes and nothing
+	-- in this run did. That is a crash here rather than a nil a section reads as
+	-- "nothing to check" and passes on.
+	local handed = {}
+	for _, handoff in ipairs(handoffs) do
+		for key in pairs(handoff.writes) do
+			handed[key] = true
+		end
+	end
+	setmetatable(H.carry, { __index = function(_, key)
+		if handed[key] then
+			error(("a class run read carry.%s and no section in the run wrote it"):format(key), 2)
+		end
+	end })
+	return wanted
+end
+
 -- Naming a section runs every section up to and including it, rather than that
 -- one on its own. A section reads what the ones above it left behind, so one
 -- run in isolation is not a smaller version of the suite, it is a crash. The
 -- prefix is the smallest run that can honestly answer for the section named.
-local stop
-if only then
+-- Naming `class` instead is the class run above.
+local stop, wanted
+if only == "class" then
+	wanted = ClassRun()
+elseif only then
 	for index, section in ipairs(SECTIONS) do
 		if section == only then
 			stop = index
@@ -607,7 +722,9 @@ if only then
 end
 
 for index, section in ipairs(SECTIONS) do
-	load("sections/" .. section .. ".lua")(H)
+	if not wanted or wanted[index] then
+		load("sections/" .. section .. ".lua")(H)
+	end
 	if index == stop then
 		break
 	end

@@ -106,8 +106,8 @@ if [ "$gate_ok" -eq 0 ]; then
 	# header is dropped because the warning under it already names the file.
 	stopped "gate" "$(grep -vE '^(shape|trees|harness)  |^Total: |^Checking |^[[:space:]]*$' "$log" || true)"
 fi
-runs=$(sed -n 's/^harness  \([0-9]*\) runs$/\1/p' "$log")
-passed "gate succeeded: syntax, lint, shape, trees and ${runs:-the} harness runs"
+runs=$(sed -n 's/^harness  //p' "$log")
+passed "gate succeeded: syntax, lint, shape, trees and the harness, ${runs:-every run}"
 
 echo "== build ==" >>"$log"
 stage=$(mktemp -d)

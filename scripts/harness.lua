@@ -45,7 +45,13 @@
 -- under harness/sections without its extension. Everything above that section
 -- still runs, because a section reads what the ones above it left behind and a
 -- run of one on its own is a crash rather than a smaller suite. It is for
--- working on a section; check.sh never passes it.
+-- working on a section.
+--
+-- `class` in its place is a class run: login, the sections runner.lua lists in
+-- CLASS_SECTIONS, and the sections that hand those something. check.sh runs the
+-- whole suite once as a warrior and every class and spec as a class run.
+--
+--     lua5.1 scripts/harness.lua src MAGE:frost class
 --
 -- The layout:
 --
