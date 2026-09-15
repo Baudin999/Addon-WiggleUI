@@ -276,7 +276,8 @@ end
 -- The buttons a row carries, for a feed that asked for them.
 local function RowButtons(feed, row)
 	if feed.removable then
-		row.cross = RowButton(feed, row, CLEAR, INSET, "Take this row out of the feed.",
+		row.cross = RowButton(feed, row, CLEAR, INSET,
+			feed.removeTip or "Take this row out of the feed.",
 			function(entry) feed:Remove(entry) end)
 	end
 	if feed.watch then
@@ -498,8 +499,10 @@ end
 --                all for a feed that draws everything it holds, which is not
 --                the same as a filter that always answers true: the first costs
 --                nothing and the second walks the ring
--- opts.removable whether the row under the cursor carries a cross that takes
---                its entry out of the feed
+-- opts.removable the cross on the row under the cursor that takes its entry out
+--                of the feed: true, or a table of tip, the sentence the cross
+--                says, and gone(entry), called for every entry a sweep takes
+--                out while its table still holds it
 -- opts.watch     the delete list, or nothing for a feed with none. A table:
 --                can(entry), add(entry) answering a match for Feed:Sweep,
 --                count(), subject() for the strip control's hover, clear(), and
@@ -518,6 +521,8 @@ function UI.Feed(parent, opts)
 		note = opts.note or 0,
 		onTooltip = opts.onTooltip,
 		removable = opts.removable and true or false,
+		onRemove = type(opts.removable) == "table" and opts.removable.gone or nil,
+		removeTip = type(opts.removable) == "table" and opts.removable.tip or nil,
 		watch = opts.watch,
 		onLayout = opts.onLayout,
 		-- The predicate as the caller wrote it, and the one the paint actually
@@ -1334,6 +1339,13 @@ function Feed:Sweep(match)
 	end
 	if #gone == 0 then
 		return 0
+	end
+	-- What the caller does with an entry that went, while its table still says
+	-- what it was. The next Feed:Entry wipes it.
+	if self.onRemove then
+		for index = 1, #gone do
+			self.onRemove(gone[index])
+		end
 	end
 
 	local ring, cap = self.ring, self.cap

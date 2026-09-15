@@ -36,6 +36,11 @@ local ADDON, ns = ...
 --
 -- This part owns no frame anybody can see and draws nothing, so nothing here is
 -- on a ticker.
+--
+-- **The loot feed destroys through here too.** The cross and the can on a feed
+-- row, and every drop of an item on the feed's delete list, owe a count the way
+-- a corpse slot does and are paid by the same walk under the same refusals. One
+-- path that splits a stack and deletes the cursor is one path to get right.
 
 local Leftovers = {}
 ns.Leftovers = Leftovers
@@ -67,9 +72,31 @@ local bagEvent
 -- The frame this walk last ran in, which is the throttle. See Sweep.
 local walked = -1
 
+-- Defined under the switch, and called from the walk once nothing is owed.
+local Listen
+
 --------------------------------------------------------------------------
 -- Taking the slot
 --------------------------------------------------------------------------
+
+-- Whether an item is one this file never destroys, whoever asks: a quality the
+-- client will not state, blue and up, or a quest item. A corpse slot and a loot
+-- feed row both ask it, so the refusals are one list.
+local function Kept(quality, quest)
+	return quality == nil or quality >= KEEP or quest and true or false
+end
+
+-- That many of an item owed, to be destroyed when they are in the bags, within
+-- STALE of the last time anything was owed on it.
+local function Owe(itemId, count)
+	local entry = pending[itemId]
+	if entry then
+		entry.count = entry.count + count
+		entry.since = GetTime()
+	else
+		pending[itemId] = { count = count, since = GetTime() }
+	end
+end
 
 -- One slot the filter refused, taken anyway so the corpse can be skinned.
 --
@@ -91,23 +118,12 @@ function Leftovers.Discard(slot)
 	end
 
 	local _, _, quantity, _, quality, _, isQuestItem = GetLootSlotInfo(slot)
-	if quality == nil or quality >= KEEP or isQuestItem then
-		return false
-	end
-
 	local itemId = ns.ItemKind(link)
-	if not itemId then
+	if Kept(quality, isQuestItem) or not itemId then
 		return false
 	end
 
-	local entry = pending[itemId]
-	if entry then
-		entry.count = entry.count + (quantity or 1)
-		entry.since = GetTime()
-	else
-		pending[itemId] = { count = quantity or 1, since = GetTime() }
-	end
-
+	Owe(itemId, quantity or 1)
 	LootSlot(slot)
 	return true
 end
@@ -203,6 +219,14 @@ end
 -- Two events landing in the same frame lose the second pass and lose nothing
 -- with it: what the second would read is what the first read, and anything
 -- still owed is owed on the next event and on LOOT_CLOSED behind it.
+-- Nothing owed with the switch off, which is the loot feed's destroy paid or
+-- expired: nothing left to listen for.
+local function Settled()
+	if not ns.dbc.lootDestroy and not next(pending) then
+		Listen(false)
+	end
+end
+
 local function Sweep()
 	local now = GetTime()
 	if now == walked then
@@ -219,6 +243,32 @@ local function Sweep()
 	if next(pending) then
 		Walk()
 	end
+	Settled()
+end
+
+--------------------------------------------------------------------------
+-- The loot feed's delete
+--
+-- That many of an item destroyed out of the bags, the count split off a stack
+-- the way a corpse's is, under the same refusals as a corpse slot: a blue or a
+-- quest item on a feed row stays where it is. True where something was owed.
+--
+-- Walked at once rather than on the next bag event, because a row pressed an
+-- hour after the pickup is an item that landed an hour ago and no event is
+-- coming for it. An arrival whose chat line beat its bag update is paid on that
+-- update instead, inside STALE.
+--------------------------------------------------------------------------
+
+function Leftovers.Destroy(link, count, quest)
+	local itemId = ns.ItemKind(link)
+	if not itemId or Kept(ns.ItemValue(link), quest) then
+		return false
+	end
+	Owe(itemId, count or 1)
+	Listen(true)
+	Walk()
+	Settled()
+	return true
 end
 
 --------------------------------------------------------------------------
@@ -228,18 +278,17 @@ end
 -- Registered and unregistered rather than left on with a branch inside, which
 -- is Comfort/Loot.lua's shape and is what makes the setting off mean the addon
 -- is not on the bag path at all.
-function Leftovers.Apply()
+function Listen(on)
 	if not frame then
 		frame = CreateFrame("Frame")
 		frame:SetScript("OnEvent", Sweep)
 	end
 
-	if not ns.dbc.lootDestroy then
+	if not on then
 		if bagEvent then
 			frame:UnregisterEvent(bagEvent)
 		end
 		frame:UnregisterEvent("LOOT_CLOSED")
-		wipe(pending)
 		return
 	end
 
@@ -257,6 +306,17 @@ function Leftovers.Apply()
 	-- The corpse closing, because an item that arrived while the throttle had
 	-- the frame is an item nothing else is going to come back for.
 	frame:RegisterEvent("LOOT_CLOSED")
+end
+
+-- The switch. Off forgets what is owed, the loot feed's included, because a
+-- destroy nobody is listening for lands an hour later on the next one of those
+-- you pick up.
+function Leftovers.Apply()
+	local on = ns.dbc.lootDestroy and true or false
+	if not on then
+		wipe(pending)
+	end
+	Listen(on)
 end
 
 function Leftovers.Describe()

@@ -602,7 +602,7 @@ local function Panel(ui)
 	ui.Action(function() return "empty the delete list" end, function()
 		ns.LootFeed.Unwatch()
 	end)
-	ui.Hint("The can on a row adds its item. A listed item still goes in your bags.")
+	ui.Hint("The can on a row adds its item, and every drop of it is destroyed as it lands. Blue and better, and quest items, never are.")
 
 	ui.Divider()
 

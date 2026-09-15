@@ -5,8 +5,10 @@
 ### A delete list on the loot feed
 
 A row in the loot feed now has a trash can beside its cross. Press it and every
-row of that item goes, and the item never gets a row on this character again.
-It still goes into your bags. It no longer floats across the screen either.
+row of that item goes, what those rows counted is destroyed from your bags, and
+every later drop of it on this character is destroyed as it lands without
+getting a row or floating across the screen. Blue and better, and quest items,
+are never destroyed; the loot filter's destroy switch makes the same refusals.
 
 While the list has anything on it, a red control with a can and a count sits in
 the strip over the rows, even with the chips turned off. Hover it for the items
@@ -16,7 +18,8 @@ loot feed page has the same button.
 ### A cross takes a row out of the loot feed
 
 Point at a row in the loot feed and a cross comes up over its count. Press it
-and the row is gone; the rows under it move up one. If you have scrolled back,
+and what the row counted is destroyed from your bags, then the row goes and the
+rows under it move up one. If you have scrolled back,
 taking out a row above the view does not move the row you are reading.
 
 The tally of what reached the feed still counts it. The combat feed has no

@@ -282,10 +282,11 @@ end
 -- would push out the drops you do want to scroll back to. What it refused is
 -- counted, so the strip's hover can say what the list has kept off the feed.
 --
--- **The feed's list and nothing else's.** The item goes into your bags like
--- any other; Comfort/Loot.lua's destroy switch is a different decision on a
--- different page. Feeds/Floats.lua asks the same list, because a message
--- sliding across the screen for an item you deleted from the column is the
+-- **Deleted means destroyed.** The rows the can takes out are destroyed from
+-- the bags, and so is every later drop of a listed item, through
+-- Comfort/Leftovers.lua under its refusals: never blue and up, never a quest
+-- item, and never the group's drops. Feeds/Floats.lua asks the same list,
+-- because a message sliding across the screen for an item you deleted is the
 -- same row again.
 --
 -- Per character and keyed by item id, the shape Comfort's reagent list has.
@@ -295,8 +296,10 @@ end
 -- The most items the strip's hover names before it says how many more.
 local LIST_SHOWN = 12
 
+-- The id the client files an item under, which is the number
+-- Comfort/Leftovers.lua pays a destroy against.
 local function ItemId(link)
-	return type(link) == "string" and tonumber(link:match("item:(%d+)")) or nil
+	return (ns.ItemKind(link))
 end
 
 -- How many drops the list has kept off the feed since login.
@@ -330,14 +333,34 @@ local function ListSubject()
 		lines[#lines + 1] = ("and %d more"):format(count - LIST_SHOWN)
 	end
 	lines[#lines + 1] = ("%d drops kept off the feed since you logged in."):format(refused)
-	lines[#lines + 1] = "Click to empty the list. Nothing in your bags is touched."
+	lines[#lines + 1] = "Click to empty the list. What was destroyed stays destroyed."
 	return { kind = "note", title = "Delete list", lines = lines }
 end
 
+-- A drop destroyed out of the bags, through Comfort/Leftovers.lua, which is the
+-- one place the addon splits a count off a stack and deletes it. The group's
+-- drops are in somebody else's bags and never reach it.
+local function Destroy(who, link, count, quest)
+	if who or not link then
+		return false
+	end
+	return ns.Leftovers.Destroy(link, count or 1, quest)
+end
+
+-- What the cross on a row says and does, handed to UI/Feed.lua as
+-- opts.removable. `gone` runs for every row a sweep takes out, the can's too.
+local removable = {
+	tip = "Destroy this from your bags and take the row off the feed. Blue and"
+		.. " better, and quest items, stay.",
+	gone = function(entry)
+		return Destroy(entry.who, entry.link, entry.count, entry.quest)
+	end,
+}
+
 -- What UI/Feed.lua is handed as opts.watch.
 local watch = {
-	row = "Delete this item from the feed, now and every time it drops again."
-		.. " It still goes in your bags.",
+	row = "Destroy this item from your bags, now and every time it drops again."
+		.. " Blue and better, and quest items, stay.",
 	can = function(entry)
 		return ItemId(entry.link) ~= nil
 	end,
@@ -459,11 +482,10 @@ local stream = ns.Stream.New({
 	onTooltip = Fill,
 	chips = Chips(),
 	filter = Passes,
-	-- A cross on the row under the cursor, which takes that one row out. The
-	-- column is a list of what dropped, and the row you no longer want on it is
-	-- the one you have already dealt with. LootFeed.Counts still counts it,
-	-- because that number is what reached the feed.
-	removable = true,
+	-- A cross on the row under the cursor, which destroys what the row counts
+	-- and takes the row out. LootFeed.Counts still counts it, because that
+	-- number is what reached the feed.
+	removable = removable,
 	watch = watch,
 	-- The strip along the bottom, which is Feeds/Purse.lua's three numbers. It
 	-- is on this feed and not on the combat one because this is the window
@@ -745,6 +767,8 @@ function LootFeed.OnLoot(text)
 	end
 	if Listed(link) then
 		refused = refused + 1
+		local _, class = ns.ItemKind(link)
+		Destroy(who, link, count, class == QUEST_CLASS)
 		return false
 	end
 	return AddItem(who, link, count)
