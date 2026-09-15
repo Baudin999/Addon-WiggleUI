@@ -142,7 +142,7 @@ do
 	H.mouse.On(dear)
 	check(#shop.training.taught == taught, "a press on an ability the pet cannot learn reached the client")
 
-	-- A teachable one: picked, the secure button laid over it, and the press
+	-- A teachable one: the secure button laid over it, and a press that picks it and
 	-- goes through Blizzard's own button, because DoCraft is refused an addon.
 	H.tooltips.craft[teachable.index] = { { "Bite" }, { "Bite the enemy, causing damage." } }
 	local index = teachable.index
@@ -154,11 +154,14 @@ do
 	check(teach:GetAttribute("type") == "click" and teach:GetAttribute("clickbutton") == _G.CraftCreateButton,
 		"the secure button over an ability does not press CraftCreateButton")
 	check(teach:GetParent() == _G.UIParent, "the secure button over an ability hangs off the insecure talent window")
-	check(_G.GetCraftSelectionIndex() == index and _G.CraftCreateButton:IsEnabled(),
-		"hovering a teachable ability did not pick it in Blizzard's list")
+	-- What a live client can leave between the hover and the press: the create
+	-- button disabled and the selection on another row. The press picks the row
+	-- under the pointer itself, so it still teaches that one.
+	_G.SelectCraft(dear.index)
+	_G.CraftCreateButton:Disable()
 	H.mouse.On(teach)
 	check(#shop.training.taught == taught + 1 and shop.training.taught[#shop.training.taught] == index,
-		"a press on the secure button did not reach DoCraft through CraftCreateButton")
+		"a press on the secure button did not teach the row under it through CraftCreateButton")
 	check(not teach:IsShown(), "the secure button stayed up over a list the repaint moved")
 	check(Pet.Rows() == 2, ("after teaching one the page still drew %d to teach"):format(Pet.Rows()))
 	check(Pet.Summary() == "167 spent, 33 left", ("after seventeen points the pet reads %s"):format(tostring(Pet.Summary())))

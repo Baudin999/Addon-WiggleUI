@@ -28,11 +28,12 @@ local Training, Board = ns.TalentTraining, ns.TalentBoard
 -- is one. DoCraft is the other: a row that called it from its own OnClick put
 -- up the client's interface error, because on 2.5.6 an addon may not teach a
 -- pet. Blizzard's CraftCreateButton may, from its own OnClick, and a secure
--- button of type `click` presses it for us. So a hover on a teachable row picks
--- that row the way a click on Blizzard's list does, which enables the create
--- button for it, and lays the secure button over the row. The press lands on
--- the secure button, the secure button presses CraftCreateButton, and that
--- button's OnClick calls DoCraft on the row picked.
+-- button of type `click` presses it for us. So a hover on a teachable row lays
+-- the secure button over the row, and the press does the rest in one click:
+-- PreClick picks the row and enables the create button for it, the secure
+-- button presses CraftCreateButton, and that button's OnClick calls DoCraft on
+-- the row picked. Picked in the press rather than on the hover, so nothing
+-- between the two can leave the button disabled or on another row.
 --
 -- A protected frame makes every frame it hangs off protected as well, and the
 -- talent window is insecure on purpose: it opens with N in a fight. So both
@@ -216,13 +217,13 @@ local function Unlook(row)
 	ns.Tip.Close()
 end
 
--- The secure button onto a teachable row, with that row picked. Nothing in a
--- fight, where neither the pick nor the move would be allowed to matter.
+-- The secure button onto a teachable row. Nothing in a fight, where the move
+-- would be refused.
 local function Arm(row)
 	if not row.learnable or InCombatLockdown() then
 		return false
 	end
-	local button = Training.Select(row.index)
+	local button = Training.Button()
 	if not button then
 		return false
 	end
@@ -244,6 +245,13 @@ local function OnLeave(row)
 	Unlook(row)
 end
 
+-- The row is picked ahead of the client's half of the press, so the create
+-- button is enabled and on this row at the moment it is clicked.
+teach:SetScript("PreClick", function(this)
+	if this.row then
+		Training.Select(this.row.index)
+	end
+end)
 teach:SetScript("OnEnter", function(this)
 	if this.row then
 		Look(this.row)

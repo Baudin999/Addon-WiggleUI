@@ -2471,20 +2471,26 @@ function ns.CraftIcon(index)
 	return _G.GetCraftIcon(index)
 end
 
--- Picks a row the way a click on Blizzard's list does, which is what enables
--- CraftCreateButton for it. DoCraft is protected for an addon, so teaching the
--- pet is that button's own OnClick, reached through a secure click, and this is
--- the half that decides which row it teaches. SelectCraft alone where the
--- client's craft addon has not loaded, which leaves the button as it was.
+-- Picks a row and enables CraftCreateButton for it. DoCraft is protected for an
+-- addon, so teaching the pet is that button's own OnClick, reached through a
+-- secure click, and this is the half that decides which row it teaches. The
+-- page calls it from that secure button's PreClick, in the same press.
+--
+-- SelectCraft and Enable rather than Blizzard's CraftFrame_SetSelection, which
+-- redraws the whole parked detail pane before it enables the button. Run inside
+-- a pcall on a hover, any stop in that pane left the button disabled and the
+-- press taught nothing, with no error to show for it. The page only picks a row
+-- it has already judged teachable, and the server refuses whatever else.
 function ns.CraftSelect(index)
-	if type(_G.CraftFrame_SetSelection) == "function" then
-		return (pcall(_G.CraftFrame_SetSelection, index))
+	if type(_G.SelectCraft) ~= "function" then
+		return false
 	end
-	if type(_G.SelectCraft) == "function" then
-		_G.SelectCraft(index)
-		return true
+	_G.SelectCraft(index)
+	local button = ns.CraftCreateButton()
+	if button and type(button.Enable) == "function" then
+		button:Enable()
 	end
-	return false
+	return true
 end
 
 function ns.CraftCreateButton()

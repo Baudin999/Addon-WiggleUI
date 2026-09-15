@@ -121,14 +121,22 @@ function Training.Entry(index)
 	return name, rank or "", kind == "used", cost, level, ns.CraftIcon(index)
 end
 
--- Picks a row and hands back the button that teaches it, or nil where there is
--- no session or no button. The teaching itself is a secure click on that
--- button: Pet.lua lays one over the row.
-function Training.Select(index)
-	if not Training.Open() or not ns.CraftSelect(index) then
+-- The button that teaches a row, or nil where there is no session or no button.
+-- The teaching itself is a secure click on it: Pet.lua lays one over the row.
+function Training.Button()
+	if not Training.Open() then
 		return nil
 	end
 	return ns.CraftCreateButton()
+end
+
+-- Picks a row and enables the button for it. Pet.lua calls this from the secure
+-- button's PreClick, so the pick and the press are one click.
+function Training.Select(index)
+	if not Training.Open() then
+		return false
+	end
+	return ns.CraftSelect(index)
 end
 
 -- Ends the session if it is the page's. Enchanting is left alone: a hunter who
