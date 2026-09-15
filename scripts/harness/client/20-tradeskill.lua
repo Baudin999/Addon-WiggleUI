@@ -230,6 +230,41 @@ craftFrame:SetPoint("TOPLEFT", _G.UIParent, "TOPLEFT", 16, -116)
 craftFrame:Hide()
 _G.CraftFrame = craftFrame
 
+-- The row picked and the button that teaches it. Blizzard's OnClick is the
+-- only caller of DoCraft, and it reads the selection rather than being handed a
+-- row, which is why the page has to pick one before the secure click lands.
+local selection = 0
+_G.SelectCraft = function(index)
+	selection = index
+end
+_G.GetCraftSelectionIndex = function()
+	return selection
+end
+
+local createButton = _G.CreateFrame("Button", "CraftCreateButton", craftFrame)
+createButton:SetSize(80, 22)
+createButton:SetPoint("CENTER", craftFrame, "TOPLEFT", 224, -422)
+createButton:Disable()
+createButton:SetScript("OnClick", function()
+	_G.DoCraft(_G.GetCraftSelectionIndex())
+end)
+_G.CraftCreateButton = createButton
+
+-- Blizzard_CraftUI's own pick: the selection, and the button enabled for a row
+-- that has no missing reagent and is not one the pet has.
+_G.CraftFrame_SetSelection = function(index)
+	local row = craftRows()[index]
+	if not row or row.header then
+		return
+	end
+	_G.SelectCraft(index)
+	if row.kind == "used" then
+		createButton:Disable()
+	else
+		createButton:Enable()
+	end
+end
+
 _G.CloseCraft = function()
 	craft = nil
 	craftFrame:Hide()

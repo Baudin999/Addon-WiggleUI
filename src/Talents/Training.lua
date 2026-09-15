@@ -67,10 +67,37 @@ function Training.Pet()
 	return UnitName("pet"), UnitCreatureFamily("pet"), tonumber(UnitLevel("pet")) or 0
 end
 
--- Points left to spend, and every point earned.
+-- Points left to spend, every point earned, and how many of those are spent.
 function Training.Points()
 	local total, spent = ns.PetTrainingPoints()
-	return math.max(0, total - spent), total
+	return math.max(0, total - spent), total, spent
+end
+
+-- What the pet already knows, off its own spell book: one entry per ability,
+-- at the highest rank the book carries, which is the last one it lists.
+--
+-- The book is the only place this is written down. Beast training's list is
+-- what the pet can still be taught and says nothing with the session shut. An
+-- entry with no rank line is a command, Attack or Follow or Stay, and is left
+-- out: every ability a pet is taught for points has ranks.
+function Training.Known(out)
+	wipe(out)
+	local count = tonumber((HasPetSpells())) or 0
+	local byName = {}
+	for index = 1, count do
+		local kind = GetSpellBookItemInfo(index, "pet")
+		local name, rank = GetSpellBookItemName(index, "pet")
+		if kind ~= "FUTURESPELL" and name and rank and rank ~= "" then
+			local entry = byName[name]
+			if not entry then
+				entry = { name = name }
+				byName[name] = entry
+				out[#out + 1] = entry
+			end
+			entry.rank, entry.icon = rank, GetSpellBookItemTexture(index, "pet")
+		end
+	end
+	return out
 end
 
 function Training.Count()
@@ -94,11 +121,14 @@ function Training.Entry(index)
 	return name, rank or "", kind == "used", cost, level, ns.CraftIcon(index)
 end
 
-function Training.Learn(index)
-	if not Training.Open() then
-		return false
+-- Picks a row and hands back the button that teaches it, or nil where there is
+-- no session or no button. The teaching itself is a secure click on that
+-- button: Pet.lua lays one over the row.
+function Training.Select(index)
+	if not Training.Open() or not ns.CraftSelect(index) then
+		return nil
 	end
-	return ns.CraftLearn(index)
+	return ns.CraftCreateButton()
 end
 
 -- Ends the session if it is the page's. Enchanting is left alone: a hunter who
@@ -136,9 +166,9 @@ function Training.Describe()
 	if not Training.Offered() then
 		return "no pet to train on this class"
 	end
-	local left = Training.Points()
+	local left, _, spent = Training.Points()
 	if held then
-		return ("Beast Training open, %d training points to spend"):format(left)
+		return ("Beast Training open, %d training points spent and %d left"):format(spent, left)
 	end
-	return ("%d training points to spend"):format(left)
+	return ("%d training points spent and %d left"):format(spent, left)
 end

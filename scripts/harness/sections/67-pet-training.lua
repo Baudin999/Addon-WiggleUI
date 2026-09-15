@@ -3,8 +3,9 @@
 -- The anniversary client has no pet talent tree. It has Beast Training, a craft
 -- session the hunter opens by casting a spell, and the page is what this
 -- section drives: the tab, the secure square that casts the spell, the session
--- arriving and taking the page over from CraftFrame, the four rims, a press
--- reaching DoCraft, and the session ending with the window.
+-- arriving and taking the page over from CraftFrame, what the pet knows off
+-- its own book, the rims, the secure button that teaches through Blizzard's
+-- CraftCreateButton, and the session ending with the window.
 --
 -- **Every class runs it.** A class with no pet to train must draw no tab and
 -- must leave a beast training window it did not open to the client. The rest
@@ -74,6 +75,15 @@ do
 	local page = Pet.Page()
 	check(page:IsVisible(), "the pet's page is not on the screen")
 	check(Pet.Rows() == 0, ("with no session the page drew %d abilities"):format(Pet.Rows()))
+	check(Pet.Summary() == "150 spent, 50 left",
+		("the pet's points read %s rather than what is spent and what is left"):format(tostring(Pet.Summary())))
+
+	-- What the pet knows is there without a session, off its own book, and a
+	-- command with no rank is not an ability.
+	check(Pet.KnownRows() == 2, ("the pet's book gave %d known abilities of two"):format(Pet.KnownRows()))
+	local bite = Pet.Known(1)
+	check(bite and bite.name == "Bite" and bite.sub:GetText() == "Rank 7" and same(C.heading, Rim(bite)),
+		"a known ability is not drawn gold with its rank")
 
 	local square, spot = Pet.Square(), Pet.Spot()
 	check(square:IsShown(), "with the session shut the Beast Training square is not up")
@@ -89,7 +99,7 @@ do
 	check(math.abs(square:GetEffectiveScale() - spot:GetEffectiveScale()) < 1e-9,
 		"the Beast Training square is not at the page's scale")
 	check(_G.WarriorKitDriver(Pet.Driver(), "combat") == "[combat] on; off",
-		"nothing hides the Beast Training square when a fight starts")
+		"nothing hides the secure buttons when a fight starts")
 end
 
 ----------------------------------------------------------------------
@@ -107,43 +117,53 @@ do
 		"CraftFrame was hidden rather than parked, which would close the session")
 	check(not Pet.Square():IsShown(), "the Beast Training square stayed up over the list")
 
-	-- Four abilities and a header, and the header is not a square.
-	check(Pet.Rows() == 4, ("the page drew %d abilities of four"):format(Pet.Rows()))
-	local known, teach, dear, young = Pet.Row(1), Pet.Row(2), Pet.Row(3), Pet.Row(4)
-	check(known.name == "Bite" and same(C.heading, Rim(known)), "a rank the pet has does not wear the gold rim")
-	check(known.sub:GetText() == "Rank 7, known", ("a known rank reads %s"):format(tostring(known.sub:GetText())))
-	check(teach.learnable and same(C.tick, Rim(teach)), "a rank the pet can be taught does not wear the green rim")
-	check(teach.sub:GetText() == "Rank 8, 17 points", ("a teachable rank reads %s"):format(tostring(teach.sub:GetText())))
+	-- Five rows and a header: the one the pet has is on the known list, the
+	-- header is not a square, and three are left.
+	check(Pet.Rows() == 3, ("the page drew %d abilities to teach of three"):format(Pet.Rows()))
+	local teachable, dear, young = Pet.Row(1), Pet.Row(2), Pet.Row(3)
+	check(teachable.learnable and same(C.tick, Rim(teachable)), "a rank the pet can be taught does not wear the green rim")
+	check(teachable.sub:GetText() == "Rank 8, 17 points",
+		("a teachable rank reads %s"):format(tostring(teachable.sub:GetText())))
 	check(not dear.learnable and dear.dim and same(C.edge, Rim(dear)), "a rank the points do not reach reads as teachable")
 	check(not young.learnable and young.dim and same(C.hairline, Rim(young)), "a rank the pet is too young for reads as teachable")
 	check(young.sub:GetText() == "Rank 3, pet level 70", ("a rank for an older pet reads %s"):format(tostring(young.sub:GetText())))
 	check(Window.Describe() == "open on the pet", ("the window says it is %s"):format(Window.Describe()))
 
-	-- The hover carries the client's own text and the verdict.
-	H.tooltips.craft[teach.index] = { { "Bite" }, { "Bite the enemy, causing damage." } }
-	teach:GetScript("OnEnter")(teach)
-	local text = BoxText()
-	check(text:find("Bite the enemy", 1, true) ~= nil, "the client's description is not in an ability's box")
-	check(text:find("Click to teach your pet", 1, true) ~= nil, "a teachable ability's box does not say so")
-	teach:GetScript("OnLeave")(teach)
-	H.tipSettle()
+	-- Nothing to teach gets no secure button, and a press on it reaches nothing.
+	local teach = Pet.Teach()
 	young:GetScript("OnEnter")(young)
 	check(BoxText():find("Needs your pet at level 70", 1, true) ~= nil,
 		"an ability for an older pet does not say what level")
+	check(not teach:IsShown(), "an ability the pet is too young for got a secure button")
 	young:GetScript("OnLeave")(young)
 	H.tipSettle()
-
-	-- A press where it cannot land reaches nothing; one where it can is taught.
 	local taught = #shop.training.taught
 	H.mouse.On(young)
 	H.mouse.On(dear)
 	check(#shop.training.taught == taught, "a press on an ability the pet cannot learn reached the client")
-	local index = teach.index
+
+	-- A teachable one: picked, the secure button laid over it, and the press
+	-- goes through Blizzard's own button, because DoCraft is refused an addon.
+	H.tooltips.craft[teachable.index] = { { "Bite" }, { "Bite the enemy, causing damage." } }
+	local index = teachable.index
+	teachable:GetScript("OnEnter")(teachable)
+	local text = BoxText()
+	check(text:find("Bite the enemy", 1, true) ~= nil, "the client's description is not in an ability's box")
+	check(text:find("Click to teach your pet", 1, true) ~= nil, "a teachable ability's box does not say so")
+	check(teach:IsShown() and teach.row == teachable, "hovering a teachable ability laid no secure button over it")
+	check(teach:GetAttribute("type") == "click" and teach:GetAttribute("clickbutton") == _G.CraftCreateButton,
+		"the secure button over an ability does not press CraftCreateButton")
+	check(teach:GetParent() == _G.UIParent, "the secure button over an ability hangs off the insecure talent window")
+	check(_G.GetCraftSelectionIndex() == index and _G.CraftCreateButton:IsEnabled(),
+		"hovering a teachable ability did not pick it in Blizzard's list")
 	H.mouse.On(teach)
 	check(#shop.training.taught == taught + 1 and shop.training.taught[#shop.training.taught] == index,
-		"a press on a teachable ability did not reach DoCraft with its index")
-	check(Pet.Row(2).known and same(C.heading, Rim(Pet.Row(2))), "an ability just taught does not read as known")
-	check(Training.Points() == 33, ("after seventeen points the pet has %d left"):format(Training.Points()))
+		"a press on the secure button did not reach DoCraft through CraftCreateButton")
+	check(not teach:IsShown(), "the secure button stayed up over a list the repaint moved")
+	check(Pet.Rows() == 2, ("after teaching one the page still drew %d to teach"):format(Pet.Rows()))
+	check(Pet.Summary() == "167 spent, 33 left", ("after seventeen points the pet reads %s"):format(tostring(Pet.Summary())))
+	ns.Tip.Close()
+	H.tipSettle()
 
 	-- The window going takes the session with it and hands the frame back.
 	Window.Hide()

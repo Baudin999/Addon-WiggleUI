@@ -2352,13 +2352,28 @@ function ns.CraftIcon(index)
 	return _G.GetCraftIcon(index)
 end
 
--- The window's own create button, which is what teaches the pet on a beast
--- training row. True when the client was asked.
-function ns.CraftLearn(index)
-	if type(_G.DoCraft) ~= "function" then
-		return false
+-- Picks a row the way a click on Blizzard's list does, which is what enables
+-- CraftCreateButton for it. DoCraft is protected for an addon, so teaching the
+-- pet is that button's own OnClick, reached through a secure click, and this is
+-- the half that decides which row it teaches. SelectCraft alone where the
+-- client's craft addon has not loaded, which leaves the button as it was.
+function ns.CraftSelect(index)
+	if type(_G.CraftFrame_SetSelection) == "function" then
+		return (pcall(_G.CraftFrame_SetSelection, index))
 	end
-	return (pcall(_G.DoCraft, index))
+	if type(_G.SelectCraft) == "function" then
+		_G.SelectCraft(index)
+		return true
+	end
+	return false
+end
+
+function ns.CraftCreateButton()
+	local button = _G.CraftCreateButton
+	if type(button) ~= "table" or type(button.Click) ~= "function" then
+		return nil
+	end
+	return button
 end
 
 function ns.CraftClose()

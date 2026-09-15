@@ -11,34 +11,35 @@ local Training, Board = ns.TalentTraining, ns.TalentBoard
 -- The pet's page
 --
 -- The third tab on a hunter's talent window. A heading with the pet, its level
--- and the training points it has to spend, and under it every ability Beast
--- Training offers, in three columns the width of the three trees, one square
--- each with its rank and its price. A press teaches the pet, and only where
--- the pet is high enough and the points are there.
+-- and its training points, spent and left. Under it what the pet already
+-- knows, read off its own spell book, and under that what Beast Training can
+-- still teach it, in three columns the width of the three trees.
 --
 -- **The squares are the talent board's.** The same dressed square and the same
--- rims: gold for an ability the pet already has, green for one a press would
--- teach, the theme's edge for one the points do not stretch to, and the
--- hairline with the picture greyed for one the pet is too young for. A page
--- that coloured the same four facts differently from the trees beside it would
--- be two windows sharing a frame.
+-- rims: gold for an ability the pet has, green for one a press would teach, the
+-- theme's edge for one the points do not stretch to, and the hairline with the
+-- picture greyed for one the pet is too young for.
 --
--- **The list is only there while the client's session is.** Training.lua says
--- why: nothing answers about beast training until the spell has been cast. So
--- with the session shut the page draws one square, Beast Training itself, and
--- a press on it casts the spell. The client opens the session, the window hears
--- CRAFT_SHOW and the list arrives.
+-- **The list of what can be taught is only there while the session is.**
+-- Training.lua says why. With the session shut the page draws one square,
+-- Beast Training itself, and a press on it casts the spell.
 --
--- **That one square is secure, and it is not on the window.** Casting is
--- protected, so the square is a SecureActionButtonTemplate. A protected frame
--- makes every frame it hangs off protected as well, and the talent window is
--- insecure on purpose: it opens with N in a fight. So the square is parented
--- to UIParent, anchored to UIParent, and laid over an empty spot on the page by
--- position and scale, which ties nothing on the window to it. Moving it is
--- refused in a fight, so it is placed out of one, and a state driver hides it
--- the moment a fight starts; PLAYER_REGEN_ENABLED puts it back. Everything
--- else on the page is an ordinary button, because teaching a pet an ability is
--- not a protected act.
+-- **Two presses are protected, and neither button is on the window.** Casting
+-- is one. DoCraft is the other: a row that called it from its own OnClick put
+-- up the client's interface error, because on 2.5.6 an addon may not teach a
+-- pet. Blizzard's CraftCreateButton may, from its own OnClick, and a secure
+-- button of type `click` presses it for us. So a hover on a teachable row picks
+-- that row the way a click on Blizzard's list does, which enables the create
+-- button for it, and lays the secure button over the row. The press lands on
+-- the secure button, the secure button presses CraftCreateButton, and that
+-- button's OnClick calls DoCraft on the row picked.
+--
+-- A protected frame makes every frame it hangs off protected as well, and the
+-- talent window is insecure on purpose: it opens with N in a fight. So both
+-- secure buttons are parented to UIParent, anchored to UIParent, and laid over
+-- the page by position and scale, which ties nothing on the window to them.
+-- Moving them is refused in a fight, so they are placed out of one, and a
+-- state driver hides both the moment a fight starts.
 --
 -- Nothing here is on a ticker. The page paints when the window does.
 --------------------------------------------------------------------------
@@ -50,41 +51,115 @@ local PITCH = SQUARE + 6
 
 local COLUMNS = 3
 
-local page, head, title, points, spot, invite
-local rows = {}
-local shown = 0
+-- A line of small heading text above each list.
+local LABEL = M.row
 
--- Whether the square belongs on the page right now, and whether a fight
+local page, head, title, points, spot, invite, knownLabel, knownNone, trainLabel
+local rows, known, book = {}, {}, {}
+local shown, shownKnown = 0, 0
+
+-- Whether the cast square belongs on the page right now, and whether a fight
 -- refused the last attempt to say so.
 local wanted, pending = false, false
 
 -- The pet's level and the points left at the last paint, which is what a hover
--- and a press read.
+-- reads.
 local petLevel, left = 0, 0
 
 --------------------------------------------------------------------------
--- The secure square
+-- The secure buttons
 --------------------------------------------------------------------------
 
-local cast = CreateFrame("Button", "WarriorKitBeastTraining", UIParent, "SecureActionButtonTemplate")
-cast:SetSize(SQUARE, SQUARE)
-UI.Dress(cast, SQUARE)
 -- The up edge and the attribute that says so, in agreement, for the reason
 -- Hover/Cast.lua gives: a secure button acts only on the edge useOnKeyDown
 -- names, whatever it registered for.
-cast:RegisterForClicks("AnyUp")
-cast:SetAttribute("useOnKeyDown", false)
+local function Secure(name)
+	local button = CreateFrame("Button", name, UIParent, "SecureActionButtonTemplate")
+	button:RegisterForClicks("AnyUp")
+	button:SetAttribute("useOnKeyDown", false)
+	button:Hide()
+	return button
+end
+
+local cast = Secure("WarriorKitBeastTraining")
+cast:SetSize(SQUARE, SQUARE)
+UI.Dress(cast, SQUARE)
 cast:SetAttribute("type", "spell")
 cast:SetAttribute("spell", Training.SPELL)
-cast:Hide()
+
+-- Clear, and the size of whichever row it is laid over. The row under it draws
+-- the square and the words.
+local teach = Secure("WarriorKitBeastTeach")
+teach:SetAttribute("type", "click")
+
+-- Hidden in the secure environment when a fight starts, because that is the
+-- only place a protected frame can still be hidden from once it has. Charge
+-- /Icon.lua's binder is the same shape.
+local driver
+if _G.RegisterStateDriver then
+	local ok, made = pcall(CreateFrame, "Frame", nil, UIParent, "SecureHandlerStateTemplate")
+	if ok and made and made.Execute then
+		driver = made
+		driver:SetFrameRef("cast", cast)
+		driver:SetFrameRef("teach", teach)
+		driver:Execute([[ cast = self:GetFrameRef("cast") teach = self:GetFrameRef("teach") ]])
+		driver:SetAttribute("_onstate-combat", [[ if newstate == "on" then cast:Hide() teach:Hide() end ]])
+		RegisterStateDriver(driver, "combat", "[combat] on; off")
+	end
+end
+
+-- A secure button over a region of the page, at the region's scale.
+--
+-- The offsets are the region's own left and top. With the button scaled to the
+-- region's effective scale the two share a unit, and UIParent's bottom left is
+-- the screen's.
+local function Over(button, region)
+	local x, y = region:GetLeft(), region:GetTop()
+	if not x or not y then
+		return false
+	end
+	button:SetScale(region:GetEffectiveScale() / UIParent:GetEffectiveScale())
+	button:ClearAllPoints()
+	button:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
+	button:SetSize(region:GetWidth(), region:GetHeight())
+	button:SetFrameStrata(page:GetFrameStrata() or "HIGH")
+	button:SetFrameLevel((region:GetFrameLevel() or 0) + 10)
+	button:Show()
+	return true
+end
+
+-- The cast square over its spot, or off the screen. Refused in a fight and put
+-- right when it ends.
+function Pet.Place()
+	if InCombatLockdown() then
+		pending = true
+		return false
+	end
+	pending = false
+	if wanted and spot and spot:IsVisible() and Over(cast, spot) then
+		cast.art:SetTexture((select(3, GetSpellInfo(Training.SPELL))))
+		return true
+	end
+	cast:Hide()
+	return false
+end
+
+-- The teaching button off whatever row it was over.
+local function Lift()
+	if InCombatLockdown() then
+		return false
+	end
+	teach.row = nil
+	teach:Hide()
+	return true
+end
 
 local function CastSubject()
-	local name = Training.Name() or "Beast Training"
 	local lines = { { "Opens the list of what your pet can learn", color = C.hint } }
 	if not UnitExists("pet") then
 		lines[#lines + 1] = { "Call your pet first", color = C.dim }
 	end
-	return { kind = "spell", spell = Training.SPELL, title = name, lines = lines }
+	return { kind = "spell", spell = Training.SPELL, title = Training.Name() or "Beast Training", lines = lines }
 end
 
 cast:SetScript("OnEnter", function(this)
@@ -94,56 +169,10 @@ cast:SetScript("OnLeave", function()
 	ns.Tip.Close()
 end)
 
--- Hidden in the secure environment when a fight starts, because that is the
--- only place a protected frame can still be hidden from once it has. Charge
--- /Icon.lua's binder is the same shape. Absent where the client has no state
--- driver, and then the square simply stays where it was for the fight.
-local driver
-if _G.RegisterStateDriver then
-	local ok, made = pcall(CreateFrame, "Frame", nil, UIParent, "SecureHandlerStateTemplate")
-	if ok and made and made.Execute then
-		driver = made
-		driver:SetFrameRef("cast", cast)
-		driver:Execute([[ cast = self:GetFrameRef("cast") ]])
-		driver:SetAttribute("_onstate-combat", [[ if newstate == "on" then cast:Hide() end ]])
-		RegisterStateDriver(driver, "combat", "[combat] on; off")
-	end
-end
-
--- Over the spot, at the spot's own scale, or off the screen. Refused in a fight
--- and put right when it ends.
---
--- The offsets are the spot's own left and top. With the square scaled to the
--- spot's effective scale the two share a unit, and UIParent's bottom left is
--- the screen's.
-function Pet.Place()
-	if InCombatLockdown() then
-		pending = true
-		return false
-	end
-	pending = false
-	local up = wanted and spot ~= nil and spot:IsVisible()
-	local x, y = spot and spot:GetLeft(), spot and spot:GetTop()
-	if up and x and y then
-		cast:SetScale(spot:GetEffectiveScale() / UIParent:GetEffectiveScale())
-		cast:ClearAllPoints()
-		cast:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", x, y)
-		cast:SetFrameStrata(page:GetFrameStrata() or "HIGH")
-		cast:SetFrameLevel((spot:GetFrameLevel() or 0) + 10)
-		cast.art:SetTexture((select(3, GetSpellInfo(Training.SPELL))))
-		cast:Show()
-		return true
-	end
-	cast:Hide()
-	return false
-end
-
 --------------------------------------------------------------------------
 -- The rows
 --------------------------------------------------------------------------
 
--- What a row costs and what stands in the way, in the words its second line and
--- its hover share.
 local function Price(row)
 	if row.cost < 1 then
 		return "free"
@@ -159,9 +188,6 @@ local function Label(row, rest)
 end
 
 local function Verdict(row)
-	if row.known then
-		return "Your pet knows this", C.heading
-	end
 	if row.level > petLevel then
 		return ("Needs your pet at level %d"):format(row.level), C.dim
 	end
@@ -172,41 +198,73 @@ local function Verdict(row)
 end
 
 local function Subject(row)
+	if row.known then
+		return { kind = "note", title = row.name, lines = { { row.rank }, { "Your pet knows this", color = C.heading } } }
+	end
 	local verdict, color = Verdict(row)
 	local lines = { { Label(row, Price(row)) }, { verdict, color = color } }
 	return { kind = "craft", index = row.index, title = row.name, lines = lines }
 end
 
-local function OnEnter(row)
+local function Look(row)
 	UI.Tint(row.square.bg, C.hover)
 	ns.Tip.Open(row, Subject(row), nil, UI.Tooltip.BESIDE)
 end
 
-local function OnLeave(row)
+local function Unlook(row)
 	UI.Tint(row.square.bg, C.sunken)
 	ns.Tip.Close()
 end
 
--- Refused without a word where the hover already says why, for the reason the
--- talent squares give.
-local function OnClick(row)
-	if not row.learnable then
+-- The secure button onto a teachable row, with that row picked. Nothing in a
+-- fight, where neither the pick nor the move would be allowed to matter.
+local function Arm(row)
+	if not row.learnable or InCombatLockdown() then
 		return false
 	end
-	return Training.Learn(row.index)
+	local button = Training.Select(row.index)
+	if not button then
+		return false
+	end
+	teach:SetAttribute("clickbutton", button)
+	teach.row = row
+	return Over(teach, row)
 end
 
-local function Row(at)
-	local row = rows[at]
+local function OnEnter(row)
+	Look(row)
+	Arm(row)
+end
+
+-- The pointer leaving a row for the button laid over it has not left the row.
+local function OnLeave(row)
+	if teach.row == row and teach:IsShown() then
+		return
+	end
+	Unlook(row)
+end
+
+teach:SetScript("OnEnter", function(this)
+	if this.row then
+		Look(this.row)
+	end
+end)
+teach:SetScript("OnLeave", function(this)
+	if this.row then
+		Unlook(this.row)
+	end
+	Lift()
+end)
+
+local function Row(pool, at)
+	local row = pool[at]
 	if row then
 		return row
 	end
 	row = CreateFrame("Button", nil, page)
 	row:SetHeight(SQUARE)
-	row:RegisterForClicks("LeftButtonUp")
 	row:SetScript("OnEnter", OnEnter)
 	row:SetScript("OnLeave", OnLeave)
-	row:SetScript("OnClick", OnClick)
 	UI.PassCamera(row)
 
 	row.square = CreateFrame("Frame", nil, row)
@@ -224,44 +282,93 @@ local function Row(at)
 	row.sub:SetPoint("BOTTOMLEFT", row.square, "BOTTOMRIGHT", M.gutter, 0)
 	row.sub:SetPoint("RIGHT")
 
-	rows[at] = row
+	pool[at] = row
 	return row
 end
 
 -- The rim, the picture and the two lines, off what the row now knows.
 local function Paint(row)
-	local edge, dim
+	local edge, dim, sub
 	if row.known then
-		edge = C.heading
+		edge, sub = C.heading, row.rank
 	elseif row.level > petLevel then
-		edge, dim = C.hairline, true
+		edge, dim, sub = C.hairline, true, Label(row, ("pet level %d"):format(row.level))
 	elseif row.cost > left then
-		edge, dim = C.edge, true
+		edge, dim, sub = C.edge, true, Label(row, Price(row))
 	else
-		edge = C.tick
+		edge, sub = C.tick, Label(row, Price(row))
 	end
 	row.learnable = edge == C.tick
+	row.dim = dim and true or false
 	ns.Recolor(row.square.edges, edge)
 	row.square.art:SetTexture(row.icon)
-	row.square.art:SetDesaturated(dim and true or false)
+	row.square.art:SetDesaturated(row.dim)
 	row.square.art:SetAlpha(dim and 0.55 or 1)
-	row.dim = dim and true or false
-
 	row.title:SetText(row.name)
 	local ink = row.known and C.heading or C.text
 	row.title:SetTextColor(ink[1], ink[2], ink[3])
-	if row.known then
-		row.sub:SetText(Label(row, "known"))
-	elseif row.level > petLevel then
-		row.sub:SetText(Label(row, ("pet level %d"):format(row.level)))
-	else
-		row.sub:SetText(Label(row, Price(row)))
+	row.sub:SetText(sub)
+end
+
+-- A list of rows laid into columns from `top` down. Answers how tall that is.
+local function Lay(pool, count, top, width, gap)
+	local column = math.floor((width - (COLUMNS - 1) * gap) / COLUMNS)
+	local per = math.max(1, math.ceil(count / COLUMNS))
+	for at = 1, count do
+		local row = pool[at]
+		local across, down = math.floor((at - 1) / per), (at - 1) % per
+		row:SetWidth(column)
+		row:ClearAllPoints()
+		row:SetPoint("TOPLEFT", page, "TOPLEFT", across * (column + gap), -(top + down * PITCH))
+		row:Show()
 	end
+	for at = count + 1, #pool do
+		pool[at]:Hide()
+	end
+	if count < 1 then
+		return 0
+	end
+	return per * PITCH - (PITCH - SQUARE)
+end
+
+-- What the pet knows, off its book.
+local function FillKnown()
+	Training.Known(book)
+	for at = 1, #book do
+		local entry, row = book[at], Row(known, at)
+		row.name, row.rank, row.icon, row.known = entry.name, entry.rank, entry.icon, true
+		Paint(row)
+	end
+	return #book
+end
+
+-- What the session can still teach. A row the pet has is on the list above
+-- already, so it is not drawn twice.
+local function FillTrainable()
+	local count = 0
+	for index = 1, Training.Count() do
+		local name, rank, has, cost, level, icon = Training.Entry(index)
+		if name and not has then
+			count = count + 1
+			local row = Row(rows, count)
+			row.index, row.name, row.rank, row.known = index, name, rank, false
+			row.cost, row.level, row.icon = cost, level, icon
+			Paint(row)
+		end
+	end
+	return count
 end
 
 --------------------------------------------------------------------------
 -- Building and painting
 --------------------------------------------------------------------------
+
+local function Small(text)
+	local label = UI.Label(page, M.small, C.dim, "LEFT", UI.FLAT)
+	UI.Wrap(label, false)
+	label:SetText(text or "")
+	return label
+end
 
 function Pet.Build(parent)
 	if page then
@@ -283,11 +390,12 @@ function Pet.Build(parent)
 	title:SetPoint("LEFT", head, "RIGHT", M.gutter, 0)
 	title:SetPoint("RIGHT", points, "LEFT", -M.gutter, 0)
 
-	-- Where the secure square is laid. An empty frame the size of one, which is
+	knownLabel, knownNone, trainLabel = Small(), Small(), Small("Beast Training")
+
+	-- Where the cast square is laid. An empty frame the size of one, which is
 	-- what gives the square a place on the page without the page holding it.
 	spot = CreateFrame("Frame", nil, page)
 	spot:SetSize(SQUARE, SQUARE)
-	spot:SetPoint("TOPLEFT", 0, -(Board.HEAD + M.gutter))
 
 	invite = UI.Label(page, M.font, C.text, "LEFT", UI.FLAT)
 	UI.Wrap(invite, false)
@@ -295,7 +403,10 @@ function Pet.Build(parent)
 	invite:SetPoint("RIGHT")
 
 	page:SetScript("OnShow", Pet.Place)
-	page:SetScript("OnHide", Pet.Place)
+	page:SetScript("OnHide", function()
+		Lift()
+		Pet.Place()
+	end)
 	return page
 end
 
@@ -310,75 +421,68 @@ local function Heading()
 	else
 		title:SetText(("%s, level %d"):format(name, petLevel))
 	end
-	local total
-	left, total = Training.Points()
+	local total, spent
+	left, total, spent = Training.Points()
 	if total < 1 then
 		points:SetText("no training points")
-	elseif left == 1 then
-		points:SetText("1 point to spend")
 	else
-		points:SetText(("%d points to spend"):format(left))
+		points:SetText(("%d spent, %d left"):format(spent, left))
 	end
 	return name
 end
 
--- Every ability the session lists, laid into columns. Answers how many rows
--- that came to.
-local function List(width, gap)
-	local column = math.floor((width - (COLUMNS - 1) * gap) / COLUMNS)
-	local count = Training.Count()
-	local found = {}
-	for index = 1, count do
-		local name, rank, known, cost, level, icon = Training.Entry(index)
-		if name then
-			local row = Row(#found + 1)
-			row.index, row.name, row.rank, row.known = index, name, rank, known
-			row.cost, row.level, row.icon = cost, level, icon
-			found[#found + 1] = row
-		end
+local function At(region, top)
+	region:ClearAllPoints()
+	region:SetPoint("TOPLEFT", page, "TOPLEFT", 0, -top)
+end
+
+-- The session half, from `top` down. Answers how tall it came out.
+local function Session(pet, top, width, gap)
+	At(spot, top)
+	if not Training.Open() then
+		wanted = true
+		shown = Lay(rows, 0, top, width, gap)
+		invite:SetText(pet and ("Press the square to list what %s can learn."):format(pet)
+			or "Beast Training teaches the pet you have out. Call your pet first.")
+		invite:Show()
+		return SQUARE
 	end
-	local per = math.max(1, math.ceil(#found / COLUMNS))
-	for at = 1, #found do
-		local row = found[at]
-		local across, down = math.floor((at - 1) / per), (at - 1) % per
-		row:SetWidth(column)
-		row:ClearAllPoints()
-		row:SetPoint("TOPLEFT", page, "TOPLEFT", across * (column + gap), -(Board.HEAD + M.gutter + down * PITCH))
-		Paint(row)
-		row:Show()
+	wanted = false
+	shown = FillTrainable()
+	invite:SetText(("Beast Training has nothing more to teach %s now."):format(pet or "your pet"))
+	invite:SetShown(shown == 0)
+	if shown == 0 then
+		Lay(rows, 0, top, width, gap)
+		return SQUARE
 	end
-	for at = #found + 1, #rows do
-		rows[at]:Hide()
-	end
-	return #found, per
+	return Lay(rows, shown, top, width, gap)
 end
 
 -- The page, for a window this wide with this much air between columns. Answers
 -- how tall it came out.
 function Pet.Paint(width, gap)
+	Lift()
 	page:SetWidth(width)
 	local pet = Heading()
-	local tall = Board.HEAD + M.gutter
-	if Training.Open() then
-		wanted = false
-		invite:Hide()
-		local count, per = List(width, gap)
-		shown = count
-		tall = tall + per * PITCH - (PITCH - SQUARE)
-	else
-		wanted = true
-		shown = 0
-		for at = 1, #rows do
-			rows[at]:Hide()
-		end
-		invite:SetText(pet and ("Beast Training: press the square to list what %s can learn."):format(pet)
-			or "Beast Training teaches the pet you have out. Call your pet first.")
-		invite:Show()
-		tall = tall + SQUARE
-	end
-	page:SetHeight(tall)
+
+	local top = Board.HEAD + M.gutter
+	At(knownLabel, top)
+	knownLabel:SetText(pet and ("What %s knows"):format(pet) or "What your pet knows")
+	top = top + LABEL
+	shownKnown = pet and FillKnown() or 0
+	local tall = Lay(known, shownKnown, top, width, gap)
+	At(knownNone, top)
+	knownNone:SetText(pet and "Nothing taught yet" or "Call your pet to see what it knows")
+	knownNone:SetShown(shownKnown == 0)
+	top = top + math.max(tall, LABEL) + M.gutter * 2
+
+	At(trainLabel, top)
+	top = top + LABEL
+	top = top + Session(pet, top, width, gap)
+
+	page:SetHeight(top)
 	Pet.Place()
-	return tall
+	return top
 end
 
 function Pet.Page()
@@ -389,12 +493,20 @@ function Pet.Square()
 	return cast
 end
 
+function Pet.Teach()
+	return teach
+end
+
 function Pet.Spot()
 	return spot
 end
 
 function Pet.Driver()
 	return driver
+end
+
+function Pet.Summary()
+	return points and points:GetText()
 end
 
 function Pet.Rows()
@@ -406,6 +518,17 @@ function Pet.Row(at)
 		return nil
 	end
 	return rows[at]
+end
+
+function Pet.KnownRows()
+	return shownKnown
+end
+
+function Pet.Known(at)
+	if at > shownKnown then
+		return nil
+	end
+	return known[at]
 end
 
 -- The fight ended with a placement owed.

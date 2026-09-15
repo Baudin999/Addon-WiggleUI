@@ -68,7 +68,25 @@ _G.GetSpellTabInfo = function(tab)
 	return entry.name, entry.icon, entry.offset, entry.count
 end
 
+-- The pet's book, answered only while a pet is out. Two abilities it was taught
+-- and a command, which has no rank line and is not an ability.
+local PET_BOOK = {
+	{ kind = "SPELL", id = 17259, name = "Bite", sub = "Rank 7" },
+	{ kind = "SPELL", id = 14921, name = "Growl", sub = "Rank 6" },
+	{ kind = "PETACTION", id = 1, name = "Attack", sub = "" },
+}
+
+_G.HasPetSpells = function()
+	if not _G.UnitExists("pet") then
+		return nil
+	end
+	return #PET_BOOK, "PET"
+end
+
 local function Entry(index, book)
+	if book == "pet" then
+		return _G.UnitExists("pet") and PET_BOOK[index] or nil
+	end
 	if book ~= "spell" then
 		return nil
 	end
@@ -80,7 +98,9 @@ _G.GetSpellBookItemInfo = function(index, book)
 	if not entry then
 		return nil
 	end
-	H.spellbook.reads = H.spellbook.reads + 1
+	if book == "spell" then
+		H.spellbook.reads = H.spellbook.reads + 1
+	end
 	return entry.kind, entry.id
 end
 

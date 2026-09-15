@@ -475,6 +475,9 @@ local WATCHED = {
 	"CRAFT_CLOSE",
 	"UNIT_PET",
 	"UNIT_PET_TRAINING_POINTS",
+	-- The pet's own book, which is what the page lists as known.
+	"SPELLS_CHANGED",
+	"PET_BAR_UPDATE",
 }
 
 local events = CreateFrame("Frame")

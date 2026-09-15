@@ -58,6 +58,15 @@ local function secure(self, button, down)
 		end
 	end
 
+	-- A click handed on to another button, which is how an addon reaches a
+	-- protected call that only Blizzard's own button makes.
+	if attribute("type") == "click" then
+		local target = attribute("clickbutton")
+		if type(target) == "table" and target.Click then
+			target:Click(button)
+		end
+	end
+
 	if _G.SpellCanTargetItem and _G.SpellCanTargetItem() then
 		local slot = attribute("target-slot")
 		if slot and _G.UseInventoryItem then
