@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JVDXFMNEXD5M7JMJSWRSGS
 type: task
-status: doing
+status: done
 title: "Delete on a loot row destroys the item in the bags, not only the row"
 ---
 
