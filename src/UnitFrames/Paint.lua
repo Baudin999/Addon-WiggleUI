@@ -225,6 +225,46 @@ local function PaintPvp(entry, unit)
 	end
 end
 
+-- The shots left in your ranged slot, on the block that carries the pill.
+--
+-- ns.Ammo answers nil for a slot that never runs out, and that is no pill
+-- rather than a pill saying nothing. Compared as the number drawn, with -1 for
+-- none, so a pass that finds the count where it was costs the client calls and
+-- one comparison.
+--
+-- Under AMMO_LOW the number turns red, and zero is under it: a bow with an
+-- empty ammo slot is the reading the pill is for. A hundred arrows is about
+-- four minutes of auto shot. Above four digits the number stops at 9999,
+-- because Block sized the pill for four.
+local AMMO_LOW, AMMO_MOST = 100, 9999
+local AMMO_SHORT, AMMO_PLENTY = Color.text.short, Color.text.value
+
+local function PaintAmmo(entry)
+	local pill = entry.ammo
+	if not pill then
+		return
+	end
+	local count = ns.Ammo() or -1
+	if count > AMMO_MOST then
+		count = AMMO_MOST
+	end
+	if entry.shownAmmo == count then
+		return
+	end
+	entry.shownAmmo = count
+	if count >= 0 then
+		pill.text:SetText(tostring(count))
+		local tint = count < AMMO_LOW and AMMO_SHORT or AMMO_PLENTY
+		if entry.ammoTint ~= tint then
+			entry.ammoTint = tint
+			pill.text:SetTextColor(tint[1], tint[2], tint[3])
+		end
+		pill:Show()
+	else
+		pill:Hide()
+	end
+end
+
 function Paint.Refresh(entry)
 	local unit = entry.spec.unit
 	if not entry.styled or not UnitExists(unit) then
@@ -297,6 +337,7 @@ function Paint.Refresh(entry)
 	PaintMarker(entry, unit)
 	PaintState(entry)
 	PaintPvp(entry, unit)
+	PaintAmmo(entry)
 
 	-- The aura rows, which come along on the same pass. UNIT_AURA is one of the
 	-- events that mark this block, so a target gaining a debuff is a row
@@ -315,4 +356,5 @@ function Paint.Forget(entry)
 	entry.portraitGuid, entry.portraitDirty = nil, true
 	entry.marker, entry.state, entry.pvp = nil, nil, nil
 	entry.healSpan = nil
+	entry.shownAmmo, entry.ammoTint = nil, nil
 end

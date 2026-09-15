@@ -63,6 +63,14 @@ local VALUE_FLOOR = 9
 local HAIRLINES = 3
 local TEXT_PAD = 4
 
+-- The ammo pill: the space round its number inside the outline, its gap from
+-- the portrait's edge, and the widest number it is sized for, all in pixels
+-- but the last. Sized once for four digits rather than to the number on it, so
+-- the pill keeps its width as the count falls and the tick decides no
+-- rectangle. Paint caps the count at four digits for the same reason.
+local AMMO_PAD, AMMO_INSET = 1, 2
+local AMMO_WIDEST = "0000"
+
 -- Font sizes are taken off the bar heights, because the same code draws a 34
 -- pixel player frame and a 21 pixel target of target and one size cannot serve
 -- both. These are the fraction of the bar a glyph gets and the range it is
@@ -147,6 +155,69 @@ local function Bar(entry)
 	return bar
 end
 
+-- The shots left in your ranged slot, on the frame whose spec asks for it.
+-- A frame of its own rather than regions on the text frame, because an outline
+-- is four textures pinned to a frame's edges. Hidden until the tick has a
+-- number, and what the number is and when it shows is UnitFrames/Paint.lua's.
+local function BuildAmmo(entry)
+	if not entry.spec.ammo then
+		return
+	end
+	local pill = CreateFrame("Frame", nil, entry.top)
+	pill:EnableMouse(false)
+	ns.Fill(pill, "BACKGROUND", BACKDROP[1], BACKDROP[2], BACKDROP[3], 1):SetAllPoints()
+	pill.edges = ns.Outline(pill, IDLE[1], IDLE[2], IDLE[3], 1)
+	pill.text = ns.UI.Label(pill, SMALL_MAX, VALUE_TEXT, "CENTER", ns.UI.FLAT)
+	pill.text:SetPoint("CENTER", pill, "CENTER", 0, 0)
+	pill:Hide()
+	entry.ammo = pill
+end
+
+-- On the outer corners of the square, the two the gauge is not against,
+-- each centred on its corner so it half overhangs the block.
+--
+-- An even number of pixels, because the badge is centred on a corner and
+-- half of an odd one puts all four of its edges on a half pixel.
+local function PlaceBadges(entry, px, side, portraitEdge)
+	local badges = entry.spec.badges
+	for index = 1, #badges do
+		local slot = badges[index]
+		local badge, texture = BADGES[slot], entry.badges[slot]
+		local size = math.floor(side * badge.scale / 2 + 0.5) * 2 * px
+		texture:ClearAllPoints()
+		texture:SetSize(size, size)
+		texture:SetPoint("CENTER", entry.slot, badge.corner .. portraitEdge, 0, 0)
+	end
+end
+
+-- In the portrait's bottom corner on the gauge side, inside the block. That is
+-- the one corner nothing else uses: the badges sit on the portrait's outer
+-- corners and the aura rows hang off the gauge end above and below, so the
+-- pill covers the portrait's chin and nothing you read.
+--
+-- Both sides are an even number of pixels, because the number is centred on
+-- the pill and half of an odd side is a glyph on a half pixel. The number the
+-- tick last drew is forgotten, because the font it was measured in may have
+-- just changed.
+local function PlaceAmmo(entry, px, level, small, font, gaugeEdge, pull)
+	local pill = entry.ammo
+	if not pill then
+		return
+	end
+	pill:SetFrameLevel(level + 4)
+	ns.EdgeSize(pill.edges, px)
+	pill.text:SetFontObject(font)
+	pill.text:SetText(AMMO_WIDEST)
+	local wide = math.ceil(pill.text:GetStringWidth() / px) + 2 * (AMMO_PAD + 1)
+	local tall = small + 2 * (AMMO_PAD + 1)
+	pill.text:SetText("")
+	pill:SetSize((wide + wide % 2) * px, (tall + tall % 2) * px)
+	pill:ClearAllPoints()
+	pill:SetPoint("BOTTOM" .. gaugeEdge, entry.portrait, "BOTTOM" .. gaugeEdge,
+		pull * AMMO_INSET * px, AMMO_INSET * px)
+	entry.shownAmmo = nil
+end
+
 -- Three frame levels, and they are the whole z-order:
 --
 --   button  the secure unit button. Backdrop, edge, divider and the portrait's
@@ -222,6 +293,7 @@ function Block.Build(entry)
 		texture:Hide()
 		entry.badges[slot] = texture
 	end
+	BuildAmmo(entry)
 
 	-- The aura rows, on the frames that have them. Children of the button like
 	-- everything above, so they hide with it, and everything else about them is
@@ -366,19 +438,8 @@ function Block.Place(entry)
 	entry.powerText:SetPoint(gaugeEdge, frame, "TOP" .. gaugeEdge, pull * pad, powerMid)
 	entry.powerText:SetShown(power >= VALUE_FLOOR)
 
-	-- On the outer corners of the square, the two the gauge is not against,
-	-- each centred on its corner so it half overhangs the block.
-	--
-	-- An even number of pixels, because the badge is centred on a corner and
-	-- half of an odd one puts all four of its edges on a half pixel.
-	for index = 1, #spec.badges do
-		local slot = spec.badges[index]
-		local badge, texture = BADGES[slot], entry.badges[slot]
-		local size = math.floor(side * badge.scale / 2 + 0.5) * 2 * px
-		texture:ClearAllPoints()
-		texture:SetSize(size, size)
-		texture:SetPoint("CENTER", entry.slot, badge.corner .. portraitEdge, 0, 0)
-	end
+	PlaceBadges(entry, px, side, portraitEdge)
+	PlaceAmmo(entry, px, level, small, smallFont, gaugeEdge, pull)
 
 	-- Last, because a row wraps against the block's width and the block has
 	-- only just been given one.

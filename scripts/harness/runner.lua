@@ -248,6 +248,7 @@ local SECTIONS = {
 	"08-bars-zoom",
 	"09-cast-row",
 	"10-unit-frame-skin",
+	"10-ammo-pill",
 	"11-skin-rails",
 	"12-debuff-square-size",
 	"13-incoming-heal",

@@ -261,6 +261,10 @@ Color.text = {
 
 	count  = { 1.00, 0.86, 0.45 }, -- a debuff's stack number
 
+	-- The ammo pill's number once the shots are nearly gone. The threat red,
+	-- because running dry mid pull is the same kind of news as losing a mob.
+	short  = HUE.red,
+
 	-- The quest badge beside an enemy bar: how many of this one you still need.
 	--
 	-- Gold because gold has meant "quest" in this game since 2004, and a colour

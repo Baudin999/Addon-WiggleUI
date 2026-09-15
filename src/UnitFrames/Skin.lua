@@ -77,6 +77,7 @@ local UnregisterUnitWatch = _G.UnregisterUnitWatch
 -- mirror   the gauge sits left of the portrait rather than right of it
 -- scale    this frame's share of the height and width settings
 -- badges   which state icons the block carries, out of Block's three
+-- ammo     the block carries the pill counting the shots in your ranged slot
 -- global   the anchor's name, which is the rectangle you drag and the one
 --          every measurement in Block is taken in. Named so a block that
 --          lands wrong can be measured from a macro or a harness
@@ -94,7 +95,7 @@ local UnregisterUnitWatch = _G.UnregisterUnitWatch
 local SPECS = {
 	{
 		key = "player", unit = "player", mirror = false, scale = 1,
-		badges = { "state", "pvp" },
+		badges = { "state", "pvp" }, ammo = true,
 		global = "WarriorKitPlayerFrame", button = "WarriorKitPlayerButton",
 		title = "WarriorKit player", point = "skinPlayerPoint",
 	},
@@ -635,6 +636,12 @@ local MARKS = {
 	PLAYER_ENTER_COMBAT = true,
 	PLAYER_LEAVE_COMBAT = true,
 	RAID_TARGET_UPDATE = true,
+	-- The ammo pill on your own block. A shot spends an arrow out of a bag,
+	-- which is BAG_UPDATE, and a weapon or a stack put in the ranged or ammo
+	-- slot is UNIT_INVENTORY_CHANGED. Marks rather than watched unit events,
+	-- because only your own block draws either.
+	UNIT_INVENTORY_CHANGED = true,
+	BAG_UPDATE = true,
 }
 
 local events = CreateFrame("Frame")

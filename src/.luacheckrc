@@ -353,6 +353,7 @@ read_globals = {
 	-- reached through _G in Core beside C_Container, so it is not an entry
 	-- here.
 	"GetInventoryItemLink", "GetInventoryItemTexture",
+	"GetInventoryItemID", "GetInventoryItemCount",
 	"GetContainerNumSlots", "GetContainerItemLink",
 	"GetContainerItemInfo", "UseContainerItem",
 	"GetItemInfo", "GetItemInfoInstant", "C_Container",

@@ -1947,6 +1947,68 @@ function ns.ItemKind(link)
 	return itemId, classId, subClassId
 end
 
+-- How many shots the ranged slot has left, or nil for a slot that never runs
+-- out.
+--
+-- A bow, a gun or a crossbow fires what is in the ammo slot, and the ammo slot
+-- counts every one of that item in the bags. A thrown weapon fires itself: on
+-- the vanilla client it stacks and the stack is the count, and on 2.5.6 it is
+-- one weapon with durability, which never runs out. A wand, a relic and an
+-- empty slot never run out either.
+--
+-- Zero, not nil, for a bow with nothing in the ammo slot, because that is the
+-- reading the count is for.
+--
+-- Slot 0 is asked by id, because the client hands no link for the ammo slot.
+-- Narcissus reads it that way on this client, and TitanAmmo splits bow, gun,
+-- crossbow and thrown on the same four subclasses.
+--
+-- What the weapon is gets remembered against its link, because the unit
+-- frames ask this on their tick and a weapon's subclass does not change while
+-- it is worn. A thrown weapon whose stack size the cache has not got yet is
+-- not remembered, so the next pass asks again.
+local RANGED_SLOT, AMMO_SLOT = 18, 0
+local WEAPON, THROWN = 2, 16
+local FIRES_AMMO = { [2] = true, [3] = true, [18] = true } -- bow, gun, crossbow
+
+local shotLink, shotKind = nil, nil
+
+local function ShotKind(link)
+	if link == shotLink then
+		return shotKind
+	end
+	local _, classId, subClassId = ns.ItemKind(link)
+	local kind = "none"
+	if classId == WEAPON and FIRES_AMMO[subClassId] then
+		kind = "ammo"
+	elseif classId == WEAPON and subClassId == THROWN then
+		local stack = ns.ItemStack(link)
+		if not stack then
+			return nil
+		end
+		kind = stack > 1 and "stack" or "none"
+	end
+	shotLink, shotKind = link, kind
+	return kind
+end
+
+function ns.Ammo()
+	local link = GetInventoryItemLink("player", RANGED_SLOT)
+	if not link then
+		return nil
+	end
+	local kind = ShotKind(link)
+	if kind == "ammo" then
+		if not GetInventoryItemID("player", AMMO_SLOT) then
+			return 0
+		end
+		return GetInventoryItemCount("player", AMMO_SLOT) or 0
+	elseif kind == "stack" then
+		return GetInventoryItemCount("player", RANGED_SLOT)
+	end
+	return nil
+end
+
 -- What a loot slot is holding: the word "item", "money" or "currency", and the
 -- item's link where there is one.
 --

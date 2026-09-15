@@ -108,6 +108,36 @@ _G.GetInventoryItemTexture = function(unit, slot)
 	return "hand" .. slot
 end
 
+-- The two counts the ammo pill draws, and the id the client answers the ammo
+-- slot by. Slot 18 is a link in `worn` like the trinkets. Slot 0 is not: the
+-- client hands no link for the ammo slot and answers it only by id, so what is
+-- in it is a name here, with how many of it the bags hold. `ranged` is the
+-- stack on slot 18, which is one for everything but a thrown weapon that
+-- stacks.
+local shots = { ammo = nil, ammoCount = 0, ranged = 1 }
+
+_G.GetInventoryItemID = function(unit, slot)
+	local name
+	if unit == "player" and slot == 0 then
+		name = shots.ammo
+	else
+		local link = _G.GetInventoryItemLink(unit, slot)
+		name = link and link:match("%[(.-)%]")
+	end
+	local item = name and ITEMS[name]
+	return item and item.id or nil
+end
+
+_G.GetInventoryItemCount = function(unit, slot)
+	if unit ~= "player" or not _G.GetInventoryItemID(unit, slot) then
+		return 0
+	end
+	if slot == 0 then
+		return shots.ammoCount
+	end
+	return slot == 18 and shots.ranged or 1
+end
+
 -- Two returns, and the second is nil with an empty off hand or a shield in it,
 -- which is the answer the client gives and the one the addon branches on.
 _G.UnitAttackSpeed = function(unit)
@@ -585,7 +615,7 @@ _G.IsModifiedClick = function(binding)
 end
 
 H.swing, H.enemyCasts, H.misused = swing, enemyCasts, misused
-H.worn = worn
+H.worn, H.shots = worn, shots
 -- The corpse a section stands up in place of the four, and the way back. A
 -- section that swaps one in puts the four back before the next one runs, the
 -- way 16-dungeons.lua's own loot window does.
