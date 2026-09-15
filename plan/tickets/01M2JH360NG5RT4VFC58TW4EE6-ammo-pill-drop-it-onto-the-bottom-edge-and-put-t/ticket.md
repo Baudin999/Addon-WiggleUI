@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JH360NG5RT4VFC58TW4EE6
 type: task
-status: doing
+status: done
 title: "Ammo pill: drop it onto the bottom edge and put the arrow icon on it"
 parent: 01M2JFZRDAXDJT8RD2809SDK6S
 ---
