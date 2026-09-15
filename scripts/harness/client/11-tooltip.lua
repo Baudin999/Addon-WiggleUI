@@ -42,7 +42,7 @@ local child = H.child
 -- where color is three numbers and is left out on every line whose colour does
 -- not carry information.
 local tooltips = { item = {}, bag = {}, action = {}, spell = {}, buff = {},
-	debuff = {}, inventory = {}, unit = {}, talent = {} }
+	debuff = {}, inventory = {}, unit = {}, talent = {}, craft = {} }
 H.tooltips = tooltips
 
 local function Pair(unit, at)
@@ -138,6 +138,9 @@ local function Dress(frame)
 	-- client keys this setter by the talent's id instead, and Talents/Read.lua
 	-- asks both ways once; a section that seeds the id form seeds "id:false".
 	frame.SetTalent = Setter("talent", Pair)
+	-- A row of the craft window, keyed by its index, which is all beast training
+	-- hands the setter.
+	frame.SetCraftSpell = Setter("craft")
 end
 
 local made = _G.CreateFrame

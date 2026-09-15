@@ -2312,6 +2312,73 @@ function ns.CraftReagent(index, which)
 	return _G.GetCraftReagentItemLink(index, which)
 end
 
+-- Beast training, which is the craft window's other tenant.
+--
+-- A hunter's pet learns through the same session enchanting uses: Beast
+-- Training is a spell, casting it opens a craft window, and every row is an
+-- ability the pet can be taught for training points. It has no skill line, so
+-- ns.CraftName answers nil for it, and what names the session is the title
+-- GetCraftName hands back, which is the spell's own name. Blizzard_CraftUI/TBC
+-- reads the cost sixth and the pet level seventh off GetCraftInfo, past the
+-- five the reagent walk reads, and only while that window is open.
+function ns.CraftTitle()
+	if type(_G.GetCraftName) ~= "function" then
+		return nil
+	end
+	local name = _G.GetCraftName()
+	if type(name) ~= "string" or name == "" or name == "UNKNOWN" then
+		return nil
+	end
+	return name
+end
+
+-- One row in full: name, rank line, kind, training point cost and the pet
+-- level it needs. Nil for an index the window is not listing.
+function ns.CraftEntry(index)
+	if type(_G.GetCraftInfo) ~= "function" then
+		return nil
+	end
+	local name, sub, kind, _, _, cost, level = _G.GetCraftInfo(index)
+	if type(name) ~= "string" then
+		return nil
+	end
+	return name, sub, kind, tonumber(cost) or 0, tonumber(level) or 0
+end
+
+function ns.CraftIcon(index)
+	if type(_G.GetCraftIcon) ~= "function" then
+		return nil
+	end
+	return _G.GetCraftIcon(index)
+end
+
+-- The window's own create button, which is what teaches the pet on a beast
+-- training row. True when the client was asked.
+function ns.CraftLearn(index)
+	if type(_G.DoCraft) ~= "function" then
+		return false
+	end
+	return (pcall(_G.DoCraft, index))
+end
+
+function ns.CraftClose()
+	if type(_G.CloseCraft) ~= "function" then
+		return false
+	end
+	_G.CloseCraft()
+	return true
+end
+
+-- Every training point the pet has earned and how many of them are spent. Two
+-- zeroes with no pet out, which is what the client answers too.
+function ns.PetTrainingPoints()
+	if type(_G.GetPetTrainingPoints) ~= "function" then
+		return 0, 0
+	end
+	local total, spent = _G.GetPetTrainingPoints()
+	return tonumber(total) or 0, tonumber(spent) or 0
+end
+
 -- Which creature a GUID belongs to, as the id the databases are keyed on.
 --
 -- The client hands GUIDs out everywhere and never hands out the number inside

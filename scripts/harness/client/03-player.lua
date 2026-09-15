@@ -373,6 +373,9 @@ local SPELL_NAMES = {
 	[20554] = "Berserking",
 	[26297] = "Berserking",
 	[20594] = "Stoneform",
+	-- The hunter's way into the craft window that teaches a pet, which is what
+	-- the talent window's pet page casts and then names the session by.
+	[5149] = "Beast Training",
 }
 _G.GetSpellInfo = function(id)
 	if type(id) == "number" and id >= 900000 then

@@ -93,6 +93,7 @@ local READS = {
 	inventory = { "unit", "slot" },
 	unit      = { "unit" },
 	talent    = { "tab", "index" },
+	craft     = { "index" },
 }
 
 -- Every kind a subject may name. `note` is here and not above because it is a
@@ -100,7 +101,7 @@ local READS = {
 local KINDS = {
 	note = true, item = true, action = true, pet = true, spell = true,
 	buff = true, debuff = true, inventory = true, unit = true,
-	talent = true,
+	talent = true, craft = true,
 }
 
 -- The bands a source may write into, and the order they are drawn in. `head` is

@@ -937,7 +937,9 @@ Character\Feature.lua
 # reads the client's own description of one, are far above this line.
 Talents\Read.lua
 Talents\Cost.lua
+Talents\Training.lua
 Talents\Board.lua
+Talents\Pet.lua
 Talents\Window.lua
 Talents\Blizzard.lua
 Talents\Feature.lua

@@ -77,3 +77,31 @@ ns.TalentBlizzard = ns.BlizzAdapter.Cage({
 	place = "never loaded",
 	off = "on screen, because this addon's own window is off",
 })
+
+--------------------------------------------------------------------------
+-- Blizzard's craft frame, while the pet's page has beast training
+--
+-- The other shape, and on purpose. CraftFrame is a live session with the
+-- server: its OnHide is HideUIPanel and hiding it is what calls CloseCraft, so
+-- the attic would end the session a frame after the client opened it. It is
+-- parked instead, the mail window's way, and only for the span Training.lua
+-- holds the session. The same frame draws enchanting, and a session this page
+-- did not take is left on the screen where the client put it.
+--
+-- Behind the talent window's own switch. Two switches for one window and the
+-- craft frame it takes a session from would be one tick that leaves a hunter
+-- with both windows up.
+--
+-- On the walk, unlike the mail window. CraftFrame is a UIPanel and opening any
+-- other panel relays it back onto the screen; the walk is what finds it there.
+--------------------------------------------------------------------------
+
+ns.TrainingBlizzard = ns.BlizzAdapter.Park({
+	frame = "CraftFrame",
+	feature = "talents",
+	switch = "hideBlizzTalents",
+	window = "TalentTraining",
+	pass = true,
+	late = "not loaded yet",
+	loads = "Blizzard_CraftUI",
+})

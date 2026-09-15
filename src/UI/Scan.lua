@@ -86,6 +86,10 @@ local NAME = "WarriorKitTooltipScan"
 -- one that wrote the talent's name on its first line, which is why this entry
 -- says nothing about what the two values are.
 --
+-- `craft` is a row of the craft window, and only while that window is open. It
+-- is here for beast training, whose rows are pet abilities with no link and no
+-- id: SetCraftSpell is what Blizzard_CraftUI/TBC hovers its own icon with.
+--
 -- `pet` is a slot on the pet bar, one to ten, which is a numbering of its own
 -- and not an action slot. SetPetAction is what Blizzard's own pet button hovers
 -- with in Blizzard_ActionBar/Shared/PetActionBar.lua.
@@ -100,6 +104,7 @@ local KINDS = {
 	inventory = { method = "SetInventoryItem", args = 2 },
 	unit      = { method = "SetUnit",          args = 1 },
 	talent    = { method = "SetTalent",        args = 2 },
+	craft     = { method = "SetCraftSpell",    args = 1 },
 }
 
 local tip

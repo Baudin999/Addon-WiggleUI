@@ -6,6 +6,7 @@ ns.TalentWindow = Window
 local UI = ns.UI
 local C, M = UI.Color, UI.Metric
 local Read, Board, Cost = ns.TalentRead, ns.TalentBoard, ns.TalentCost
+local Training, Pet = ns.TalentTraining, ns.TalentPet
 
 --------------------------------------------------------------------------
 -- The talent window
@@ -32,13 +33,21 @@ local Read, Board, Cost = ns.TalentRead, ns.TalentBoard, ns.TalentCost
 -- specialisation the window carries two tabs, the one you are standing in
 -- marked, and a button that makes the other one live. Points go into the live
 -- one only, which is the client's own rule, and the boards say so on a hover
--- rather than by refusing quietly. A client with one group draws no strip at
--- all: the boards start under the title and the window is that much shorter.
+-- rather than by refusing quietly. A client with one group and a class with
+-- no pet draws no strip at all: the boards start under the title and the
+-- window is that much shorter.
+--
+-- **A hunter's pet is the last tab.** The client has no talent tree for a pet;
+-- it has Beast Training, a craft session that spends training points, and
+-- Pet.lua draws it where the trees are. The session is the client's to open,
+-- so CRAFT_SHOW for beast training opens this window on that tab the way it
+-- would have opened CraftFrame, and closing the window closes the session the
+-- way closing that frame would have.
 --
 -- **The foot is the two numbers the client's frame does not put together.**
 -- How many points are waiting, and what unlearning them all would cost, the
 -- second off Talents/Cost.lua and worded as a quote where there is one and as
--- an estimate where there is not.
+-- an estimate where there is not. On the pet's tab it is the pet's points.
 --
 -- Nothing here is on a ticker. The window paints when it opens and when the
 -- client says the talents moved, and a window nobody has open is not painted
@@ -52,15 +61,23 @@ local BETWEEN = 20
 -- room under it before the boards start.
 local STRIP = M.tab + M.gutter
 
-local window, tabs, activate, foot
+-- The pet's tab, after the two specs.
+local PET = 3
+
+local window, tabs, activate, foot, page
 local boards = {}
 
 -- Which group the boards are showing. The live one until a tab is pressed,
 -- and back to the live one whenever the client says the live one changed.
 local viewing = 1
 
--- The tallest tree drawn, so the window can be sized to it exactly.
+-- Whether the pet's page is up in place of the boards.
+local onPet = false
+
+-- The tallest tree drawn, so the window can be sized to it exactly, and how
+-- tall the pet's page came out.
 local tiers = 1
+local petTall = 0
 
 --------------------------------------------------------------------------
 -- Size
@@ -74,9 +91,18 @@ local function Width()
 	return M.pad * 2 + Read.Tabs() * Board.Width() + (Read.Tabs() - 1) * BETWEEN
 end
 
+-- Whether there is a strip: a second spec to switch to, or a pet to train.
+local function Striped(count)
+	return count > 1 or Training.Offered()
+end
+
 local function Height(count)
-	local strip = (count > 1) and STRIP or 0
-	return M.title + M.pad + strip + Board.Height(tiers) + M.pad + M.footer
+	local strip = Striped(count) and STRIP or 0
+	local body = Board.Height(tiers)
+	if onPet and petTall > body then
+		body = petTall
+	end
+	return M.title + M.pad + strip + body + M.pad + M.footer
 end
 
 -- Every board placed, the strip shown or not, and the window sized to fit.
@@ -84,14 +110,17 @@ function Window.Fit()
 	if not window then
 		return false
 	end
-	local count = Read.Groups()
-	local strip = (count > 1) and STRIP or 0
+	local count, active = Read.Groups()
+	local striped = Striped(count)
+	local strip = striped and STRIP or 0
 	local width, height = Width(), Height(count)
 	window:Resize(width, height)
 
-	tabs.frame:SetShown(count > 1)
-	activate:SetShown(count > 1 and viewing ~= select(2, Read.Groups()))
-	if count > 1 then
+	tabs.frame:SetShown(striped)
+	tabs:SetShown(2, count > 1)
+	tabs:SetShown(PET, Training.Offered())
+	activate:SetShown(not onPet and count > 1 and viewing ~= active)
+	if striped then
 		tabs:Resize(width - M.pad * 2 - activate:GetWidth() - M.gutter)
 	end
 
@@ -100,12 +129,17 @@ function Window.Fit()
 		board.frame:ClearAllPoints()
 		board.frame:SetPoint("TOPLEFT", window.content, "TOPLEFT",
 			M.pad + (index - 1) * (Board.Width() + BETWEEN), -(M.pad + strip))
+		board.frame:SetShown(not onPet)
 		if board.rule then
 			board.rule:ClearAllPoints()
 			board.rule:SetPoint("TOPLEFT", board.frame, "TOPRIGHT", math.floor(BETWEEN / 2), 0)
 			board.rule:SetPoint("BOTTOMLEFT", board.frame, "BOTTOMRIGHT", math.floor(BETWEEN / 2), 0)
+			board.rule:SetShown(not onPet)
 		end
 	end
+	page:ClearAllPoints()
+	page:SetPoint("TOPLEFT", window.content, "TOPLEFT", M.pad, -(M.pad + strip))
+	page:SetShown(onPet)
 	return true
 end
 
@@ -113,7 +147,10 @@ end
 -- The strip
 --------------------------------------------------------------------------
 
-local function SpecLabel(group, active)
+local function SpecLabel(group, active, count)
+	if count < 2 then
+		return "Talents"
+	end
 	local word
 	if group == 1 then
 		word = type(_G.TALENT_SPEC_PRIMARY) == "string" and _G.TALENT_SPEC_PRIMARY or "Primary"
@@ -134,7 +171,12 @@ local function Select(index)
 	if quiet then
 		return false
 	end
-	viewing = index
+	if index == PET then
+		onPet = true
+	else
+		onPet = false
+		viewing = index
+	end
 	return Window.Paint()
 end
 
@@ -151,6 +193,13 @@ local function Activate()
 end
 
 --------------------------------------------------------------------------
+
+-- The window going down takes a beast training session with it, which is what
+-- closing CraftFrame did, and takes the secure square off the page.
+local function Hidden()
+	Training.Close()
+	Pet.Place()
+end
 
 function Window.Build()
 	if window then
@@ -171,10 +220,24 @@ function Window.Build()
 	})
 	ns.Remember(window)
 
+	-- The secure square sits over the page by position, so a drag that moved
+	-- the window has to move it too. Wrapped around whatever Remember asked to
+	-- be told, never in place of it.
+	local told = window.place and window.place.moved
+	if window.place then
+		window.place:OnMoved(function(...)
+			if told then
+				told(...)
+			end
+			Pet.Place()
+		end)
+	end
+
 	tabs = UI.TabStrip(window.content, { onSelect = Select })
 	tabs.frame:SetPoint("TOPLEFT", M.pad, -M.pad)
-	tabs:Add(SpecLabel(1, 1))
-	tabs:Add(SpecLabel(2, 1))
+	tabs:Add(SpecLabel(1, 1, 1))
+	tabs:Add(SpecLabel(2, 1, 2))
+	tabs:Add("Pet")
 
 	activate = UI.Button(window.content, { label = "Make this spec live", width = 130, height = M.tab,
 		onClick = Activate })
@@ -187,6 +250,7 @@ function Window.Build()
 		end
 		boards[index] = board
 	end
+	page = Pet.Build(window.content)
 
 	foot = UI.Label(window.footer, M.small, C.dim, "LEFT", UI.FLAT)
 	UI.Wrap(foot, false)
@@ -196,6 +260,7 @@ function Window.Build()
 	window.frame:SetScript("OnShow", function()
 		Window.Paint()
 	end)
+	window.frame:HookScript("OnHide", Hidden)
 
 	viewing = select(2, Read.Groups())
 	Window.Fit()
@@ -216,8 +281,22 @@ local function PointsLine(unspent)
 	return ("%d points to spend"):format(unspent)
 end
 
+local function Foot(unspent)
+	if not onPet then
+		return ("%s. %s."):format(PointsLine(unspent), Cost.Describe())
+	end
+	local left = Training.Points()
+	local where = Training.Open() and "Beast Training closes with this window"
+		or "Beast Training lists what your pet can learn"
+	return ("%s training. %s."):format(PointsLine(left), where)
+end
+
 -- Every board, the strip and the foot. The window is then fitted again,
 -- because how tall the boards came out is only known once they are painted.
+--
+-- The boards are painted on the pet's tab as well. The window keeps the size
+-- the trees give it, so changing tab does not jump, and it cannot know that
+-- size without them.
 function Window.Paint()
 	if not window then
 		return false
@@ -225,6 +304,9 @@ function Window.Paint()
 	local count, active = Read.Groups()
 	if count < 2 or viewing < 1 or viewing > count then
 		viewing = active
+	end
+	if onPet and not Training.Offered() then
+		onPet = false
 	end
 	local live = viewing == active
 	local unspent = Read.Unspent(viewing)
@@ -236,19 +318,26 @@ function Window.Paint()
 			tiers = deep
 		end
 	end
+	if onPet then
+		petTall = Pet.Paint(Width() - M.pad * 2, BETWEEN)
+	end
 
-	if count > 1 then
-		tabs:SetLabel(1, SpecLabel(1, active))
-		tabs:SetLabel(2, SpecLabel(2, active))
-		if tabs.selected ~= viewing then
+	if Striped(count) then
+		tabs:SetLabel(1, SpecLabel(1, active, count))
+		tabs:SetLabel(2, SpecLabel(2, active, count))
+		local want = onPet and PET or viewing
+		if tabs.selected ~= want then
 			quiet = true
-			tabs:Select(viewing)
+			tabs:Select(want)
 			quiet = false
 		end
 	end
 
-	foot:SetText(("%s. %s."):format(PointsLine(unspent), Cost.Describe()))
+	foot:SetText(Foot(unspent))
 	Window.Fit()
+	-- After the fit, because the fit is what put the page where the square has
+	-- to follow it.
+	Pet.Place()
 	return true
 end
 
@@ -268,6 +357,17 @@ function Window.Show()
 		Window.Paint()
 	end
 	return true
+end
+
+-- Open on the pet's tab, which is where the client opening beast training and
+-- the slash word both land. Refused on a class with no pet to train.
+function Window.ShowPet()
+	if not Training.Offered() then
+		return false
+	end
+	Window.Build()
+	onPet = true
+	return Window.Show()
 end
 
 function Window.Hide()
@@ -293,11 +393,20 @@ function Window.View(group)
 		return false
 	end
 	viewing = group
+	onPet = false
 	return Window.Paint()
 end
 
 function Window.Viewing()
 	return viewing
+end
+
+function Window.OnPet()
+	return onPet
+end
+
+function Window.Tabs()
+	return tabs
 end
 
 function Window.Board(index)
@@ -338,9 +447,12 @@ function Window.Describe()
 	if not Window.Shown() then
 		return "closed"
 	end
-	local count = Read.Groups()
+	if onPet then
+		return "open on the pet"
+	end
+	local count, active = Read.Groups()
 	if count > 1 then
-		return ("open on %s"):format(SpecLabel(viewing, select(2, Read.Groups())))
+		return ("open on %s"):format(SpecLabel(viewing, active, count))
 	end
 	return "open"
 end
@@ -358,6 +470,11 @@ local WATCHED = {
 	"CHARACTER_POINTS_CHANGED",
 	"ACTIVE_TALENT_GROUP_CHANGED",
 	"PLAYER_LEVEL_UP",
+	"CRAFT_SHOW",
+	"CRAFT_UPDATE",
+	"CRAFT_CLOSE",
+	"UNIT_PET",
+	"UNIT_PET_TRAINING_POINTS",
 }
 
 local events = CreateFrame("Frame")
@@ -372,7 +489,19 @@ events:SetScript("OnEvent", function(_, event)
 		end
 		return
 	end
-	if event == "ACTIVE_TALENT_GROUP_CHANGED" then
+	if event == "CRAFT_SHOW" then
+		-- UIParent has already loaded and shown CraftFrame by now: it registered
+		-- the event before any addon. So the frame is there for the park.
+		if Training.Opened() then
+			Window.ShowPet()
+		end
+		ns.TrainingBlizzard.Apply()
+		return
+	end
+	if event == "CRAFT_CLOSE" then
+		Training.Closed()
+		ns.TrainingBlizzard.Apply()
+	elseif event == "ACTIVE_TALENT_GROUP_CHANGED" then
 		-- Back onto the live one. The tab you were reading was the one you
 		-- asked to be made live, and it is now.
 		viewing = select(2, Read.Groups())

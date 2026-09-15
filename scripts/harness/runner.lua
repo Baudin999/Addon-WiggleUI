@@ -461,6 +461,11 @@ local SECTIONS = {
 	"65-bag-piles",
 	"66-bag-drop",
 	"67-talents",
+	-- After the talent window's own section, whose window it opens on the pet's
+	-- tab. It opens a beast training session and closes it again, and puts the
+	-- pet and its training points back, so 70-reagents still finds the craft
+	-- window empty.
+	"67-pet-training",
 	"68-spellbook",
 
 	-- Last, and it is the only section that stands a corpse up other than the

@@ -13,6 +13,7 @@ local function SetTalents(value)
 		ns.TalentWindow.Hide()
 	end
 	ns.TalentBlizzard.Apply()
+	ns.TrainingBlizzard.Apply()
 end
 
 --------------------------------------------------------------------------
@@ -30,6 +31,14 @@ local function TalentWord(arg, rawArg)
 		ns.Print(ns.TalentWindow.Trees() .. ".")
 	elseif word == "cost" then
 		ns.Print(ns.TalentCost.Describe() .. ".")
+	elseif word == "pet" then
+		if not ns.TalentTraining.Offered() then
+			ns.Print("only a hunter trains a pet, through Beast Training.")
+		elseif not ns.db.talents then
+			ns.Print("the talent window is off. Type /wk talents on.")
+		else
+			ns.TalentWindow.ShowPet()
+		end
 	elseif word == "on" or word == "off" then
 		SetTalents(word == "on")
 		ns.Print("the talent window is " .. (ns.db.talents and "on" or "off") .. ".")
@@ -40,7 +49,7 @@ local function TalentWord(arg, rawArg)
 		end
 		ns.TalentWindow.Toggle()
 	else
-		ns.Print("talents takes on, off, hide, trees or cost.")
+		ns.Print("talents takes on, off, hide, trees, cost or pet.")
 	end
 	-- rawArg is the untouched line, which this word has no use for: every
 	-- sub-word above takes a switch rather than a name. Named so the signature
@@ -57,7 +66,7 @@ ns.Register({
 	switch = {
 		key = "talents",
 		label = "the talent window",
-		says = "Three trees side by side, nothing to scroll, and what unlearning costs along the foot.",
+		says = "Three trees side by side, nothing to scroll, what unlearning costs along the foot, and a hunter's pet training on a tab of its own.",
 		apply = function(value) SetTalents(value) end,
 	},
 
@@ -108,11 +117,13 @@ ns.Register({
 		"talents hide on|off, keep Blizzard's own from loading and take the N key",
 		"talents trees, how many points are in each of your three trees",
 		"talents cost, what your trainer last quoted to unlearn them, and what the schedule says",
+		"talents pet, a hunter's pet: what Beast Training can teach it and the points it has",
 	},
 
 	status = function()
-		return ("%s; %s; Blizzard's %s"):format(
-			ns.TalentWindow.Describe(), ns.TalentWindow.Trees(), ns.TalentBlizzard.Describe())
+		return ("%s; %s; %s; Blizzard's %s"):format(
+			ns.TalentWindow.Describe(), ns.TalentWindow.Trees(), ns.TalentTraining.Describe(),
+			ns.TalentBlizzard.Describe())
 	end,
 
 	panel = function(ui)
@@ -123,6 +134,7 @@ ns.Register({
 			return tostring(ns.TalentRead.Unspent(select(2, ns.TalentRead.Groups())))
 		end)
 		ui.Reading("unlearning", ns.TalentCost.Brief)
+		ui.Reading("pet training", ns.TalentTraining.Describe)
 		ui.Reading("Blizzard's window", ns.TalentBlizzard.Describe)
 	end,
 })

@@ -414,18 +414,29 @@ do
 	local strip = Window.Build().content
 	check(strip ~= nil, "the window has no content frame")
 
-	-- One group: no strip, and the boards start under the title.
+	-- One group: no strip, and the boards start under the title. A hunter has
+	-- the pet's tab, so the strip is up with one group too, and a second group
+	-- adds a tab to it rather than a strip.
+	local Metric = ns.UI.Metric
+	local striped = ns.TalentTraining.Offered()
+	local top = striped and -(Metric.pad + Metric.tab + Metric.gutter) or -Metric.pad
 	local arms = Window.Board(ARMS)
 	local _, y = Offsets(arms.frame)
-	check(y == -ns.UI.Metric.pad,
-		("with one spec the boards start %.0f down and the padding is %d"):format(-y, ns.UI.Metric.pad))
+	check(y == top,
+		("with one spec the boards start %.0f down and %.0f was asked"):format(-y, -top))
 	local shortHeight = _G.WarriorKitTalents:GetHeight()
 
 	model.groups = 2
 	Window.Paint()
 	_, y = Offsets(arms.frame)
-	check(y < -ns.UI.Metric.pad, "with two specs the boards did not move down under the strip")
-	check(_G.WarriorKitTalents:GetHeight() > shortHeight, "with two specs the window did not grow for the strip")
+	if striped then
+		check(y == top, "with two specs a hunter's boards moved off the strip the pet's tab had already put up")
+		check(_G.WarriorKitTalents:GetHeight() == shortHeight,
+			"with two specs a hunter's window grew for a strip it already had")
+	else
+		check(y < -Metric.pad, "with two specs the boards did not move down under the strip")
+		check(_G.WarriorKitTalents:GetHeight() > shortHeight, "with two specs the window did not grow for the strip")
+	end
 	check(Window.Viewing() == 1, ("the window opened on group %d rather than the live one"):format(Window.Viewing()))
 
 	-- The other group: empty trees, nothing reachable, a press refused.

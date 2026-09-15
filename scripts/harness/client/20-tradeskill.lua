@@ -64,6 +64,19 @@ local CRAFTS = {
 		{ name = "Enchant Chest - Lesser Mana",
 			reagents = { "Lesser Magic Essence", "Strange Dust" } },
 	},
+	-- A hunter's pet, which is the same window with no skill line, no reagents
+	-- and a price in training points. One row of each state the page draws: a
+	-- rank the pet has, a rank it can be taught, one the points do not reach
+	-- and one it is too young for, with a header between so a walk that took
+	-- one for an ability would draw a square too many.
+	["Beast Training"] = {
+		training = true,
+		{ name = "Bite", sub = "Rank 7", kind = "used", cost = 0, level = 48 },
+		{ name = "Bite", sub = "Rank 8", cost = 17, level = 56 },
+		{ header = true, expanded = true, name = "Resistances" },
+		{ name = "Great Stamina", sub = "Rank 10", cost = 150, level = 50 },
+		{ name = "Dash", sub = "Rank 3", cost = 20, level = 70 },
+	},
 }
 
 local trade, craft, linked = nil, nil, false
@@ -144,11 +157,18 @@ _G.IsTradeSkillLinked = function()
 	return linked
 end
 
+-- No skill line for beast training, which is what ns.CraftName reads as no
+-- profession and the reagent walk as nothing to walk.
 _G.GetCraftDisplaySkillLine = function()
-	if not craft then
+	if not craft or CRAFTS[craft].training then
 		return "UNKNOWN", 0, 0
 	end
 	return craft, 300, 375
+end
+
+-- The window's title, which is the profession or the spell that opened it.
+_G.GetCraftName = function()
+	return craft or "UNKNOWN"
 end
 
 _G.GetNumCrafts = function()
@@ -163,8 +183,57 @@ _G.GetCraftInfo = function(index)
 	if not row then
 		return nil
 	end
-	return row.name, nil, row.header and "header" or (row.kind or "optimal"), 1,
-		row.expanded and true or false
+	return row.name, row.sub, row.header and "header" or (row.kind or "optimal"), 1,
+		row.expanded and true or false, row.cost or 0, row.level or 0
+end
+
+_G.GetCraftIcon = function(index)
+	local row = craftRows()[index]
+	return row and ("Interface\\Icons\\" .. row.name:gsub("%s", "")) or nil
+end
+
+-- The pet's training points. Two hundred earned and a hundred and fifty spent,
+-- so the rank at seventeen fits and the one at a hundred and fifty does not.
+local training = { total = 200, spent = 150, taught = {} }
+
+_G.GetPetTrainingPoints = function()
+	return training.total, training.spent
+end
+
+_G.UnitCreatureFamily = function(unit)
+	return unit == "pet" and "Wolf" or nil
+end
+
+-- A pet taught, the way the server teaches one: refused where the client's own
+-- create button would be disabled, and both events on the way back.
+_G.DoCraft = function(index)
+	local row = craftRows()[index]
+	training.taught[#training.taught + 1] = index
+	if not row or row.header or row.kind == "used" then
+		return
+	end
+	if (row.level or 0) > _G.UnitLevel("pet") or (row.cost or 0) > training.total - training.spent then
+		return
+	end
+	row.kind = "used"
+	training.spent = training.spent + (row.cost or 0)
+	H.fire("UNIT_PET_TRAINING_POINTS", "pet")
+	H.fire("CRAFT_UPDATE")
+end
+
+-- The client's own frame, standing from the start the way PlayerTalentFrame
+-- is in 18-talents.lua, so the park has something to move. UIParent shows it
+-- on CRAFT_SHOW and hides it on CRAFT_CLOSE, ahead of any addon.
+local craftFrame = H.region("frame", _G.UIParent, "CraftFrame")
+craftFrame:SetSize(384, 512)
+craftFrame:SetPoint("TOPLEFT", _G.UIParent, "TOPLEFT", 16, -116)
+craftFrame:Hide()
+_G.CraftFrame = craftFrame
+
+_G.CloseCraft = function()
+	craft = nil
+	craftFrame:Hide()
+	H.fire("CRAFT_CLOSE")
 end
 
 _G.GetCraftNumReagents = function(index)
@@ -194,6 +263,7 @@ H.professions = {
 	end,
 	openCraft = function(name)
 		craft = name
+		craftFrame:Show()
 		H.fire("CRAFT_SHOW")
 	end,
 	updateCraft = function()
@@ -201,7 +271,10 @@ H.professions = {
 	end,
 	closeCraft = function()
 		craft = nil
+		craftFrame:Hide()
 	end,
+	training = training,
+	craftFrame = craftFrame,
 	-- Somebody else's profession, opened from a link in chat. A flag rather
 	-- than a second fixture, because what the addon has to do about it is
 	-- refuse to read the window at all.

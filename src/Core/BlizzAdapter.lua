@@ -222,13 +222,18 @@ function Adapter.Park(d)
 	function Blizz.Apply()
 		local wanted = Blizz.Wanted()
 		if wanted ~= parked then
-			parked = wanted
 			local moved
 			if wanted then
 				moved = Park()
 			else
 				moved = Unpark()
 			end
+			-- Parked only once there was a frame to move. A window that arrives
+			-- with a load-on-demand addon can be wanted a moment before it
+			-- exists, and a flag set on the wish would be every later Apply
+			-- agreeing the frame is aside while it sits in the middle of the
+			-- screen.
+			parked = wanted and moved or false
 			if d.pass then
 				return true
 			end
