@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2J03VBVEKB80XYKW52VT5RN
 type: task
-status: review
+status: doing
 title: "A hunter cannot train the pet: Beast Training has no page on N"
 ---
 
