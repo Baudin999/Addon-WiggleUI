@@ -620,10 +620,16 @@ local function PaintThreat()
 	-- to it at all, and the header stayed empty until somebody first pulled
 	-- ahead. A guard whose "nothing changed" case matches "nothing has happened
 	-- yet" is a guard that skips the first write.
+	--
+	-- A hostile target with nobody from the group on its threat table is a
+	-- different answer from a mob held with nobody climbing. Both said "held",
+	-- and an empty pane under that word read as the meter failing rather than
+	-- the client having nothing to say.
+	local rows = ns.MeterThreat.Rank()
 	local soonest, when = ns.MeterThreat.Soonest()
 	if not soonest then
 		threat.shownEta, threat.shownSoonest = nil, nil
-		SetRight(threat, "held", DIM)
+		SetRight(threat, rows[1] and "held" or "no threat", DIM)
 	else
 		local eta = math.floor(when + 0.5)
 		if threat.shownEta ~= eta or threat.shownSoonest ~= soonest.guid then
@@ -633,7 +639,6 @@ local function PaintThreat()
 		end
 	end
 
-	local rows = ns.MeterThreat.Rank()
 	local shown = 0
 	for index = 1, threat.visible do
 		local slot = rows[index]

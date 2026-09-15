@@ -505,10 +505,10 @@ ns.MeterThreat.Update()
 local soonest, when = ns.MeterThreat.Soonest()
 check(soonest ~= nil and soonest.guid == SNEAKY,
 	"the member climbing towards the pull was not the one picked out")
--- Twenty points in a second, four tenths of it into the average, so eight
--- points a second against the thirty that are left.
-check(when and math.abs(when - 3.75) < 0.01,
-	("the projection says %s seconds, the arithmetic says 3.75"):format(tostring(when)))
+-- Two thousand threat in a second against a tank standing still, and three
+-- thousand left to the threshold.
+check(when and math.abs(when - 1.5) < 0.01,
+	("the projection says %s seconds, the arithmetic says 1.5"):format(tostring(when)))
 check(ns.MeterThreat.Tanking().guid == BAUDIN, "the wrong member is holding the mob")
 
 -- Falling threat is not a projection. Somebody who stopped is not on their
@@ -542,6 +542,43 @@ do
 	threatPct.partypet1 = nil
 	ns.MeterThreat.Update()
 	check(#ns.MeterThreat.Rank() == 3, "a pet with no threat left kept its row")
+end
+
+-- A blow from the tank is not the member stopping. The member gains eight
+-- hundred a half second and the tank four hundred, then the tank lands sixteen
+-- hundred at once. The percentage falls on that half second, and a rate taken
+-- off the percentage went negative and hid the projection. Over the window the
+-- member has gained 4000 against the threshold's 3200 across 2.5 seconds,
+-- which closes 320 a second on the 3800 that are left.
+do
+	local readerWas = state.threatReader
+	local tank, member = 10000, 5000
+	state.threatReader = function(source)
+		if source == "player" then
+			return true, 3, 100, 100, tank
+		elseif source == "party1" then
+			local pct = member / tank * 100
+			return false, 1, pct, pct, member
+		end
+		return nil
+	end
+	guids.target = "Creature-0-0000-000-add"
+	for _ = 1, 5 do
+		ns.MeterThreat.Update()
+		advance(0.5)
+		tank, member = tank + 400, member + 800
+	end
+	ns.MeterThreat.Update()
+	advance(0.5)
+	tank, member = tank + 1600, member + 800
+	ns.MeterThreat.Update()
+	local lumped, lumpedWhen = ns.MeterThreat.Soonest()
+	check(lumped ~= nil and lumped.guid == SNEAKY
+		and lumpedWhen and math.abs(lumpedWhen - 11.875) < 0.01,
+		("a blow from the tank hid the projection, it says %s seconds, the arithmetic says 11.875")
+			:format(tostring(lumpedWhen)))
+	state.threatReader = readerWas
+	guids.target = "Creature-0-0000-000-boss"
 end
 
 ----------------------------------------------------------------------
@@ -638,6 +675,20 @@ meterTicker:Beat(0.25)
 check(threatPane.right:GetText() == "held",
 	("the threat header says %q with the mob held and nobody climbing")
 		:format(tostring(threatPane.right:GetText())))
+
+-- A hostile target the client has no threat entry for, for anyone in the group.
+-- It said "held" over an empty pane, which is the word for rows with nobody
+-- climbing.
+do
+	local readerWas = state.threatReader
+	state.threatReader = function() return nil end
+	meterTicker:Beat(0.25)
+	check(threatPane.right:GetText() == "no threat",
+		("nobody has threat on the mob and the header says %q")
+			:format(tostring(threatPane.right:GetText())))
+	check(not threatPane.rows[1]:IsShown(), "nobody has threat on the mob and a row is still drawn")
+	state.threatReader = readerWas
+end
 
 guids.target = nil
 meterTicker:Beat(0.25)

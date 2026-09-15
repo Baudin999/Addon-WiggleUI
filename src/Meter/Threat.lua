@@ -22,12 +22,14 @@ ns.MeterThreat = ThreatMeter
 -- 82% and climbing four points a second is a rogue who takes the mob in four
 -- and a half seconds, and you would like to know that now rather than then.
 --
--- The rate is smoothed, because the raw one is unusable. Threat arrives in
--- lumps the size of a Sinister Strike and the denominator is a tank whose own
--- total steps up every swing, so two consecutive samples can differ by twenty
--- points in either direction. What is wanted is the trend across the last
--- couple of seconds, which is what an exponential average of half second
--- deltas is.
+-- The rate is not taken off the percentage. The percentage is a ratio with the
+-- tank's total underneath it, and that total steps up every swing, so a member
+-- gaining steadily read as falling for half a second after each of the tank's
+-- blows. The projection was only drawn while the rate was positive, and it
+-- flickered off for most of a fight. The client also hands out the raw value,
+-- and the threshold a member has to reach is that value over the percentage.
+-- Both of those only climb, so each is measured across the last three seconds
+-- on its own and the closing speed is the difference between them.
 --
 -- On a client with no threat API this whole file answers nothing and the pane
 -- says so. Vanilla computes no threat at all, which is why every Classic
@@ -36,11 +38,18 @@ ns.MeterThreat = ThreatMeter
 -- worse than an honest blank.
 --------------------------------------------------------------------------
 
--- How often the reference sample moves, and how much of the new delta goes
--- into the average. Half a second is two ticks of the window's own clock, which
--- is long enough for a swing to land and short enough to see a taunt.
+-- How often a mark is laid and how many are kept. Half a second is two ticks
+-- of the window's own clock, which is long enough for a swing to land. Six of
+-- them is three seconds, which is long enough for the tank's blows to average
+-- out and short enough to see a taunt.
 local SAMPLE = 0.5
-local WEIGHT = 0.4
+local MARKS = 6
+
+-- How far the threshold may fall before it counts as a new fight. The client
+-- may round the percentage the threshold is read back through, which wobbles
+-- it by a point either way. Stepping into melee range drops it by an eighth,
+-- and a new tank by far more.
+local SETTLE = 0.95
 
 -- Past this, a projection is noise. Sixty seconds of "they overtake you
 -- eventually" is not information, and every fight that lasts that long has had
@@ -58,8 +67,8 @@ local tanking       -- the slot holding the mob, or nil
 local function Slot(guid)
 	local slot = slots[guid]
 	if not slot then
-		slot = { guid = guid, pct = 0, rate = 0, eta = nil,
-			markPct = 0, markAt = 0, tanking = false, live = false }
+		slot = { guid = guid, pct = 0, eta = nil, tanking = false, live = false,
+			count = 0, values = {}, limits = {}, times = {} }
 		slots[guid] = slot
 	end
 	return slot
@@ -70,8 +79,8 @@ end
 -- unrelated numbers, and it would draw a projection out of nothing.
 local function Forget()
 	for _, slot in pairs(slots) do
-		slot.pct, slot.rate, slot.eta = 0, 0, nil
-		slot.markPct, slot.markAt, slot.tanking, slot.live = 0, 0, false, false
+		slot.pct, slot.eta, slot.count = 0, nil, 0
+		slot.tanking, slot.live = false, false
 	end
 	tanking = nil
 end
@@ -92,17 +101,35 @@ end
 
 -- One member, one sample. Split out of Update so the loop below is a loop and
 -- so check.sh has a name to hold the arithmetic to.
+-- Lay a mark, dropping the oldest once the window is full. Shifted rather than
+-- kept as a ring: fifteen numbers moved twice a second per member is nothing,
+-- and the oldest mark is then always the first.
+local function Mark(slot, value, limit, now)
+	local values, limits, times = slot.values, slot.limits, slot.times
+	local count = slot.count
+	if count == MARKS then
+		for index = 1, MARKS - 1 do
+			values[index], limits[index], times[index] =
+				values[index + 1], limits[index + 1], times[index + 1]
+		end
+	else
+		count = count + 1
+		slot.count = count
+	end
+	values[count], limits[count], times[count] = value, limit, now
+end
+
 local function Sample(unit, now)
 	local guid = UnitGUID(unit)
 	if not guid then
 		return
 	end
 
-	local isTanking, status, pct = ns.Threat(unit, "target")
+	local isTanking, status, pct, _, value = ns.Threat(unit, "target")
 	local slot = Slot(guid)
 
 	if status == nil or pct == nil then
-		slot.live = false
+		slot.live, slot.eta, slot.count = false, nil, 0
 		return
 	end
 
@@ -114,29 +141,40 @@ local function Sample(unit, now)
 		tanking = slot
 	end
 
-	-- The reference moves on its own clock rather than every tick, so each
-	-- delta is measured across enough time to mean something.
-	--
-	-- The first sample for a slot only plants the reference. Measuring against a
-	-- mark of zero would divide this member's whole threat by however long the
-	-- client has been running, which is a rate of about nothing and would be
-	-- mistaken for a member who has stopped.
-	local since = now - slot.markAt
-	if slot.markAt == 0 then
-		slot.markPct, slot.markAt = pct, now
-	elseif since >= SAMPLE then
-		local moved = (pct - slot.markPct) / since
-		slot.rate = slot.rate * (1 - WEIGHT) + moved * WEIGHT
-		slot.markPct, slot.markAt = pct, now
+	-- What this member has to reach. The client scales against it and hands out
+	-- both ends of the division, so it is read back rather than rebuilt from the
+	-- melee and ranged multipliers. A member on zero has no threshold to read
+	-- and nothing to project.
+	local limit = (value and pct > 0) and (value * 100 / pct) or nil
+	if not limit then
+		slot.eta, slot.count = nil, 0
+		return
+	end
+
+	-- A drop is a fade, a threat wipe, a new tank or a step into melee range,
+	-- and each of those makes the marks behind it about a different fight.
+	local count = slot.count
+	if count > 0 and (value < slot.values[count] or limit < slot.limits[count] * SETTLE) then
+		count = 0
+		slot.count = 0
+	end
+	if count == 0 or now - slot.times[count] >= SAMPLE then
+		Mark(slot, value, limit, now)
 	end
 
 	-- Whoever is holding the mob is not on their way to taking it off
-	-- themselves, whatever the arithmetic says about the last half second.
-	if slot.tanking or slot.rate <= 0 or pct >= 100 then
+	-- themselves, and a first mark has nothing behind it to measure against.
+	local span = now - slot.times[1]
+	if slot.tanking or value >= limit or span < SAMPLE then
 		slot.eta = nil
 		return
 	end
-	local seconds = (100 - pct) / slot.rate
+	local closing = ((value - slot.values[1]) - (limit - slot.limits[1])) / span
+	if closing <= 0 then
+		slot.eta = nil
+		return
+	end
+	local seconds = (limit - value) / closing
 	slot.eta = (seconds <= HORIZON) and seconds or nil
 end
 
