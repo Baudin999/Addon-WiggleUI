@@ -156,6 +156,11 @@ local PIN = 2
 -- column has one left edge rather than two.
 local LEAD = M.rowGap + PIN + M.rowGap
 
+-- The column a quest's tick stands in, left of its name. The quest window's own
+-- width for the same mark, and reserved on every quest finished or not, so the
+-- names keep one left edge the way the window's levels do.
+local MARK = 10
+
 -- The line over the quests saying how full your log is, and the air under it.
 --
 -- Chrome rather than a row, which is why it is anchored above the stack instead
@@ -620,8 +625,18 @@ end
 -- Questie's own tooltip on the column you are already reading.
 local function Quest(quest, head, line)
 	head = head + 1
-	local row = Take(heads, head, TITLE_TEXT, LEAD)
+	local row = Take(heads, head, TITLE_TEXT, LEAD + MARK)
 	local tone = Log.Tint(quest)
+	-- The quest window's tick, in its glyph face and its colour. Made here rather
+	-- than in Take because only a quest's name carries one and the objective
+	-- lines share that pool's constructor.
+	if not row.tick then
+		row.tick = UI.Glyph(row, M.glyph, C.tick, "LEFT")
+		row.tick:SetPoint("LEFT", LEAD, 0)
+		row.tick:SetWidth(MARK)
+		row.tick:SetText(Log.TICK)
+	end
+	row.tick:SetShown(quest.complete and true or false)
 	row.quest = quest.id
 	row.text:SetText(Log.Label(quest, ns.QuestWhere.Tag(quest.id)))
 	row.text:SetTextColor(tone[1], tone[2], tone[3])

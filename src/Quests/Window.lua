@@ -106,11 +106,9 @@ local LIST, PAY = 250, 200
 -- up down one edge and the icons down the other.
 local SLOT, MARK = 22, 10
 
--- The tick, in the one place both columns read it from. It is a `V` because
--- that is the letter Media/Glyphs.ttf cuts the Font Awesome check onto, and a
--- `V` is what a client that refuses the font draws instead. Nothing here has to
--- know either of those things beyond this line.
-local TICK = "V"
+-- The tick, off Quests/Log.lua so the tracker draws the same one. Both columns
+-- of this window read it from this line.
+local TICK = Log.TICK
 
 -- The pin's own mark, and the heading it draws under.
 --

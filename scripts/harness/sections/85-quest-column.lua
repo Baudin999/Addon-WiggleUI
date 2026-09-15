@@ -78,13 +78,15 @@ end
 -- What the column is drawing, top down, one string per quest row. Off the
 -- frames rather than off Column.Quests, so a right scope with a stale paint
 -- fails here. Quest rows only: a harmonica plate per zone sits in the same
--- stack, and a row carrying a quest id is a name or an objective.
+-- stack, and a row carrying a quest id is a name or an objective. The tick on a
+-- finished quest's name is a mark on that row and not a row of its own, so it is
+-- left out here and read by the check that is about it.
 local function drawn()
 	local out = {}
 	for _, row in ipairs(canvas().children) do
 		if row.shown and row.quest then
 			for _, text in ipairs(row.regions) do
-				if text.kind == "fontstring" and text.text ~= "" then
+				if text.kind == "fontstring" and text ~= row.tick and text.text ~= "" then
 					out[#out + 1] = text.text
 				end
 			end
@@ -447,6 +449,18 @@ do
 
 	Log.Pin("q102", wasHere)
 	Log.Pin("q201", wasThere)
+
+	-- The tick. Hogger is the quest the fixture has ready to hand in and the
+	-- diplomat is not, so one row draws the mark and the other keeps the column
+	-- empty. The letter is Log.TICK because the window draws that one, and a
+	-- tracker with its own letter would be a finished quest marked two ways.
+	Column.Refresh()
+	local hogger, diplomat = row("Wanted: Hogger"), row("The Missing Diplomat")
+	check(hogger and hogger.tick and hogger.tick:IsShown()
+		and hogger.tick:GetText() == Log.TICK,
+		"a quest ready to hand in has no tick on the tracker")
+	check(diplomat and diplomat.tick and not diplomat.tick:IsShown(),
+		"a quest still in progress is wearing the tick on the tracker")
 	standing.map = WESTFALL
 	Column.Refresh()
 end

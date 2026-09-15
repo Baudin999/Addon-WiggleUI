@@ -84,6 +84,13 @@ function Log.Label(quest, tag)
 	return ("[%d%s] %s"):format(quest.level or 0, elite and "+" or "", quest.title or "")
 end
 
+-- The tick on a quest ready to hand in, here for the reason Label is: the window
+-- and the tracker both draw it, and a tracker that drew another mark was a
+-- finished quest read two ways. It is a `V` because that is the letter
+-- Media/Glyphs.ttf cuts the Font Awesome check onto, and a `V` is what a client
+-- that refuses the font draws instead.
+Log.TICK = "V"
+
 -- The colour a quest is drawn in. Green for a quest you can hand in, red for one
 -- that has failed, and the client's own XP ladder for everything else, which is
 -- the same ladder the enemy bars colour a mob's level with. A quest that says
