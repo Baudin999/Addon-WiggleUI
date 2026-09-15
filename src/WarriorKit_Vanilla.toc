@@ -939,6 +939,7 @@ Character\Feature.lua
 Talents\Read.lua
 Talents\Cost.lua
 Talents\Training.lua
+Talents\Trace.lua
 Talents\Board.lua
 Talents\Pet.lua
 Talents\Window.lua

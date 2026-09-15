@@ -39,6 +39,9 @@ local function TalentWord(arg, rawArg)
 		else
 			ns.TalentWindow.ShowPet()
 		end
+	elseif word == "trace" then
+		ns.PetTrace.Set(ns.Command.Toggle(rest))
+		ns.Print("the pet trace is " .. ns.PetTrace.Describe() .. ".")
 	elseif word == "on" or word == "off" then
 		SetTalents(word == "on")
 		ns.Print("the talent window is " .. (ns.db.talents and "on" or "off") .. ".")
@@ -49,7 +52,7 @@ local function TalentWord(arg, rawArg)
 		end
 		ns.TalentWindow.Toggle()
 	else
-		ns.Print("talents takes on, off, hide, trees, cost or pet.")
+		ns.Print("talents takes on, off, hide, trees, cost, pet or trace.")
 	end
 	-- rawArg is the untouched line, which this word has no use for: every
 	-- sub-word above takes a switch rather than a name. Named so the signature
@@ -118,6 +121,7 @@ ns.Register({
 		"talents trees, how many points are in each of your three trees",
 		"talents cost, what your trainer last quoted to unlearn them, and what the schedule says",
 		"talents pet, a hunter's pet: what Beast Training can teach it and the points it has",
+		"talents trace on|off, says in chat where a press on a pet ability stops",
 	},
 
 	status = function()

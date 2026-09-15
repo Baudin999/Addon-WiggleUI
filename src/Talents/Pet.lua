@@ -6,6 +6,7 @@ ns.TalentPet = Pet
 local UI = ns.UI
 local C, M = UI.Color, UI.Metric
 local Training, Board = ns.TalentTraining, ns.TalentBoard
+local PetTrace = ns.PetTrace
 
 --------------------------------------------------------------------------
 -- The pet's page
@@ -217,24 +218,31 @@ local function Unlook(row)
 	ns.Tip.Close()
 end
 
--- The secure button onto a teachable row. Nothing in a fight, where the move
--- would be refused.
+-- The secure button onto a teachable row. Answers whether it went over the row
+-- and why not, which is what the trace says on a hover.
 local function Arm(row)
-	if not row.learnable or InCombatLockdown() then
-		return false
+	if not row.learnable then
+		return false, "not teachable by the page's reading"
+	end
+	if InCombatLockdown() then
+		return false, "in a fight"
 	end
 	local button = Training.Button()
 	if not button then
-		return false
+		return false, "no beast training session or no create button"
 	end
 	teach:SetAttribute("clickbutton", button)
 	teach.row = row
-	return Over(teach, row)
+	if not Over(teach, row) then
+		return false, "the row has no position yet"
+	end
+	return true, "secure button laid over it"
 end
 
 local function OnEnter(row)
 	Look(row)
-	Arm(row)
+	local armed, why = Arm(row)
+	PetTrace.Hover(row, petLevel, left, armed, why)
 end
 
 -- The pointer leaving a row for the button laid over it has not left the row.
@@ -247,10 +255,20 @@ end
 
 -- The row is picked ahead of the client's half of the press, so the create
 -- button is enabled and on this row at the moment it is clicked.
+--
+-- The row is held for PostClick as well: teaching fires CRAFT_UPDATE, and the
+-- repaint that follows takes the button off the row.
+local pressed
 teach:SetScript("PreClick", function(this)
-	if this.row then
-		Training.Select(this.row.index)
+	pressed = this.row
+	PetTrace.Press(pressed, this, "before")
+	if pressed then
+		Training.Select(pressed.index)
 	end
+	PetTrace.Press(pressed, this, "picked")
+end)
+teach:SetScript("PostClick", function()
+	PetTrace.After(pressed)
 end)
 teach:SetScript("OnEnter", function(this)
 	if this.row then
@@ -273,6 +291,10 @@ local function Row(pool, at)
 	row:SetHeight(SQUARE)
 	row:SetScript("OnEnter", OnEnter)
 	row:SetScript("OnLeave", OnLeave)
+	-- Only ever reached by a press the secure button did not take.
+	row:SetScript("OnClick", function(this)
+		PetTrace.Missed(this, teach)
+	end)
 	UI.PassCamera(row)
 
 	row.square = CreateFrame("Frame", nil, row)

@@ -129,6 +129,16 @@ do
 	check(young.sub:GetText() == "Rank 3, pet level 70", ("a rank for an older pet reads %s"):format(tostring(young.sub:GetText())))
 	check(Window.Describe() == "open on the pet", ("the window says it is %s"):format(Window.Describe()))
 
+	-- The trace is quiet until asked, and every line it says from here on is read
+	-- back once the press below has landed.
+	local PetTrace = ns.PetTrace
+	local said = _G.ChatFrame1.messages or {}
+	check(PetTrace.On() == false and PetTrace.Describe() == "off", "the pet trace is on before anybody asked for it")
+	PetTrace.Set(true)
+	check(PetTrace.Describe():find("beast training open", 1, true) ~= nil,
+		("the pet trace describes itself as %q"):format(PetTrace.Describe()))
+	local traced = #said
+
 	-- Nothing to teach gets no secure button, and a press on it reaches nothing.
 	local teach = Pet.Teach()
 	young:GetScript("OnEnter")(young)
@@ -162,6 +172,19 @@ do
 	H.mouse.On(teach)
 	check(#shop.training.taught == taught + 1 and shop.training.taught[#shop.training.taught] == index,
 		"a press on the secure button did not teach the row under it through CraftCreateButton")
+	local lines = {}
+	for at = traced + 1, #said do
+		lines[#lines + 1] = said[at].text
+	end
+	lines = table.concat(lines, "\n")
+	check(lines:find("no secure button, not teachable", 1, true) ~= nil,
+		"the pet trace did not say why an ability for an older pet got no secure button")
+	check(lines:find("landed on the row", 1, true) ~= nil, "the pet trace did not say a click missed the secure button")
+	check(lines:find("secure button laid over it", 1, true) ~= nil,
+		"the pet trace did not say the secure button went over a teachable ability")
+	check(lines:find("Blizzard's button ran", 1, true) ~= nil, "the pet trace did not say the press reached Blizzard's button")
+	PetTrace.Set(false)
+	check(PetTrace.On() == false, "the pet trace would not turn off")
 	check(not teach:IsShown(), "the secure button stayed up over a list the repaint moved")
 	check(Pet.Rows() == 2, ("after teaching one the page still drew %d to teach"):format(Pet.Rows()))
 	check(Pet.Summary() == "167 spent, 33 left", ("after seventeen points the pet reads %s"):format(tostring(Pet.Summary())))
