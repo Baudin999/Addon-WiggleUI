@@ -236,7 +236,7 @@ local function WriteAim(plate)
 		return
 	end
 	TOP.relativeTo, BOTTOM.relativeTo = aimTop[plate], aimBottom[plate]
-	plate:SetHitTestPoints(ANCHORS)
+	plate:SetHitTestPoints(ANCHORS) -- unguarded: Reaim runs this after Blizzard's options pass wrote its own points, so a comparison with ours would skip the write that undoes them
 	TOP.relativeTo, BOTTOM.relativeTo = nil, nil
 	owed[plate] = nil
 end
@@ -256,7 +256,13 @@ end
 -- it, otherwise from the name's top left, fourteen out, down to the bar's
 -- bottom right. Every figure comes from NamePlateSetupOptions, so nothing on
 -- the plate is measured. Nil on a client without the table.
+--
+-- Reused like ANCHORS, because Unaim is on the path every plate leaves on. The
+-- caller clears relativeTo after the write.
 local INSIDE_HEALTH_BAR = 1 -- NamePlateConstants.NAME_ANCHOR_STYLES.InsideHealthBar
+local BLIZZARD_TOP = { point = "TOPLEFT", relativePoint = "TOPLEFT", offsetX = 0, offsetY = 0 }
+local BLIZZARD_BOTTOM = { point = "BOTTOMRIGHT", relativePoint = "BOTTOMRIGHT", offsetX = 10, offsetY = 0 }
+local BLIZZARD_ANCHORS = { BLIZZARD_TOP, BLIZZARD_BOTTOM }
 local function BlizzardAnchors(plate)
 	local setup, unitFrame = _G.NamePlateSetupOptions, plate.UnitFrame
 	if type(setup) ~= "table" or type(setup.healthBarHeight) ~= "number" or not unitFrame then
@@ -267,11 +273,13 @@ local function BlizzardAnchors(plate)
 		return nil
 	end
 	local halfBar = setup.healthBarHeight / 2
-	local bottom = { point = "BOTTOMRIGHT", relativeTo = bar, relativePoint = "BOTTOMRIGHT", offsetX = 10, offsetY = -halfBar }
+	BLIZZARD_BOTTOM.relativeTo, BLIZZARD_BOTTOM.offsetY = bar, -halfBar
 	if setup.unitNameAnchorStyle == INSIDE_HEALTH_BAR or not name then
-		return { { point = "TOPLEFT", relativeTo = bar, relativePoint = "TOPLEFT", offsetX = -10, offsetY = halfBar }, bottom }
+		BLIZZARD_TOP.relativeTo, BLIZZARD_TOP.offsetX, BLIZZARD_TOP.offsetY = bar, -10, halfBar
+	else
+		BLIZZARD_TOP.relativeTo, BLIZZARD_TOP.offsetX, BLIZZARD_TOP.offsetY = name, -14, 0
 	end
-	return { { point = "TOPLEFT", relativeTo = name, relativePoint = "TOPLEFT", offsetX = -14, offsetY = 0 }, bottom }
+	return BLIZZARD_ANCHORS
 end
 
 -- Blizzard's points back. Refused in combat, the plate keeps ours until its
@@ -285,6 +293,7 @@ function Plates.Unaim(plate)
 	local anchors = plate:CanChangeHitTestPoints() and BlizzardAnchors(plate)
 	if anchors then
 		plate:SetHitTestPoints(anchors)
+		BLIZZARD_TOP.relativeTo, BLIZZARD_BOTTOM.relativeTo = nil, nil
 	end
 	aimTop[plate], aimBottom[plate], owed[plate] = nil, nil, nil
 end

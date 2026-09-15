@@ -420,6 +420,7 @@ UI/Feed.lua:1:the return above compares the marker against what the row is drawi
 UI/Pixel.lua:1:UI.Rezoom compares the zoom a frame already carries before it calls Rescale
 UnitFrames/Cast.lua:1:the moving edge of a cast bar
 UnitFrames/EnemyBars.lua:5:a nameplate appearing and a nameplate going, which is once per plate and not once per tick
+UnitFrames/Plates.lua:1:Reaim rewrites the hit test points Blizzard's options pass has just overwritten, so the write cannot compare against its own last value
 UnitFrames/PlayerCast.lua:2:the moving edge of the player's cast and of the channel it replaces
 "
 

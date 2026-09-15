@@ -1152,10 +1152,15 @@ local function AimPlate(widget, plate)
 		bottom = unitFrame.healthBar
 	end
 	ns.Plates.Aim(plate, top, bottom)
+	-- Unhost clears the anchors with the points, so a widget out of the pool
+	-- always writes; the same corners already on the outline do not.
 	local hitbox = widget.hitbox
-	hitbox:ClearAllPoints()
-	hitbox:SetPoint("TOPLEFT", top, "TOPLEFT")
-	hitbox:SetPoint("BOTTOMRIGHT", bottom, "BOTTOMRIGHT")
+	if hitbox.top ~= top or hitbox.bottom ~= bottom then
+		hitbox:ClearAllPoints()
+		hitbox:SetPoint("TOPLEFT", top, "TOPLEFT")
+		hitbox:SetPoint("BOTTOMRIGHT", bottom, "BOTTOMRIGHT")
+		hitbox.top, hitbox.bottom = top, bottom
+	end
 	hitbox.hosted = true
 end
 
@@ -1995,6 +2000,7 @@ local function Unhost(widget)
 	-- this widget is about to stop being a child of.
 	widget.hitbox:Hide()
 	widget.hitbox:ClearAllPoints()
+	widget.hitbox.top, widget.hitbox.bottom = nil, nil
 	widget.hitbox.hosted = nil
 	widget:ClearAllPoints()
 	widget:SetParent(UIParent) -- unguarded: the plate this widget was a child of is going, and it is only ever reparented here
