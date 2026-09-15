@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JEY27XNYWRAG2FXH7XZV9D
 type: feature
-status: doing
+status: done
 title: A bag row at the foot of the bag window to put bags on and swap them
 assignee: ck
 ---
