@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2HR2VP61K9XDSQ09YJBPY24
 type: task
-status: doing
+status: done
 title: "release.sh prints ten lines, not the whole gate"
 ---
 
