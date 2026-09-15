@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JS43SRWTZP9SGJN02SNTRD
 type: task
-status: doing
+status: review
 title: check.sh runs the whole harness thirteen times for one login check
 parent: 01M1XJZSDGJ90YGY9ZP6HBYPS9
 ---
