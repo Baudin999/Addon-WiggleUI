@@ -95,16 +95,16 @@ if pill then
 		check(math.abs(pixels - whole) < 1e-6 and whole > 0 and whole % 2 == 0,
 			("the pill is %.4f pixels %s, not an even whole number"):format(pixels, side[1]))
 	end
-	local point, anchor, _, _, drop = pill:GetPoint(1)
-	check(point == "BOTTOMRIGHT" and anchor == player.portrait,
-		("the pill hangs off %s of %s and belongs in the portrait's bottom corner on the gauge side")
-			:format(tostring(point), tostring(anchor)))
-	-- Centred on the block's bottom edge: dropped half its height, less the
-	-- pixel the portrait sits inside the outline.
-	local want = -(pill:GetHeight() / 2 - px)
-	check(type(drop) == "number" and math.abs(drop - want) < 1e-6,
-		("the pill drops %s below the portrait and belongs %s, centred on the block's edge")
-			:format(tostring(drop), tostring(want)))
+	-- Docked, not offset: the pill's top corner on the gauge side pinned to the
+	-- portrait square's bottom corner, one pixel up so the two outlines share
+	-- the block's bottom hairline.
+	local point, anchor, relative, across, up = pill:GetPoint(1)
+	check(point == "TOPRIGHT" and anchor == player.slot and relative == "BOTTOMRIGHT",
+		("the pill docks %s to %s of %s and belongs TOPRIGHT to BOTTOMRIGHT of the portrait's square")
+			:format(tostring(point), tostring(relative), tostring(anchor)))
+	check(across == 0 and up == px,
+		("the dock is offset %s across and %s up, and should be 0 and one pixel")
+			:format(tostring(across), tostring(up)))
 	check(pill.icon:GetHeight() == pill:GetHeight() - 2 * px,
 		"the icon is not as tall as the inside of the pill's outline")
 

@@ -63,12 +63,12 @@ local VALUE_FLOOR = 9
 local HAIRLINES = 3
 local TEXT_PAD = 4
 
--- The ammo pill: the space round its number inside the outline, its gap from
--- the portrait's edge, the gap between its icon and its number, and the widest
--- number it is sized for, all in pixels but the last. Sized once for four digits rather than to the number on it, so
+-- The ammo pill: the space round its number inside the outline, the gap
+-- between its icon and its number, and the widest number it is sized for, all
+-- in pixels but the last. Sized once for four digits rather than to the number on it, so
 -- the pill keeps its width as the count falls and the tick decides no
 -- rectangle. Paint caps the count at four digits for the same reason.
-local AMMO_PAD, AMMO_INSET, AMMO_GAP = 1, 2, 2
+local AMMO_PAD, AMMO_GAP = 1, 2
 local AMMO_WIDEST = "0000"
 
 -- Font sizes are taken off the bar heights, because the same code draws a 34
@@ -192,12 +192,16 @@ local function PlaceBadges(entry, px, side, portraitEdge)
 	end
 end
 
--- In the portrait's bottom corner on the gauge side, centred on the block's
--- bottom edge so half of it hangs below. That corner is the one nothing else
--- uses: the badges sit on the portrait's outer corners and the aura rows hang
--- off the gauge end, so the pill covers the portrait's chin, the edge under it
--- and nothing you read. Inside the block it sat over the face; on the edge it
--- reads as a tag on the frame.
+-- Docked under the portrait: the pill's top corner on the gauge side is pinned
+-- to the portrait square's bottom corner on the same side, so it hangs below
+-- the block like a tab and moves with it. The one pixel up is the shared
+-- hairline, so the pill's top outline is the block's bottom outline rather
+-- than a second line under it. That corner is the one nothing else uses: the
+-- badges sit on the portrait's outer corners and the aura rows start at the
+-- gauge end.
+--
+-- It sat on the portrait first, then hung half over the edge off a computed
+-- drop, and both read as floating. A dock has no number in it to get wrong.
 --
 -- The icon is a square as tall as the inside of the outline, and the number
 -- is centred in what is left. The height is an even number of pixels, because
@@ -229,12 +233,8 @@ local function PlaceAmmo(entry, px, level, small, font, gaugeEdge, pull)
 	pill.text:ClearAllPoints()
 	pill.text:SetPoint("CENTER", pill, gaugeEdge, pull * (1 + number / 2) * px, 0)
 
-	-- Anchored to the portrait for the corner and dropped by half the pill,
-	-- less the pixel the portrait sits inside the outline, so the pill's middle
-	-- row is the block's bottom edge.
 	pill:ClearAllPoints()
-	pill:SetPoint("BOTTOM" .. gaugeEdge, entry.portrait, "BOTTOM" .. gaugeEdge,
-		pull * AMMO_INSET * px, -(tall / 2 - 1) * px)
+	pill:SetPoint("TOP" .. gaugeEdge, entry.slot, "BOTTOM" .. gaugeEdge, 0, px)
 	entry.shownAmmo, entry.ammoIcon = nil, nil
 end
 
