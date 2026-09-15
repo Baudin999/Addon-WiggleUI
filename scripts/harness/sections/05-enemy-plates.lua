@@ -28,14 +28,19 @@ function H.CopyAnchors(anchors)
 	return copy
 end
 
+-- The table ApplyFrameOptions reads its hit test figures from. Style 2 is
+-- NAME_ANCHOR_STYLES.AboveHealthBar, the name above the bar.
+_G.NamePlateSetupOptions = { healthBarHeight = 4, unitNameAnchorStyle = 2 }
+
 -- What Blizzard_NamePlateUnitFrame.lua's ApplyFrameOptions writes for a name
 -- above the bar: the name's top left, ten pixels and four out, down to the
 -- health bar's bottom right, ten out and half the bar down.
 function H.BlizzardAnchors(plate)
 	local unitFrame = plate.UnitFrame
+	local halfBar = _G.NamePlateSetupOptions.healthBarHeight / 2
 	return {
 		{ point = "TOPLEFT", relativeTo = unitFrame.name, relativePoint = "TOPLEFT", offsetX = -14, offsetY = 0 },
-		{ point = "BOTTOMRIGHT", relativeTo = unitFrame.healthBar, relativePoint = "BOTTOMRIGHT", offsetX = 10, offsetY = -2 },
+		{ point = "BOTTOMRIGHT", relativeTo = unitFrame.healthBar, relativePoint = "BOTTOMRIGHT", offsetX = 10, offsetY = -halfBar },
 	}
 end
 
@@ -64,12 +69,17 @@ local function Pull(index)
 	-- puts them on the name and the health bar before any addon hears the plate
 	-- arrive. `refusing` is the client blocking addon code in combat off the
 	-- tick a unit arrives, and a write through it raises, as the client's does.
+	-- The read is a measurement of a restricted region, refused to the addon
+	-- always: it shipped in Plates.Aim and the client blamed WarriorKit's taint.
 	function plate:CanChangeHitTestPoints() return not self.refusing end
 	function plate:SetHitTestPoints(anchors)
 		assert(not self.refusing, "wrote a plate's hit test points while the client refuses them")
 		self.hitTest = H.CopyAnchors(anchors)
 	end
-	function plate:GetHitTestPoints() return H.CopyAnchors(self.hitTest) end
+	function plate:GetHitTestPoints()
+		H.refused(self, "GetHitTestPoints")
+		return H.CopyAnchors(self.hitTest)
+	end
 	plate.hitTest = H.BlizzardAnchors(plate)
 	plates[#plates + 1] = plate
 	guids[unit] = ("Creature-0-0-0-0-1234-0000000%d"):format(index)

@@ -209,7 +209,12 @@ end
 -- write for addon code in combat "except on the tick a unit is first
 -- assigned". EnemyBars' Attach runs on NAME_PLATE_UNIT_ADDED after the
 -- driver's own handler has set the unit, which is that tick, in a pull or out
--- of one. What Blizzard set is kept and put back when the bar leaves.
+-- of one.
+--
+-- Blizzard's points are never read back. GetHitTestPoints is a measurement,
+-- a plate is a restricted region, and the client refuses the read and blames
+-- WarriorKit for the taint. When the bar leaves, Blizzard's points are built
+-- again from NamePlateSetupOptions, the same table ApplyFrameOptions reads.
 --
 -- The driver writes its own points on every plate again in
 -- UpdateNamePlateOptions, so that is hooked. A write refused there is owed and
@@ -217,7 +222,6 @@ end
 --------------------------------------------------------------------------
 
 local aimTop, aimBottom = {}, {} -- plate -> the regions its click runs corner to corner
-local prior = {}                 -- plate -> Blizzard's anchors, as GetHitTestPoints gave them
 local owed = {}                  -- plate -> true while a refused write is outstanding
 
 -- Reused, because Attach is on the path every plate arrives on. The client
@@ -243,11 +247,31 @@ function Plates.Aim(plate, top, bottom)
 	if type(plate.SetHitTestPoints) ~= "function" then
 		return
 	end
-	if not aimTop[plate] then
-		prior[plate] = plate:GetHitTestPoints()
-	end
 	aimTop[plate], aimBottom[plate] = top, bottom
 	WriteAim(plate)
+end
+
+-- What Blizzard_NamePlateUnitFrame.lua's ApplyFrameOptions writes: the health
+-- bar ten pixels out and half its height up and down when the name is inside
+-- it, otherwise from the name's top left, fourteen out, down to the bar's
+-- bottom right. Every figure comes from NamePlateSetupOptions, so nothing on
+-- the plate is measured. Nil on a client without the table.
+local INSIDE_HEALTH_BAR = 1 -- NamePlateConstants.NAME_ANCHOR_STYLES.InsideHealthBar
+local function BlizzardAnchors(plate)
+	local setup, unitFrame = _G.NamePlateSetupOptions, plate.UnitFrame
+	if type(setup) ~= "table" or type(setup.healthBarHeight) ~= "number" or not unitFrame then
+		return nil
+	end
+	local bar, name = unitFrame.healthBar, unitFrame.name
+	if not bar then
+		return nil
+	end
+	local halfBar = setup.healthBarHeight / 2
+	local bottom = { point = "BOTTOMRIGHT", relativeTo = bar, relativePoint = "BOTTOMRIGHT", offsetX = 10, offsetY = -halfBar }
+	if setup.unitNameAnchorStyle == INSIDE_HEALTH_BAR or not name then
+		return { { point = "TOPLEFT", relativeTo = bar, relativePoint = "TOPLEFT", offsetX = -10, offsetY = halfBar }, bottom }
+	end
+	return { { point = "TOPLEFT", relativeTo = name, relativePoint = "TOPLEFT", offsetX = -14, offsetY = 0 }, bottom }
 end
 
 -- Blizzard's points back. Refused in combat, the plate keeps ours until its
@@ -258,17 +282,17 @@ function Plates.Unaim(plate)
 	if not aimTop[plate] then
 		return
 	end
-	if prior[plate] and plate:CanChangeHitTestPoints() then
-		plate:SetHitTestPoints(prior[plate])
+	local anchors = plate:CanChangeHitTestPoints() and BlizzardAnchors(plate)
+	if anchors then
+		plate:SetHitTestPoints(anchors)
 	end
-	aimTop[plate], aimBottom[plate], prior[plate], owed[plate] = nil, nil, nil, nil
+	aimTop[plate], aimBottom[plate], owed[plate] = nil, nil, nil
 end
 
 -- Post hook on the driver's options pass, which has just written Blizzard's
--- points on every plate. Those are the ones to hand back later.
+-- points on every plate.
 local function Reaim()
 	for plate in pairs(aimTop) do
-		prior[plate] = plate:GetHitTestPoints()
 		WriteAim(plate)
 	end
 end

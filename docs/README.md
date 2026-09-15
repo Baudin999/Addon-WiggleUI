@@ -3685,7 +3685,8 @@ for addon code in combat "except on the tick a unit is first assigned", and
 mob that comes up mid-pull is clickable at once. The driver writes its own
 points again in `UpdateNamePlateOptions`, on a display change or a nameplate
 option CVar, so that is post-hooked, and a write refused there is paid on
-`PLAYER_REGEN_ENABLED`. The points Blizzard set are kept and handed back when a
+`PLAYER_REGEN_ENABLED`. Blizzard's points are built again from
+`NamePlateSetupOptions` and handed back when a
 bar leaves a plate that stays up.
 
 Two fixes before this one blamed something else. The first sent the bar's

@@ -365,6 +365,7 @@ end
 
 function Region:IsMovingOrSizing() return self.moving ~= nil end
 H.moving = moving
+H.refused = refused -- the plate stub's GetHitTestPoints is the same kind of read
 -- Recorded for the reason above it: a frame that registered no drag button
 -- answers every drag by doing nothing and looks exactly like one that did.
 -- RegisterForDrag with no arguments is how the addon takes a drag away again,
