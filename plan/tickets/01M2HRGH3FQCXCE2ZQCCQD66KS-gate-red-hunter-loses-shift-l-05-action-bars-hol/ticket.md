@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2HRGH3FQCXCE2ZQCCQD66KS
 type: task
-status: doing
+status: done
 title: "Gate red: HUNTER loses Shift-L, 05-action-bars holds two subjects"
 ---
 
