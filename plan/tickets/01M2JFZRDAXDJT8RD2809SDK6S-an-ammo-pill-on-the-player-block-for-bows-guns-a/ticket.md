@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JFZRDAXDJT8RD2809SDK6S
 type: feature
-status: todo
+status: doing
 title: "An ammo pill on the player block for bows, guns and thrown that runs out"
 ---
 
