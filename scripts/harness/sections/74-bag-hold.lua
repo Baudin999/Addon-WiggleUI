@@ -9,12 +9,13 @@
 -- What is asserted is each of those frames, driven one at a time through the
 -- tick's own function.
 --
--- And the squares do not move while you sell. The first paint at a vendor is
--- held, a sale leaves an empty square where the item was, and every other
--- square stays on the point it was laid at. What breaks the hold is asserted
--- too, because a hold that never lets go is a window that cannot draw a
--- purchase: an item landing in a slot no held square points at lays the piles
--- out again, and walking away closes the gaps.
+-- And the squares do not move while the window is open. The first paint after
+-- it opens is held, an item leaving its slot leaves an empty square where it
+-- was, with a merchant open or not, and every other square stays on the point
+-- it was laid at. What breaks the hold is asserted too, because a hold that
+-- never lets go is a window that cannot draw a purchase: an item landing in a
+-- slot no held square points at lays the piles out again. Walking away from
+-- the vendor keeps the holes, and shutting the window closes them.
 
 local H = ...
 local ns, check = H.ns, H.check
@@ -213,7 +214,24 @@ check(ns.db.bagHover == 50, "the wait did not go back to fifty")
 -- The hold
 ----------------------------------------------------------------------
 
-check(Grid.Held() == nil, "the layout is held with no merchant open")
+check(Grid.Held() == shown(),
+	("%s squares are held with the window open and %d are drawn"):format(tostring(Grid.Held()), shown()))
+
+-- A grey gone with no merchant in sight: its square stays, empty, and nothing
+-- else moves. Put back in the same slot, it is painted on the same square.
+do
+	local grey = find("Tattered Cloth")
+	local bag, slot = grey.bag, grey.slot
+	local was = snapshot()
+	CARRIED[bag][slot] = false
+	Window.Refresh()
+	check(moved(was, snapshot()) == 0 and grey:IsShown() and grey.link == nil,
+		"an item left its slot with no merchant open and the squares moved, or its square went")
+	CARRIED[bag][slot] = "Tattered Cloth"
+	Window.Refresh()
+	check(moved(was, snapshot()) == 0 and grey.name == "Tattered Cloth",
+		"the grey went back into its own slot and was not painted on its own square")
+end
 
 _G.MerchantFrame:Show()
 H.fire("MERCHANT_SHOW")
@@ -291,16 +309,26 @@ check(shown() == drawn - 1,
 check(Grid.Held() == shown(),
 	("the layout after the arrival is not held: %s held, %d drawn"):format(tostring(Grid.Held()), shown()))
 
--- Walking away lets go, and the gaps close.
+-- Walking away keeps the hold. The holes stay until the window shuts, so the
+-- grid you were reading does not jump as the vendor closes.
 CARRIED[3][2] = false
 H.fire("MERCHANT_CLOSED")
 _G.MerchantFrame:Hide()
-check(Grid.Held() == nil, "the merchant closed and the layout is still held")
-check(shown() == slots - (free + 2) + 1,
-	("%d squares drawn away from the merchant, and %d used slots plus the fold is %d")
-		:format(shown(), slots - (free + 2), slots - (free + 2) + 1))
+Window.Refresh()
+check(Grid.Held() == shown() and shown() == drawn - 1,
+	("the merchant closed and %s of %d squares are held; the %d laid at the arrival should still be")
+		:format(tostring(Grid.Held()), shown(), drawn - 1))
 
-print(("hold   the box waited 50ms for the pointer to stop; two sales moved 0 of %d squares, an arrival laid the piles out again, and walking away closed the gaps")
+-- Shutting the window lets go, and the next open closes the gaps.
+Window.Hide()
+check(Grid.Held() == nil, "the window shut and the layout is still held")
+Window.Show()
+check(shown() == slots - (free + 2) + 1,
+	("%d squares drawn on the next open, and %d used slots plus the fold is %d")
+		:format(shown(), slots - (free + 2), slots - (free + 2) + 1))
+check(Grid.Held() == shown(), "the window opened again and its first paint is not held")
+
+print(("hold   the box waited 50ms for the pointer to stop; a grey gone with no merchant and two sales moved 0 of %d squares, an arrival laid the piles out again, and shutting the window closed the gaps")
 	:format(drawn))
 
 refill()

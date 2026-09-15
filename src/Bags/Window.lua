@@ -307,6 +307,10 @@ local function Build()
 	-- handlers are UI/Placeable.lua's.
 	window.frame:HookScript("OnReceiveDrag", Drop)
 	window.frame:HookScript("OnMouseUp", Drop)
+	-- The grid's hold lets go on the way down, whatever took it down: B, the
+	-- close cross, escape, or Window.Hide. The next open lays the piles out
+	-- again with the gaps closed.
+	window.frame:HookScript("OnHide", ns.BagsGrid.Release)
 
 	view = UI.ScrollView(window.content, { overlay = true })
 	view.frame:SetPoint("TOPLEFT", M.pad, -M.pad)

@@ -75,14 +75,15 @@ ns.BagsGrid = Grid
 -- edge under the session and over the junk; and a plain break where a section
 -- ends. Each ends the line being filled.
 --
--- **At a merchant the layout holds still.** Selling a grey takes it out of its
--- pile, and a pile that closes the gap moves every square after it, so a grid
--- you were reading for the next thing to be rid of is a grid you read again
--- from the top after every sale. The first paint at a vendor lays the piles
--- out and holds them; every paint after it keeps each square where it is and
--- asks the scan what is lying on its slot now. A slot that emptied stays as
--- an empty square, which is the placeholder that keeps everything else in
--- place. Walking away lets go. See Hold below for what breaks it early.
+-- **While the window is open the layout holds still.** Selling a grey, eating
+-- a potion or equipping a sword takes an item out of its pile, and a pile that
+-- closes the gap moves every square after it, so a grid you were reading is a
+-- grid you read again from the top after every click. The first paint after
+-- the window opens lays the piles out and holds them; every paint after it
+-- keeps each square where it is and asks the scan what is lying on its slot
+-- now. A slot that emptied stays as an empty square, which is the placeholder
+-- that keeps everything else in place. Shutting the window lets go, and the
+-- next open closes the gaps. See Hold below for what breaks it early.
 --
 -- **The art is ours and the behaviour is theirs.** The template arrives dressed
 -- for a window that looks nothing like this one, so UI.Undress sweeps every
@@ -560,6 +561,8 @@ local function Lay(group, lane, rest, left, top)
 			folded = at
 		end
 		Paint(button, entry, flow.selling, empty and (entry.count or 1) or nil)
+		-- The pile the square was laid for, which the hold compares against.
+		button.laid = group.key
 		if split and not entry.yours then
 			Place(button, top, theirs % rest, math.floor(theirs / rest), shift, flow.side)
 			theirs = theirs + 1
@@ -576,16 +579,18 @@ end
 --------------------------------------------------------------------------
 -- The hold
 --
--- What the first paint at a merchant laid out, kept until the merchant closes:
--- how many squares, which of them is the fold, the columns and the side they
--- were laid at, and the height they came to. Nil while nothing is held, which
--- is every moment away from a vendor.
+-- What the first paint after the window opened laid out, kept until the window
+-- shuts: how many squares, which of them is the fold, the columns and the side
+-- they were laid at, and the height they came to. Nil while nothing is held,
+-- which is every moment the window is shut.
 --
--- Three things end a hold early, and each is a layout the held one cannot
+-- Four things end a hold early, and each is a layout the held one cannot
 -- describe. Something landing in a slot no held square points at, which is a
--- purchase going into a free slot the fold was not drawn on. The column
--- setting moving. And the zoom moving, which changes what a square's side is
--- and is only ever written in Place.
+-- loot or a purchase going into a free slot the fold was not drawn on. A held
+-- square's slot holding an item from a different pile than the one it was laid
+-- for, which is two items swapped, a session started, or a grey the client
+-- graded at last. The column setting moving. And the zoom moving, which changes
+-- what a square's side is and is only ever written in Place.
 --------------------------------------------------------------------------
 
 local held
@@ -615,6 +620,9 @@ local function Hold(state, columns, side, selling)
 		local button = squares[index]
 		local entry = ns.Bags.Entry(button.bag, button.slot)
 		if not entry then
+			return false
+		end
+		if entry.link and entry.group ~= button.laid then
 			return false
 		end
 		if entry.link then
@@ -858,10 +866,9 @@ function Grid.Paint(state, columns)
 	-- Walking away from a vendor with the pointer still on a square you could
 	-- have sold. There is no OnLeave for that, because the mouse did not move:
 	-- the merchant closed under it, and the repaint is where this file finds
-	-- out. The hold goes with the vendor, and this paint closes the gaps.
+	-- out. The hold stays: the gaps close when the window shuts.
 	if not selling then
 		Give()
-		held = nil
 	end
 	-- Once a pass, like the merchant check above and for the same reason: the
 	-- zoom cannot change inside one layout.
@@ -887,12 +894,16 @@ function Grid.Paint(state, columns)
 	Follow()
 	-- The last line added a break under itself that nothing follows.
 	local height = math.max(flow.top - BREAK, 1)
-	-- The first paint at a vendor, or the one after a hold broke, is the one
-	-- the squares are held at from here until the vendor closes.
-	if selling then
-		Keep(flow.at, columns, side, height)
-	end
+	-- The first paint after the window opened, or the one after a hold broke,
+	-- is the one the squares are held at from here until the window shuts.
+	Keep(flow.at, columns, side, height)
 	return height
+end
+
+-- The hold let go, so the next paint lays the piles out again. The window
+-- calls it as it hides, however it was hidden.
+function Grid.Release()
+	held = nil
 end
 
 -- How many squares the hold is keeping in place, or nothing while none are.
@@ -945,7 +956,7 @@ function Grid.Describe()
 			:format(#squares)
 	end
 	if held then
-		return ("%d squares on the client's own bag button, %d of them held in place for the merchant")
+		return ("%d squares on the client's own bag button, %d of them held in place while the window is open")
 			:format(#squares, held.count)
 	end
 	return ("%d squares on the client's own bag button"):format(#squares)
