@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2HWC96M9GMJ4HEPP07MPTRF
 type: bug
-status: doing
+status: done
 title: Talent names overlap their points; hovers miss the description
 ---
 
