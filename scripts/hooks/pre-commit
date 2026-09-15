@@ -27,7 +27,11 @@ fi
 # a stacking order, a colour or an allocation, and it costs about twenty
 # milliseconds. A gate that only one of the two layers enforces is a gate that
 # is off on whichever machine forgot to run the other one.
-if ! lua5.1 scripts/harness.lua src; then
+# Quiet on a pass for the same reason check.sh's runs are: a line a section is
+# read by nobody, and the failure is the line that matters.
+if ! harness_out=$(lua5.1 scripts/harness.lua src 2>&1); then
+	grep -E '^[[:space:]]*FAIL |^harness: [0-9]+ failed$' <<<"$harness_out" >&2 \
+		|| tail -n 15 <<<"$harness_out" >&2
 	echo >&2
 	echo "commit blocked: scripts/harness.lua failed." >&2
 	echo "Fix it, or run git commit --no-verify if you know why you are bypassing it." >&2

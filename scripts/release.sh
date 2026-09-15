@@ -10,12 +10,17 @@
 #   CF_API_TOKEN   from https://legacy.curseforge.com/account/api-tokens
 #   CF_PROJECT_ID  the numeric id on the project page
 #
+# It prints one line a step. Everything a step says on the way, the whole gate
+# included, goes to dist/release.log, and a step that fails prints only the
+# lines that say why. The gate on its own is hundreds of lines, and scrolling
+# it past is how a failure in the middle of it went unread.
+#
 # NOT YET RUN AGAINST A LIVE PROJECT. The endpoints, the header name and the
 # metadata shape below come from the upload API documentation, not from a
 # publish that succeeded. The build half is exercised every time; the upload
 # half is inference until the first real release proves it. Same convention as
 # the API notes in docs/README.md.
-set -euo pipefail
+set -eEuo pipefail
 cd "$(dirname "$0")/.."
 
 API="https://wow.curseforge.com/api"
@@ -46,17 +51,65 @@ case "$release_type" in
 	*) echo "--type must be alpha, beta or release, not '$release_type'" >&2; exit 2 ;;
 esac
 
-# Nothing gets built from a tree that does not pass. A release is the one
-# moment where shipping a warning is permanent.
-echo "== gate =="
-./scripts/check.sh || { echo "check.sh failed, nothing built" >&2; exit 1; }
-
-# check.sh has already proved every TOC agrees with this, so one read is enough.
+# check.sh proves every TOC agrees with this, so one read is enough.
 version=$(sed -n 's/^ns\.version = "\(.*\)"$/\1/p' src/Core/Core.lua)
 [ -n "$version" ] || { echo "no ns.version in src/Core/Core.lua" >&2; exit 1; }
 
-echo
-echo "== build =="
+mkdir -p dist
+log="dist/release.log"
+: >"$log"
+warnings=0
+
+passed() { printf '* %s\n' "$1"; }
+
+# The step that failed, the lines that say why, and the tally. Ten reasons at
+# most: a gate that failed in forty places is read in the log. A luacheck
+# warning is one of the reasons, so it is taken out of the error count.
+stopped() {
+	local step="$1" why="$2" count errors
+	count=$(grep -c . <<<"$why" || true)
+	[ "$count" -gt 0 ] || { why="it gave no reason; the log has everything it printed"; count=1; }
+	errors=$((count - warnings))
+	[ "$errors" -gt 0 ] || errors=0
+	printf '* %s FAILED\n' "$step"
+	grep . <<<"$why" | head -n 10 | sed 's/^/    /'
+	[ "$count" -le 10 ] || echo "    and $((count - 10)) more"
+	echo
+	echo "release stopped: $errors errors / $warnings warnings, full output in $log"
+	exit 1
+}
+
+# A command that fails outside any check below still says where, rather than
+# leaving a prompt and an exit code.
+trap 'stopped "line $LINENO" "a command failed there"' ERR
+
+echo "Starting release of WarriorKit $version as $release_type"
+
+# Checked before the gate, because the gate takes minutes and learning the
+# token is unset after it is a run thrown away.
+if [ "$upload" -eq 1 ]; then
+	unset_vars=""
+	[ -n "${CF_API_TOKEN:-}" ] || unset_vars+="set CF_API_TOKEN, from legacy.curseforge.com/account/api-tokens"$'\n'
+	[ -n "${CF_PROJECT_ID:-}" ] || unset_vars+="set CF_PROJECT_ID, the numeric id on the project page"$'\n'
+	[ -z "$unset_vars" ] || stopped "upload settings" "$unset_vars"
+fi
+
+# Nothing gets built from a tree that does not pass. A release is the one
+# moment where shipping a warning is permanent.
+gate_ok=1
+./scripts/check.sh >>"$log" 2>&1 || gate_ok=0
+warnings=$(sed -n 's/^Total: \([0-9]*\) warnings.*/\1/p' "$log" | tail -n 1)
+warnings=${warnings:-0}
+if [ "$gate_ok" -eq 0 ]; then
+	# What check.sh says on a pass is one summary line per measuring script and
+	# luacheck's tally. Whatever is left is what failed. luacheck's "Checking"
+	# header is dropped because the warning under it already names the file.
+	stopped "gate" "$(grep -vE '^(shape|trees|harness)  |^Total: |^Checking |^[[:space:]]*$' "$log" || true)"
+fi
+runs=$(sed -n 's/^harness  \([0-9]*\) runs$/\1/p' "$log")
+passed "gate succeeded: syntax, lint, shape, trees and ${runs:-the} harness runs"
+
+echo "== build ==" >>"$log"
 stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
 
@@ -74,15 +127,17 @@ for extra in README.md LICENSE; do
 	if [ -f "$extra" ]; then cp "$extra" "$stage/WarriorKit/$extra"; fi
 done
 
-mkdir -p dist
 zip_path="dist/WarriorKit-$version.zip"
 rm -f "$zip_path"
-( cd "$stage" && zip -qr - WarriorKit ) > "$zip_path"
+if ! ( cd "$stage" && zip -qr - WarriorKit ) >"$zip_path" 2>>"$log"; then
+	stopped "build" "zip could not write $zip_path"
+fi
 
 # Listed once into a variable rather than piped per check. `unzip -l | grep -q`
 # races: grep exits on the first match, unzip takes SIGPIPE, and pipefail turns
 # a passing check into a failing one depending on where the match landed.
 listing=$(unzip -l "$zip_path")
+printf '%s\n' "$listing" >>"$log"
 
 # A zip that is missing a TOC installs as a folder the client ignores, and the
 # symptom is an addon that simply never appears in the list. Media/Glyphs.ttf is
@@ -96,32 +151,29 @@ listing=$(unzip -l "$zip_path")
 # is still in src/ on the machine that built this, because src/ is what the
 # author's client loads, which is exactly why it is on the list rather than
 # left to a deletion somebody has to remember: the copy step takes all of src/.
+why=""
 for required in WarriorKit/WarriorKit.toc WarriorKit/WarriorKit_Vanilla.toc WarriorKit/Bindings.xml \
 	WarriorKit/Media/Icon.tga WarriorKit/Media/Glyphs.ttf WarriorKit/Media/Glyphs-LICENSE.txt; do
 	if ! grep -qF "$required" <<<"$listing"; then
-		echo "the zip is missing $required" >&2
-		exit 1
+		why+="the zip is missing $required"$'\n'
 	fi
 done
 for name in "${IGNORE[@]}"; do
 	if grep -qF "WarriorKit/$name" <<<"$listing"; then
-		echo "the zip contains $name, which IGNORE says it must not" >&2
-		exit 1
+		why+="the zip contains $name, which IGNORE says it must not"$'\n'
 	fi
 done
+[ -z "$why" ] || stopped "build" "$why"
+passed "build succeeded: $zip_path, $(du -h "$zip_path" | cut -f1), $(tail -1 <<<"$listing" | awk '{print $2}') files"
 
-echo "$zip_path  ($(du -h "$zip_path" | cut -f1), $(tail -1 <<<"$listing" | awk '{print $2}') files)"
-
-[ "$upload" -eq 1 ] || {
+if [ "$upload" -eq 0 ]; then
+	passed "upload skipped: add --upload to publish it"
 	echo
-	echo "built only. Add --upload to publish it."
+	echo "release done: 0 errors / $warnings warnings"
 	exit 0
-}
+fi
 
-echo
-echo "== upload =="
-: "${CF_API_TOKEN:?set CF_API_TOKEN, from legacy.curseforge.com/account/api-tokens}"
-: "${CF_PROJECT_ID:?set CF_PROJECT_ID, the numeric id on the project page}"
+echo "== upload ==" >>"$log"
 
 # 20506 is 2.5.6 and 11509 is 1.15.9. The last two digits are the patch, the
 # two before that the minor, whatever is left the major, which is why this
@@ -137,7 +189,7 @@ for toc in src/WarriorKit*.toc; do
 	iface=$(sed -n 's/^## Interface: //p' "$toc" | tr -d '[:space:]')
 	wanted+=("$(iface_to_name "$iface")")
 done
-echo "game versions from the TOCs: ${wanted[*]}"
+echo "game versions from the TOCs: ${wanted[*]}" >>"$log"
 
 # Into a file, not a variable. Everything that crosses into python below goes
 # by path for the same reason: the kernel caps one argument or one environment
@@ -149,10 +201,9 @@ versions_file=$(mktemp)
 # handler per signal and a second `trap ... EXIT` silently drops the first. So
 # $stage is named here too, or the staging directory outlives every upload.
 trap 'rm -rf "$stage"; rm -f "$versions_file" "${meta_file:-}"' EXIT
-curl -sS -f -H "X-Api-Token: $CF_API_TOKEN" "$API/game/versions" > "$versions_file" || {
-	echo "could not read $API/game/versions. Is the token right?" >&2
-	exit 1
-}
+if ! curl -sS -f -H "X-Api-Token: $CF_API_TOKEN" "$API/game/versions" >"$versions_file" 2>>"$log"; then
+	stopped "upload" "could not read $API/game/versions. Is the token right?"
+fi
 
 # Resolving names to ids rather than hardcoding ids, because CurseForge issues
 # a new id for every patch and a stale one is accepted as a silent mistag.
@@ -163,7 +214,10 @@ curl -sS -f -H "X-Api-Token: $CF_API_TOKEN" "$API/game/versions" > "$versions_fi
 # array of objects happens to be a valid python expression. So it evaluated the
 # list, printed nothing and exited 0. An empty $ids sailed past `|| exit 1` and
 # died four steps later somewhere else.
-ids=$(WANTED="${wanted[*]}" python3 - "$versions_file" <<'PY'
+#
+# A refusal is printed on stdout and exits 1, so the same capture that holds
+# the ids on success holds the reason on failure.
+if ! ids=$(WANTED="${wanted[*]}" python3 - "$versions_file" <<'PY'
 import json, os, sys
 versions = json.load(open(sys.argv[1]))
 wanted = os.environ["WANTED"].split()
@@ -172,18 +226,20 @@ for v in versions:
     by_name.setdefault(v["name"], v["id"])
 missing = [w for w in wanted if w not in by_name]
 if missing:
-    sys.stderr.write("CurseForge does not list: %s\n" % ", ".join(missing))
-    sys.stderr.write("It does list: %s\n" % ", ".join(sorted(by_name)[-30:]))
+    print("CurseForge does not list: %s" % ", ".join(missing))
+    print("It does list: %s" % ", ".join(sorted(by_name)[-30:]))
     sys.exit(1)
 print(json.dumps([by_name[w] for w in wanted]))
 PY
-) || exit 1
+); then
+	stopped "upload" "$ids"
+fi
 
 # The check that was missing when the redirection bug made $ids empty. An
 # empty tag list is an upload against no game version at all, which the client
 # never offers to anybody.
-[ -n "$ids" ] || { echo "resolved no game version ids at all" >&2; exit 1; }
-echo "resolved to ids: $ids"
+[ -n "$ids" ] || stopped "upload" "resolved no game version ids at all"
+echo "resolved to ids: $ids" >>"$log"
 
 changelog_file="docs/CHANGELOG.md"
 [ -f "$changelog_file" ] || changelog_file=""
@@ -230,19 +286,20 @@ json.dump({
 }, open(sys.argv[1], "w", encoding="utf-8"))
 META
 
-response=$(curl -sS -w '\n%{http_code}' \
+if ! response=$(curl -sS -w '\n%{http_code}' \
 	-H "X-Api-Token: $CF_API_TOKEN" \
 	-F "metadata=<$meta_file" \
 	-F "file=@$zip_path" \
-	"$API/projects/$CF_PROJECT_ID/upload-file")
+	"$API/projects/$CF_PROJECT_ID/upload-file" 2>>"$log"); then
+	stopped "upload" "curl could not reach $API"
+fi
 
 code=$(tail -n1 <<<"$response")
 body=$(sed '$d' <<<"$response")
+printf 'HTTP %s\n%s\n' "$code" "$body" >>"$log"
 
-if [ "$code" != "200" ]; then
-	echo "upload failed, HTTP $code" >&2
-	echo "$body" >&2
-	exit 1
-fi
-echo "$body"
-echo "uploaded WarriorKit $version as $release_type"
+[ "$code" = "200" ] || stopped "upload" "CurseForge answered HTTP $code: $(head -c 300 <<<"$body")"
+passed "upload to CurseForge succeeded: $release_type, tagged ${wanted[*]}"
+
+echo
+echo "release done: 0 errors / $warnings warnings"

@@ -1489,13 +1489,25 @@ if [ -f ../scripts/harness.lua ]; then
 		fi
 	done
 
+	# A passing run prints a line a section, and thirteen runs of that were most
+	# of what this script ever said while nothing in it was read. So a run talks
+	# only when it fails: one line per assertion with the run in front, or the
+	# tail of what it printed when it fell over before reaching its tally.
+	harness_log=$(mktemp)
+	harness_runs=0
 	for run in $runs HUNTER; do
-		if ! lua5.1 ../scripts/harness.lua . "$run"; then
-			echo "harness FAIL as $run"
+		harness_runs=$((harness_runs + 1))
+		if ! lua5.1 ../scripts/harness.lua . "$run" >"$harness_log" 2>&1; then
+			sed -n "s/^[[:space:]]*FAIL /harness FAIL as $run: /p" "$harness_log"
+			if ! grep -q '^harness: [0-9]* failed$' "$harness_log"; then
+				echo "harness FAIL as $run, before it finished:"
+				tail -n 15 "$harness_log" | sed 's/^/  /'
+			fi
 			status=1
 		fi
-		echo
 	done
+	rm -f "$harness_log"
+	echo "harness  $harness_runs runs"
 else
 	echo "scripts/harness.lua is missing"
 	status=1
@@ -1619,7 +1631,8 @@ fi
 
 luacheck=$(command -v luacheck || echo "$HOME/.luarocks/bin/luacheck")
 if [ -x "$luacheck" ]; then
-	"$luacheck" . || status=1
+	# -q: a file with nothing to say is not listed. The tally and every warning still are.
+	"$luacheck" -q . || status=1
 else
 	echo "luacheck missing: luarocks install --local --lua-version 5.1 luacheck"
 	status=1
