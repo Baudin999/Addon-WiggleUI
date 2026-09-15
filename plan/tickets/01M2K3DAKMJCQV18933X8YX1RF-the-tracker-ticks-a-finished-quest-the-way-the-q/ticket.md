@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2K3DAKMJCQV18933X8YX1RF
 type: task
-status: todo
+status: doing
 title: The tracker ticks a finished quest the way the quest log does
 ---
 
