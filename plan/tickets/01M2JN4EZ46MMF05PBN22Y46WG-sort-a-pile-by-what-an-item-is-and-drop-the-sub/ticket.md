@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JN4EZ46MMF05PBN22Y46WG
 type: task
-status: todo
+status: doing
 title: "Sort a pile by what an item is, and drop the sub-piles"
 parent: 01M2JN4ESP53ET2Q080EAA8RJD
 ---
