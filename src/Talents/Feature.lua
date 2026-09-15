@@ -31,9 +31,17 @@ local function TalentWord(arg, rawArg)
 		ns.Print(ns.TalentWindow.Trees() .. ".")
 	elseif word == "cost" then
 		ns.Print(ns.TalentCost.Describe() .. ".")
+	elseif word == "pet" and (rest == "on" or rest == "off") then
+		ns.db.petTraining = rest == "on"
+		ns.TalentTraining.Closed()
+		ns.TrainingBlizzard.Apply()
+		ns.TalentWindow.Refresh()
+		ns.Print("pet training is " .. ns.TalentTraining.Describe() .. ".")
 	elseif word == "pet" then
-		if not ns.TalentTraining.Offered() then
+		if not ns.TalentTraining.Hunter() then
 			ns.Print("only a hunter trains a pet, through Beast Training.")
+		elseif not ns.TalentTraining.Offered() then
+			ns.Print("the pet page is off, and Blizzard's Beast Training window teaches your pet. Type /wk talents pet on.")
 		elseif not ns.db.talents then
 			ns.Print("the talent window is off. Type /wk talents on.")
 		else
@@ -95,6 +103,11 @@ ns.Register({
 		-- client's is switched off. The default lives here because a default
 		-- belongs to the part that owns the frame replacing it.
 		hideBlizzTalents = true,
+
+		-- Off. The pet's tab has not yet taught a pet in the live client, and
+		-- while it takes the session over, Blizzard's window cannot either.
+		-- Talents/Trace.lua is how the press gets diagnosed with this on.
+		petTraining = false,
 	},
 
 	charDefaults = {
@@ -121,6 +134,7 @@ ns.Register({
 		"talents trees, how many points are in each of your three trees",
 		"talents cost, what your trainer last quoted to unlearn them, and what the schedule says",
 		"talents pet, a hunter's pet: what Beast Training can teach it and the points it has",
+		"talents pet on|off, the pet's tab instead of Blizzard's Beast Training window",
 		"talents trace on|off, says in chat where a press on a pet ability stops",
 	},
 

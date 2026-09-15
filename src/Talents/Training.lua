@@ -43,8 +43,15 @@ local held = false
 
 -- The only class this client teaches a pet this way. A warlock's demon learns
 -- from a book, which is an item and not this window.
-function Training.Offered()
+function Training.Hunter()
 	return ns.Class.Token() == "HUNTER"
+end
+
+-- Whether the talent window takes beast training over. Behind its own switch,
+-- off: on 2.5.6 a press on the page has not yet taught a pet, and while it
+-- does not, Blizzard's own window is the one that can.
+function Training.Offered()
+	return Training.Hunter() and ns.db.petTraining and true or false
 end
 
 function Training.Name()
@@ -171,8 +178,11 @@ function Training.Shown()
 end
 
 function Training.Describe()
-	if not Training.Offered() then
+	if not Training.Hunter() then
 		return "no pet to train on this class"
+	end
+	if not Training.Offered() then
+		return "off, Blizzard's Beast Training window teaches the pet"
 	end
 	local left, _, spent = Training.Points()
 	if held then

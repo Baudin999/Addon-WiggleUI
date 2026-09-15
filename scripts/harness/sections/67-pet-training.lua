@@ -42,6 +42,10 @@ local function BoxText()
 	return table.concat(out, "\n")
 end
 
+-- The page is off by default; everything below is about it being on.
+local hadPage = ns.db.petTraining
+ns.db.petTraining = true
+
 if not Training.Offered() then
 	Window.Show()
 	check(not Window.Tabs():IsShown(3), "a class with no pet to train drew a pet tab")
@@ -54,6 +58,7 @@ if not Training.Offered() then
 	check(not Blizz.Parked(), "a beast training window on a class with no pet to train was parked")
 	_G.CloseCraft()
 	print(("pet training: %s"):format(Training.Describe()))
+	ns.db.petTraining = hadPage
 	return
 end
 
@@ -208,6 +213,16 @@ do
 		"with the talent window off beast training was taken off the client")
 	_G.CloseCraft()
 	ns.db.talents = true
+
+	ns.db.petTraining = false
+	Window.Show()
+	check(not Window.Tabs():IsShown(3), "with the pet page off a hunter's window still draws the pet's tab")
+	Window.Hide()
+	shop.openCraft("Beast Training")
+	check(not Training.Shown() and not Window.Shown() and not Blizz.Parked(),
+		"with the pet page off beast training was taken off Blizzard's window")
+	_G.CloseCraft()
+	ns.db.petTraining = true
 end
 
 print(("pet training %s; Blizzard's craft frame %s"):format(Training.Describe(), Blizz.Describe()))
@@ -220,4 +235,5 @@ for _, row in ipairs(shop.CRAFTS["Beast Training"]) do
 	end
 end
 guids.pet, names.pet, levels.pet = had.guid, had.name, had.level
+ns.db.petTraining = hadPage
 fire("UNIT_PET", "player")
