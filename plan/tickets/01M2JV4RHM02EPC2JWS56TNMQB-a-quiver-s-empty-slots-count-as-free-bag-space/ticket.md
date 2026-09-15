@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JV4RHM02EPC2JWS56TNMQB
 type: bug
-status: todo
+status: doing
 title: A quiver's empty slots count as free bag space
 ---
 
