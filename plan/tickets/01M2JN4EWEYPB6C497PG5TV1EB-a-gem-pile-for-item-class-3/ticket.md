@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JN4EWEYPB6C497PG5TV1EB
 type: task
-status: todo
+status: doing
 title: A Gem pile for item class 3
 parent: 01M2JN4ESP53ET2Q080EAA8RJD
 ---
