@@ -38,14 +38,15 @@ ns.Plates = Plates
 -- the spacing right and leaves the click target where it was.
 --
 -- The plate's size is applied whenever the bars are drawn on plates, and not
--- only when `bars stack` is on, because it is two jobs and only one of them is
--- spacing. The other is the click: the frame the game hit-tests is the plate's
--- own, our bar is drawn over it and takes no mouse of its own, so a plate the
--- size of Blizzard's nameplate under a bar twice its height is a bar that
--- targets in the middle and does nothing at the ends. The figure sent is the
--- one UnitFrames/EnemyBars.lua measures: the smallest box centred where the
--- plate is that holds the whole bar. `bars stack` keeps the two CVars, which
--- are the half that is really about spacing.
+-- only when `bars stack` is on, because the driver spaces plates by it whether
+-- or not motion is on. The figure sent is the one UnitFrames/EnemyBars.lua
+-- measures: the smallest box centred where the plate is that holds the whole
+-- bar. `bars stack` keeps the two CVars.
+--
+-- The size is not the click. The client hit-tests a plate against its hit
+-- test points, which Blizzard_NamePlateUnitFrame.lua's ApplyFrameOptions
+-- anchors to the plate's health bar and name on every SetUnit. Replace hides
+-- both, so the click had nothing under it; see Plates.Aim.
 --
 -- All four are the player's, borrowed, and so is the friendly player plate the
 -- bars need to reach your own side. Turning a setting off puts back what
@@ -134,9 +135,8 @@ end
 -- The call that tells the client how big a plate is. Both clients this addon
 -- ships for name it SetNamePlateSize, and it is the one Blizzard's own driver
 -- makes in UpdateNamePlateSize. This file used to ask only for
--- SetNamePlateEnemySize, the retail name, which neither client has. The size
--- was never sent, so the client hit-tested Blizzard's small plate under a bar
--- twice its height. The retail name stays as the fallback.
+-- SetNamePlateEnemySize, the retail name, which neither client has, so the
+-- size was never sent. The retail name stays as the fallback.
 local function SizeCall()
 	if not C_NamePlate then
 		return nil
@@ -195,6 +195,84 @@ end
 -- Named rather than written into the hook, because Plates.Apply is on a tick
 -- path and a closure built there is an allocation check.sh refuses, early
 -- return or not.
+
+--------------------------------------------------------------------------
+-- Where a click on a plate lands
+--
+-- A plate takes no mouse. The client tests a click against the plate's hit
+-- test points, and Blizzard's ApplyFrameOptions sets them on every SetUnit: on
+-- the health bar, or from the name down to the health bar. `replace` hides
+-- both, and a click over a hidden region targeted nothing. The plate's mouse
+-- and SetNamePlateSize were each blamed for it and neither moved the click.
+--
+-- So the points go on the bar. FrameAPINamePlateDocumentation.lua blocks the
+-- write for addon code in combat "except on the tick a unit is first
+-- assigned". EnemyBars' Attach runs on NAME_PLATE_UNIT_ADDED after the
+-- driver's own handler has set the unit, which is that tick, in a pull or out
+-- of one. What Blizzard set is kept and put back when the bar leaves.
+--
+-- The driver writes its own points on every plate again in
+-- UpdateNamePlateOptions, so that is hooked. A write refused there is owed and
+-- Plates.Flush pays it when combat drops.
+--------------------------------------------------------------------------
+
+local aimTop, aimBottom = {}, {} -- plate -> the regions its click runs corner to corner
+local prior = {}                 -- plate -> Blizzard's anchors, as GetHitTestPoints gave them
+local owed = {}                  -- plate -> true while a refused write is outstanding
+
+-- Reused, because Attach is on the path every plate arrives on. The client
+-- copies what it is handed, so relativeTo is cleared after to hold no bar.
+local TOP = { point = "TOPLEFT", relativePoint = "TOPLEFT", offsetX = 0, offsetY = 0 }
+local BOTTOM = { point = "BOTTOMRIGHT", relativePoint = "BOTTOMRIGHT", offsetX = 0, offsetY = 0 }
+local ANCHORS = { TOP, BOTTOM }
+
+local function WriteAim(plate)
+	if not plate:CanChangeHitTestPoints() then
+		owed[plate] = true
+		return
+	end
+	TOP.relativeTo, BOTTOM.relativeTo = aimTop[plate], aimBottom[plate]
+	plate:SetHitTestPoints(ANCHORS)
+	TOP.relativeTo, BOTTOM.relativeTo = nil, nil
+	owed[plate] = nil
+end
+
+-- The click on a plate, from the top left of one region to the bottom right of
+-- another. A client with no hit test points has nothing to aim.
+function Plates.Aim(plate, top, bottom)
+	if type(plate.SetHitTestPoints) ~= "function" then
+		return
+	end
+	if not aimTop[plate] then
+		prior[plate] = plate:GetHitTestPoints()
+	end
+	aimTop[plate], aimBottom[plate] = top, bottom
+	WriteAim(plate)
+end
+
+-- Blizzard's points back. Refused in combat, the plate keeps ours until its
+-- next SetUnit writes Blizzard's again. Nothing is owed for it, because a
+-- restore paid later could land on a plate the client has since handed to
+-- another unit, anchored to a UnitFrame that plate no longer has.
+function Plates.Unaim(plate)
+	if not aimTop[plate] then
+		return
+	end
+	if prior[plate] and plate:CanChangeHitTestPoints() then
+		plate:SetHitTestPoints(prior[plate])
+	end
+	aimTop[plate], aimBottom[plate], prior[plate], owed[plate] = nil, nil, nil, nil
+end
+
+-- Post hook on the driver's options pass, which has just written Blizzard's
+-- points on every plate. Those are the ones to hand back later.
+local function Reaim()
+	for plate in pairs(aimTop) do
+		prior[plate] = plate:GetHitTestPoints()
+		WriteAim(plate)
+	end
+end
+
 local hooked
 local function Resized()
 	if sizeApplied and not ApplySize() then
@@ -212,6 +290,9 @@ local function HookDriver()
 	end
 	hooked = true
 	hooksecurefunc(driver, "UpdateNamePlateSize", Resized)
+	if type(driver.UpdateNamePlateOptions) == "function" then
+		hooksecurefunc(driver, "UpdateNamePlateOptions", Reaim)
+	end
 end
 
 -- Only on the fallback path. Where the size call took, the driver already knows
@@ -381,8 +462,8 @@ function Plates.Apply()
 
 	local done = true
 
-	-- The range and the click target, which belong to the bars being drawn at
-	-- all rather than to how they are spaced.
+	-- The range and the plate size, which belong to the bars being drawn at
+	-- all rather than to whether motion is on.
 	if ns.db.bars then
 		HookDriver()
 		done = ApplyDistance() and done
@@ -426,6 +507,9 @@ function Plates.Restore()
 end
 
 function Plates.Flush()
+	for plate in pairs(owed) do
+		WriteAim(plate)
+	end
 	if pending then
 		Plates.Apply()
 	end

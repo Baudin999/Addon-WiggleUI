@@ -132,11 +132,10 @@ do
 		:format(low, high))
 end
 
--- The plate is the frame the game hit-tests, so it has to hold the whole bar
--- and not merely be as tall as one. The bar hangs off the plate's centre by the
+-- The plate is what the driver spaces by, so it has to hold the whole bar and
+-- not merely be as tall as one. The bar hangs off the plate's centre by the
 -- gauge, which puts more of it above that centre than below, and a plate sized
--- to the bar's own height would leave the debuff row hanging over nothing: a
--- click there would target the ground.
+-- to the bar's own height would let one bar's debuff row land on the next.
 --
 -- Measured in UIParent's units on both sides, because that is what the driver
 -- was told in.
@@ -177,6 +176,26 @@ do
 				:format(plate.namePlateUnitToken))
 	end
 
+	-- Where the click lands. The client tests a plate against its hit test
+	-- points, Blizzard puts them on the name and the health bar, and replace
+	-- hides both, so a click on a bar targeted nothing through two fixes that
+	-- blamed the mouse and the size. Every plate's points are on its own bar,
+	-- still there after the driver's options pass writes Blizzard's again, owed
+	-- while the client refuses, and handed back when the bar leaves.
+	local function Aimed(plate)
+		local bar = ns.EnemyBars.WidgetFor(plate.namePlateUnitToken)
+		local bottom = ns.db.barsStyle == "replace" and bar.box or plate.UnitFrame.healthBar
+		local points = plate:GetHitTestPoints()
+		return #points == 2 and points[1].relativeTo == bar.box and points[2].relativeTo == bottom
+	end
+	local function EveryPlateAimed(said)
+		for _, plate in ipairs(H.plates) do
+			check(Aimed(plate), ("%s: a click on %s's bar lands on Blizzard's hidden regions and targets nothing")
+				:format(said, plate.namePlateUnitToken))
+		end
+	end
+	EveryPlateAimed("as the plates arrived")
+
 	local wanted = { plateSize[1], plateSize[2] }
 	_G.hooksecurefunc = function(target, name, post)
 		local original = target[name]
@@ -189,14 +208,41 @@ do
 		UpdateNamePlateSize = function()
 			_G.C_NamePlate.SetNamePlateSize(H.PLATE_W, H.PLATE_H)
 		end,
+		-- Untainted, so the client lets it through whatever the plate refuses
+		-- an addon; hence the field rather than the plate's own setter.
+		UpdateNamePlateOptions = function()
+			for _, plate in ipairs(H.plates) do
+				plate.hitTest = H.BlizzardAnchors(plate)
+			end
+		end,
 	}
 	ns.Plates.Apply()
 	_G.NamePlateDriverFrame:UpdateNamePlateSize()
+	_G.NamePlateDriverFrame:UpdateNamePlateOptions()
+	EveryPlateAimed("after the driver's options pass")
+
+	for _, plate in ipairs(H.plates) do
+		plate.refusing = true
+	end
+	_G.NamePlateDriverFrame:UpdateNamePlateOptions()
+	for _, plate in ipairs(H.plates) do
+		plate.refusing = nil
+	end
+	ns.Plates.Flush()
+	EveryPlateAimed("after a refused options pass and the combat flush")
 	_G.hooksecurefunc, _G.NamePlateDriverFrame = nil, nil
 
 	check(plateSize[1] == wanted[1] and plateSize[2] == wanted[2],
 		("the driver put the plate back to %s by %s and nothing sized it to the bar again")
 			:format(tostring(plateSize[1]), tostring(plateSize[2])))
+
+	local second = H.plates[2]
+	local bar = ns.EnemyBars.WidgetFor(second.namePlateUnitToken)
+	ns.Plates.Unaim(second)
+	check(second:GetHitTestPoints()[2].relativeTo == second.UnitFrame.healthBar,
+		"a plate whose bar left kept the click on a bar that is no longer there")
+	ns.Plates.Aim(second, bar.box, ns.db.barsStyle == "replace" and bar.box or second.UnitFrame.healthBar)
+	check(Aimed(second), "a plate aimed again after its bar left does not click on the bar")
 end
 
 -- Allocation. Every ticker but the bars' is somebody else's measurement, so the

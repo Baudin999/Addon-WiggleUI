@@ -1130,10 +1130,9 @@ local function CreateWidget()
 
 	widget.targetedBy = Text(widget, PLATE_TEXT, HEALTH_TEXT, "CENTER")
 
-	-- The outline of the plate's UnitFrame, drawn only while the frames are
-	-- unlocked. The click itself is hit-tested in C++ against a frame no addon
-	-- can see, placed where the plate is and sized by SetNamePlateSize, so the
-	-- outline is where to look first when one edge of a bar does not target.
+	-- The outline of where a click on this bar lands, drawn only while the
+	-- frames are unlocked. AimPlate puts it on the corners it hands the client
+	-- as the plate's hit test points, so what it shows is what the client tests.
 	local hitbox = CreateFrame("Frame", nil, widget)
 	hitbox.edges = ns.Outline(hitbox, 0.95, 0.35, 0.35, 0.9)
 	hitbox:Hide()
@@ -1142,16 +1141,32 @@ local function CreateWidget()
 	return widget
 end
 
--- Shown while unlocked, and only on a plate that has a UnitFrame to outline.
+-- Where a click on this bar lands, and the outline drawn on the same corners.
+-- In `replace` it is the box, where Blizzard's bar was. In `attach` Blizzard's
+-- bar still shows under ours, so the click runs from the top of the box to the
+-- bottom of that bar. See Plates.Aim.
+local function AimPlate(widget, plate)
+	local top, bottom = widget.box, widget.box
+	local unitFrame = plate.UnitFrame
+	if ns.db.barsStyle ~= "replace" and unitFrame and unitFrame.healthBar then
+		bottom = unitFrame.healthBar
+	end
+	ns.Plates.Aim(plate, top, bottom)
+	local hitbox = widget.hitbox
+	hitbox:ClearAllPoints()
+	hitbox:SetPoint("TOPLEFT", top, "TOPLEFT")
+	hitbox:SetPoint("BOTTOMRIGHT", bottom, "BOTTOMRIGHT")
+	hitbox.hosted = true
+end
+
+-- Shown while unlocked, and only on a bar that is on a plate.
 local function ShowHitbox(widget)
 	widget.hitbox:SetShown(widget.hitbox.hosted and not ns.db.locked) -- unguarded: run when a plate appears and when the lock moves, never from a tick
 end
 
--- What the client needs to know to stop two bars landing on each other, and
--- what it needs to know for a click on a bar to reach the mob. Sent in
+-- What the client needs to know to stop two bars landing on each other. Sent in
 -- UIParent's units because that is what the nameplate driver counts in, and
--- only from a widget on a plate: the list spaces itself and nothing under it
--- takes a click.
+-- only from a widget on a plate: the list spaces itself.
 --
 -- The height sent is the casting one unconditionally, because the widget really
 -- does grow and a driver told the idle figure would space plates so a chamber
@@ -1159,16 +1174,13 @@ end
 -- states; for the shorter one, neither. The width is just the bar now that the
 -- tag is gone.
 --
--- It is the box round the bar and not the bar, and that is the half that makes
--- a bar clickable rather than merely spaced. The frame the game hit-tests is
--- the plate's, our bar takes no mouse of its own, and PlaceOnPlate hangs the
--- bar off the plate's centre by the gauge: the bar reaches `gaugeMid` above
--- that centre and the rest below, and the two are not equal, because the debuff
--- row and the threat line are above the gauge and only the cast chamber is
--- below. A plate as tall as the bar covers the bar's middle and neither end, so
--- a click lands on the mob over the health bar and on nothing over the icons.
--- Twice the longer reach is the smallest box centred where the plate is that
--- holds the whole bar, and every pixel of that targets.
+-- It is the box round the bar and not the bar. PlaceOnPlate hangs the bar off
+-- the plate's centre by the gauge: the bar reaches `gaugeMid` above that centre
+-- and the rest below, and the two are not equal, because the debuff row and the
+-- threat line are above the gauge and only the cast chamber is below. A plate
+-- as tall as the bar is spaced as if the bar were centred, and the icons of one
+-- bar land on the next. Twice the longer reach is the smallest box centred
+-- where the plate is that holds the whole bar.
 --
 -- It costs a little spacing, since two plates now stand as far apart as the
 -- taller half needs on both sides. That is the right way to be wrong: the
@@ -1196,7 +1208,7 @@ end
 -- CreateWidget.
 --
 -- Both are outside on purpose and it is the same reason twice. The box is what
--- PlateFootprint hands the nameplate driver as the click target, so anything
+-- AimPlate puts the click on, so anything
 -- placed inside it either takes the room the mob's name is clipped into or
 -- grows the hit box by the width of a string nobody clicks.
 --
@@ -1437,17 +1449,10 @@ local function PlaceOnPlate(widget)
 		return
 	end
 
-	-- Anchored to the frame that takes the mouse, not to the plate around it.
-	--
-	-- That frame is the hit box. Our bar is standing in for it, so the two
-	-- should occupy the same strip of screen by construction rather than by a
-	-- constant that happened to line up, and where they do not line up the
-	-- result is a bar that eats a drag along part of its length and passes it
-	-- along the rest, with nothing on screen saying where the boundary is.
-	--
-	-- Where the UnitFrame is coincident with the plate, which is the usual
-	-- shape, this places identically to the old anchor. Where it is not, the
-	-- bar moves onto the hit box, which is the point. barsOffset still nudges.
+	-- Anchored to the plate's UnitFrame rather than the plate around it. Where
+	-- the two are coincident, which is the usual shape, this places identically
+	-- to the old anchor. barsOffset still nudges. The click follows the bar
+	-- wherever this puts it; see AimPlate.
 	local host = plate.UnitFrame or plate
 
 	local unit = ns.UI.Unit(widget)
@@ -1888,6 +1893,10 @@ end
 -- plate that swallowed clicks. The plate swallowed them because Marking hooked
 -- OnMouseDown on it, and a mouse script turns the mouse on. The hook is gone
 -- and so is the workaround.
+--
+-- The two regions this hides first in `replace` are the two Blizzard anchors
+-- the plate's hit test points to, so a stripped plate clicks on nothing until
+-- AimPlate moves the points onto the bar.
 
 local function StripPlate(plate)
 	local complete = true
@@ -1972,6 +1981,7 @@ end
 
 -- Everything that ends a widget's life on a plate.
 local function Unhost(widget)
+	ns.Plates.Unaim(widget.plate)
 	widget.plate = nil
 	-- The events go back with the plate. A pooled widget still registered
 	-- against a token the client has handed to another mob is a widget marked
@@ -2141,12 +2151,7 @@ local function Attach(unit)
 
 	widget.plate = plate
 	PlaceOnPlate(widget)
-
-	widget.hitbox:ClearAllPoints()
-	widget.hitbox.hosted = plate.UnitFrame ~= nil
-	if widget.hitbox.hosted then
-		widget.hitbox:SetAllPoints(plate.UnitFrame)
-	end
+	AimPlate(widget, plate)
 	ShowHitbox(widget)
 
 	StartFade(widget, 0, 1)

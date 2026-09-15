@@ -17,6 +17,28 @@ local PLATE_W, PLATE_H = H.PLATE_W, H.PLATE_H
 local ns, fire = H.ns, H.fire
 local check = H.check
 
+-- The anchors a plate hands back, copied both ways because the client copies
+-- both ways: a caller that reuses its table must not move a plate's click.
+function H.CopyAnchors(anchors)
+	local copy = {}
+	for index, anchor in ipairs(anchors) do
+		copy[index] = { point = anchor.point, relativeTo = anchor.relativeTo,
+			relativePoint = anchor.relativePoint, offsetX = anchor.offsetX, offsetY = anchor.offsetY }
+	end
+	return copy
+end
+
+-- What Blizzard_NamePlateUnitFrame.lua's ApplyFrameOptions writes for a name
+-- above the bar: the name's top left, ten pixels and four out, down to the
+-- health bar's bottom right, ten out and half the bar down.
+function H.BlizzardAnchors(plate)
+	local unitFrame = plate.UnitFrame
+	return {
+		{ point = "TOPLEFT", relativeTo = unitFrame.name, relativePoint = "TOPLEFT", offsetX = -14, offsetY = 0 },
+		{ point = "BOTTOMRIGHT", relativeTo = unitFrame.healthBar, relativePoint = "BOTTOMRIGHT", offsetX = 10, offsetY = -2 },
+	}
+end
+
 -- A mob and the plate the client puts up for it, carrying a scale of its own
 -- the way a real plate does, so a widget that inherited it would be measurably
 -- wrong. The size is the client's own figure until the addon asks for another.
@@ -37,6 +59,18 @@ local function Pull(index)
 		plate.UnitFrame[child] = region("frame", plate.UnitFrame)
 	end
 	plate.UnitFrame.CastBarsContainer.castBar = region("frame", plate.UnitFrame.CastBarsContainer)
+	-- The hit test points, which are where the client lands a click on a plate,
+	-- kept as data so a section can ask what they are on. The driver's SetUnit
+	-- puts them on the name and the health bar before any addon hears the plate
+	-- arrive. `refusing` is the client blocking addon code in combat off the
+	-- tick a unit arrives, and a write through it raises, as the client's does.
+	function plate:CanChangeHitTestPoints() return not self.refusing end
+	function plate:SetHitTestPoints(anchors)
+		assert(not self.refusing, "wrote a plate's hit test points while the client refuses them")
+		self.hitTest = H.CopyAnchors(anchors)
+	end
+	function plate:GetHitTestPoints() return H.CopyAnchors(self.hitTest) end
+	plate.hitTest = H.BlizzardAnchors(plate)
 	plates[#plates + 1] = plate
 	guids[unit] = ("Creature-0-0-0-0-1234-0000000%d"):format(index)
 	fire("NAME_PLATE_UNIT_ADDED", unit)

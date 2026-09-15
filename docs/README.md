@@ -3668,25 +3668,37 @@ every glyph and every icon inside it drawn across two rows. `PlaceOnPlate` used
 to round that away and give up half a pixel of centring in exchange. An even bar
 gives up nothing and there is nothing left to round.
 
-**A plate takes no mouse, and nothing here gives it one.**
-`Blizzard_NamePlateUnitFrame.lua` calls `EnableMouse(false)` on the plate's
-UnitFrame in `OnLoad`, under the comment "Nothing in the nameplate is
-clickable. Hit testing is done at the C++ level". A left click on a bar reaches
-the world and the client targets the unit under it. A right drag turns the
-camera for the same reason. `C_NamePlate.SetNamePlateSize` sizes the frame the
-client tests against, which is why `Plates.lua` sends the bar's footprint
-through it.
+**A click on a bar lands on the bar.** A plate takes no mouse.
+`Blizzard_NamePlateUnitFrame.lua` calls `EnableMouse(false)` on the UnitFrame in
+`OnLoad`, under "Nothing in the nameplate is clickable. Hit testing is done at
+the C++ level using the location the internal hit test frame". That location
+is the plate's hit test points. `ApplyFrameOptions` sets them on every
+`SetUnit`: on the health bar widened ten pixels a side, or from the name down
+to the health bar. `replace` hides both regions, so a click on a bar landed on
+hidden regions and targeted nothing.
 
-This section used to document `bars clickthrough` and `bars camera`, which
-assumed the UnitFrame arrived mouse enabled and swallowed buttons. It did
-swallow them, and the cause was ours: `Marking.lua` hooked `OnMouseDown` on
-every plate, a mouse script turns the mouse on, and the UnitFrame then took
-every click and targeted nothing. The hook, both settings and `PlateMouse` are
-gone, and their keys are in `RETIRED`.
+`Plates.Aim` moves the points onto the bar. In `replace` they cover the box. In
+`attach` they run from the top of the box to the bottom of Blizzard's health
+bar, which still shows. `FrameAPINamePlateDocumentation.lua` blocks the write
+for addon code in combat "except on the tick a unit is first assigned", and
+`Attach` runs on that tick, after the driver's own handler has set the unit. A
+mob that comes up mid-pull is clickable at once. The driver writes its own
+points again in `UpdateNamePlateOptions`, on a display change or a nameplate
+option CVar, so that is post-hooked, and a write refused there is paid on
+`PLAYER_REGEN_ENABLED`. The points Blizzard set are kept and handed back when a
+bar leaves a plate that stays up.
 
-**The plate is outlined while unlocked.** Each widget carries a `hitbox` frame
-outlined in red on `plate.UnitFrame`, shown only while the frames are unlocked,
-so where a bar sits on its plate can be checked by eye.
+Two fixes before this one blamed something else. The first sent the bar's
+footprint through `C_NamePlate.SetNamePlateSize`, which spaces plates and does
+not move the click. The second removed `Marking.lua`'s `OnMouseDown` hook on
+the plate. That hook was a real fault, since a mouse script turns the
+UnitFrame's mouse on and it ate the click, but the click stayed on the hidden
+regions. `bars clickthrough` and `bars camera` went with the hook, and their
+keys are in `RETIRED`.
+
+**The click is outlined while unlocked.** Each widget's `hitbox` frame is drawn
+in red on the two corners `Plates.Aim` hands the client, so the outline is what
+the client tests.
 
 `barsMode` defaults to `auto`, which reads
 `nameplateShowEnemies` and runs the attached version when nameplates are on and
