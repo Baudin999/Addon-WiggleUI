@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2JYYPCZ1K961E4WXW19YG31
 type: task
-status: todo
+status: doing
 title: "A double click on a loot row's delete destroys one item, not two"
 ---
 
