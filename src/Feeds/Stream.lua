@@ -110,6 +110,8 @@ local streams = {}
 --                none. See UI/Feed.lua's own header for one chip's shape
 -- spec.filter    function(entry), whether an entry is drawn, and nothing at all
 --                for a stream that draws everything it holds
+-- spec.removable whether the row under the cursor carries a cross that takes
+--                it out of the feed
 -- spec.onStatus  function(), answering the three readings along the bottom and
 --                the colour of the last one, or nothing at all for a stream
 --                whose strip is switched off. Absent for a stream with no strip
@@ -126,6 +128,7 @@ function Stream.New(spec)
 		onTooltip = spec.onTooltip,
 		chips = spec.chips,
 		filter = spec.filter,
+		removable = spec.removable,
 		onStatus = spec.onStatus,
 		onStatusTooltip = spec.onStatusTooltip,
 		keys = { on = spec.prefix },
@@ -422,6 +425,7 @@ function Instance:Build()
 		onTooltip = self.onTooltip,
 		chips = self.chips,
 		filter = self.filter,
+		removable = self.removable,
 	})
 	self.feed.frame:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
 	-- Told here rather than left to Apply. Apply resizes before it shows, and a

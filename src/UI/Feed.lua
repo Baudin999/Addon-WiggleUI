@@ -226,6 +226,44 @@ end
 -- One row
 --------------------------------------------------------------------------
 
+-- The cross on a row of a feed that lets you take a row out. The strip's reset
+-- again: the same button at the same cell size with its mark dimmed, laid over
+-- the right end of the row and up on the row under the cursor and no other.
+--
+-- Over the count rather than beside it. A row has no spare column, and a fourth
+-- one would narrow every name in the feed for a control that is up on one row
+-- at a time. The count is in the hover beside it.
+--
+-- The entry is read off the row at the click rather than when the cross comes
+-- up, because a drop between the two moves every row down one and an entry
+-- taken at the hover is the row that used to be there.
+local function BuildCross(feed, row)
+	local unit = feed.unit
+	local cross = UI.Button(row, { label = CLEAR, glyph = true, size = CHIP_MARK,
+		width = CHIP * unit, height = CHIP * unit,
+		tip = "Take this row out of the feed.",
+		onClick = function()
+			if row.shownEntry then
+				feed:Remove(row.shownEntry)
+			end
+		end })
+	cross:SetPoint("RIGHT", row, "RIGHT", -INSET * unit, 0)
+	cross.text:SetTextColor(C.dim[1], C.dim[2], C.dim[3])
+
+	-- Off the cross and back onto the row is still the row. The other half of
+	-- this is the row's own OnLeave.
+	local leave = cross:GetScript("OnLeave")
+	cross:SetScript("OnLeave", function(self)
+		leave(self)
+		if not row:IsMouseOver() then
+			feed:Leave()
+		end
+	end)
+	UI.PassCamera(cross)
+	cross:Hide()
+	return cross
+end
+
 local function BuildRow(feed, index)
 	local unit = feed.unit
 	local row = CreateFrame("Frame", nil, feed.frame)
@@ -319,10 +357,18 @@ local function BuildRow(feed, index)
 		feed:Enter(self.index)
 	end)
 	row:SetScript("OnLeave", function()
+		-- Onto the row's own cross is still on the row. The client hands the
+		-- pointer to the child and tells the row it left, and a Leave here would
+		-- hide the cross from under the click it was reached for.
+		local cross = row.cross
+		if cross and cross:IsShown() and cross:IsMouseOver() then
+			return
+		end
 		feed:Leave()
 	end)
 	UI.PassCamera(row)
 	row:EnableMouse(false)
+	row.cross = feed.removable and BuildCross(feed, row) or nil
 
 	row:Hide()
 	return row
@@ -394,6 +440,8 @@ end
 --                all for a feed that draws everything it holds, which is not
 --                the same as a filter that always answers true: the first costs
 --                nothing and the second walks the ring
+-- opts.removable whether the row under the cursor carries a cross that takes
+--                its entry out of the feed
 --------------------------------------------------------------------------
 
 function UI.Feed(parent, opts)
@@ -405,6 +453,7 @@ function UI.Feed(parent, opts)
 		empty = opts.empty,
 		note = opts.note or 0,
 		onTooltip = opts.onTooltip,
+		removable = opts.removable and true or false,
 		-- The predicate as the caller wrote it, and the one the paint actually
 		-- uses. They differ while the chips are hidden, which is the only time
 		-- a feed with a filter draws everything it holds.
@@ -424,6 +473,11 @@ function UI.Feed(parent, opts)
 		-- things by the time you log out.
 		ring = {},
 		written = 0,
+		-- How many of those the ring still holds. It was min(written, cap) until
+		-- a row could be taken out: Feed:Remove steps `written` back to keep the
+		-- ring's arithmetic, and once the ring has lapped that sum is the cap
+		-- however much has gone.
+		held = 0,
 		offset = 0,
 		visible = 0,
 		rows = {},
@@ -836,7 +890,7 @@ end
 -- ring has in it rather than what the column is drawing, and the two are
 -- different numbers the moment a chip goes off.
 function Feed:Count()
-	return math.min(self.written, self.cap)
+	return self.held
 end
 
 -- The nth entry counting back through the ring, where zero is the one that
@@ -963,7 +1017,10 @@ function Feed:Entry()
 	-- moment that entry leaves the feed. If the filter was letting it through,
 	-- the count goes down by it here, because in a line's time there will be
 	-- nothing left to ask.
-	if self.matching and self.written >= self.cap and self.filter(slot) then
+	--
+	-- Full rather than lapped. After a Feed:Remove the slot at the end is the
+	-- entry that was taken out, which is off the count already.
+	if self.matching and self.held >= self.cap and self.filter(slot) then
 		self.matching = self.matching - 1
 	end
 	for key in pairs(slot) do
@@ -989,6 +1046,7 @@ function Feed:Push()
 	local slot = self.ring[(self.written % self.cap) + 1]
 	slot.at = GetTime()
 	self.written = self.written + 1
+	self.held = math.min(self.held + 1, self.cap)
 	-- One comparison rather than a recount. What this entry pushed out of the
 	-- ring was taken off the count in Feed:Entry, where it was still there to
 	-- be asked about.
@@ -1051,7 +1109,7 @@ function Feed:Fold(match)
 			break
 		end
 		if match(slot, fresh) then
-			if self.matching and self.written >= self.cap and self.filter(fresh) then
+			if self.matching and self.held >= self.cap and self.filter(fresh) then
 				self.matching = self.matching + 1
 			end
 			self.stale = true
@@ -1083,7 +1141,63 @@ function Feed:Mark(kind, label, trailing, band)
 end
 
 function Feed:Clear()
-	self.written, self.offset, self.matching = 0, 0, nil
+	self.written, self.held, self.offset, self.matching = 0, 0, 0, nil
+	self:Paint()
+	return true
+end
+
+-- One entry out of the feed, and the gap it leaves closed.
+--
+-- The entry is the table a row is drawing, which is what the cross on that row
+-- hands over. It is found by identity in one walk, which is up to four hundred
+-- reads for a click: the price of a gesture rather than of a drop.
+--
+-- Every entry newer than it moves one slot older and its own table goes to the
+-- end of the ring, where the next Feed:Entry wipes it and hands it out. So a
+-- removal allocates nothing and the ring keeps the order it was written in.
+-- `written` steps back, which is what keeps Feed:Held's arithmetic true, and
+-- `held` is the count.
+--
+-- The offset follows an entry that was above the view and no other, for the
+-- reason Feed:Push moves it: taking out a row you have scrolled past would
+-- otherwise move the one you are reading.
+function Feed:Remove(entry)
+	local found, above = nil, 0
+	for back = 0, self:Count() - 1 do
+		local slot = self:Held(back)
+		if slot == entry then
+			found = back
+			break
+		end
+		if not self.filter or self.filter(slot) then
+			above = above + 1
+		end
+	end
+	if not found then
+		return false
+	end
+
+	if self.matching and self.filter(entry) then
+		self.matching = self.matching - 1
+	end
+
+	local ring, cap = self.ring, self.cap
+	local at = ((self.written - 1 - found) % cap) + 1
+	for _ = 1, found do
+		local newer = (at % cap) + 1
+		ring[at] = ring[newer]
+		at = newer
+	end
+	ring[at] = entry
+	self.written = self.written - 1
+	self.held = self.held - 1
+
+	if above < self.offset then
+		self.offset = self.offset - 1
+	end
+	if self.offset > self:Room() then
+		self.offset = self:Room()
+	end
 	self:Paint()
 	return true
 end
@@ -1469,6 +1583,11 @@ function Feed:Enter(index)
 	self.reopenedAt = GetTime()
 
 	local entry = row.shownEntry
+	-- The cross comes up on the row being read, and never on a marker, which is a
+	-- break in the timeline rather than a thing that happened to take out.
+	if row.cross then
+		row.cross:SetShown(entry ~= nil and not entry.mark)
+	end
 	-- What the row was showing when this tooltip was filled, so Paint can tell a
 	-- repaint that moved the entry under the cursor from one that did not. Both
 	-- halves: the ring hands the same table back a full lap later, and the push
@@ -1491,6 +1610,9 @@ function Feed:Leave()
 		local row = self.rows[self.hovered]
 		if row then
 			row.glow:Hide()
+			if row.cross then
+				row.cross:Hide()
+			end
 			row.lit = nil
 			Tone(row)
 		end

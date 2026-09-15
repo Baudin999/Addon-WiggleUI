@@ -368,6 +368,11 @@ local stream = ns.Stream.New({
 	onTooltip = Fill,
 	chips = Chips(),
 	filter = Passes,
+	-- A cross on the row under the cursor, which takes that one row out. The
+	-- column is a list of what dropped, and the row you no longer want on it is
+	-- the one you have already dealt with. LootFeed.Counts still counts it,
+	-- because that number is what reached the feed.
+	removable = true,
 	-- The strip along the bottom, which is Feeds/Purse.lua's three numbers. It
 	-- is on this feed and not on the combat one because this is the window
 	-- already answering "what did I just get", and gold was the part of that

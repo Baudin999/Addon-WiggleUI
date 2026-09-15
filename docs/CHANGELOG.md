@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+### A cross takes a row out of the loot feed
+
+Point at a row in the loot feed and a cross comes up over its count. Press it
+and the row is gone; the rows under it move up one. If you have scrolled back,
+taking out a row above the view does not move the row you are reading.
+
+The tally of what reached the feed still counts it. The combat feed has no
+cross, because its rows arrive faster than anybody would take one out.
+
 ### Reset gives you the screen the addon is built around
 
 A fresh install and `/wk defaults yes` used to land on whatever number each

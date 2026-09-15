@@ -326,6 +326,14 @@ local function where()
 	return H.cursor.x * ui, (H.cursor.y - _G.GetScreenHeight()) * ui
 end
 
+-- Whether the pointer is inside this frame's rectangle, which is all the client
+-- answers: not whether the frame is shown and not whether anything lies over
+-- it. UI/Feed.lua asks it of a row and of the cross on that row, to tell a
+-- pointer that left the row from one that moved onto the row's own child.
+function H.Region:IsMouseOver()
+	return inside(self, where())
+end
+
 -- What the client says is under the pointer, answered by the same hit test that
 -- decides where a press lands.
 --

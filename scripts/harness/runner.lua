@@ -294,6 +294,10 @@ local SECTIONS = {
 	"39-party-told",
 	"40-loot-feed",
 	"40-loot-strip",
+	-- Taking a row out of the loot feed. A file of its own because 40-loot-feed.lua
+	-- and 31-feeds.lua are both at their ceilings, and it empties the feed it
+	-- was handed.
+	"40-loot-remove",
 	"41-voice",
 	"42-cooldown-row",
 	"43-blizzard-hide",
