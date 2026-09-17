@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2QT3AT8Y4FBQGX9N1KDMXRF
 type: task
-status: todo
+status: doing
 title: The pet block draws no happiness icon
 parent: 01M1XJZXCNPFEXZ02D6C12QR0A
 ---
