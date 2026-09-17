@@ -379,7 +379,35 @@ do
 	pass()
 	check(not marker:IsShown(), "the marker came off and the badge stayed up")
 
-	print("badges rest, combat, the flag and a raid marker each up on the event and down again")
+	-- The pet's face. Happy is drawn too, a demon draws none, and the crops
+	-- are the texels PetFrame.lua's decimals land on.
+	local mood = ns.FrameSkin.Entry("pet").badges.mood
+	check(mood ~= nil and not mood:IsShown(), "the pet's face is up on a pet with no happiness")
+	check(player.badges.mood == nil and target.badges.mood == nil,
+		"a block that is not the pet's carries a happiness face")
+	check(mood:GetTexture() == "Interface\\PetPaperDollFrame\\UI-PetHappiness",
+		("the pet's face is cut from %s"):format(tostring(mood:GetTexture())))
+	own.hunterPet = true
+	for value, left in pairs({ [3] = 0, [2] = 0.1875, [1] = 0.375 }) do
+		own.petMood = value
+		fire("UNIT_HAPPINESS", "pet")
+		pass()
+		check(mood:IsShown() and mood.texcoord and mood.texcoord[1] == left
+			and mood.texcoord[2] == left + 0.1875 and mood.texcoord[4] == 0.359375,
+			("happiness %d drew the cell starting at %s"):format(value,
+				tostring(mood.texcoord and mood.texcoord[1])))
+	end
+	own.hunterPet = false
+	fire("UNIT_HAPPINESS", "pet")
+	pass()
+	check(not mood:IsShown(), "a pet that is not a hunter's wears a happiness face")
+	own.hunterPet, own.petMood = true, nil
+	fire("UNIT_HAPPINESS", "pet")
+	pass()
+	check(not mood:IsShown(), "the client stopped answering a happiness and the face stayed up")
+	own.hunterPet = false
+
+	print("badges rest, combat, the flag, a raid marker and the pet's face each up on the event and down again")
 end
 
 -- Left for the sections below.

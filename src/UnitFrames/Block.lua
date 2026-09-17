@@ -105,7 +105,7 @@ local IDLE = Color.reaction.idle
 local TRACK_LAYER, SLICE_LAYER = -8, -7
 
 -- The state icons on the corners of the portrait's square, each centred on its
--- corner so it half overhangs the block. Which of the three a frame carries is
+-- corner so it half overhangs the block. Which of the four a frame carries is
 -- the spec's, in UnitFrames/Skin.lua; what each one is drawn from is here, and
 -- what it says is UnitFrames/Paint.lua's.
 --
@@ -118,12 +118,18 @@ local TRACK_LAYER, SLICE_LAYER = -8, -7
 --           SetRaidTargetIconTexture crops on the tick
 --   state   resting or fighting, two cells of one sheet, which Paint crops
 --   pvp     the faction's flag, a sheet of its own per faction, set on the tick
+--   mood    a hunter pet's face, three cells of one sheet, which Paint crops.
+--           On the flag's corner, and no frame carries both: the pet block has
+--           no flag. The marker's size, which on the shipped pet block is 24
+--           pixels and the size Blizzard's PetFrame draws the same cell at
 local BADGES = {
 	marker = { corner = "TOP", scale = 0.55,
 		art = "Interface\\TargetingFrame\\UI-RaidTargetingIcons" },
 	state = { corner = "TOP", scale = 0.55,
 		art = "Interface\\CharacterFrame\\UI-StateIcon" },
 	pvp = { corner = "BOTTOM", scale = 0.72 },
+	mood = { corner = "BOTTOM", scale = 0.55,
+		art = "Interface\\PetPaperDollFrame\\UI-PetHappiness" },
 }
 
 --------------------------------------------------------------------------

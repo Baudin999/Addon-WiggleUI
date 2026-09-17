@@ -76,7 +76,7 @@ local UnregisterUnitWatch = _G.UnregisterUnitWatch
 -- unit     the token the button targets and the block reads
 -- mirror   the gauge sits left of the portrait rather than right of it
 -- scale    this frame's share of the height and width settings
--- badges   which state icons the block carries, out of Block's three
+-- badges   which state icons the block carries, out of Block's four
 -- ammo     the block carries the pill counting the shots in your ranged slot
 -- global   the anchor's name, which is the rectangle you drag and the one
 --          every measurement in Block is taken in. Named so a block that
@@ -118,7 +118,7 @@ local SPECS = {
 		-- reads the same way round twice: its square, its gauge, your square,
 		-- your gauge.
 		key = "pet", unit = "pet", mirror = false, scale = GLANCE_SCALE,
-		badges = { "marker" }, flank = "player", watch = true,
+		badges = { "marker", "mood" }, flank = "player", watch = true,
 		global = "WarriorKitPetFrame", button = "WarriorKitPetButton",
 	},
 }
@@ -628,8 +628,12 @@ end
 -- over it is a handful of comparisons that all hold. UNIT_PET is the pet token
 -- turning into a different creature, and the client fires it against your own
 -- unit rather than the pet's, so the pet block's own filter never hears it.
+-- UNIT_HAPPINESS is the face on the pet block, and a mark rather than a watched
+-- unit event because Blizzard's PetFrame.lua takes it without reading a unit
+-- off it, so nothing on disk says which token it carries.
 local MARKS = {
 	UNIT_PET = true,
+	UNIT_HAPPINESS = true,
 	PLAYER_TARGET_CHANGED = true,
 	PLAYER_UPDATE_RESTING = true,
 	PLAYER_REGEN_DISABLED = true,

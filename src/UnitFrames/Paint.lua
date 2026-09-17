@@ -47,12 +47,14 @@ local PLAIN_LEVEL = Color.text.value
 
 local UnitCanAttack = UnitCanAttack
 
--- The three client calls the badges are read with, taken at load. Every one is
--- FrameXML's on both clients this addon runs on, and a client that turns out
+-- The five client calls the badges are read with, taken at load. Every one
+-- answers on both clients this addon runs on, and a client that turns out
 -- not to carry one draws no badge of that kind rather than raising on a tick.
 local SetPortraitTexture = _G.SetPortraitTexture
 local SetRaidTargetIconTexture = _G.SetRaidTargetIconTexture
 local GetRaidTargetIndex = _G.GetRaidTargetIndex
+local GetPetHappiness = _G.GetPetHappiness
+local HasPetUI = _G.HasPetUI
 
 -- The two cells of Interface\CharacterFrame\UI-StateIcon: resting on the left
 -- and fighting on the right, each the top half of its column. Blizzard crops
@@ -61,6 +63,17 @@ local GetRaidTargetIndex = _G.GetRaidTargetIndex
 local STATE = {
 	rest = { 0, 0.5, 0, 0.5 },
 	combat = { 0.5, 1, 0, 0.5 },
+}
+
+-- The three cells of Interface\\PetPaperDollFrame\\UI-PetHappiness, keyed by what
+-- GetPetHappiness answers: 1 unhappy, 2 content, 3 happy. The sheet is 128 by
+-- 64 and a cell is 24 by 23, so these are PetFrame.lua's own crops written as
+-- the texels they land on.
+local MOOD_BOTTOM = 23 / 64
+local MOOD = {
+	{ 48 / 128, 72 / 128 },
+	{ 24 / 128, 48 / 128 },
+	{ 0, 24 / 128 },
 }
 
 -- The PvP flag per faction, built once rather than concatenated on the tick.
@@ -225,6 +238,34 @@ local function PaintPvp(entry, unit)
 	end
 end
 
+-- A hunter pet's face, on the block that carries one. Asked the way
+-- PetFrame.lua asks: GetPetHappiness answers nil for a pet that has no
+-- happiness, HasPetUI's second answer is whether the pet is a hunter's, and
+-- either one saying no is no face. A warlock's demon draws none. All three
+-- faces are drawn, the happy one included, because a face that only turns up
+-- when something is wrong cannot be told from a badge that failed to draw.
+local function PaintMood(entry)
+	local texture = entry.badges.mood
+	if not texture or not GetPetHappiness or not HasPetUI then
+		return
+	end
+	local mood = GetPetHappiness()
+	local _, hunters = HasPetUI()
+	-- False rather than nil for no face, so the first pass after Paint.Forget
+	-- hides a face the last pet left up instead of finding nil where it left nil.
+	local crop = hunters and MOOD[mood or 0] or false
+	if entry.mood == crop then
+		return
+	end
+	entry.mood = crop
+	if crop then
+		texture:SetTexCoord(crop[1], crop[2], 0, MOOD_BOTTOM)
+		texture:Show()
+	else
+		texture:Hide()
+	end
+end
+
 -- The shots left in your ranged slot, on the block that carries the pill.
 --
 -- ns.Ammo answers nil for a slot that never runs out, and that is no pill
@@ -340,6 +381,7 @@ function Paint.Refresh(entry)
 	PaintMarker(entry, unit)
 	PaintState(entry)
 	PaintPvp(entry, unit)
+	PaintMood(entry)
 	PaintAmmo(entry)
 
 	-- The aura rows, which come along on the same pass. UNIT_AURA is one of the
@@ -357,7 +399,7 @@ function Paint.Forget(entry)
 	entry.shownPercent, entry.shownPower, entry.shownName = nil, nil, nil
 	entry.healthValue, entry.healthMax, entry.powerValue, entry.powerMax = nil, nil, nil, nil
 	entry.portraitGuid, entry.portraitDirty = nil, true
-	entry.marker, entry.state, entry.pvp = nil, nil, nil
+	entry.marker, entry.state, entry.pvp, entry.mood = nil, nil, nil, nil
 	entry.healSpan = nil
 	entry.shownAmmo, entry.ammoTint, entry.ammoIcon = nil, nil, nil
 end
