@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2QXCZ78H63G6SW2Z5WNWRCK
 type: task
-status: todo
+status: doing
 title: The harness drops its 800 line file cap for shape.lua
 ---
 
