@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2MMRQNQTNCNAFY7TTEB09EM
 type: task
-status: todo
+status: doing
 title: A session slides to 95 fps by minute 25 and a reload puts it back
 ---
 
