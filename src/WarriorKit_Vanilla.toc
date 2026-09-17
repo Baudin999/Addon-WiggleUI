@@ -345,7 +345,9 @@ Perf\Perf.lua
 Perf\Census.lua
 Perf\Cause.lua
 Perf\Held.lua
+Perf\Probe.lua
 Perf\Trace.lua
+Perf\Sweep.lua
 Perf\Hud.lua
 Perf\Key.lua
 Perf\Feature.lua

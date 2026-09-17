@@ -95,6 +95,35 @@ function Census.Names()
 	return names
 end
 
+-- The two events the client sent most since this was last asked, and how many
+-- of each. Perf/Trace.lua asks once a minute and writes them into the row.
+--
+-- The minute log counted events and never named one, and on 2026-09-17 it
+-- counted 6000 a minute in a minute with nothing happening in it, which is one
+-- a frame. An event on every frame runs every handler registered for it on
+-- every frame, outside any ticker bracket, and that is the shape the garbage
+-- this addon cannot account for would have.
+--
+-- A walk over every name seen, which is why it is once a minute. `minuted` is
+-- the lifetime count at the last asking, so the difference is the minute.
+local minuted = {}
+
+function Census.Top()
+	local first, firstCount, second, secondCount = "", 0, "", 0
+	for index = 1, #names do
+		local name = names[index]
+		local count = lifetime[name] - (minuted[name] or 0)
+		minuted[name] = lifetime[name]
+		if count > firstCount then
+			second, secondCount = first, firstCount
+			first, firstCount = name, count
+		elseif count > secondCount then
+			second, secondCount = name, count
+		end
+	end
+	return first, firstCount, second, secondCount
+end
+
 --------------------------------------------------------------------------
 
 local function OnEvent(_, event)
@@ -143,6 +172,7 @@ function Census.Forget()
 	for index = 1, #names do
 		local name = names[index]
 		lifetime[name] = 0
+		minuted[name] = 0
 		counts[name] = 0
 		stamps[name] = -1
 	end

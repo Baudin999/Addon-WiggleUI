@@ -108,10 +108,12 @@ check(listening == 2, "attaching after ready did not register in the same call")
 
 local was = Window.Shown()
 
--- Every read of the log opens the client's headers first, so the client's
--- count of that is what says a paint happened. It is the cheapest probe that
--- cannot be satisfied by the window merely being asked.
+-- A read of the log opens a header that is shut and leaves the client alone
+-- otherwise, so a header is shut first and the client's count of being asked is
+-- what says a paint happened. It is the cheapest probe that cannot be satisfied
+-- by the window merely being asked.
 Window.Show()
+quests.Collapse()
 local reads = quests.Expanded()
 check(questie.Update(102, 1, REASONS.QUEST_UPDATED) == 2,
 	"the update did not reach every callback registered for it")
@@ -122,10 +124,13 @@ check(quests.Expanded() > reads,
 -- get to break: sixty rows and three borrows of the shared cursor are not read
 -- for a window nobody is looking at.
 Window.Hide()
+quests.Collapse()
 reads = quests.Expanded()
 questie.Update(102, nil, REASONS.QUEST_TURNED_IN)
 check(quests.Expanded() == reads,
 	"a quest update redrew a quest log that is not on the screen")
+-- The header this shut and nothing read, put back for the sections after.
+_G.ExpandQuestHeader(0)
 
 if was then
 	Window.Show()

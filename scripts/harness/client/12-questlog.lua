@@ -118,10 +118,10 @@ local selection = nil
 -- a section can assert that without reaching into this file.
 local stranded = 0
 
--- Every header open. The rows here are never collapsed, so this records the
--- call rather than acting on it: what a section checks is that the part asked,
--- because a part that does not ask reads a short log on a real client and has
--- no way to know it did.
+-- Every header open, counted. A section shuts one through Collapse below and
+-- checks the part asks then and not otherwise: the real call sends
+-- QUEST_LOG_UPDATE whether or not it opened anything, and a part that reads the
+-- log on that event and asks on every read is a read on every frame.
 local expanded = 0
 
 local function Row(index)
@@ -157,7 +157,7 @@ _G.GetQuestLogTitle = function(index)
 		return nil
 	end
 	if row.header then
-		return row.header, 0, nil, true, false, nil, nil, nil
+		return row.header, 0, nil, true, row.collapsed and true or false, nil, nil, nil
 	end
 	-- The quest id is the eighth value, which is where Questie reads it from
 	-- and where Quests/Client.lua and Comfort/Clutter.lua both read it.
@@ -175,6 +175,9 @@ end
 
 _G.ExpandQuestHeader = function()
 	expanded = expanded + 1
+	for _, row in ipairs(ROWS) do
+		row.collapsed = nil
+	end
 end
 
 _G.GetQuestLogSelection = function()
@@ -766,6 +769,8 @@ H.quests = {
 	abandoned = abandoned,
 	Selection = function() return selection end,
 	Expanded = function() return expanded end,
+	-- The first row shut, which is a header: a log begins with one.
+	Collapse = function() ROWS[1].collapsed = true end,
 	Stranded = function() return stranded end,
 	Opened = function() return opened end,
 	-- How many clicks in Questie's tracker reached Blizzard's log rather than

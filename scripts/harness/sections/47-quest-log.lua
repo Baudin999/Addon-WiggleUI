@@ -98,11 +98,26 @@ check(zones[2].quests[2].failed and not zones[2].quests[2].complete,
 	"the quest the client marks -1 read as complete rather than failed")
 
 -- Every header is opened before the rows are counted, because a collapsed one
--- hides its quests from the client's own count. The stub cannot collapse, so
--- what is checked is that the part asked at all: a part that does not ask reads
+-- hides its quests from the client's own count. A part that does not ask reads
 -- a short log on a real client and has no way to know it did.
-check(quests.Expanded() > 0,
-	"the log was read without ever asking the client to open its headers")
+--
+-- And only then. ExpandQuestHeader makes the client send QUEST_LOG_UPDATE even
+-- when every header was already open, the tracker reads the log on that event,
+-- and on 2026-09-17 that was a read of the whole log on every frame of every
+-- session, with Questie queueing a tracker update behind each one.
+do
+	local asked = quests.Expanded()
+	Log.Read()
+	check(quests.Expanded() == asked,
+		"a log with every header open was asked to open them, which the client answers with another QUEST_LOG_UPDATE")
+	quests.Collapse()
+	Log.Read()
+	check(quests.Expanded() == asked + 1,
+		("a log with a header shut was asked to open it %d times"):format(quests.Expanded() - asked))
+	Log.Read()
+	check(quests.Expanded() == asked + 1,
+		"the header was open again and the next read asked anyway")
+end
 
 ----------------------------------------------------------------------
 -- The cursor

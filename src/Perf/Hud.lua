@@ -280,10 +280,13 @@ local function FillCost(last)
 		Say(cost[1].value, ("%.1f ms"):format(last.ours))
 		Say(cost[2].label, "events the client sent")
 		Say(cost[2].value, ("%d"):format(last.events))
-		Say(cost[3].label, "every other addon")
-		Say(cost[3].value, "not measured")
-		Say(cost[4].label, "the client's own profiler is off")
-		Say(cost[4].value, "nothing else can be named")
+		-- The one figure here that answers to a switch. Turn a feature or an
+		-- addon off and this either drops inside the second or that was not
+		-- what made it.
+		Say(cost[3].label, "Lua memory made, every addon")
+		Say(cost[3].value, ("%.1f MB"):format(last.made / 1024))
+		Say(cost[4].label, "every other addon's time")
+		Say(cost[4].value, "not measured, the profiler is off")
 		return
 	end
 
@@ -386,7 +389,7 @@ function Hud.Paint()
 	-- is no ranking at all, so the two numbers those rows are made of stand in
 	-- for it.
 	local _, total = ns.Cause.Ranking()
-	local moved = total + last.events + math.floor(last.ours * 100)
+	local moved = total + last.events + math.floor(last.ours * 100) + math.floor(last.made)
 	if shown.total ~= moved then
 		shown.total = moved
 		FillCost(last)

@@ -58,7 +58,21 @@ check(Trace.Head() == 60, ("the ring head is at %d after sixty frames"):format(T
 
 ----------------------------------------------------------------------
 -- Off the shelf, which is the profiler off
+--
+-- Arranged the way 2.5.6 actually behaves rather than the way it is convenient
+-- to stub. The client always has GetScriptCPUUsage. With scriptProfile off the
+-- call is still there, still callable, and answers a constant 0, so "off" is
+-- not the absence of the call and a stub that leaves it nil is testing a client
+-- that does not exist. It left Perf/Cause.lua free to read that 0 as a
+-- measurement: the dip said unknown for the right answer by accident, and the
+-- minute log wrote 0.00 ms of Lua under a profiled flag it had latched on a
+-- zero, for every row of a three hour session.
 ----------------------------------------------------------------------
+
+_G.GetScriptCPUUsage = function() return 0 end
+check(not Cause.Profiling(), "scriptProfile is off and Cause reads the profiler as on")
+check(Cause.LuaSince() == nil,
+	("the profiler is off and a frame claims %s ms of Lua"):format(tostring(Cause.LuaSince())))
 
 frame:Beat(0.120)
 check(Trace.Dips() == 1, ("one long frame wrote %d dips"):format(Trace.Dips()))
@@ -146,7 +160,7 @@ _G.EnumerateFrames = function(after)
 	return fakes[fakeAt[after] + 1]
 end
 
-local memoryNames, memoryKB = { "Details", "Questie", "WarriorKit" }, { 1000, 2000, 300 }
+local memoryNames, memoryKB = { "Details", "Questie", "WarriorKit" }, { 1000, 3000, 300 }
 local clientUsage, clientUpdate = _G.GetAddOnMemoryUsage, _G.UpdateAddOnMemoryUsage
 _G.UpdateAddOnMemoryUsage = function() end
 _G.GetAddOnMemoryUsage = function(index) return memoryKB[index] or 0 end
@@ -156,21 +170,54 @@ ns.Held.Read()
 check(ns.Held.Grower() == "", "the first memory reading named an addon with nothing to compare against")
 memoryKB[1], memoryKB[2] = memoryKB[1] + 100, memoryKB[2] + 900
 
+-- Watching started again, which is a login with a reading already taken. An
+-- addon over 2 MB gets a column of its own and the column is 180 slots, so it
+-- is made where the log is made and not inside the minute measured below.
+--
+-- The same moment is where Perf/Probe.lua puts its count over Questie's combat
+-- queue, so the queue is given to the stub loader first. It runs nothing: what
+-- is counted is the asking.
+local combatQueue = _G.QuestieLoader:ImportModule("QuestieCombatQueue")
+local ran = 0
+combatQueue.Queue = function() ran = ran + 1 end
+Trace.Watch(false)
+Trace.Watch(true)
+check(type(ns.db.perfLog.addons) == "table" and ns.db.perfLog.addons.Questie ~= nil,
+	"Questie holds 3000 KB at login and the log made no column for it")
+
 ----------------------------------------------------------------------
 -- A minute of frames, written where a reload keeps it
 --
 -- A session that gets slower is 12 to 20 ms frames arriving more often by the
 -- hour, and none of them is a dip. So the recorder sums each minute into a row
 -- of the saved log. Driven here with a hundred 25 ms frames and 9 ms ones, a
--- frame that makes a 100 Hz deadline, to fill the minute. The collector is
--- stopped, because the roll is reached from the tick and has to allocate nothing
--- either.
+-- frame that makes a 100 Hz deadline, to fill the minute. Each 25 ms frame is
+-- followed by eight of 9, so the slow ones land 97 ms apart, which is the ten a
+-- second beat the plateau of 2026-09-17 arrived on. The collector is stopped,
+-- because the roll is reached from the tick and has to allocate nothing either.
 ----------------------------------------------------------------------
 
 local log = ns.db.perfLog
 check(type(log) == "table" and log.size == 180, "the saved minute log was not made at login")
 Trace.Forget()
 local head, rows = log.head, log.filled
+
+ns.Probe.Roll()
+for _ = 1, 3 do
+	combatQueue:Queue(print)
+end
+
+-- Five of one event and two of another inside the minute. Both names are met
+-- and the ranking asked once before it, so the roll finds nothing new to keep.
+Census.Count("WARRIORKIT_HARNESS_EVENT")
+Census.Count("WARRIORKIT_HARNESS_OTHER")
+Census.Top()
+for _ = 1, 5 do
+	Census.Count("WARRIORKIT_HARNESS_EVENT")
+end
+for _ = 1, 2 do
+	Census.Count("WARRIORKIT_HARNESS_OTHER")
+end
 
 collectgarbage("collect")
 collectgarbage("stop")
@@ -179,6 +226,10 @@ local spent = 0
 for _ = 1, 100 do
 	frame:Beat(0.025)
 	spent = spent + 0.025
+	for _ = 1, 8 do
+		frame:Beat(0.009)
+		spent = spent + 0.009
+	end
 end
 while spent < 60 do
 	frame:Beat(0.009)
@@ -208,6 +259,61 @@ check(log.uiRegions[row] == 56 and log.uiTicking[row] == 1,
 check(log.grower[row] == "Questie" and log.grew[row] == 900,
 	("Questie grew 900 KB and Details 100, and the row names %q at %s KB")
 		:format(tostring(log.grower[row]), tostring(log.grew[row])))
+
+-- The two the ranking above cannot answer. grower is a difference between two
+-- samples of a number the collector swings, so it says who moved most in a
+-- minute and never what is actually being held. These two say that.
+check(log.oursKB[row] == 300,
+	("this addon is holding 300 KB and its own column says %s")
+		:format(tostring(log.oursKB[row])))
+-- The collector is stopped for this minute, so the heap only ever rises and the
+-- low water mark is the first frame of it. A floor above the heap would mean it
+-- was taking the last reading rather than the smallest.
+check(log.floor[row] > 0 and log.floor[row] <= log.heap[row],
+	("a minute that only allocated has a floor of %s KB under a heap of %s")
+		:format(tostring(log.floor[row]), tostring(log.heap[row])))
+
+-- What the slow frames were, which is what the counts above cannot say.
+check(log.slowMs[row] > 2499 and log.slowMs[row] < 2501,
+	("100 frames of 25 ms took %s ms between them"):format(tostring(log.slowMs[row])))
+check(log.beat[row] == 99,
+	("100 slow frames 97 ms apart read as %s on the beat, and the first has none before it")
+		:format(tostring(log.beat[row])))
+check(log.slowKey[row] == "frame",
+	("the recorder is the only ticker beaten here and the slow frames name %q")
+		:format(tostring(log.slowKey[row])))
+check(log.slowOurs[row] >= 0 and log.slowOurs[row] <= log.ours[row],
+	("the slow frames hold %s ms of ours out of %s in the minute")
+		:format(tostring(log.slowOurs[row]), tostring(log.ours[row])))
+-- The collector is stopped, so nothing was given back in any frame.
+check(log.sweeps[row] == 0 and log.slowSweeps[row] == 0,
+	("a minute with the collector stopped counted %s sweeps, %s of them slow")
+		:format(tostring(log.sweeps[row]), tostring(log.slowSweeps[row])))
+check(log.slowAlloc[row] <= log.alloc[row],
+	("the slow frames allocated %s KB of the minute's %s")
+		:format(tostring(log.slowAlloc[row]), tostring(log.alloc[row])))
+check(log.oursAlloc[row] >= 0,
+	("tick timing is on and the brackets report %s KB"):format(tostring(log.oursAlloc[row])))
+
+-- One column per addon over 2 MB, and the sum of all of them.
+check(log.addons.Questie[row] == 3900,
+	("Questie holds 3900 KB and its column says %s"):format(tostring(log.addons.Questie[row])))
+check(log.addons.Details == nil and log.addons.WarriorKit == nil,
+	"an addon under 2 MB was given a column of its own")
+check(log.addonsKB[row] == 5300,
+	("1100, 3900 and 300 KB sum to %s"):format(tostring(log.addonsKB[row])))
+-- Questie's combat queue, counted. The wrapper went on when watching started
+-- above, and three askings inside the minute are three in the row.
+check(log.topEvent[row] == "WARRIORKIT_HARNESS_EVENT" and log.topEvents[row] == 5,
+	("five of one event in the minute and the row names %q at %s")
+		:format(tostring(log.topEvent[row]), tostring(log.topEvents[row])))
+check(log.nextEvent[row] == "WARRIORKIT_HARNESS_OTHER" and log.nextEvents[row] == 2,
+	("two of another and the runner up reads %q at %s")
+		:format(tostring(log.nextEvent[row]), tostring(log.nextEvents[row])))
+check(ran == 3, ("the count over Questie's queue called through %d times out of 3"):format(ran))
+check(log.qQueued[row] == 3,
+	("three things were queued with Questie in the minute and the row says %s")
+		:format(tostring(log.qQueued[row])))
 check(log.readMs[row] >= 0, ("the memory reading was timed at %s ms"):format(tostring(log.readMs[row])))
 
 -- The frame after the roll is the memory reading, and it is not a stall.
@@ -271,6 +377,129 @@ check(Trace.Dips() == kept,
 	"the frame the client drew coming out of a loading screen was logged as a stall")
 
 ----------------------------------------------------------------------
+-- The sweep, one feature off at a time
+--
+-- Perf/Sweep.lua switches one feature off for a fixed number of minutes,
+-- switches it back on and moves to the next, so the minute log can be split on
+-- the `off` column afterwards. What is worth asserting is the four things that
+-- would ruin the reading rather than the list of steps, which is a design
+-- decision and not a fact: that a row names what was actually off during it,
+-- that the next step restores before it switches, that a step due in a fight
+-- waits and the rows still tell the truth about the minutes it waited through,
+-- and that the feature always comes back.
+--
+-- Driven a minute at a time in whole seconds. The sweep changes step at the
+-- roll and nowhere else, so what matters here is how many rolls happen and not
+-- how many frames are in each one.
+----------------------------------------------------------------------
+
+-- In a block of its own, so its ten names stay out of the chunk.
+do
+	local function sweepMinute()
+		for _ = 1, 60 do
+			frame:Beat(1.0)
+		end
+		return log.head
+	end
+
+	check(ns.Sweep.Describe() == "not running",
+		("nothing has started a sweep and it reads %q"):format(ns.Sweep.Describe()))
+
+	local wasBars, wasSkin, wasCast = ns.db.bars, ns.db.skin, ns.db.playerCast
+	check(wasBars and wasSkin and wasCast,
+		"the first three steps of the sweep need their features on to switch them off")
+
+	-- One minute a step, which is what the number after the word sets.
+	ns.Sweep.Word("1")
+	check(ns.db.bars == wasBars,
+		"the first step is the baseline and it switched a feature off")
+
+	-- The baseline minute, and then the first feature step.
+	local first = sweepMinute()
+	check(log.off[first] == "base",
+		("the baseline minute is written as %q"):format(tostring(log.off[first])))
+	check(ns.db.bars == false,
+		"the minute rolled onto the enemy bars step and the bars are still on")
+
+	local second = sweepMinute()
+	check(log.off[second] == "bars",
+		("the minute with the enemy bars off is written as %q"):format(tostring(log.off[second])))
+	check(ns.db.bars == true and ns.db.skin == false,
+		("the next step put the bars back at %s and took the skin at %s")
+			:format(tostring(ns.db.bars), tostring(ns.db.skin)))
+
+	-- A zone change is the same event the interrupted run is found on, and a step
+	-- switched off ten seconds ago looks exactly like one switched off last session
+	-- in the saved settings. The run in progress is what tells them apart.
+	fire("PLAYER_ENTERING_WORLD")
+	check(ns.db.skin == false and ns.db.perfSweep ~= nil,
+		"zoning in the middle of a sweep read the run as an interrupted one and undid its step")
+
+	----------------------------------------------------------------------
+	-- A step that comes due in a fight
+	--
+	-- Half of the list owns secure frames, so a step change under lockdown is
+	-- either refused by the client or taints the button. It waits, and the minutes
+	-- it waits through are more minutes of the step that is already running, which
+	-- is what they have to be written as.
+	----------------------------------------------------------------------
+
+	local realLockdown = _G.InCombatLockdown
+	_G.InCombatLockdown = function() return true end
+
+	local third = sweepMinute()
+	check(log.off[third] == "skin",
+		("the unit frame skin's own minute is written as %q"):format(tostring(log.off[third])))
+	local fourth = sweepMinute()
+	check(log.off[fourth] == "skin",
+		("a step held by a fight left the next minute reading %q, and the skin was off in it")
+			:format(tostring(log.off[fourth])))
+	check(ns.db.skin == false and ns.db.playerCast == true,
+		"a step change happened under combat lockdown")
+
+	_G.InCombatLockdown = realLockdown
+	fire("PLAYER_REGEN_ENABLED")
+	check(ns.db.skin == true and ns.db.playerCast == false,
+		("the fight ended and the held step did not run: skin %s, cast %s")
+			:format(tostring(ns.db.skin), tostring(ns.db.playerCast)))
+
+	-- That switch landed in the middle of a minute, so the minute saw both states
+	-- and is written as neither.
+	local fifth = sweepMinute()
+	check(log.off[fifth] == "mixed",
+		("the minute a held step change landed in is written as %q"):format(tostring(log.off[fifth])))
+
+	----------------------------------------------------------------------
+	-- Stopping, and a run cut short by a reload
+	----------------------------------------------------------------------
+
+	ns.Sweep.Word("stop")
+	check(ns.db.playerCast == wasCast and ns.db.bars == wasBars and ns.db.skin == wasSkin,
+		"stopping the sweep left a feature switched off")
+	check(ns.Sweep.Describe() == "not running", "the sweep did not stop")
+	check(ns.db.perfSweep == nil, "a stopped sweep left its record in the saved settings")
+
+	local after = sweepMinute()
+	check(log.off[after] == "",
+		("a minute with no sweep running is written as %q"):format(tostring(log.off[after])))
+
+	-- A logout in the middle of the enemy bars step: the record is in the saved
+	-- settings and so is the feature, still off. The way into the world is where
+	-- that is put right, because every part has had its login pass by then.
+	ns.db.perfSweep = { step = 2, minutes = 5 }
+	ns.db.bars = false
+	fire("PLAYER_ENTERING_WORLD")
+	check(ns.db.bars == true,
+		"a sweep cut short by a reload left the enemy bars off at the next login")
+	check(ns.db.perfSweep == nil,
+		"the interrupted run was put right and its record was left behind")
+
+	print(("sweep  five minutes of it read %s, %s, %s, %s, %s; the fourth is a step waiting for a fight"
+		.. " to end, the fifth is the minute it landed in, and every feature was back on after")
+		:format(log.off[first], log.off[second], log.off[third], log.off[fourth], log.off[fifth]))
+end
+
+----------------------------------------------------------------------
 -- What the recorder costs
 --
 -- It runs on every frame, so this is the measurement that matters more than
@@ -288,6 +517,40 @@ local function churn(ticks)
 	local grew = collectgarbage("count") - held
 	collectgarbage("restart")
 	return grew
+end
+
+-- A bracket weighs the heap either side of its tick, and only a rise counts.
+do
+	ns.Perf.Allocated()
+	collectgarbage("collect")
+	collectgarbage("stop")
+	ns.Perf.Start("bags")
+	local made = {}
+	for index = 1, 200 do
+		made[index] = {}
+	end
+	ns.Perf.Stop("bags")
+	collectgarbage("restart")
+	local bracketed, bracketKey, bracketKB = ns.Perf.Allocated()
+	check(bracketKey == "bags" and bracketKB > 5 and bracketed >= bracketKB,
+		("200 tables made inside the bags bracket read as %s at %s KB of %s")
+			:format(tostring(bracketKey), tostring(bracketKB), tostring(bracketed)))
+	check(ns.Perf.Allocated() == 0, "reading what the brackets allocated did not clear it")
+
+	-- And the recorder weighs it across a frame, whoever made it, which is the row
+	-- the window shows live.
+	collectgarbage("collect")
+	collectgarbage("stop")
+	frame:Beat(0.016)
+	local junk = {}
+	for index = 1, 200 do
+		junk[index] = {}
+	end
+	frame:Beat(0.016)
+	collectgarbage("restart")
+	check(Trace.Second().made > 5,
+		("200 tables made between two frames read as %.2f KB made in the second")
+			:format(Trace.Second().made))
 end
 
 churn(200)

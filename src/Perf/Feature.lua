@@ -198,6 +198,13 @@ local function PerfValue(word, rest)
 		return true
 	end
 
+	-- The one verb whose value is optional. Everything after the word goes
+	-- through to Perf/Sweep.lua, which owns stop, status and the minutes.
+	if word == "sweep" then
+		ns.Sweep.Word(rest)
+		return true
+	end
+
 	if word == "watch" then
 		ns.db.perfWatch = ns.Command.Toggle(rest)
 		Rewatch()
@@ -322,13 +329,19 @@ ns.Register({
 		"perf dips, the frames that went wrong and what made each one",
 		"perf watch on|off, whether the trace runs while the window is shut",
 		"perf dip <ms>, how long a frame has to be to count as one",
+		"perf sweep [minutes], one feature off at a time so the log can be split on it",
+		"perf sweep stop puts everything back, perf sweep status says where it is",
 		"perf show, what each ticker costs. perf on|off, tick timing",
 		"perf reset, clear the counters and the log",
 	},
 
 	status = function()
-		return ("%s; timing %s; opens on %s")
-			:format(ns.Trace.Describe(), ns.db.perf and "on" or "off", ns.PerfKey.Describe())
+		-- The sweep is on the end because it is the one thing here that changes
+		-- other parts' settings, and a player who has forgotten it is running
+		-- would otherwise have to guess why a feature of theirs is off.
+		return ("%s; timing %s; opens on %s; sweep %s")
+			:format(ns.Trace.Describe(), ns.db.perf and "on" or "off",
+				ns.PerfKey.Describe(), ns.Sweep.Describe())
 	end,
 
 	panel = function(ui)

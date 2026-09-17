@@ -72,8 +72,30 @@ end
 --------------------------------------------------------------------------
 
 -- Every header open, so an index means the same thing twice running.
+--
+-- **Only when one is shut.** ExpandQuestHeader(0) makes the client send
+-- QUEST_LOG_UPDATE whether or not it opened anything, and the tracker reads the
+-- log on QUEST_LOG_UPDATE, and reading the log begins here. With this call
+-- unconditional that was a circle one frame wide. The minute log of 2026-09-17
+-- counted 6000 events a minute in minutes where nothing happened and Questie's
+-- combat queue asked 6000 times a minute, both of them the frame count: every
+-- frame of the session read the whole log, built its zones and rows again and
+-- threw the last ones away, and had Questie queue a tracker update it drains at
+-- 3600 a minute at best. That queue was the 1.6 MB a minute the session leaked
+-- and taking entries off the front of it was the ten a second stall that grew
+-- until a reload.
+--
+-- A header is a row like any other, so whether one is shut is a read and the
+-- read is silent. GetQuestLogTitle is asked directly rather than through
+-- Client.Entry below, which builds a table per row.
 function Client.Open()
-	return Fire("ExpandQuestHeader", 0)
+	for index = 1, (Client.Count()) do
+		local _, _, _, isHeader, isCollapsed = GetQuestLogTitle(index)
+		if isHeader and isCollapsed then
+			return Fire("ExpandQuestHeader", 0)
+		end
+	end
+	return true
 end
 
 -- Take a reading with the cursor, wherever the reader chooses to put it, and

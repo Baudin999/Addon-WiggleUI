@@ -73,13 +73,23 @@ function Cause.Profiling()
 	return type(_G.GetScriptCPUUsage) == "function"
 end
 
--- Total milliseconds the client has spent in Lua since it started counting.
+-- Total milliseconds the client has spent in Lua since it started counting, or
+-- nil where the client is not counting at all.
+--
+-- The CVar is the load bearing half of that question and this function used to
+-- skip it. With scriptProfile off the call is still there and still answers,
+-- and what it answers is a constant 0, which is a number and passes every other
+-- test here. Perf/Trace.lua read that as a real zero, latched minute.profiled
+-- on it, and wrote 0.00 into the log's lua column where the contract says -1.
+-- Three hours of rows said the profiler was on and the client had spent no time
+-- in Lua, which is the one shape a reader cannot tell from a measurement. Ask
+-- Profiling, which is the one place that reads the CVar, and a client with the
+-- profiler off now costs a CVar lookup here rather than a call into it.
 local function ScriptTotal()
-	local read = _G.GetScriptCPUUsage
-	if type(read) ~= "function" then
+	if not Cause.Profiling() then
 		return nil
 	end
-	local ok, ms = pcall(read)
+	local ok, ms = pcall(_G.GetScriptCPUUsage)
 	return (ok and type(ms) == "number") and ms or nil
 end
 

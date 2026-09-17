@@ -125,6 +125,21 @@ local gauges, gaugeOrder = {}, {}
 -- question three lines here answer exactly.
 local frameTotal, frameWorst, frameWorstKey = 0, 0, nil
 
+-- What the brackets saw allocated, in KB, since the minute log last asked.
+--
+-- scripts/check.sh refuses a table, a closure and a built string on any path a
+-- ticker reaches, and on 2026-09-17 this addon's heap still swung between 16 and
+-- 57 MB inside a minute. So something allocates that the text of a tick does
+-- not show, a client call that answers with a fresh table being the likely
+-- shape, and the only way to name it is to weigh the heap either side of each
+-- tick. collectgarbage("count") is a read of one number and allocates nothing.
+--
+-- Only a rise is counted. A collector step that lands inside a bracket makes
+-- the heap fall across it, and a fall says nothing about what the tick made, so
+-- the figure is a floor on the truth rather than the truth. What the slots do
+-- not account for, against the churn in oursKB, is the event handlers.
+local allocated = 0
+
 local watching = false   -- the tab is on screen
 local ticker             -- the sampler's own tick, kept so the tab can stop it
 local lastMemory, memoryRate, memoryNow = nil, 0, 0
@@ -141,6 +156,8 @@ for index = 1, #ORDER do
 		peak = 0,
 		ticks = 0,
 		started = nil,
+		heap = 0,
+		kb = 0,
 	}
 	for i = 1, WINDOW do
 		slot.ring[i] = 0
@@ -171,6 +188,7 @@ function Perf.Start(key)
 	end
 	local slot = slots[key]
 	if slot then
+		slot.heap = collectgarbage("count")
 		slot.started = clock()
 	end
 end
@@ -182,6 +200,11 @@ function Perf.Stop(key)
 	end
 	local taken = clock() - slot.started
 	slot.started = nil
+	local rose = collectgarbage("count") - slot.heap
+	if rose > 0 then
+		slot.kb = slot.kb + rose
+		allocated = allocated + rose
+	end
 	if taken < 0 then
 		return -- the clock wrapped, which it does on a long session
 	end
@@ -211,6 +234,23 @@ function Perf.FrameCost()
 	local total, worst, key = frameTotal, frameWorst, frameWorstKey
 	frameTotal, frameWorst, frameWorstKey = 0, 0, nil
 	return total, worst, key
+end
+
+-- What the brackets saw allocated since this was last called, in KB, then the
+-- slot that made most of it and how much that was. Cleared by the read, because
+-- the caller is the minute log and the question is always "in this minute". A
+-- walk over every slot, which is why it is asked once a minute and not a frame.
+function Perf.Allocated()
+	local total, most, mostKey = allocated, 0, nil
+	allocated = 0
+	for index = 1, #ORDER do
+		local slot = slots[ORDER[index]]
+		if slot.kb > most then
+			most, mostKey = slot.kb, slot.key
+		end
+		slot.kb = 0
+	end
+	return total, mostKey, most
 end
 
 -- A count a part wants shown beside its timing, because 0.31 ms means one thing
@@ -256,12 +296,14 @@ function Perf.Reset()
 	for index = 1, #ORDER do
 		local slot = slots[ORDER[index]]
 		slot.at, slot.count, slot.total, slot.peak, slot.ticks = 0, 0, 0, 0, 0
+		slot.kb = 0
 		for i = 1, WINDOW do
 			slot.ring[i] = 0
 		end
 	end
 	lastMemory, memoryRate = nil, 0
 	frameTotal, frameWorst, frameWorstKey = 0, 0, nil
+	allocated = 0
 end
 
 -- Only when scriptProfile is already on, which is a client wide setting with a
