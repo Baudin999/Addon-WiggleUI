@@ -671,6 +671,14 @@ for index, section in ipairs(SECTIONS) do
 	end
 end
 
+-- The nearest section above `index` that writes `key`, which is the one whose
+-- value a reader at `index` is handed.
+local function LastWriter(key, index)
+	for earlier = index - 1, 1, -1 do
+		if handoffs[earlier].writes[key] then return earlier end
+	end
+end
+
 -- Which sections a class run loads: every class section, and walking up the
 -- list, every section that last wrote a key one of those reads. Walking upward
 -- is what makes it transitive, because a writer is always above its reader and
@@ -681,12 +689,8 @@ local function ClassRun()
 		if CLASS_SECTIONS[SECTIONS[index]] or wanted[index] then
 			wanted[index] = true
 			for key in pairs(handoffs[index].reads) do
-				for earlier = index - 1, 1, -1 do
-					if handoffs[earlier].writes[key] then
-						wanted[earlier] = true
-						break
-					end
-				end
+				local writer = LastWriter(key, index)
+				if writer then wanted[writer] = true end
 			end
 		end
 	end

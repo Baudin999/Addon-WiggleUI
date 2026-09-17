@@ -62,7 +62,7 @@ local function Name(frame)
 end
 
 local function Selection()
-	local ok, index = pcall(GetCraftSelectionIndex)
+	local ok, index = pcall(_G.GetCraftSelectionIndex)
 	return ok and tostring(index) or "unreadable"
 end
 

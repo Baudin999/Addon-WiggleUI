@@ -6484,13 +6484,16 @@ and zero errors.
    settings that vanish on logout rather than an error.
 5. Bans writes and allocation on ticker paths, described under Ticker
    discipline above.
-6. Caps how long a file may be. 800 lines in general, and four files carry
-   their own ceiling set at what they measure today, each with a one-line reason
-   and the split it would take. The ceiling fails in both directions: a file that
-   grows past it fails, and a file that shrinks below it fails until the number
-   comes down with it, which is what makes it a ratchet rather than a licence.
-   The addon had gates on allocation, on TOC parity and on version drift, and
-   nothing at all watching a file reach nineteen hundred lines.
+6. Measures every function with `scripts/shape.lua`, in the addon and in the
+   harness: 100 lines of its own with nested functions taken out, 4 levels of
+   nesting, 30 branches. A function past one of those carries an entry in that
+   file with the number it measures today and a reason. An entry fails in both
+   directions: a function that grows past it fails, and one that shrinks below
+   it fails until the number comes down. `scripts/ratchet.lua` reads the
+   committed copy and refuses an entry that went up. No gate counts the lines
+   in a file. There were two, 800 for the addon and 800 for the harness, and
+   both went the same way: the change that hit the ceiling raised it, or split
+   a file that was one subject, and no function got better either time.
 7. Runs `scripts/harness.lua`, which loads every file in TOC order against a
    stub of the client, puts two nameplates up, drives the enemy bars ticker and
    then asserts the things reading the source cannot settle: that the grid
@@ -6663,10 +6666,9 @@ and zero errors.
    as the invariant it comes from: at 3.4, 2.4 and 1.6 second swings, and across
    a proc that lands mid swing, the moment the fill reaches the mark is the
    moment the swing has exactly a cast time left to run.
-8. Holds the harness to the shape it was split into. No file over 800 lines
-   or 40 names at chunk level unless it carries its own ceiling and a reason,
-   both ratcheting in each direction, and the runner's section list has to
-   match what is on disk. This one is here because the harness was a single
+8. Holds the harness to the shape it was split into. No file over 40 names at
+   chunk level unless it carries its own ceiling and a reason, ratcheting in
+   each direction, and the runner's section list has to match what is on disk. This one is here because the harness was a single
    file of eleven thousand lines that had reached a hundred and seventy one
    chunk locals against Lua 5.1's ceiling of two hundred, and the only thing
    watching that number was a comment asking the next author to be careful.

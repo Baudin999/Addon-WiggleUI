@@ -58,15 +58,15 @@ end
 --
 -- An allow-list entry is keyed by its list as well as its path. Nothing needed
 -- that while there were two lists and they named different trees; there are
--- seven now, four of them over src/, and the same file appearing on two of them
--- is ordinary rather than exotic.
+-- eight now, seven of them over src/, and the same file appearing on two of
+-- them is ordinary rather than exotic.
 local function Ceilings(text)
 	local found = {}
 
 	-- Which allow-list the entry below belongs to, so two lists naming the same
 	-- file are two ceilings rather than one. They are keyed on the path alone
-	-- otherwise, and check.sh now holds seven such lists: the two harness
-	-- budgets, the two markers, the two line exemptions and the ticker frames. A
+	-- otherwise, and check.sh now holds eight such lists: the harness name
+	-- budget, the markers, the line exemptions and the ticker frames among them. A
 	-- path on two of them would leave whichever came second watching the first
 	-- one's number, which is a ratchet that reads as green while the ceiling
 	-- under it moves.
@@ -79,8 +79,8 @@ local function Ceilings(text)
 	-- NESTING unwatched, which is a gate with a hole in the shape of the
 	-- thing it was written to catch.
 	for line in (text .. "\n"):gmatch("([^\n]*)\n") do
-		-- shape.lua's three, and check.sh's two. `local NESTING = 4` and
-		-- `HARNESS_LINE_LIMIT=800` are one declaration in two languages.
+		-- shape.lua's three, and check.sh's one. `local NESTING = 4` and
+		-- `HARNESS_NAME_LIMIT=40` are one declaration in two languages.
 		local name, value = line:match("^local ([A-Z_]+) = (%d+)$")
 		if not name then
 			name, value = line:match("^([A-Z_]+)=(%d+)$")

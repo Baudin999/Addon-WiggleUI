@@ -194,6 +194,49 @@ end
 -- One pass over every string there is
 ------------------------------------------------------------
 
+-- What one string breaks, written into `bad`. False for a string nothing has
+-- drawn into yet: it has no font and no role to be wrong about, and the addon
+-- makes a few and fills them on first use.
+local function Judge(r, bad)
+	local path, size, flags = r:GetFont()
+	local text = r:GetText()
+	if not (path and text and text ~= "") then
+		return false
+	end
+	flags = flags or ""
+	local at = r.madeAt or "?"
+	local file = at:gsub(":%d+$", "")
+	local outlined = flags:find("OUTLINE", 1, true) ~= nil
+	-- Not a flag. UI/Text.lua strips UI.SHADOW before SetFont and turns it
+	-- into an offset on the font object, so the only way to read the role
+	-- back off a string is to ask what it draws.
+	local shadowed = select(1, r:GetShadowOffset()) ~= 0
+	local function fault(rule, what)
+		local exempt = ALLOWED[file]
+		if exempt and exempt[rule] then
+			return
+		end
+		bad[#bad + 1] = ("%s  %s"):format(at, what)
+	end
+
+	if not ADDON_FACES[path] then
+		fault("face", ("drawn in %s, which the addon does"
+			.. " not ship"):format(path))
+	end
+	if outlined and size and size < floor then
+		fault("floor", ("outlined at %d, under the floor of %d")
+			:format(size, floor))
+	end
+	if not outlined and not shadowed and not Surface(r, size) then
+		fault("bare", "flat with nothing painted behind it")
+	end
+	if flags:find("MONOCHROME", 1, true) then
+		fault("mono",
+			"MONOCHROME, which breaks Arial Narrow's stems")
+	end
+	return true
+end
+
 local function Sweep(why)
 	local bad, total = {}, 0
 	local seen = {}
@@ -201,45 +244,8 @@ local function Sweep(why)
 		for _, r in ipairs(frame.regions or {}) do
 			if r.kind == "fontstring" and not seen[r] then
 				seen[r] = true
-				local path, size, flags = r:GetFont()
-				-- A string nothing has drawn into yet has no font and no role
-				-- to be wrong about. The addon makes a few and fills them on
-				-- first use.
-				local text = r:GetText()
-				if path and text and text ~= "" then
+				if Judge(r, bad) then
 					total = total + 1
-					flags = flags or ""
-					local at = r.madeAt or "?"
-					local file = at:gsub(":%d+$", "")
-					local outlined = flags:find("OUTLINE", 1, true) ~= nil
-					-- Not a flag. UI/Text.lua strips UI.SHADOW before SetFont
-					-- and turns it into an offset on the font object, so the
-					-- only way to read the role back off a string is to ask
-					-- what it draws.
-					local shadowed = select(1, r:GetShadowOffset()) ~= 0
-					local function fault(rule, what)
-						local exempt = ALLOWED[file]
-						if exempt and exempt[rule] then
-							return
-						end
-						bad[#bad + 1] = ("%s  %s"):format(at, what)
-					end
-
-					if not ADDON_FACES[path] then
-						fault("face", ("drawn in %s, which the addon does"
-							.. " not ship"):format(path))
-					end
-					if outlined and size and size < floor then
-						fault("floor", ("outlined at %d, under the floor of %d")
-							:format(size, floor))
-					end
-					if not outlined and not shadowed and not Surface(r, size) then
-						fault("bare", "flat with nothing painted behind it")
-					end
-					if flags:find("MONOCHROME", 1, true) then
-						fault("mono",
-							"MONOCHROME, which breaks Arial Narrow's stems")
-					end
 				end
 			end
 		end

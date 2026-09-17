@@ -1367,8 +1367,14 @@ done < <(find . -name '*.lua' -type f | sort)
 # own lines with nested functions taken out, how deep it nests, and how many
 # branches it takes. The numbers, the allow-list and the reason for every entry
 # on it are in that file, next to the code that enforces them.
+#
+# The harness is measured in the same call. It kept a file ceiling of its own
+# for longer than the addon did, eleven of its files were on the allow-list for
+# it, and every one of those entries had been raised at least once by the change
+# it blocked. A test function nobody can see the ends of costs what any other
+# function costs, so the same three numbers hold it.
 if [ -f ../scripts/shape.lua ]; then
-	if ! lua5.1 ../scripts/shape.lua $(find . -name '*.lua' -type f | sort); then
+	if ! lua5.1 ../scripts/shape.lua $(find . ../scripts/harness -name '*.lua' -type f | sort); then
 		status=1
 	fi
 else
@@ -1531,15 +1537,16 @@ fi
 # `do ... end`, which is a request rather than a gate, and eleven of the thirty
 # six sections had not.
 #
-# So the three things the split is worth are measured here rather than asked
-# for. The name budget is the one that actually broke. The line limit is the
-# rule the addon is already held to above. The manifest is TOC parity by
-# another name, because a section file the runner does not list is a test that
-# looks like it covers something and does not.
+# So the two things the split is worth are measured here rather than asked
+# for. The name budget is the one that actually broke. The manifest is TOC
+# parity by another name, because a section file the runner does not list is a
+# test that looks like it covers something and does not. How long a harness
+# file runs is not measured: scripts/shape.lua holds its functions further up,
+# and a long section that is one subject is one file.
 harness_status=0
 
-# Names declared at the top of a chunk, against Lua's ceiling of 200. Both of
-# these are ratchets: the general limit and every entry beside it sit at what
+# Names declared at the top of a chunk, against Lua's ceiling of 200. Both
+# numbers are ratchets: the general limit and every entry beside it sit at what
 # is measured today, so an improvement lowers the number in the same commit and
 # growth fails here instead of passing unremarked. Growth of the number itself
 # fails further up, in scripts/ratchet.lua, which is the half of that sentence
@@ -1549,24 +1556,6 @@ HARNESS_NAME_LIMIT=40
 # path:ceiling:why it is exempt
 HARNESS_NAME_ALLOWED="
 sections/25-meters.lua:57:one scene held across damage, threat, the clock and both panes
-"
-
-# The same 800 the addon is held to, and the same allow-list shape.
-HARNESS_LINE_LIMIT=800
-
-# path:ceiling:why it is exempt
-HARNESS_LINE_ALLOWED="
-sections/29-social.lua:817:one subject, the chat window; the rooms, what routes into them, what is unread in them and what each one draws are four readings of the same scene
-client/02-text.lua:776:one class, the Region stub; every line is a method of the client's own frame, and a frame API split across two files is two halves of one object
-sections/05-action-bars.lua:884:one subject, the cloned bars, in one do block over one Bars handle and one slot fixture; the keys, the paging and the churn all read the same five bars
-sections/55-bags.lua:806:one subject, the bag window; what it draws, what a square answers and where the window sits are one window and one bag fixture
-sections/39-party-raid.lua:950:one subject, two lists, two directions each; the party line and the raid grid share a tile, a roster fixture and a header model, and splitting them copies all three
-sections/42-cooldown-row.lua:734:one subject, the cooldown row; what is on it, what a square draws, when the row is up and what the tick costs are four readings of one row and every one of them moves when an entry does
-sections/85-quest-column.lua:825:one subject, the tracker over the world; its scope, its rows, the party under a quest, the zone plates and the click through to the window are readings of one column under one log fixture and one standing position, and a file of their own would carry the frame walkers and the standing position twice
-sections/54-world-map.lua:809:one subject, the world map; the column, the picture, Questie's markers and the gestures over them are one window under one zone fixture, and splitting them copies the map tree, the standing position and the icon frames three ways
-client/05-quests.lua:830:one subject, what Questie answers; the item rows, the drop rates, the public API and the icon table are four faces of one addon under one loader stub, and a file of their own would carry the loader and the quest table twice
-sections/80-floating-numbers.lua:872:one subject, the floating numbers; which column a blow or a miss comes off, its colour, its envelope, the merge and the client's own text put away are readings of one stream under one combat log fixture, and a file of their own would carry the line builders and the anchors twice
-sections/40-loot-feed.lua:908:one subject, the loot feed; what it is dressed in, how a chip filters it, what a hover on a row says, the arithmetic of folding a repeat onto a row and why a row matters are readings of one column under one feed instance, one item fixture and one clock, and a file of their own would carry all three twice
 "
 
 harness_names='
@@ -1582,8 +1571,7 @@ harness_names='
 END { print n + 0 }
 '
 
-# One measurement against one limit and one allow-list. Called twice per file
-# because the two numbers are the same rule about two different things.
+# One measurement against one limit and one allow-list.
 harness_budget() {
 	local rel="$1" what="$2" measured="$3" limit="$4" allowed="$5"
 	local ceiling="" why="" entry
@@ -1620,8 +1608,6 @@ while IFS= read -r f; do
 	rel="${f#../scripts/harness/}"
 	harness_budget "$rel" "names at chunk level" "$(awk "$harness_names" "$f")" \
 		"$HARNESS_NAME_LIMIT" "$HARNESS_NAME_ALLOWED"
-	harness_budget "$rel" "lines" "$(wc -l < "$f")" \
-		"$HARNESS_LINE_LIMIT" "$HARNESS_LINE_ALLOWED"
 done < <(find ../scripts/harness -name '*.lua' -type f | sort)
 
 # Every section on disk is listed by the runner, and every section the runner
