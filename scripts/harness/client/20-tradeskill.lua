@@ -204,6 +204,22 @@ _G.UnitCreatureFamily = function(unit)
 	return unit == "pet" and "Wolf" or nil
 end
 
+-- The pet's face, through the two calls Blizzard's PetFrame.lua reads it with.
+-- H.pet.mood is what GetPetHappiness answers first, 1 to 3, and H.pet.hunters
+-- is HasPetUI's second answer. Both empty in the shipped scene, which is a pet
+-- with no happiness, so the pet block's section sets them. The damage
+-- percentage is the one the client pairs with each mood. Here rather than with
+-- the pet bar in 08-blizzard.lua, because that file loads after the addon and
+-- UnitFrames/Paint.lua takes both calls at load.
+H.pet = { mood = nil, hunters = false }
+_G.GetPetHappiness = function()
+	if not H.pet.mood then
+		return nil
+	end
+	return H.pet.mood, 50 + 25 * H.pet.mood, 0
+end
+_G.HasPetUI = function() return true, H.pet.hunters end
+
 -- A pet taught, the way the server teaches one: refused where the client's own
 -- create button would be disabled, and both events on the way back.
 _G.DoCraft = function(index)

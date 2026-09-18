@@ -387,9 +387,9 @@ do
 		"a block that is not the pet's carries a happiness face")
 	check(mood:GetTexture() == "Interface\\PetPaperDollFrame\\UI-PetHappiness",
 		("the pet's face is cut from %s"):format(tostring(mood:GetTexture())))
-	own.hunterPet = true
+	H.pet.hunters = true
 	for value, left in pairs({ [3] = 0, [2] = 0.1875, [1] = 0.375 }) do
-		own.petMood = value
+		H.pet.mood = value
 		fire("UNIT_HAPPINESS", "pet")
 		pass()
 		check(mood:IsShown() and mood.texcoord and mood.texcoord[1] == left
@@ -397,15 +397,15 @@ do
 			("happiness %d drew the cell starting at %s"):format(value,
 				tostring(mood.texcoord and mood.texcoord[1])))
 	end
-	own.hunterPet = false
+	H.pet.hunters = false
 	fire("UNIT_HAPPINESS", "pet")
 	pass()
 	check(not mood:IsShown(), "a pet that is not a hunter's wears a happiness face")
-	own.hunterPet, own.petMood = true, nil
+	H.pet.hunters, H.pet.mood = true, nil
 	fire("UNIT_HAPPINESS", "pet")
 	pass()
 	check(not mood:IsShown(), "the client stopped answering a happiness and the face stayed up")
-	own.hunterPet = false
+	H.pet.hunters = false
 
 	print("badges rest, combat, the flag, a raid marker and the pet's face each up on the event and down again")
 end

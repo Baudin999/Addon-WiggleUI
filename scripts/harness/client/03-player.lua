@@ -37,10 +37,6 @@ local own = {
 	-- What a worn item's own cooldown reads, keyed by inventory slot. The two
 	-- trinket slots are the only ones anything asks about.
 	worn = {},
-	-- The pet's face: what GetPetHappiness answers first, 1 to 3, and whether
-	-- HasPetUI calls the pet a hunter's. Both empty in the shipped scene, which
-	-- is a pet with no happiness, so the pet block's section sets them.
-	petMood = nil, hunterPet = false,
 }
 
 -- The race, as the client answers it: a localised name first and a token
@@ -101,15 +97,6 @@ _G.GetTotemInfo = function(slot)
 end
 
 _G.IsResting = function() return own.resting end
--- The two calls Blizzard's PetFrame.lua reads the face with. The damage
--- percentage is the one the client pairs with each mood.
-_G.GetPetHappiness = function()
-	if not own.petMood then
-		return nil
-	end
-	return own.petMood, 50 + 25 * own.petMood, 0
-end
-_G.HasPetUI = function() return true, own.hunterPet end
 _G.UnitIsDeadOrGhost = function() return own.dead end
 
 -- Threat, with a hook for the same reason. Core/Core.lua resolves
