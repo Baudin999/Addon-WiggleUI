@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2TB7JKV4G19RF2HAE7G26Z8
 type: task
-status: todo
+status: doing
 title: Every square draws its key at twice the old size
 ---
 
