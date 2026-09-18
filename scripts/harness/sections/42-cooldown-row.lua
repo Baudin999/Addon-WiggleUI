@@ -377,7 +377,7 @@ do
 	for index = 1, #window.groups do
 		local group = window.groups[index]
 		for section = 1, #group.sections do
-			if group.sections[section].title == "Which cooldowns" then
+			if group.sections[section].title == "Cooldowns" then
 				window.rail:Select(index)
 				ns.Options.SelectSection(section)
 			end

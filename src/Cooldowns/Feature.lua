@@ -239,7 +239,7 @@ ns.Register({
 
 	panel = function(ui)
 		ui.Section("Cooldowns", "Fighting")
-		ui.Lede("Two lines, up for the whole fight. The big squares on top are the seconds the fight is made of; the small ones docked under them are the minutes.")
+		ui.Lede("Two lines up for the whole fight: seconds on top, minutes docked under. Drag a spell from your spellbook onto a line, across lines, or off the row.")
 
 		ui.Reading("the row", ns.Cooldowns.Describe)
 
@@ -271,8 +271,9 @@ ns.Register({
 		end)
 		ui.Hint("Unlock the frames to drag the row somewhere else. This puts it back where the addon ships it.")
 
-		ui.Section("Which cooldowns", "Fighting")
-		ui.Lede("The row as it will look. Drag a spell off your spellbook onto either line, drag a square from one line to the other, drag one off to stop counting it.")
+		-- Which cooldowns are on it, under the same title. It was a page of its
+		-- own, and choosing what the row counts is the same job as shaping it.
+		ui.Divider()
 
 		-- The row itself, and the squares that are off it. Both are drawn in
 		-- Panel.lua, which is a page of this addon's own the way Hover/Panel.lua
