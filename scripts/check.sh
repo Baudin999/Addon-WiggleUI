@@ -704,6 +704,19 @@ while IFS= read -r bad; do
 done < <(grep -rn 'SecureHandlerClickTemplate' --include='*.lua' . \
 	| grep -v '^\./UI/' || true)
 
+# And every button registers its clicks there, secure or not. Seventeen files
+# called RegisterForClicks with their own spelling of a button and an edge, and
+# which buttons a frame answers is the question the camera pass has to ask, so
+# it gets one place to be answered. UI.Press.Clicks takes the edge the way
+# Press.Button does. The call is matched and the word is not, because a comment
+# that names the client's method is explaining it, and Mail/Bags.lua probes for
+# the method on a button the client built.
+while IFS= read -r bad; do
+	echo "only UI/Press.lua may register a button's clicks, use UI.Press.Clicks: $bad"
+	status=1
+done < <(grep -rn ':RegisterForClicks(' --include='*.lua' . \
+	| grep -v '^\./UI/Press\.lua:' || true)
+
 # One file runs the work a fight refused, and it is Core/Lockdown.lua.
 #
 # The client refuses every protected write in combat and forgets it. Twenty

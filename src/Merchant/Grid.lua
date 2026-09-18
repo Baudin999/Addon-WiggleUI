@@ -346,7 +346,7 @@ local function Build(index)
 	-- Both buttons, and the right one is not handed to the camera: it is the
 	-- one that spends, and the header says what that costs. The same two edges
 	-- MerchantItemButton_OnLoad registers, and the same drag button.
-	card:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	UI.Press.Clicks(card, "up", "LeftButton", "RightButton")
 	card:RegisterForDrag("LeftButton")
 
 	-- On the way down, in the addon's own black. A card that does not move under

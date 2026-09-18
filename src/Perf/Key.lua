@@ -44,7 +44,7 @@ local BARE = { BUTTON1 = true, BUTTON2 = true }
 -- Left shown, because a click delivered by the binding system is only proven to
 -- arrive on a shown frame.
 local button = CreateFrame("Button", BUTTON_NAME, UIParent)
-button:RegisterForClicks("AnyUp")
+ns.UI.Press.Clicks(button, "up")
 button:SetScript("OnClick", function()
 	ns.PerfHud.Toggle()
 end)

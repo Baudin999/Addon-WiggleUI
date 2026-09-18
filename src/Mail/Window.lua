@@ -181,7 +181,7 @@ local function Slot(parent, at)
 
 	local button = CreateFrame("Button", nil, parent)
 	button:SetAllPoints(square)
-	button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	ns.UI.Press.Clicks(button, "up", "LeftButton", "RightButton")
 	button.at = at
 
 	square.icon, square.count, square.button = icon, count, button
@@ -290,7 +290,7 @@ local function RailRow(index)
 	button.text:SetPoint("LEFT", M.rowGap, 0)
 	button.text:SetPoint("RIGHT", -M.rowGap, 0)
 	button.note:Hide()
-	button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	ns.UI.Press.Clicks(button, "up", "LeftButton", "RightButton")
 
 	button:SetScript("OnClick", function(this, which)
 		if not this.name then

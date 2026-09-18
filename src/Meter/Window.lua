@@ -223,7 +223,7 @@ local function BuildPane(clickable, percent)
 		button:SetPoint("TOPLEFT")
 		button:SetPoint("TOPRIGHT")
 		button:SetHeight(HEADER * unit)
-		button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+		ns.UI.Press.Clicks(button, "up", "LeftButton", "RightButton")
 		button:SetScript("OnClick", function(_, click)
 			if click == "RightButton" then
 				MeterWindow.Toggle()

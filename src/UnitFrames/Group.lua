@@ -394,7 +394,7 @@ end
 local function Take(list, button)
 	list.adopted[button] = true
 	list.members[#list.members + 1] = button
-	button:RegisterForClicks("AnyUp")
+	ns.UI.Press.Clicks(button, "up")
 	Member.Build(button)
 	for index = 1, #watchers do
 		watchers[index](button)

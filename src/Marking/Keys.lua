@@ -56,7 +56,7 @@ local warned
 -- mouse disabled frame, and a silently inert button is the one failure this
 -- file has no way to report.
 local button = CreateFrame("Button", BUTTON_NAME, UIParent)
-button:RegisterForClicks("AnyDown")
+ns.UI.Press.Clicks(button, "down")
 button:SetScript("OnClick", function(_, click)
 	ns.Marking.Key(click)
 end)

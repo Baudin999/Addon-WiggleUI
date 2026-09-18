@@ -301,7 +301,7 @@ local function Build(spec)
 	button:SetAttribute("unit", spec.unit)
 	button:SetAttribute("*type1", "target")
 	button:SetAttribute("*type2", "togglemenu")
-	button:RegisterForClicks("AnyUp")
+	ns.UI.Press.Clicks(button, "up")
 	button:Hide()
 
 	-- And it stands down while a screen window is up. UI/Hush.lua carries the

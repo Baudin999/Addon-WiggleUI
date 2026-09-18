@@ -482,7 +482,7 @@ local function Take(pool, at, size, indent)
 	-- answers the left button on the up edge already, so this changes no
 	-- behaviour and says what the behaviour is, which is the thing that goes
 	-- wrong first in this addon when nobody writes it down.
-	row:RegisterForClicks("LeftButtonUp")
+	UI.Press.Clicks(row, "up", "LeftButton")
 	row:SetScript("OnClick", Press)
 
 	-- The right button and the middle one to the camera, on a client that will
@@ -585,7 +585,7 @@ local function Slab(at)
 	row.text:SetPoint("LEFT", LEAD, 0)
 	row.text:SetPoint("RIGHT", -(M.rowGap * 2 + DOT), 0)
 
-	row:RegisterForClicks("LeftButtonUp")
+	UI.Press.Clicks(row, "up", "LeftButton")
 	row:SetScript("OnClick", Unfold)
 	row:SetScript("OnEnter", Lit)
 	row:SetScript("OnLeave", Unlit)

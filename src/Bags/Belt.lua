@@ -109,7 +109,7 @@ local function Build(bag)
 	button.bag = bag
 	button:SetSize(SLOT, SLOT)
 	UI.Dress(button, SLOT)
-	button:RegisterForClicks("LeftButtonUp")
+	UI.Press.Clicks(button, "up", "LeftButton")
 	button:RegisterForDrag("LeftButton")
 	button:SetScript("OnClick", Press)
 	button:SetScript("OnReceiveDrag", Put)

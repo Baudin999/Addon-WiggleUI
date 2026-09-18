@@ -8,7 +8,8 @@ UI.Press = Press
 -- Secure buttons, and the edge each one fires on
 --
 -- Every button in this addon that makes a protected call is built here, and
--- check.sh holds every other file to that: nothing outside this file names
+-- every button registers its clicks here. check.sh holds every other file to
+-- that: nothing outside this file names RegisterForClicks,
 -- SecureActionButtonTemplate, SecureAuraHeaderTemplate or useOnKeyDown, and
 -- nothing outside UI/ names SecureHandlerClickTemplate.
 --
@@ -85,6 +86,18 @@ function Press.Key(name, edge)
 		key:RegisterForClicks("AnyDown")
 	end
 	return key
+end
+
+-- A button that is not secure, answering `edge` for the mouse buttons named or
+-- for all of them. A plain button's OnClick runs on whatever it registered, so
+-- there is no attribute to keep in step here. The call is here so that every
+-- registration in the addon is one function, and which buttons a frame answers
+-- is a question with one place to ask it. "up" for anything the cursor
+-- presses, "down" for a key a binding presses that acts on the press.
+function Press.Clicks(button, edge, ...)
+	assert(edge == "up" or edge == "down", "Press.Clicks: edge is \"up\" or \"down\"")
+	Register(button, edge, ...)
+	return button
 end
 
 -- Which edge a secure action button fires on, worked out the way the client

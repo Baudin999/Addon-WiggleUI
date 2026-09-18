@@ -186,10 +186,10 @@ function Bags.Dress(button)
 		return false
 	end
 	if taking then
-		button:RegisterForClicks("LeftButtonUp")
+		ns.UI.Press.Clicks(button, "up", "LeftButton")
 		button:SetScript("OnMouseUp", Release)
 	else
-		button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+		ns.UI.Press.Clicks(button, "up", "LeftButton", "RightButton")
 		button:SetScript("OnMouseUp", nil)
 	end
 	return true

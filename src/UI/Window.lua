@@ -1565,7 +1565,7 @@ local function Make(strip, index)
 	-- widget's default. A Button that registers nothing answers exactly this
 	-- already, so it changes no behaviour and says what the behaviour is, which
 	-- is the thing that goes wrong first when nobody writes it down.
-	button:RegisterForClicks("LeftButtonUp")
+	UI.Press.Clicks(button, "up", "LeftButton")
 	button:SetScript("OnClick", function(this)
 		strip:Select(this.key)
 	end)
@@ -2114,7 +2114,7 @@ local function ListRow(list, index)
 	-- arrives at OnClick as "LeftButton" on a row registered for the left
 	-- button and on a row that registered nothing.
 	if list.onBack or list.onRight then
-		button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+		UI.Press.Clicks(button, "up", "LeftButton", "RightButton")
 	end
 	button:SetScript("OnClick", function(this, which)
 		if which == "RightButton" then

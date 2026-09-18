@@ -521,7 +521,7 @@ function UI.KeyBox(parent, opts)
 		Listen(field)
 	end
 
-	field:RegisterForClicks("AnyUp")
+	UI.Press.Clicks(field, "up")
 	field:SetScript("OnClick", function(self, button)
 		if capturing ~= self then
 			Listen(self)
@@ -697,7 +697,7 @@ function UI.DropSquare(parent, size, get, set, opts)
 	-- reading this expected it to do already.
 	local button = CreateFrame("Button", nil, square)
 	button:SetAllPoints(square)
-	button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	UI.Press.Clicks(button, "up", "LeftButton", "RightButton")
 	button:SetScript("OnReceiveDrag", Drop)
 	button:SetScript("OnClick", function(_, which)
 		UI.CloseDropdown()

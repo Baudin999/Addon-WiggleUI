@@ -238,7 +238,7 @@ local function Square(board, index)
 	UI.Dress(square, SQUARE)
 	square.board = board
 	square.needs = {}
-	square:RegisterForClicks("LeftButtonUp")
+	UI.Press.Clicks(square, "up", "LeftButton")
 	square:SetScript("OnEnter", OnEnter)
 	square:SetScript("OnLeave", OnLeave)
 	square:SetScript("OnClick", OnClick)
