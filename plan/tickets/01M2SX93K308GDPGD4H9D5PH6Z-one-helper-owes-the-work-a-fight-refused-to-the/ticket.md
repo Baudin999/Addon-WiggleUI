@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SX93K308GDPGD4H9D5PH6Z
 type: task
-status: doing
+status: done
 title: One helper owes the work a fight refused to the end of the fight
 ---
 
