@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SPR26SMAMKEX88F1QY4GF7
 type: task
-status: doing
+status: done
 title: Stepper rows line up whether or not they carry a hint
 ---
 
