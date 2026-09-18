@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2TBM088MXMPHXNZMCTJEHJ7
 type: task
-status: done
+status: doing
 title: The spell book draws no tab for your pet's abilities
 ---
 
