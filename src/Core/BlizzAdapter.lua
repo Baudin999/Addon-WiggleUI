@@ -46,8 +46,8 @@ ns.BlizzAdapter = Adapter
 -- the part is registered on Core/BlizzHide.lua's once-a-second walk. A part on
 -- the walk has to re-apply on every call, because a pass that remembers what it
 -- did cannot see a frame the client built since; it has nothing a combat
--- lockdown can refuse, so it always answers true and there is nothing for the
--- PLAYER_REGEN_ENABLED retry to pick up; and it is the only place a drift
+-- lockdown can refuse, so it always answers true and the walk owes nothing to
+-- the end of a fight; and it is the only place a drift
 -- correction could run. A part off the walk is called when the switch moves and
 -- answers whether it moved anything. Those are one decision written three ways,
 -- and they were three fields in the copies.

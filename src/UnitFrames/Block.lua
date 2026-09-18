@@ -26,7 +26,7 @@ ns.FrameBlock = Block
 -- menu and the unit watch. A secure button cannot be moved by an addon in
 -- combat, and neither can its parent, so everything below that writes a point
 -- or a size asks ns.Blocked on the button first and hands a refusal back to
--- UnitFrames/Skin.lua, which carries it to the next PLAYER_REGEN_ENABLED.
+-- UnitFrames/Skin.lua, which owes it to the end of the fight.
 --------------------------------------------------------------------------
 
 -- How much of the gauge the health bar takes. The rest is power, less the

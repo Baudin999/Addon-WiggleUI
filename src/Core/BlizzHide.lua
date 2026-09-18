@@ -173,8 +173,8 @@ local FRAMES = {
 	-- declared as PlayerFrame's child too and was still on the screen with
 	-- PlayerFrame caged, so it is named. All three are secure unit buttons,
 	-- which is the same shape the four party frames below are and takes the
-	-- same road: caged out of combat, refused in it, and the refusal picked up
-	-- at PLAYER_REGEN_ENABLED.
+	-- same road: caged out of combat, refused in it, and the refusal owed to
+	-- the end of the fight.
 	{ needs = { "hideBlizzUnitFrames" }, names = { "PlayerFrame", "PetFrame", "TargetFrame" } },
 	{ needs = { "hideBlizzBuffs", "hideBlizzDebuffs" }, names = { "BuffFrame" } },
 	{ needs = { "hideBlizzBuffs" }, names = { "TemporaryEnchantFrame" } },
@@ -461,7 +461,7 @@ function Blizz.Apply()
 			complete = false
 		end
 	end
-	return complete
+	return ns.Lockdown.Done(Blizz.Apply, complete)
 end
 
 --------------------------------------------------------------------------
@@ -608,8 +608,8 @@ function Blizz.Describe()
 		:format(table.concat(hidden, ", "), found, of, ns.Attic.Count())
 end
 
--- PLAYER_LOGIN starts the clock. PLAYER_REGEN_ENABLED is the retry every strip
--- in the addon uses. ADDON_LOADED is the first of the clock's two jobs taken off
+-- PLAYER_LOGIN starts the clock, and a pass combat refused is owed through
+-- ns.Lockdown. ADDON_LOADED is the first of the clock's two jobs taken off
 -- it: a load-on-demand window is built inside that event, so the pass that hides
 -- it runs before the frame has been drawn once rather than up to five seconds
 -- later.
@@ -639,6 +639,5 @@ local function Moved(_, event)
 end
 
 events:RegisterEvent("PLAYER_LOGIN")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:RegisterEvent("ADDON_LOADED")
 events:SetScript("OnEvent", Moved)

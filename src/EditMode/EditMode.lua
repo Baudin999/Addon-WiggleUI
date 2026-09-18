@@ -172,8 +172,11 @@ local function AutoApply()
 		done = true
 		return
 	end
+	if ns.Lockdown.Held(AutoApply) then
+		return
+	end
 	if not EditMode.CanApply() then
-		return -- not loaded yet, or in combat. Another event comes back here.
+		return -- not loaded yet, and ADDON_LOADED comes back here
 	end
 	if EditMode.IndexOf(name) then
 		done = true
@@ -190,7 +193,6 @@ end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:RegisterEvent("ADDON_LOADED")
 events:SetScript("OnEvent", function(_, event, arg1)
 	if event == "ADDON_LOADED" and arg1 ~= "Blizzard_EditMode" then

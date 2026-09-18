@@ -72,7 +72,6 @@ local footprintWidth, footprintHeight -- what a bar actually occupies, in UIPare
 local naturalWidth, naturalHeight     -- what a plate measured before we touched it
 local sizeApplied, overlapApplied, distanceApplied
 local ceiling -- the highest range this client will hold, asked of it once
-local pending
 local warned
 
 local function Read(cvar)
@@ -148,8 +147,8 @@ end
 -- with no such call and a plate nobody has measured yet are both settled: the
 -- first will never be able to, and the second is retried by Measure and
 -- SetFootprint rather than by the combat flush. Reporting either as unfinished
--- leaves pending set for the session and re-runs the whole apply on every
--- combat drop for nothing.
+-- leaves the apply owed for the session and re-runs it on every combat drop
+-- for nothing.
 
 local function ApplySize()
 	local call = SizeCall()
@@ -217,7 +216,7 @@ end
 -- again from NamePlateSetupOptions, the same table ApplyFrameOptions reads.
 --
 -- The driver writes its own points on every plate again in
--- UpdateNamePlateOptions, so that is hooked. A write refused there is owed and
+-- UpdateNamePlateOptions, so that is hooked. A write refused there is owed, and
 -- Plates.Flush pays it when combat drops.
 --------------------------------------------------------------------------
 
@@ -233,6 +232,7 @@ local ANCHORS = { TOP, BOTTOM }
 local function WriteAim(plate)
 	if not plate:CanChangeHitTestPoints() then
 		owed[plate] = true
+		ns.Lockdown.Done(Plates.Flush, false)
 		return
 	end
 	TOP.relativeTo, BOTTOM.relativeTo = aimTop[plate], aimBottom[plate]
@@ -309,7 +309,7 @@ end
 local hooked
 local function Resized()
 	if sizeApplied and not ApplySize() then
-		pending = true -- refused in combat, and PLAYER_REGEN_ENABLED flushes it
+		ns.Lockdown.Done(Plates.Apply, false)
 	end
 end
 
@@ -486,8 +486,8 @@ end
 --------------------------------------------------------------------------
 
 -- Put the client where the setting says it should be. Every write is allowed to
--- refuse, and a refusal sets pending rather than saying anything: combat is the
--- normal reason and PLAYER_REGEN_ENABLED runs the whole thing again.
+-- refuse, and a refusal owes the whole thing to the end of the fight rather than
+-- saying anything, because combat is the normal reason.
 function Plates.Apply()
 	if not ns.db then
 		return
@@ -524,7 +524,7 @@ function Plates.Apply()
 		done = RestoreMotion() and done
 	end
 
-	pending = not done
+	ns.Lockdown.Done(Plates.Apply, done)
 end
 
 -- Hand all four back. Called when the bars go off, and at logout by nothing at
@@ -542,9 +542,6 @@ end
 function Plates.Flush()
 	for plate in pairs(owed) do
 		WriteAim(plate)
-	end
-	if pending then
-		Plates.Apply()
 	end
 end
 

@@ -96,11 +96,6 @@ local viewing = 1
 -- all of them and does not jump when you change tab.
 local deepest = 1
 
--- Whether a fight refused something. One flag rather than a queue, because
--- everything deferred here ends in the same pass: fit the window and paint
--- the tab that is up.
-local pending = false
-
 -- Whether the book on file is older than the client's. True until something
 -- has read it, so the first read is the first paint rather than login.
 local stale = true
@@ -195,14 +190,12 @@ local function OnDragStart(square)
 	return Read.Pickup(row.spell.ranks[row.pick])
 end
 
--- The secure half of a square: what a press casts. Refused in a fight, which
--- is where every SetAttribute is, and the flag puts it right when the fight
--- ends. Cleared rather than left on a square whose spell is passive, so a
+-- The secure half of a square: what a press casts. Held to the end of a fight,
+-- where the paint arms every square again. Cleared rather than left on a square whose spell is passive, so a
 -- press on Enrage does not cast whatever the row held last.
 local function Arm(row)
 	local spell = row.spell
-	if InCombatLockdown() then
-		pending = true
+	if ns.Lockdown.Held(Window.Paint) then
 		return false
 	end
 	if not spell or spell.passive then
@@ -351,8 +344,7 @@ function Window.Build()
 		-- zoom it had until the fight ends: scaling the frame the secure
 		-- squares hang off is refused, and Fit is refused for the same reason.
 		rescale = function(apply)
-			if InCombatLockdown() then
-				pending = true
+			if ns.Lockdown.Held(Window.Fit) then
 				return
 			end
 			apply()
@@ -433,15 +425,14 @@ function Window.Read()
 	return #book
 end
 
--- Sized to the tallest tab. Refused in a fight, and put right when it drops:
--- sizing the grid sizes the frame every secure square hangs off, which is the
--- same protected act as showing it.
+-- Sized to the tallest tab. Held to the end of a fight: sizing the grid sizes
+-- the frame every secure square hangs off, which is the same protected act as
+-- showing it.
 function Window.Fit()
 	if not window then
 		return false
 	end
-	if InCombatLockdown() then
-		pending = true
+	if ns.Lockdown.Held(Window.Fit) then
 		return false
 	end
 	local width, height = Width(), Height()
@@ -535,7 +526,7 @@ function Window.Foot()
 		return false
 	end
 	local line = Window.Ranks()
-	if pending then
+	if ns.Lockdown.Owed(Window.Fit) or ns.Lockdown.Owed(Window.Paint) then
 		line = line .. ". The fight is holding a change back"
 	end
 	foot:SetText(line .. ".")
@@ -700,7 +691,6 @@ end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:RegisterEvent("SPELLS_CHANGED")
 events:RegisterEvent("PLAYER_LEVEL_UP")
 pcall(events.RegisterEvent, events, "LEARNED_SPELL_IN_TAB")
@@ -708,18 +698,6 @@ events:SetScript("OnEvent", function(_, event)
 	if event == "PLAYER_LOGIN" then
 		if ns.db.spellbook then
 			Window.Build()
-		end
-		return
-	end
-	if event == "PLAYER_REGEN_ENABLED" then
-		-- Whatever the fight refused, in one pass: the fit, then every square
-		-- armed again by the paint.
-		if pending then
-			pending = false
-			Window.Fit()
-			if window then
-				Window.Paint()
-			end
 		end
 		return
 	end

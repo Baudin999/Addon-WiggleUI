@@ -330,7 +330,7 @@ end
 -- Blizzard's own update code turns its regions back on, so hiding one is not
 -- enough: its Show method is replaced with Hide first, and put back on the way
 -- out. Both halves refuse while a protected region is in lockdown and say so by
--- returning false, so the caller can finish the job at PLAYER_REGEN_ENABLED
+-- returning false, so the caller can owe the job through ns.Lockdown.Done
 -- rather than eating a lockdown error.
 --
 -- Lives here because three parts strip Blizzard regions, the enemy bars, the
@@ -341,7 +341,7 @@ end
 -- Whether a region refuses to be touched right now. Shared rather than local
 -- because three parts ask it: the enemy bars strip nameplate regions, the
 -- artwork part strips bar art, and the frame skin moves the regions of a
--- secure unit button, and all three queue the refusal for PLAYER_REGEN_ENABLED
+-- secure unit button, and all three owe the refusal through ns.Lockdown.Done
 -- rather than eating a lockdown error.
 function ns.Blocked(region)
 	return region and region.IsProtected and region:IsProtected() and InCombatLockdown()
@@ -2601,8 +2601,8 @@ end
 
 local rebinds = {}
 local passing = false
-local waiting = false
 local bindings = CreateFrame("Frame")
+local Book
 
 function ns.Rebind(apply)
 	assert(type(apply) == "function", "a rebind is a function")
@@ -2621,11 +2621,9 @@ local function Pass(self)
 	-- Held rather than dropped. A binding call is refused under lockdown, and
 	-- not every file that takes a key picks its own work back up when the
 	-- fight ends; going through here means all of them do.
-	if InCombatLockdown() then
-		waiting = true
+	if ns.Lockdown.Held(Book) then
 		return
 	end
-	waiting = false
 
 	passing = true
 	local ok, why = pcall(Run)
@@ -2635,15 +2633,14 @@ local function Pass(self)
 	end
 end
 
+-- A pass booked for the next frame, which is what collapses a storm of the
+-- event into one run.
+function Book()
+	bindings:SetScript("OnUpdate", Pass)
+end
+
 bindings:RegisterEvent("UPDATE_BINDINGS")
-bindings:RegisterEvent("PLAYER_REGEN_ENABLED")
-bindings:SetScript("OnEvent", function(self, event)
-	if event == "PLAYER_REGEN_ENABLED" then
-		if waiting then
-			self:SetScript("OnUpdate", Pass)
-		end
-		return
-	end
+bindings:SetScript("OnEvent", function(self)
 	-- Nothing to put back before the saved variables are merged, because every
 	-- pass reads the key it holds out of ns.db or ns.dbc. PLAYER_LOGIN runs
 	-- them all afterwards, so an event this early costs nothing to drop.

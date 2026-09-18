@@ -91,6 +91,7 @@ end
 local function Rescale(frame, zoom)
 	if ns.Blocked(frame) then
 		deferred[frame] = zoom
+		ns.Lockdown.Done(UI.Flush, false)
 		return false
 	end
 	deferred[frame] = nil
@@ -381,11 +382,4 @@ local watcher = CreateFrame("Frame")
 watcher:RegisterEvent("PLAYER_LOGIN")
 watcher:RegisterEvent("UI_SCALE_CHANGED")
 watcher:RegisterEvent("DISPLAY_SIZE_CHANGED")
-watcher:RegisterEvent("PLAYER_REGEN_ENABLED")
-watcher:SetScript("OnEvent", function(_, event)
-	if event == "PLAYER_REGEN_ENABLED" then
-		UI.Flush()
-		return
-	end
-	UI.Refresh()
-end)
+watcher:SetScript("OnEvent", UI.Refresh)

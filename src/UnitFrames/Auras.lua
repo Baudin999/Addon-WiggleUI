@@ -395,8 +395,8 @@ local function Run(head, ceiling)
 	return { names = names, swept = 0 }
 end
 
--- False when combat refused, which is the caller's signal to try again at
--- PLAYER_REGEN_ENABLED rather than to eat a lockdown error.
+-- False when combat refused, which is the caller's signal to owe the pass to
+-- the end of the fight rather than to eat a lockdown error.
 --
 -- A refusal on one run gives up on that run and not on the next one. The two
 -- are separate frames of the client's, so a lockdown refusing one says nothing
@@ -639,8 +639,7 @@ end
 --
 -- The header is protected, so where it sits, how big its buttons are and
 -- whether it is shown are written out of combat only. A change that arrives in
--- a fight is remembered and written on the first pass after it, the way every
--- other half of the skin that a lockdown can turn down is.
+-- a fight is held by ns.Lockdown and written when the fight ends.
 --------------------------------------------------------------------------
 
 -- What a button over a square says when the pointer rests on it: the buff at
@@ -703,8 +702,8 @@ local function Grid(row, square, px, timer, gap, width, mirror)
 	row.gridDirty = true
 end
 
--- Write the grid and the header's visibility, or remember that combat
--- refused. True when there was nothing left to write.
+-- Write the grid and the header's visibility, or leave it to the end of the
+-- fight. True when there was nothing left to write.
 local function Lay(row, box)
 	local header, grid = row.header, row.grid
 	if not header or not grid then
@@ -713,11 +712,9 @@ local function Lay(row, box)
 	if not row.gridDirty and header:IsShown() == row.covered then
 		return true
 	end
-	if InCombatLockdown() then
-		row.gridStale = true
+	if ns.Lockdown.Held(row.lay) then
 		return false
 	end
-	row.gridStale = nil
 	if row.gridDirty then
 		row.gridDirty = nil
 		header:ClearAllPoints()
@@ -855,6 +852,11 @@ function Auras.Build(entry)
 			-- and Grow is the only thing that moves it.
 			wanted = 0, drawn = 0, perLine = 1,
 		}
+		-- Kept on the row, because ns.Lockdown owes work by the function.
+		local row = list[index]
+		row.lay = function()
+			Lay(row, list.box)
+		end
 	end
 	entry.auras = list
 end
@@ -994,9 +996,8 @@ end
 --------------------------------------------------------------------------
 
 -- Put the client's copy of each row where its switch says, and show ours. False
--- where combat refused a strip, so the caller can finish at
--- PLAYER_REGEN_ENABLED like every other half of the skin that a lockdown can
--- turn down.
+-- where combat refused a strip, so the skin can owe the rest to the end of the
+-- fight.
 function Auras.Style(entry)
 	local list = entry.auras
 	if not list then
@@ -1048,9 +1049,6 @@ function Auras.Update(entry)
 	for index = 1, #list do
 		local row = list[index]
 		Groom(row)
-		if row.gridStale then
-			Lay(row, list.box)
-		end
 		if row.wanted > 0 then
 			Fill(row, unit, now)
 		end

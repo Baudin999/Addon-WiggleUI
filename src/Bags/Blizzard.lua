@@ -150,8 +150,8 @@ end
 -- it has taken.
 --
 -- Always true, which is the one place this differs from every other applier on
--- that pass. False on that pass means work a combat lockdown refused and puts
--- the whole pass on the PLAYER_REGEN_ENABLED retry. Nothing here can be refused
+-- that pass. False on that pass means work a combat lockdown refused and owes
+-- the whole pass to the end of the fight. Nothing here can be refused
 -- that way: a global is not a protected frame and writing one in a fight is
 -- allowed. The only thing that can go wrong is a name this build does not carry,
 -- and that is not work to retry every second for the rest of the session. It is

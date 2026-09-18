@@ -29,6 +29,10 @@
 # signs into, and the panel walks that registry at PLAYER_LOGIN.
 Core\Core.lua
 
+# Straight after Core.lua and before every part, so the one listener that runs
+# the work a fight refused is the first to hear the fight end. See its header.
+Core\Lockdown.lua
+
 # The screen the addon ships with: every setting the author's own install
 # answers differently from the feature that owns it, captured by
 # ./scripts/bake-defaults.sh. It only assigns a table, which Core.lua merges

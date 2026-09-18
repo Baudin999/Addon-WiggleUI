@@ -280,19 +280,7 @@ end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
--- Because a protected region will not be hidden in a fight, and the menu is a
--- frame you open in one. Core/MenuSkin.lua says whether it had to leave part
--- of the paint behind, and this is where it comes back for the rest, on the
--- same event Artwork/Artwork.lua uses for the same refusal.
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
-events:SetScript("OnEvent", function(_, event)
-	if event == "PLAYER_REGEN_ENABLED" then
-		if ns.MenuSkin.Deferred() then
-			ns.MenuSkin.Apply()
-		end
-		return
-	end
-
+events:SetScript("OnEvent", function()
 	Build()
 	if not button then
 		return

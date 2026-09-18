@@ -19,7 +19,7 @@ local UPDATE_INTERVAL = 0.1
 
 local frame, handle, binder
 local tick             -- the refresh ticker, armed once, see the foot
-local lastMacro, securePending
+local lastMacro
 local lastUnit, lastWeapon, lastEpoch
 
 -- What the square was last drawn against. The ticker runs at 10 Hz because the
@@ -219,9 +219,9 @@ end
 -- Secure state
 --
 -- Everything a protected frame will not let you touch in combat lives in one
--- place. If combat is up the work is deferred to PLAYER_REGEN_ENABLED, which
--- is also why nothing below ever calls Show or Hide: visibility runs on alpha,
--- which is not protected, so the icon can appear and vanish mid-fight.
+-- place, held to the end of a fight by ns.Lockdown. Nothing below calls Show or
+-- Hide: visibility runs on alpha, which is not protected, so the icon can
+-- appear and vanish mid-fight.
 --------------------------------------------------------------------------
 
 -- Returns false when combat deferred the work, so the caller can say so.
@@ -229,11 +229,9 @@ function ChargeIcon.ApplySecure()
 	if not frame then
 		return true
 	end
-	if InCombatLockdown() then
-		securePending = true
+	if ns.Lockdown.Held(ChargeIcon.ApplySecure) then
 		return false
 	end
-	securePending = nil
 
 	local db = ns.db
 	-- The button never takes the mouse, in either state. A mouse enabled frame
@@ -462,9 +460,6 @@ events:SetScript("OnEvent", function(_, event)
 			tick = ns.UI.Ticker(ns.UI.Forever, UPDATE_INTERVAL, "icon", Refresh)
 		end
 	elseif event == "PLAYER_REGEN_ENABLED" then
-		if securePending then
-			ChargeIcon.ApplySecure()
-		end
 		ChargeIcon.SyncMacro()
 	end
 	ChargeIcon.Forget()

@@ -78,10 +78,6 @@ local heading
 -- What the last pass came to, for the status line and the panel's reading.
 local stripped, dressed = 0, 0
 
--- Combat stopped part of the work, so Core/Menu.lua comes back at
--- PLAYER_REGEN_ENABLED for the rest.
-local pending = false
-
 --------------------------------------------------------------------------
 -- Reading a frame the addon does not own
 --------------------------------------------------------------------------
@@ -423,8 +419,7 @@ function Skin.Apply()
 		Headed(buttons)
 	end
 
-	pending = not complete
-	return complete
+	return ns.Lockdown.Done(Skin.Apply, complete)
 end
 
 -- Which menu, and which button in it is ours. Called by Core/Menu.lua once its
@@ -435,7 +430,7 @@ function Skin.Watch(menu, ours)
 end
 
 function Skin.Deferred()
-	return pending
+	return ns.Lockdown.Owed(Skin.Apply)
 end
 
 function Skin.Describe()
@@ -448,7 +443,7 @@ function Skin.Describe()
 	if dressed == 0 then
 		return "nothing painted yet"
 	end
-	if pending then
+	if Skin.Deferred() then
 		return ("%d buttons and %d regions, the rest follows when combat drops")
 			:format(dressed, stripped)
 	end

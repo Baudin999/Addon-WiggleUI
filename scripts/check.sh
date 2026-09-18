@@ -704,6 +704,62 @@ while IFS= read -r bad; do
 done < <(grep -rn 'SecureHandlerClickTemplate' --include='*.lua' . \
 	| grep -v '^\./UI/' || true)
 
+# One file runs the work a fight refused, and it is Core/Lockdown.lua.
+#
+# The client refuses every protected write in combat and forgets it. Twenty
+# files answered that by hand, each with a flag of its own and a branch in its
+# own PLAYER_REGEN_ENABLED handler, and the copies drifted: a flag one file
+# cleared on success another never cleared, and a retry that ran a different
+# function from the one refused. ns.Lockdown.Held and ns.Lockdown.Done owe the
+# work, and the one listener in that file runs it when the fight ends.
+#
+# Two halves. A file that listens for the end of a fight is on the list below
+# with the thing it does there, and that thing is never a retry. And a
+# lockdown test followed within eight lines by a flag set to true is the
+# hand-written half itself, refused everywhere but the helper.
+regen_allowed='
+Breakdown/Window.lua	repaints the lifetime table the fight has just added to
+Buttons/Reaction.lua	shuts the dodge and block windows, because the fight is over
+Character/Window.lua	repaints the sheet, whose rows sit still for the length of a fight
+Charge/Charge.lua	moves the epoch its memo of the button state is read against
+Charge/Icon.lua	rewrites the macro its tickers skip in combat, and repaints the icon
+CombatText/Calls.lua	forgets what was true in the fight, so the next one is announced afresh
+CombatText/Numbers.lua	forgets the biggest number of the fight
+Feeds/Combat.lua	closes the fight in the combat feed
+Meter/Meter.lua	stops the meter at the end of the fight
+Quests/Column.lua	takes the fight off the column foot line
+Swing/Swing.lua	stops a swing that is not coming
+UnitFrames/Skin.lua	marks every block for a repaint of what the fight changed
+'
+while IFS= read -r file; do
+	file="${file#./}"
+	[ "$file" = "Core/Lockdown.lua" ] && continue
+	if ! grep -q "^$file	" <<< "$regen_allowed"; then
+		echo "only Core/Lockdown.lua may listen for PLAYER_REGEN_ENABLED, owe the work with ns.Lockdown.Held or ns.Lockdown.Done, or add $file to regen_allowed with what it does there: $file"
+		status=1
+	fi
+done < <(grep -rlF 'RegisterEvent("PLAYER_REGEN_ENABLED")' --include='*.lua' . | sort)
+while IFS= read -r file; do
+	if ! grep -qsF 'RegisterEvent("PLAYER_REGEN_ENABLED")' "$file"; then
+		echo "regen_allowed lists $file, which no longer listens for PLAYER_REGEN_ENABLED: take it off"
+		status=1
+	fi
+done < <(sed -n 's/^\([^	]*\)	.*/\1/p' <<< "$regen_allowed")
+while IFS= read -r bad; do
+	echo "a lockdown test followed by a flag is ns.Lockdown.Held by hand, use it: $bad"
+	status=1
+done < <(find . -name '*.lua' -type f ! -path './Core/Lockdown.lua' | sort | xargs awk '
+	FNR == 1 { armed = 0 }
+	/InCombatLockdown\(\)/ { armed = 8; at = FNR; next }
+	armed > 0 {
+		if ($0 ~ /^[ \t]*[A-Za-z_][A-Za-z0-9_.\[\]]*[ \t]*=[ \t]*true/) {
+			print FILENAME ":" at ":" $0
+			armed = 0
+		} else {
+			armed--
+		}
+	}' || true)
+
 # One file talks to Questie, and it is Core/Core.lua.
 #
 # Questie is another addon. Every question this one asks it starts at

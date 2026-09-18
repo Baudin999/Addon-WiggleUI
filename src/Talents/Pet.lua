@@ -60,9 +60,8 @@ local page, head, title, points, spot, invite, knownLabel, knownNone, trainLabel
 local rows, known, book = {}, {}, {}
 local shown, shownKnown = 0, 0
 
--- Whether the cast square belongs on the page right now, and whether a fight
--- refused the last attempt to say so.
-local wanted, pending = false, false
+-- Whether the cast square belongs on the page right now.
+local wanted = false
 
 -- The pet's level and the points left at the last paint, which is what a hover
 -- reads.
@@ -126,14 +125,12 @@ local function Over(button, region)
 	return true
 end
 
--- The cast square over its spot, or off the screen. Refused in a fight and put
--- right when it ends.
+-- The cast square over its spot, or off the screen. Held to the end of a
+-- fight, because the square is a secure button.
 function Pet.Place()
-	if InCombatLockdown() then
-		pending = true
+	if ns.Lockdown.Held(Pet.Place) then
 		return false
 	end
-	pending = false
 	if wanted and spot and spot:IsVisible() and Over(cast, spot) then
 		cast.art:SetTexture((select(3, GetSpellInfo(Training.SPELL))))
 		return true
@@ -557,11 +554,3 @@ function Pet.Known(at)
 	return known[at]
 end
 
--- The fight ended with a placement owed.
-local events = CreateFrame("Frame")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
-events:SetScript("OnEvent", function()
-	if pending then
-		Pet.Place()
-	end
-end)

@@ -51,8 +51,8 @@ local C, M = UI.Color, UI.Metric
 -- press run a snippet. So there are three answers here and no fourth. The key
 -- is bound to a secure button whose snippet shows and hides the window, and the
 -- cross on the title bar is the same button in the corner. Everything that
--- would have to move a protected frame, the layout and the zoom, waits for
--- PLAYER_REGEN_ENABLED. The Lua way in still exists and still refuses in a
+-- would have to move a protected frame, the layout and the zoom, waits for the
+-- end of the fight. The Lua way in still exists and still refuses in a
 -- fight, and says which key does work.
 --
 -- **Nothing here is on a ticker.** Your gear changes when the server says it
@@ -95,7 +95,6 @@ local C, M = UI.Color, UI.Metric
 -- units and each unit is worth more pixels.
 
 local window, page, footer, key
-local pending = false
 
 --------------------------------------------------------------------------
 
@@ -107,12 +106,9 @@ local function Chrome()
 	footer:SetPoint("LEFT")
 end
 
--- Refused in a fight, and put right when it drops.
---
--- Sizing the gear page sizes the frame nineteen secure buttons hang off, which
--- is the same protected act as showing it. Nothing here is urgent: a sheet laid
--- out for the old screen is a sheet with a wide margin until the fight ends,
--- and PLAYER_REGEN_ENABLED below runs the pass again.
+-- Held to the end of a fight. Sizing the gear page sizes the frame nineteen
+-- secure buttons hang off, which is the same protected act as showing it, and
+-- a sheet laid out for the old screen only has a wide margin until then.
 --
 -- The resize is what re-reads the monitor. The page says how big it is worth
 -- drawing at, this adds the window's own padding and its footer to that, and
@@ -128,8 +124,7 @@ function Window.Fit()
 	if not (window and page) then
 		return false
 	end
-	if InCombatLockdown() then
-		pending = true
+	if ns.Lockdown.Held(Window.Fit) then
 		return false
 	end
 	local wide, tall = page:Natural()
@@ -180,8 +175,7 @@ local function Sheet()
 		-- scaling the frame the secure gear squares hang off is refused, and Fit
 		-- is refused for the same reason.
 		rescale = function(apply)
-			if InCombatLockdown() then
-				pending = true
+			if ns.Lockdown.Held(Window.Fit) then
 				return
 			end
 			apply()
@@ -459,12 +453,8 @@ for index = 1, #WATCHED do
 end
 events:SetScript("OnEvent", function(_, event)
 	if event == "PLAYER_REGEN_ENABLED" then
-		-- Whatever the fight refused. One flag rather than a queue, because
-		-- everything deferred here ends in the same two calls.
-		if pending then
-			pending = false
-			Window.Fit()
-		end
+		-- A repaint rather than a retry: the rows Paperdoll would not animate
+		-- in the fight are drawn again once it is over.
 		Window.Refresh()
 		return
 	end

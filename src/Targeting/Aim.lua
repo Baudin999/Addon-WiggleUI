@@ -53,7 +53,6 @@ local OWNED = {
 }
 
 local applied = {}  -- what this addon last wrote, so a no-op pass writes nothing
-local pending       -- a write the client refused, retried when combat drops
 local warned, warnedIgnored
 
 local function Read(cvar)
@@ -107,7 +106,7 @@ function Aim.Apply()
 		local cvar, want = owned.cvar, owned.value
 		if applied[cvar] ~= want or Read(cvar) ~= want then
 			if not Write(cvar, want) then
-				pending, ok = true, false
+				ok = false
 				if not warned then
 					warned = true
 					ns.Print("this client would not change action targeting just now. It will be set again when you leave combat.")
@@ -128,10 +127,7 @@ function Aim.Apply()
 		end
 	end
 
-	if ok then
-		pending = nil
-	end
-	return ok
+	return ns.Lockdown.Done(Aim.Apply, ok)
 end
 
 -- Put the character's own values back. Called when the setting is turned off,
@@ -181,15 +177,9 @@ function Aim.Describe()
 	return "aiming, and the target follows what the camera picks"
 end
 
--- PLAYER_REGEN_ENABLED is the retry and not a transition: the only write that
--- can be refused is one attempted in combat, and leaving one is the moment it
--- can be attempted again.
+-- A write the client refuses is one attempted in combat, and ns.Lockdown owes
+-- it to the end of the fight.
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
-events:SetScript("OnEvent", function(_, event)
-	if event ~= "PLAYER_REGEN_ENABLED" or pending then
-		Aim.Apply()
-	end
-end)
+events:SetScript("OnEvent", Aim.Apply)

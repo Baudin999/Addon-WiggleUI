@@ -44,7 +44,6 @@ local BARE = { BUTTON1 = true, BUTTON2 = true }
 
 local held = {}   -- id -> key currently on the override layer
 local heldAny     -- true while at least one is up
-local pending     -- a change the client refused, retried when combat drops
 local proven      -- nil until the readback has answered once
 local warned
 
@@ -133,11 +132,9 @@ end
 function Keys.Apply()
 	Seed()
 
-	if InCombatLockdown() then
-		pending = true
+	if ns.Lockdown.Held(Keys.Apply) then
 		return
 	end
-	pending = nil
 
 	Clear()
 	held, heldAny = {}, false
@@ -200,7 +197,7 @@ function Keys.Bind(id, key)
 
 	-- Apply defers under lockdown and leaves the old bindings up, so `held` is
 	-- still describing the previous key here. Say that rather than read it.
-	if pending then
+	if ns.Lockdown.Owed(Keys.Apply) then
 		return false, "saved. This client will not change a binding in combat, so it takes effect when the fight ends."
 	end
 	if key == "" then
@@ -224,7 +221,7 @@ function Keys.Describe()
 	local line = table.concat(parts, ", ")
 
 	if not heldAny then
-		if InCombatLockdown() and pending then
+		if ns.Lockdown.Owed(Keys.Apply) then
 			return line .. " (waiting for combat to drop)"
 		end
 		return line
@@ -240,13 +237,7 @@ end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
-events:SetScript("OnEvent", function(_, event)
-	if event == "PLAYER_REGEN_ENABLED" and not pending then
-		return
-	end
-	Keys.Apply()
-end)
+events:SetScript("OnEvent", Keys.Apply)
 
 -- And again when the client rebuilds its binding set, which drops every
 -- override the addon holds. See ns.Rebind in Core/Core.lua.

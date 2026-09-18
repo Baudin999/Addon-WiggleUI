@@ -54,9 +54,8 @@ ns.Group = Group
 -- Three things follow from the header being secure, and they are most of this
 -- file:
 --
---   Every attribute write is refused in combat and retried at
---   PLAYER_REGEN_ENABLED, which is the pattern Charge/Icon.lua and
---   Buttons/Bars.lua already carry.
+--   Every attribute write is refused in combat and owed to the end of the
+--   fight through ns.Lockdown.
 --
 --   A button the header has just made cannot be laid out until combat drops,
 --   because it is protected. That costs nothing in practice: the header defers
@@ -336,7 +335,7 @@ local function Stack(list)
 end
 
 -- Every attribute that decides the shape of one list, written in one pass.
--- False where combat refused, which the retry at PLAYER_REGEN_ENABLED picks up.
+-- False where combat refused, which Group.Rebuild owes to the end of the fight.
 local function Secure(list)
 	if InCombatLockdown() then
 		return false
@@ -930,6 +929,24 @@ local function RebuildOne(list)
 	Preview(list)
 end
 
+local function Deferring()
+	for index = 1, #lists do
+		if lists[index].pending then
+			return true
+		end
+	end
+	return false
+end
+
+-- The rebuild again with nothing held back, which is what the roster events
+-- run and what a rebuild combat refused is owed.
+local function Again()
+	for index = 1, #lists do
+		lists[index].pending = false
+	end
+	Group.Rebuild()
+end
+
 -- The order recomputed and every button laid out under it. This is the entry
 -- the roster events reach and the one a harness drives.
 function Group.Rebuild()
@@ -939,6 +956,7 @@ function Group.Rebuild()
 	for index = 1, #lists do
 		RebuildOne(lists[index])
 	end
+	ns.Lockdown.Done(Again, not Deferring())
 	-- Painted here rather than left to the next tick, for the reason Skin.Apply
 	-- paints at the end of its own pass: up to a fifth of a second of a block
 	-- with no name and a white gauge on it is exactly long enough to read as a
@@ -1177,23 +1195,11 @@ end
 -- trap Charge/Icon.lua and Swing/Gauges.lua both carry a note about.
 --------------------------------------------------------------------------
 
-
-
-local function Deferring()
-	for index = 1, #lists do
-		if lists[index].pending then
-			return true
-		end
-	end
-	return false
-end
-
 local events = CreateFrame("Frame")
 local tick -- the poll, armed once, see below
 events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
 events:RegisterEvent("GROUP_ROSTER_UPDATE")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:RegisterEvent("UNIT_DISPLAYPOWER")
 -- The raid leader moving a main tank flag, which is one of the four sources
 -- Unit/Role.lua reads and the only one that moves without the roster moving.
@@ -1225,13 +1231,7 @@ events:SetScript("OnEvent", function(_, event)
 		end
 		return
 	end
-	if event == "PLAYER_REGEN_ENABLED" and not Deferring() then
-		return
-	end
-	for index = 1, #lists do
-		lists[index].pending = false
-	end
-	Group.Rebuild()
+	Again()
 end)
 
 -- A resolution change moves every size in this file at once, and it moves each

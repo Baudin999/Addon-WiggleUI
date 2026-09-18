@@ -192,8 +192,8 @@ end
 -- One frame into the room. True when there is nothing left to do, which
 -- includes a client that cannot cage and an object that is not a frame: neither
 -- is a refusal and neither gets better by being retried. False is combat
--- refusing a protected frame, and that is the caller's signal to come back at
--- PLAYER_REGEN_ENABLED.
+-- refusing a protected frame, and that is the caller's signal to owe the pass
+-- through ns.Lockdown.Done.
 --
 -- The parent is compared on every call rather than trusted, because a frame the
 -- client re-parented back is a frame on the screen and the record here would say

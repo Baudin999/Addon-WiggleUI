@@ -158,7 +158,6 @@ end
 
 local held = {}   -- index -> the key currently on the override layer
 local heldAny     -- true while at least one is up
-local pending     -- a change combat refused, retried when the fight ends
 local proven      -- nil until the readback has answered once
 local warned
 
@@ -251,12 +250,10 @@ end
 
 -- Returns false when combat deferred the work, so the caller can say so.
 function Cast.Apply()
-	if InCombatLockdown() then
-		pending = true
+	if ns.Lockdown.Held(Cast.Apply) then
 		Log("in combat, so the keys are held until the fight ends")
 		return false
 	end
-	pending = nil
 
 	if type(ClearOverrideBindings) == "function" then
 		pcall(ClearOverrideBindings, button)
@@ -314,7 +311,7 @@ end
 
 -- Always reports what the binding layer says, never what this file meant to set.
 function Cast.Describe()
-	if InCombatLockdown() and pending then
+	if ns.Lockdown.Owed(Cast.Apply) then
 		return "waiting for combat to drop"
 	end
 	if not heldAny then
@@ -355,16 +352,12 @@ end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:SetScript("OnEvent", function(_, event, unit, target, _, spell)
 	if event == "UNIT_SPELLCAST_SENT" then
 		if unit == "player" then
 			Log("  the client sent %s at %s",
 				ns.SpellName(spell) or tostring(spell), target or "nothing")
 		end
-		return
-	end
-	if event == "PLAYER_REGEN_ENABLED" and not pending then
 		return
 	end
 	Cast.Apply()

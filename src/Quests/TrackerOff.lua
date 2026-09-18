@@ -44,18 +44,14 @@ ns.QuestTrackerOff = Off
 --
 -- **Neither call is made in combat.** Questie's own checkbox greys itself out
 -- on InCombatLockdown and the reason is on the other side of the call: Enable
--- rebuilds the tracker's frames. Work refused here is booked and run at
--- PLAYER_REGEN_ENABLED, which is the shape every deferred build in this addon
--- takes, and `/wk status` says so while it is waiting.
+-- rebuilds the tracker's frames. Work refused here is held by ns.Lockdown to
+-- the end of the fight, and `/wk status` says so while it is waiting.
 --
 -- **Both calls reload the interface.** Questie's Disable ends in ReloadUI and
 -- its Enable hands ReloadUI to ThreadLib as the callback; its own checkbox says
 -- so in the description text. Nothing here can avoid that and nothing should
 -- try, so the panel says it in front of the box.
 --------------------------------------------------------------------------
-
--- Work combat refused, run again when it ends.
-local pending = false
 
 -- Questie's tracker module, or nil, asked for by the two calls this file makes.
 --
@@ -97,7 +93,6 @@ end
 function Off.Apply()
 	local profile, tracker = Profile(), Module()
 	if not profile or not tracker then
-		pending = false
 		return false
 	end
 
@@ -113,11 +108,9 @@ function Off.Apply()
 		if not profile.trackerEnabled then
 			return false
 		end
-		if InCombatLockdown() then
-			pending = true
+		if ns.Lockdown.Held(Off.Apply) then
 			return false
 		end
-		pending = false
 		ns.db.questsTrackerTook = true
 		tracker:Disable()
 		return true
@@ -127,15 +120,12 @@ function Off.Apply()
 	-- own options while our box was ticked ends the claim without a call: the
 	-- setting is already where unticking would have put it.
 	if profile.trackerEnabled then
-		pending = false
 		ns.db.questsTrackerTook = false
 		return false
 	end
-	if InCombatLockdown() then
-		pending = true
+	if ns.Lockdown.Held(Off.Apply) then
 		return false
 	end
-	pending = false
 	ns.db.questsTrackerTook = false
 	tracker:Enable()
 	return true
@@ -143,7 +133,7 @@ end
 
 -- Whether a call is booked for the end of combat.
 function Off.Waiting()
-	return pending
+	return ns.Lockdown.Owed(Off.Apply)
 end
 
 -- Short enough for a reading on the options page, which never wraps. The noun
@@ -153,7 +143,7 @@ function Off.Describe()
 	if not profile or not Module() then
 		return "not here to switch off"
 	end
-	if pending then
+	if Off.Waiting() then
 		return "waiting for combat to end"
 	end
 	if Off.Took() then
@@ -164,16 +154,9 @@ end
 
 --------------------------------------------------------------------------
 
-local function OnEvent(_, event)
-	if event == "PLAYER_LOGIN" or pending then
-		Off.Apply()
-	end
-end
-
 -- Login rather than load, for the reason Quests/Window.lua gives about the
 -- function swap beside this one: the addon being reached into may not have
 -- loaded yet, and Questie fills its settings table in at ADDON_LOADED.
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
-events:SetScript("OnEvent", OnEvent)
+events:SetScript("OnEvent", Off.Apply)

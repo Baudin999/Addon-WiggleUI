@@ -372,6 +372,7 @@ local haveTarget = false -- gathered once a tick, read by every widget
 local firstSeen, seenCounter = {}, 0
 local scratch = {}
 local stripped, pending = {}, {}
+local FlushPending -- the pass that finishes them, below the two that owe it
 -- Bumped by anything that changes the shape of a widget, which is how a pooled
 -- widget knows its layout is stale. See Attach.
 local layoutEpoch = 0
@@ -1923,7 +1924,8 @@ local function StripPlate(plate)
 	end
 	stripped[plate] = true
 	if not complete then
-		pending[plate] = "strip" -- finish once combat drops
+		pending[plate] = "strip"
+		ns.Lockdown.Done(FlushPending, false)
 	else
 		pending[plate] = nil
 	end
@@ -1947,10 +1949,13 @@ local function RestorePlate(plate)
 		pending[plate] = nil
 	else
 		pending[plate] = "restore"
+		ns.Lockdown.Done(FlushPending, false)
 	end
 end
 
-local function FlushPending()
+-- Every plate combat left half stripped or half restored, owed to the end of
+-- the fight by the two above.
+function FlushPending()
 	for plate, action in pairs(pending) do
 		if action == "strip" then
 			StripPlate(plate)
@@ -2603,7 +2608,6 @@ end
 
 events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:RegisterEvent("CVAR_UPDATE")
 -- Which bar is yours is the loudest thing on the screen and it is said on every
 -- bar at once, so it is the one readout the per-unit events cannot mark: the
@@ -2676,10 +2680,6 @@ events:SetScript("OnEvent", function(_, event, arg1)
 		return
 	elseif event == "PLAYER_TARGET_CHANGED" then
 		Retarget()
-		return
-	elseif event == "PLAYER_REGEN_ENABLED" then
-		FlushPending()
-		ns.Plates.Flush()
 		return
 	elseif event == "CVAR_UPDATE" then
 		if EnemyBars.Mode() ~= lastMode then

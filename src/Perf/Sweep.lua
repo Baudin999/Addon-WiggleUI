@@ -38,7 +38,7 @@ ns.Sweep = Sweep
 -- frames, and changing one of those in a fight is either refused by the client
 -- or taints the button. A step that comes due mid fight is held, the minute it
 -- was due in is written with what was really off in it rather than with what
--- the schedule wanted, and the switch happens at PLAYER_REGEN_ENABLED. That one
+-- the schedule wanted, and the switch happens when the fight ends. That one
 -- lands in the middle of a minute, so that minute is written as `mixed` and is
 -- a row to drop.
 --
@@ -259,11 +259,27 @@ local function Step()
 	Say(coming, state.minutes)
 end
 
+-- The end of a fight, which is when a step change that came due under lockdown
+-- is finally allowed. It lands in the middle of a minute, so that minute saw
+-- both states and is written as neither of them. The new step gets its full
+-- count of clean minutes after it.
+local function Release()
+	if not state.running or not state.held then
+		return
+	end
+	state.held = false
+	Step()
+	if state.running then
+		state.label = MIXED
+		state.left = state.left + 1
+	end
+end
+
 -- A step boundary, held back if the client is in a fight. Held, the minute that
 -- follows is another minute of the step that is already running, and the label
 -- is left alone so the row says what was really off in it.
 local function Advance()
-	if InCombatLockdown and InCombatLockdown() then
+	if ns.Lockdown.Held(Release) then
 		-- Said once, on the minute the hold begins. A step that is late with
 		-- nothing on screen reads as a sweep that has stopped.
 		if not state.held then
@@ -274,26 +290,6 @@ local function Advance()
 		return
 	end
 	Step()
-end
-
--- The end of a fight, which is when a step change that came due under lockdown
--- is finally allowed. It lands in the middle of a minute, so that minute saw
--- both states and is written as neither of them. The new step gets its full
--- count of clean minutes after it.
-local function Regen()
-	if not state.running then
-		Sweep.Resume()
-		return
-	end
-	if not state.held then
-		return
-	end
-	state.held = false
-	Step()
-	if state.running then
-		state.label = MIXED
-		state.left = state.left + 1
-	end
 end
 
 --------------------------------------------------------------------------
@@ -348,7 +344,7 @@ function Sweep.Resume()
 	end
 	-- A reload in the middle of a fight comes back in the middle of it. The
 	-- record is left where it is and the end of the fight asks again.
-	if InCombatLockdown and InCombatLockdown() then
+	if ns.Lockdown.Held(Sweep.Resume) then
 		return
 	end
 	ns.db.perfSweep = nil
@@ -426,9 +422,6 @@ end
 
 --------------------------------------------------------------------------
 
--- Two events. The way into the world is where an interrupted run is put right,
--- and the end of a fight is where a step change that was held finally happens.
---
 -- PLAYER_ENTERING_WORLD rather than PLAYER_LOGIN, and the difference matters.
 -- Perf loads before nearly every part of the addon, so its login handler runs
 -- before theirs, and putting a feature back on through a slash word at that
@@ -436,11 +429,4 @@ end
 -- its login pass by the time the world arrives.
 local watch = CreateFrame("Frame")
 watch:RegisterEvent("PLAYER_ENTERING_WORLD")
-watch:RegisterEvent("PLAYER_REGEN_ENABLED")
-watch:SetScript("OnEvent", function(_, event)
-	if event == "PLAYER_REGEN_ENABLED" then
-		Regen()
-		return
-	end
-	Sweep.Resume()
-end)
+watch:SetScript("OnEvent", Sweep.Resume)

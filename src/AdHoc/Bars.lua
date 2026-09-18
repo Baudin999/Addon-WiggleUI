@@ -83,7 +83,6 @@ local LEVEL = 120
 local DEFAULT_POINT = { "CENTER", "UIParent", "CENTER", 0, -160 }
 
 local entries = {}
-local pending = false
 
 local function FrameName(index)
 	return ("WarriorKitAdHoc%d"):format(index)
@@ -338,19 +337,16 @@ local function Arrange(entry, bar)
 	entry.place:Place(bar.point or DEFAULT_POINT)
 end
 
--- Everything protected in one function. Attributes, anchors and override
--- bindings are all refused under lockdown, so in combat this sets pending and
--- PLAYER_REGEN_ENABLED runs it for real.
+-- Everything protected in one function, so one ns.Lockdown.Held covers the
+-- attributes, the anchors and the override bindings.
 --
 -- Every frame is rewritten from the list every time rather than the one that
 -- changed, because deleting a bar shifts every bar under it onto a different
 -- frame and a partial pass would leave a key on the wrong one.
 function Bars.Apply()
-	if InCombatLockdown() then
-		pending = true
+	if ns.Lockdown.Held(Bars.Apply) then
 		return false
 	end
-	pending = false
 
 	local list = ns.AdHoc.All()
 	local on = ns.db.adhoc
@@ -477,7 +473,7 @@ function Bars.CanClose(index)
 end
 
 function Bars.Pending()
-	return pending
+	return ns.Lockdown.Owed(Bars.Apply)
 end
 
 -- The entry, for the harness. Nothing in the addon reads it.
@@ -530,19 +526,12 @@ UI.Ticker(UI.Forever, 0.1, "adhoc", Bars.Update)
 -- Events
 --
 -- PLAYER_LOGIN rather than ADDON_LOADED, because the binding set the overrides
--- land on top of is not built until then. PLAYER_REGEN_ENABLED picks up
--- anything a fight refused.
+-- land on top of is not built until then.
 --------------------------------------------------------------------------
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
-events:SetScript("OnEvent", function(_, event)
-	if event == "PLAYER_REGEN_ENABLED" and not pending then
-		return
-	end
-	Bars.Apply()
-end)
+events:SetScript("OnEvent", Bars.Apply)
 
 -- And again every time the client rebuilds its binding set, which throws every
 -- override away, including the one taken at PLAYER_LOGIN a moment earlier. See

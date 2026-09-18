@@ -353,7 +353,7 @@ end
 -- The button goes up through the unit watch on the two frames that follow a
 -- unit and through a plain Show on your own, and comes down the reverse way.
 -- Both are protected calls on a secure button, so both ask ns.Blocked first
--- and a refusal is carried to the next PLAYER_REGEN_ENABLED.
+-- and a refusal is owed to the end of the fight through Finish below.
 --------------------------------------------------------------------------
 
 local function Reveal(entry)
@@ -416,6 +416,15 @@ function Skin.Wanted(key)
 	return ns.db.skin and ns.db.skinFrames[key] ~= false
 end
 
+-- The pass again, after a fight that refused part of it. Apply finishes a
+-- style combat refused. Relayout finishes a re-anchor it refused, which Apply
+-- cannot: Style returns early on a frame that is already styled, so a block on
+-- the wrong grid would stay there.
+local function Finish()
+	Skin.Apply()
+	Skin.Relayout()
+end
+
 -- Puts every frame where the setting says it should be. Idempotent, and safe
 -- to call before the saved variables exist, the same as every other part.
 function Skin.Apply()
@@ -446,6 +455,7 @@ function Skin.Apply()
 	for _, entry in ipairs(entries) do
 		Paint.Refresh(entry)
 	end
+	ns.Lockdown.Done(Finish, not pending)
 end
 
 -- Every block laid out again on the settings it has now, and hung again.
@@ -469,6 +479,7 @@ function Skin.Relayout()
 			pending = true
 		end
 	end
+	ns.Lockdown.Done(Finish, not pending)
 end
 
 -- Locked is the normal state. Unlocked, the two anchors you can drag wear
@@ -689,14 +700,6 @@ events:SetScript("OnEvent", function(_, event)
 
 	if event == "PLAYER_REGEN_ENABLED" then
 		MarkAll()
-		if pending then
-			-- Apply finishes a style combat refused. Relayout finishes a
-			-- re-anchor it refused, which Apply cannot: Style returns early on
-			-- a frame that is already styled, so a block on the wrong grid
-			-- would stay there.
-			Skin.Apply()
-			Skin.Relayout()
-		end
 		return
 	end
 
@@ -722,7 +725,7 @@ events:SetScript("OnEvent", function(_, event)
 end)
 
 -- A resolution change moves the grid under the whole block at once. Relayout
--- refuses in lockdown and PLAYER_REGEN_ENABLED picks it up, so a monitor
+-- refuses in lockdown and owes the rest to the end of the fight, so a monitor
 -- swapped mid pull is a block one fight out of date rather than an error.
 ns.UI.OnRescale(function()
 	Skin.Relayout()

@@ -54,8 +54,8 @@ local Which = ns.WhichBars
 --   Bars.CanPage says which path came up.
 --
 --   Bind, unbind, hide or show a protected frame in combat. Every one of those
---   is in Bars.Apply, which refuses in lockdown, sets pending and is run again
---   at PLAYER_REGEN_ENABLED. That is Charge/Icon.lua's ApplySecure shape.
+--   is in Bars.Apply, Bars.ApplyBindings or Bars.Restyle, and each is held to
+--   the end of the fight by ns.Lockdown.Held.
 --
 -- What a square deliberately is not: a Blizzard action button. It casts, it
 -- draws what the slot is doing, it carries its key, it names what is on it when
@@ -123,7 +123,6 @@ local seen = {}
 
 local live = false     -- the squares are up and the tick should draw them
 local tick             -- the action ticker, armed once and kept, see the foot
-local pending          -- work combat refused, retried at PLAYER_REGEN_ENABLED
 local paging           -- true once a state driver has been accepted
 local binding          -- re-entrancy latch, see Bars.ApplyBindings
 local proven           -- nil until the override readback has answered once
@@ -501,8 +500,7 @@ function Bars.ApplyBindings()
 	if #order == 0 then
 		return true
 	end
-	if InCombatLockdown() then
-		pending = true
+	if ns.Lockdown.Held(Bars.ApplyBindings) then
 		return false
 	end
 	-- SetOverrideBindingClick fires UPDATE_BINDINGS, which is the event that
@@ -619,13 +617,10 @@ end
 -- folded into their rows, the ground under them repainted, and the client told
 -- again when each of them is allowed on the screen.
 --
--- Refused in lockdown for the reason every other entry point in this file is.
--- Laying a bar out moves twelve secure buttons, and a state driver is not
--- something this addon registers in combat either. It comes back at
--- PLAYER_REGEN_ENABLED with the rest of the deferred work.
+-- Held to the end of a fight, because laying a bar out moves twelve secure
+-- buttons and a state driver is not registered in combat either.
 function Bars.Restyle()
-	if InCombatLockdown() then
-		pending = true
+	if ns.Lockdown.Held(Bars.Restyle) then
 		return false
 	end
 	for index = 1, #order do
@@ -726,11 +721,9 @@ function Bars.Apply()
 		return true
 	end
 
-	if InCombatLockdown() then
-		pending = true
+	if ns.Lockdown.Held(Bars.Apply) then
 		return false
 	end
-	pending = nil
 
 	local want = ns.db.actionBars and true or false
 	if want then
@@ -954,7 +947,8 @@ function Bars.Describe()
 	if proven == false then
 		line = line .. "; this client accepted the keys and did not bind them"
 	end
-	if pending then
+	if ns.Lockdown.Owed(Bars.Apply) or ns.Lockdown.Owed(Bars.ApplyBindings)
+		or ns.Lockdown.Owed(Bars.Restyle) then
 		line = line .. "; the rest follows when combat drops"
 	end
 	if order[1].def.pages and not paging then
@@ -1029,7 +1023,6 @@ events:RegisterEvent("PLAYER_LOGIN")
 -- the world, which is after login, so login sees a fraction of what is there.
 -- Build costs a walk of five names once everything is standing.
 events:RegisterEvent("PLAYER_ENTERING_WORLD")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:RegisterEvent("UPDATE_SHAPESHIFT_FORM")
 events:RegisterEvent("ACTIONBAR_PAGE_CHANGED")
 events:RegisterEvent("UPDATE_BINDINGS")
@@ -1077,13 +1070,6 @@ events:SetScript("OnEvent", function(_, event, arg1)
 
 	if event == "UPDATE_BINDINGS" then
 		Bars.ApplyBindings()
-		return
-	end
-
-	if event == "PLAYER_REGEN_ENABLED" then
-		if pending then
-			Bars.Apply()
-		end
 		return
 	end
 

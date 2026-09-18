@@ -101,7 +101,7 @@ local ART_KEYS = {
 
 --------------------------------------------------------------------------
 
-local found, pending = 0, false
+local found = 0
 
 -- pcall guarded for the same reason ns.Measure is: a frame the addon does not
 -- own may refuse a call that looks harmless, and a screenful of errors is worse
@@ -130,8 +130,8 @@ local function EachTexture(frame, apply)
 	return complete
 end
 
--- Returns false when combat blocked part of the work, so Apply can come back
--- for the rest at PLAYER_REGEN_ENABLED.
+-- Returns false when combat blocked part of the work, so Apply can owe the
+-- rest to the end of the fight.
 local function Sweep(hide)
 	local function apply(region)
 		if hide then
@@ -182,7 +182,7 @@ function Artwork.Apply()
 	if not ns.db then
 		return
 	end
-	pending = not Sweep(not ns.db.blizzArt)
+	ns.Lockdown.Done(Artwork.Apply, Sweep(not ns.db.blizzArt))
 end
 
 -- How many regions the last sweep touched. Zero means every name in both lists
@@ -193,16 +193,9 @@ function Artwork.Found()
 end
 
 function Artwork.Deferred()
-	return pending
+	return ns.Lockdown.Owed(Artwork.Apply)
 end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
-events:SetScript("OnEvent", function(_, event)
-	if event == "PLAYER_LOGIN" then
-		Artwork.Apply()
-	elseif pending then
-		Artwork.Apply()
-	end
-end)
+events:SetScript("OnEvent", Artwork.Apply)

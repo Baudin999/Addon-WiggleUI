@@ -87,7 +87,6 @@ local bar, entry
 local squares = {}
 local live = false     -- the clone is on and the tick should draw
 local driven = false   -- the client holds the bar's visibility
-local pending          -- work combat refused, retried at PLAYER_REGEN_ENABLED
 
 --------------------------------------------------------------------------
 -- One square
@@ -254,11 +253,9 @@ function Pet.Apply()
 	if not ns.db then
 		return true
 	end
-	if InCombatLockdown() then
-		pending = true
+	if ns.Lockdown.Held(Pet.Apply) then
 		return false
 	end
-	pending = nil
 
 	if not ns.db.actionBars then
 		live = false
@@ -349,7 +346,7 @@ function Pet.Describe()
 	if not driven then
 		line = line .. "; no state driver, so it follows your pet out of combat only"
 	end
-	if pending then
+	if ns.Lockdown.Owed(Pet.Apply) then
 		line = line .. "; the rest follows when combat drops"
 	end
 	return line
@@ -380,7 +377,6 @@ UI.OnRescale(Rescaled)
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
-events:RegisterEvent("PLAYER_REGEN_ENABLED")
 events:RegisterEvent("UPDATE_BINDINGS")
 events:RegisterEvent("UNIT_PET")
 events:SetScript("OnEvent", function(_, event, unit)
@@ -390,10 +386,6 @@ events:SetScript("OnEvent", function(_, event, unit)
 		-- second tick under one name, and the harness logs in again.
 		if not ns.UI.Ticking("pet") then
 			ns.UI.Ticker(ns.UI.Forever, UPDATE_INTERVAL, "pet", Pet.Tick)
-		end
-	elseif event == "PLAYER_REGEN_ENABLED" then
-		if pending then
-			Pet.Apply()
 		end
 	elseif event == "UPDATE_BINDINGS" then
 		Pet.Bind()
