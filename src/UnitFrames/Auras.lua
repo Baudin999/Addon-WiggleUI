@@ -51,8 +51,8 @@ ns.FrameAuras = Auras
 --
 -- The client's own buffs and debuffs are hidden the same way the target's are,
 -- by name and one at a time, because BuffButton1 and DebuffButton1 are built
--- the same way on demand. Right click to cancel a buff comes back on our
--- squares, yours and your pet's, out of combat only; see Hover.
+-- the same way on demand. Right click to cancel a buff comes back on your own
+-- squares, out of combat only; the pet's cannot, see Hover.
 --
 -- The temporary weapon enchant does come back, and it has to. It sits at no
 -- aura index at all, so the walk below cannot find it and GetWeaponEnchantInfo
@@ -598,15 +598,22 @@ local function Hover(square, unit, filter)
 
 	-- Right click takes a buff off, which is what the client's own buff button
 	-- does and the one thing these squares dropped when they replaced it. Only
-	-- on a buff row, only yours or your pet's, and only out of combat: the
-	-- cancel calls are protected in combat, and an addon that makes one there
-	-- gets the client's "interface action failed" box instead of the cancel.
+	-- on your own buff row, and only out of combat: the cancel calls are
+	-- protected in combat, and an addon that makes one there gets the client's
+	-- "interface action failed" box instead of the cancel.
+	--
+	-- Not the pet's. CancelUnitBuff takes the player or the player's vehicle
+	-- and answers "pet" by doing nothing, which is what the live client did
+	-- when this shipped for the pet too, and WowClassic.exe carries no other
+	-- call that cancels an aura on another unit. A square that took the click
+	-- and did nothing would say the feature is there, so the pet's squares
+	-- answer no click, the same as the client's own pet frame.
 	--
 	-- Tip.Hang hands the right button to the camera on a client that has
 	-- SetPassThroughButtons, which would eat the click before it got here, so
 	-- the square keeps only the middle button passed. 2.5.6 has no such call
 	-- and the pcall says so.
-	if filter ~= "HELPFUL" or (unit ~= "player" and unit ~= "pet") then
+	if filter ~= "HELPFUL" or unit ~= "player" then
 		return
 	end
 	if type(square.SetPassThroughButtons) == "function" then
