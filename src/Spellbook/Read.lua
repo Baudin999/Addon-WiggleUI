@@ -31,7 +31,14 @@ ns.BookRead = Read
 -- it as a second book beside the spell book rather than as a tab of it, so it
 -- is read off HasPetSpells and the "pet" book type and named after the pet the
 -- way the client's own tab is. Only its spells: Attack, Follow and the stances
--- come back as PETACTION and live on the pet bar, not here.
+-- live on the pet bar, not here.
+--
+-- **The pet's entries are told apart by GetSpellInfo, not by their kind.** On
+-- 2.5.6 the kind GetSpellBookItemInfo hands back for the pet's book is not
+-- "SPELL" for a spell, and a reader that asked for "SPELL" drew an empty tab
+-- that was then not drawn at all. OPie, installed beside this, reads the pet's
+-- book on this client as GetSpellInfo(index, "pet") and takes the seventh
+-- return as the spell id, which a command does not have. Same call here.
 --
 -- **Read at call time, not at load.** Nothing here is on a ticker: the book
 -- is read when the window paints, which is when it opens and when the client
@@ -116,8 +123,22 @@ end
 -- it. The pet's tab says so with `pet`.
 --------------------------------------------------------------------------
 
+-- The spell id of a pet book entry, or nil for a command or a greyed rank.
+local function PetSpell(index)
+	local kind = GetSpellBookItemInfo(index, PET)
+	local info = Call("GetSpellInfo")
+	if kind == "FUTURESPELL" or not info then
+		return nil
+	end
+	return select(7, info(index, PET))
+end
+
 local function Entry(tab, index, byName, book)
 	local kind, id = GetSpellBookItemInfo(index, book)
+	if book == PET then
+		id = PetSpell(index)
+		kind = id and "SPELL"
+	end
 	if kind ~= "SPELL" then
 		return
 	end

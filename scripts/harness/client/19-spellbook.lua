@@ -70,10 +70,17 @@ end
 
 -- The pet's book, answered only while a pet is out. Two abilities it was taught
 -- and a command, which has no rank line and is not an ability.
+--
+-- **Every entry is a PETACTION, the spells too.** 2.5.6 does not answer
+-- "SPELL" for a pet's ability, and a book reader written against a fixture that
+-- said it did drew no pet tab on the live client. What tells a spell from a
+-- command is `spell`, the id GetSpellInfo(index, "pet") hands back in its
+-- seventh return; a command has none. That is the call OPie makes on this
+-- client, and the id is the entry's action id where the client's is not.
 local PET_BOOK = {
-	{ kind = "SPELL", id = 17259, name = "Bite", sub = "Rank 7" },
-	{ kind = "SPELL", id = 14921, name = "Growl", sub = "Rank 6" },
-	{ kind = "PETACTION", id = 1, name = "Attack", sub = "" },
+	{ kind = "PETACTION", id = 0x1000000 + 17259, spell = 17259, name = "Bite", sub = "Rank 7" },
+	{ kind = "PETACTION", id = 0x1000000 + 14921, spell = 14921, name = "Growl", sub = "Rank 6" },
+	{ kind = "PETACTION", id = 0x7000002, name = "Attack", sub = "" },
 }
 
 _G.HasPetSpells = function()
@@ -215,7 +222,14 @@ end
 
 local Flat = _G.GetSpellInfo
 
-_G.GetSpellInfo = function(spell)
+_G.GetSpellInfo = function(spell, book)
+	if book == "pet" then
+		local entry = Entry(spell, book)
+		if not entry or not entry.spell then
+			return nil
+		end
+		return entry.name, entry.sub, "Interface\\Icons\\A" .. entry.spell, 0, nil, nil, entry.spell
+	end
 	if type(spell) == "string" then
 		local entry = Look(spell, "name")
 		local name, rank, icon, cast = Flat(spell)
