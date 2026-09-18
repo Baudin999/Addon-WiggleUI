@@ -79,29 +79,21 @@ local function DropdownRows()
 end
 
 ----------------------------------------------------------------------
--- The book is read on the way up
+-- The book is drawn before the fight that opens it
 --
--- Reading it is four client calls per entry over every rank of every spell,
--- and it ran at login and again on every SPELLS_CHANGED for a window most
--- sessions never open. A change marks the book and the next paint pays for
--- it, so a shut window costs nothing when the trainer sells you something.
---
--- Counted off the stub rather than asserted about the window, because a read
--- that does not happen leaves nothing behind to look at.
+-- A paint is held whole to the end of a fight, so the window P opens in a
+-- pull shows the last paint. The book used to be read on the way up only, and
+-- a session whose first press was in a pull opened on no rows. A change with
+-- the window shut is drawn there and then, and a fight opens on it.
 ----------------------------------------------------------------------
 
 do
 	Window.Hide()
 	local before = fixture.reads
 	fire("SPELLS_CHANGED")
-	check(fixture.reads == before,
-		("the client said the book changed with the window shut and %d entries were read")
-			:format(fixture.reads - before))
-
-	Window.Show()
-	check(fixture.reads > before,
-		"opening the window after the book changed did not read it")
-	Window.Hide()
+	check(fixture.reads > before, "the client said the book changed with the window shut and it was not read")
+	check(Window.Row(1) ~= nil and Window.Row(1).spell ~= nil,
+		"a book changed with the window shut left no row for a fight to open on")
 end
 
 ----------------------------------------------------------------------

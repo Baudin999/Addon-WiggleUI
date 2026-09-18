@@ -51,15 +51,16 @@ local Read = ns.BookRead
 -- client says the book changed, and a window nobody has open is not painted
 -- at all.
 --
--- **The book is read on the way up, not at login.** Reading it is four client
--- calls per entry over every rank of every spell you know, which on a warrior
--- at sixty is about eight hundred, and it ran at login and again on every
--- SPELLS_CHANGED whether or not anybody had ever opened this. SPELLS_CHANGED
--- marks the book stale now and the first paint after that is what pays for it.
--- A session that never presses P reads the book never.
+-- **The book is drawn when it changes, open or shut.** It used to be read on
+-- the way up only, which saved a walk of the book per SPELLS_CHANGED for a
+-- window nobody had opened. It cannot be: a paint is held whole to the end of
+-- a fight, so the window P opens in a pull is the last paint, and a session
+-- whose first press was in a pull opened on no rows at all. Reading it is
+-- four client calls per entry, once per change, and a change in a fight is
+-- read when the fight ends.
 --
--- The frames are a different question and they stay at login, because the key
--- has to work in a fight. The snippet below is handed the window as a frame
+-- The frames stay at login for the same reason: the key has to work in a
+-- fight. The snippet below is handed the window as a frame
 -- reference, a snippet may only touch what it has been given, and neither the
 -- window nor the reference can be made in combat. A book built on first press
 -- would be a key that does nothing the first time it is pressed in a pull.
@@ -679,23 +680,15 @@ function Window.Book()
 	return book
 end
 
--- Marked either way, read only while it is up.
---
--- Reading the book is four client calls per entry over every rank you know, and
--- this runs on SPELLS_CHANGED, which the client fires at login, at a trainer, on
--- a talent change and on a handful of things that are none of those. It read and
--- refitted the window on every one of them for a window most sessions never
--- open. The mark is what the next paint pays for, and the fit rides along with
--- the read because both answer to the same change.
+-- Marked and painted, open or shut, so the rows a fight opens on are today's
+-- book; the header says why a shut window is painted at all. In a fight the
+-- paint is held to its end, which is Paint's own rule.
 function Window.Refresh()
 	if not window then
 		return false
 	end
 	stale = true
-	if Window.Shown() then
-		return Window.Paint()
-	end
-	return false
+	return Window.Paint()
 end
 
 function Window.Describe()
@@ -732,6 +725,7 @@ events:SetScript("OnEvent", function(_, event, unit)
 	if event == "PLAYER_LOGIN" then
 		if ns.db.spellbook then
 			Window.Build()
+			Window.Paint()
 		end
 		return
 	end

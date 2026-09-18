@@ -39,6 +39,11 @@ check(login.durability == 0,
 check(login.models == 0,
 	("login loaded %d player models"):format(login.models))
 
-check(login.book == 0,
-	("login read %d spell book entries for a window nobody had opened")
-		:format(login.book))
+-- The book is the exception, and read exactly once. A paint is held whole to
+-- the end of a fight, so the window P opens in a pull is the last paint, and a
+-- book first read on the way up was an empty window for a session whose first
+-- press was in a pull. One walk of every entry, not the walk per event it used
+-- to be.
+check(login.book == #H.spellbook.entries,
+	("login read %d spell book entries, and one walk of the book is %d")
+		:format(login.book, #H.spellbook.entries))
