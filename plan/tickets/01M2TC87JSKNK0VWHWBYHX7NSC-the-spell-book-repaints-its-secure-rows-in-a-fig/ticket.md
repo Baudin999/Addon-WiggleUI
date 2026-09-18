@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2TC87JSKNK0VWHWBYHX7NSC
 type: bug
-status: doing
+status: done
 title: The spell book repaints its secure rows in a fight and the game stalls
 ---
 
