@@ -184,7 +184,7 @@ if window then
 					-- The `?` in the corner, and the room it was given. A hint
 					-- nothing marks is a hint nobody finds, which is what every
 					-- one of them was before the marker existed.
-					if cell.frame.hint and cell.frame.MakeRoom then
+					if cell.frame.hint and cell.frame.corner then
 						check(cell.frame.mark ~= nil,
 							("%s: a row carries a hint and draws no ? to say so"):format(where))
 					end

@@ -902,10 +902,10 @@ local function InstallProse(kit, ctx)
 	-- Costing no space was the half that worked. The other half was that nothing
 	-- said a hint was there, so a page full of them looked like a page with none
 	-- and the only way to find one was to sweep the cursor down the column. A
-	-- row with a hint carries a `?` in its right corner now, and the controls on
-	-- it slide left to make room. That is the whole of the marker's job: the
-	-- sentence still opens on hovering the row, not on hitting a twelve pixel
-	-- target, because the row is what you were reading.
+	-- row with a hint carries a `?` in its right corner now, in a column every
+	-- paired row keeps free so the controls line up. That is the whole of the
+	-- marker's job: the sentence still opens on hovering the row, not on hitting
+	-- a twelve pixel target, because the row is what you were reading.
 	--
 	-- `text` is a string, or a function returning one for a sentence that is
 	-- different every time it is read. A zoom row says which stop it is on and
@@ -926,16 +926,15 @@ local function InstallProse(kit, ctx)
 		assert(not owner.hint, "two hints on one control")
 		owner.hint = text
 
-		-- The mark, and the room for it. Only a row built by Paired can carry
-		-- one: an action button and a reading are full width and have no corner
-		-- to give up, so they keep the hint and go without the `?`.
-		if owner.MakeRoom then
+		-- The mark, in the corner Paired already keeps free. Only a row built by
+		-- Paired can carry one: an action button and a reading are full width and
+		-- have no corner to give up, so they keep the hint and go without the `?`.
+		if owner.corner then
 			local mark = UI.Label(owner, M.font, C.dim, "CENTER", UI.FLAT)
 			mark:SetPoint("TOPRIGHT", 0, -math.floor((M.control - M.font) / 2))
 			mark:SetWidth(MARK)
 			mark:SetText("?")
 			owner.mark = mark
-			owner.MakeRoom()
 		end
 
 		-- Hung over whatever the widget already does on the way in and out,
@@ -1033,11 +1032,10 @@ end
 -- label pushes the row down rather than running under its own control.
 --
 -- Three things come back and the third is the one to read carefully. `right`
--- is what a control anchors its TOPRIGHT to, not the row: a row that gains a
--- hint puts a `?` in the corner and pulls `right` in by that much, so every
--- control on it slides left without any of the six builders below knowing a
--- marker exists. A row with no hint reserves nothing, which is the whole
--- point of hanging the column off the hint rather than off the row.
+-- is what a control anchors its TOPRIGHT to, not the row, and it stops short of
+-- the row by the width of a hint's `?` whether or not the row has a hint. A
+-- row without one used to reserve nothing, and its buttons then sat one column
+-- to the right of the rows above and below it that did.
 local function Paired(ctx, reserved, controlHeight)
 	local stack = ctx.Stack()
 	local row = CreateFrame("Frame", nil, ctx.Parent())
@@ -1048,14 +1046,9 @@ local function Paired(ctx, reserved, controlHeight)
 
 	local right = CreateFrame("Frame", nil, row)
 	right:SetPoint("TOPLEFT")
-	right:SetPoint("BOTTOMRIGHT")
-
-	-- Called once, by kit.Hint, on the row it was written under.
-	row.MakeRoom = function()
-		right:SetPoint("BOTTOMRIGHT", -(MARK + M.rowGap), 0)
-		reserved = reserved + MARK + M.rowGap
-		stack:Reflow()
-	end
+	right:SetPoint("BOTTOMRIGHT", -(MARK + M.rowGap), 0)
+	reserved = reserved + MARK + M.rowGap
+	row.corner = true
 
 	stack:Add(row, {
 		indent = M.indent,
@@ -1260,7 +1253,8 @@ function UI.Kit(host)
 	-- slider's, so a caller can put a unit after the number without this file
 	-- learning what the unit means. Left out, the number speaks for itself.
 	function kit.Stepper(label, low, high, step, get, set, format)
-		local valueWidth = 34
+		-- Wide enough for "700px": three digits and a unit, the longest any page reads.
+		local valueWidth = 44
 		local reserved = M.control * 2 + valueWidth + M.rowGap * 2
 		local row, text, right = Paired(ctx, reserved, M.control)
 		text:SetText(label)
