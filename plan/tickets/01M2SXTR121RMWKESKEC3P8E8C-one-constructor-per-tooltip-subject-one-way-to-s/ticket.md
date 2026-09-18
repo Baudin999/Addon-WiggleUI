@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SXTR121RMWKESKEC3P8E8C
 type: task
-status: doing
+status: done
 title: "One constructor per tooltip subject, one way to say where a box opens"
 ---
 
