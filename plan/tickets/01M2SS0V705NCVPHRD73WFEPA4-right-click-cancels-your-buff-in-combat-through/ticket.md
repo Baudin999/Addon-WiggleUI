@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SS0V705NCVPHRD73WFEPA4
 type: task
-status: todo
+status: done
 title: Right click cancels your buff in combat through the secure aura header
 ---
 
