@@ -47,12 +47,14 @@ local AURAS = "SecureAuraHeaderTemplate"
 
 -- The registration for one edge, for every mouse button named or for all of
 -- them. Built into a list the caller's varargs fill, because RegisterForClicks
--- takes its names loose.
+-- takes its names loose. What it registers is what the button keeps from the
+-- camera, see Press.Keep at the foot of this file.
 local function Register(button, edge, ...)
 	local suffix = edge == "down" and "Down" or "Up"
 	local count = select("#", ...)
 	if count == 0 then
 		button:RegisterForClicks("Any" .. suffix)
+		Press.Keep(button)
 		return
 	end
 	local names = {}
@@ -60,6 +62,7 @@ local function Register(button, edge, ...)
 		names[index] = select(index, ...) .. suffix
 	end
 	button:RegisterForClicks(unpack(names))
+	Press.Keep(button, ...)
 end
 
 -- A secure action button that fires on `edge`, for the mouse buttons named
@@ -172,4 +175,111 @@ function Press.Cancels(parent, name, filter, count, hands)
 		end
 	end
 	return header, buttons
+end
+
+--------------------------------------------------------------------------
+-- Which buttons a frame keeps, and which go to the camera
+--
+-- A mouse enabled frame swallows every button that lands on it, and the right
+-- button drag that turns the camera is one of those. Everything in this addon
+-- you can hover sits over the middle of the screen, which is exactly where that
+-- drag starts, so a tooltip bought at the price of a camera that will not turn
+-- is a bad trade made silently.
+--
+-- The buttons a frame answers and the buttons it hands on are one decision,
+-- and it used to be written in two places that did not read each other. A row
+-- registered the right button in one call and passed it to the camera in the
+-- next, and a button passed through never reaches the frame's scripts: the
+-- mail window's rows and slots, the meter's rows and the dungeon log's rows
+-- each drew a right click they could not receive, and the action squares, the
+-- bag squares, the list rows and the unit frames each carried a paragraph on
+-- why they skipped the pass. So what Register writes is what the frame keeps,
+-- Press.Keep says it for a frame that reads the button in OnMouseUp, and
+-- UI.PassCamera hands over only what is left. Either may be called first.
+--
+-- There are two shapes of the pass and the client answers only one of them.
+--
+-- **A frame that answers a click and wants the other buttons back** is
+-- UI.PassCamera, and SetPassThroughButtons is the only call that does it. That
+-- one arrived in 10.1.5 and this client is 2.5.6: nothing on disk calls it
+-- outside a retail path, and Questie's map library stubs it to a no-op for a
+-- retail bug. So it is probed, and on the live client the probe fails and a
+-- right drag begun on such a frame still stops there. Those frames are buttons
+-- inside windows and none of them is large.
+--
+-- **A frame whose whole answer is the hover** is UI.HoverOnly, and that one the
+-- client does have. Motion and clicks are separate flags: turn the clicks off
+-- and every button that lands on the frame falls through to the world, while
+-- OnEnter and OnLeave still fire. SetMouseClickEnabled arrived in 9.0 and was
+-- backported; OPie ships `## Interface: 20506` and calls it unguarded on a
+-- slider thumb it hangs OnEnter on, which is the same frame in the same shape.
+--
+-- The difference is worth the two functions because the character sheet is the
+-- size of the monitor. Nineteen gear rows, four readings and a column of stats
+-- answer nothing but the hover, and passed through SetPassThroughButtons alone
+-- they were most of a screen the camera would not turn in.
+--------------------------------------------------------------------------
+
+local CAMERA = { "RightButton", "MiddleButton" }
+
+-- The camera's buttons this frame does not keep, handed on. A frame that keeps
+-- all of them and never passed any is not written to at all, because the unit
+-- frames are secure buttons and nothing is gained by touching one.
+local function Pass(owner)
+	if type(owner.SetPassThroughButtons) ~= "function" then
+		return false
+	end
+	local keeps, pass = owner.wkKeeps, {}
+	for index = 1, #CAMERA do
+		local name = CAMERA[index]
+		if not (keeps and (keeps.Any or keeps[name])) then
+			pass[#pass + 1] = name
+		end
+	end
+	if #pass == 0 and not owner.wkPassed then
+		return true
+	end
+	owner.wkPassed = #pass > 0
+	return pcall(owner.SetPassThroughButtons, owner, unpack(pass))
+end
+
+-- The mouse buttons a frame answers, named, or all of them with none named.
+-- Replaces what it kept before, because a registration replaces the one before
+-- it. Press.Clicks and Press.Button say it for the buttons they register; a
+-- frame that reads the button in OnMouseUp says it here.
+function Press.Keep(frame, ...)
+	local keeps = {}
+	local count = select("#", ...)
+	if count == 0 then
+		keeps.Any = true
+	end
+	for index = 1, count do
+		keeps[select(index, ...)] = true
+	end
+	frame.wkKeeps = keeps
+	if frame.wkPasses then
+		Pass(frame)
+	end
+	return frame
+end
+
+function UI.PassCamera(owner)
+	owner.wkPasses = true
+	return Pass(owner)
+end
+
+-- The mouse for the hover and nothing else. EnableMouse first because that is
+-- what turns motion on, then the clicks off, because a frame with no clicks and
+-- no motion is a frame with no mouse at all.
+--
+-- Falls back to handing the camera its two buttons where the client has no
+-- click flag, which is the most a caller could have asked for before this
+-- existed.
+function UI.HoverOnly(owner)
+	owner:EnableMouse(true)
+	if type(owner.SetMouseClickEnabled) == "function"
+		and pcall(owner.SetMouseClickEnabled, owner, false) then
+		return true
+	end
+	return UI.PassCamera(owner)
 end

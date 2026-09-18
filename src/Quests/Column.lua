@@ -489,11 +489,9 @@ local function Take(pool, at, size, indent)
 	-- take the call. 2.5.6 will not: SetPassThroughButtons arrived in 10.1.5,
 	-- UI.PassCamera pcalls it and answers false here, and the rows keep every
 	-- button they are given. So a right drag begun on this column stops dead on
-	-- the live client, which is the trade UI/Window.lua's list already writes
-	-- out and refused to take for the quest log's two hundred pixel left
-	-- column. It is worth taking here and it is a narrower column: the rows are
-	-- the whole of the feature, a tracker you cannot click is a picture, and
-	-- the frame is one you drag to wherever your camera hand is not.
+	-- the live client. It is worth it: the rows are the whole of the feature, a
+	-- tracker you cannot click is a picture, and the frame is one you drag to
+	-- wherever your camera hand is not.
 	UI.PassCamera(row)
 
 	pool[at] = row

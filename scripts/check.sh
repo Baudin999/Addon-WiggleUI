@@ -717,6 +717,21 @@ while IFS= read -r bad; do
 done < <(grep -rn ':RegisterForClicks(' --include='*.lua' . \
 	| grep -v '^\./UI/Press\.lua:' || true)
 
+# And the camera gets only what a frame does not keep. A button handed on never
+# reaches the frame's scripts, and rows in the mail window, the meter and the
+# dungeon log registered or read the right button and then passed it to the
+# camera anyway, because the registration and the pass were two calls in two
+# files that did not read each other. UI.PassCamera now reads what Press
+# registered and what Press.Keep said, so the two client calls that hand a
+# button on are named nowhere else. Comment lines are skipped: several files
+# explain why the live client has neither. 04-ability-square is the other half
+# of this gate and drives the order both ways.
+while IFS= read -r bad; do
+	echo "only UI/Press.lua may hand a mouse button on, use UI.PassCamera or UI.HoverOnly: $bad"
+	status=1
+done < <(grep -rnE 'SetPassThroughButtons|SetMouseClickEnabled' --include='*.lua' . \
+	| grep -v '^\./UI/Press\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
+
 # One file runs the work a fight refused, and it is Core/Lockdown.lua.
 #
 # The client refuses every protected write in combat and forgets it. Twenty

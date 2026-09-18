@@ -58,12 +58,8 @@ ns.Square = Square
 -- data. So a square says exactly what Blizzard's own square would have said,
 -- drawn in the same chrome as everything else this addon puts on the screen.
 --
--- The scripts are hung here rather than through ns.Tip.Hang, and the difference
--- is the one thing Hang does for free: it hands the right and middle buttons
--- back to the camera. That is right for everything else in the addon you can
--- hover and wrong here. A right click on an action square casts, and a square
--- that let the button through to the world would turn the camera instead of
--- pressing the ability.
+-- Hung here rather than through ns.Tip.Hang because an empty square closes the
+-- box on the spot, below, rather than opening on nothing.
 local function Tooltip(w)
 	w:SetScript("OnEnter", function(self)
 		local slot = self:GetAttribute("action")

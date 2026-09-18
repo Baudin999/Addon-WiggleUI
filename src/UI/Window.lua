@@ -394,7 +394,7 @@ end
 -- the handle. The one thing the sheet gives up is the world behind it, which it
 -- used to hand every click it did not want; while the sheet is up, a click on it
 -- moves the sheet rather than reaching the mob. This client has no
--- SetPassThroughButtons to split that, and UI/Tip.lua carries why.
+-- SetPassThroughButtons to split that, and UI/Press.lua carries why.
 --
 -- Nothing is drawn for it. The strip that used to light under the cursor was
 -- there to point at a handle you could not otherwise find; a handle that is the
@@ -1960,20 +1960,10 @@ local function IconRow(list, button)
 
 	button.icons = true
 	-- The hover scripts are the row's own, because they paint as well as
-	-- describe. What ns.Tip.Hang would have done for free is the one thing left, and
-	-- it is the thing a frame under the cursor all evening cannot do without:
-	-- a right drag over the rail has to turn the camera rather than stop dead.
-	--
-	-- Unless the row answers the right button itself. A button passed through
-	-- never reaches the frame's scripts, whatever RegisterForClicks said, so a
-	-- rail that hands the camera its right button and closes a conversation on
-	-- the same button does the first and never the second. That is how a
-	-- right click on a whisper room turned the camera and left the room where
-	-- it was. A column that took the gesture keeps the button, and the price
-	-- is that a right drag begun on its rows does not turn the camera.
-	if not (list.onBack or list.onRight) then
-		UI.PassCamera(button)
-	end
+	-- describe, so the pass ns.Tip.Hang would have made is made here: a right
+	-- drag over the rail has to turn the camera rather than stop dead. A column
+	-- that took the right button keeps it through its registration.
+	UI.PassCamera(button)
 	return button
 end
 
@@ -2104,10 +2094,7 @@ local function ListRow(list, index)
 	--
 	-- The list stays here and does not register both on every row, which was
 	-- the other way to give onSelect a button to report. A row that takes the
-	-- right button keeps it, and the price is written above UI.PassCamera: a
-	-- right drag begun over that column stops dead instead of turning the
-	-- camera. The quest log's left column is two hundred pixels of the screen
-	-- and that trade is not worth an argument nothing reads yet.
+	-- right button keeps it from the camera, see UI.Press.Keep.
 	--
 	-- A modifier costs nothing here either way. RegisterForClicks names the
 	-- button and the edge and says nothing about shift, so a shift left click

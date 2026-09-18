@@ -895,7 +895,7 @@ local function Square(pane, entry)
 	-- UI.HoverOnly and not EnableMouse with the camera's buttons handed back:
 	-- this client has no SetPassThroughButtons, so that pair was a row two hundred
 	-- and eighty pixels wide swallowing the drag, nineteen times, on a sheet the
-	-- size of the monitor. UI/Tip.lua carries which call the client actually has.
+	-- size of the monitor. UI/Press.lua carries which call the client actually has.
 	UI.HoverOnly(box)
 	box:SetScript("OnEnter", Enter)
 	box:SetScript("OnLeave", Leave)

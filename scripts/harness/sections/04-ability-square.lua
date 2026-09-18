@@ -749,6 +749,47 @@ collectgarbage("restart")
 check(churned < 0.05,
 	("redrawing an unchanged square 50 times allocated %.2f KB"):format(churned))
 
+--------------------------------------------------------------------------
+-- What a frame hands the camera
+--------------------------------------------------------------------------
+
+-- UI.PassCamera hands on only the buttons a frame keeps no use for, whichever
+-- of the pass and the registration comes first. The stub's
+-- SetPassThroughButtons raises, the way the live client has none, so each
+-- frame here carries a recorder in its place.
+do
+	local Press = ns.UI.Press
+	local function Recorded()
+		local frame = _G.CreateFrame("Button", nil, _G.UIParent)
+		frame.SetPassThroughButtons = function(self, ...)
+			self.passed = {}
+			for index = 1, select("#", ...) do
+				self.passed[select(index, ...)] = true
+			end
+		end
+		return frame
+	end
+
+	local row = Recorded()
+	Press.Clicks(row, "up", "LeftButton", "RightButton")
+	ns.UI.PassCamera(row)
+	check(row.passed and not row.passed.RightButton and row.passed.MiddleButton,
+		"a row that registered the right button handed it to the camera")
+
+	local late = Recorded()
+	ns.UI.PassCamera(late)
+	check(late.passed and late.passed.RightButton,
+		"a frame that answers only the hover kept the right button from the camera")
+	Press.Keep(late, "RightButton")
+	check(not late.passed.RightButton,
+		"a frame that kept the right button after its pass still hands it on")
+
+	local unit = Recorded()
+	Press.Clicks(unit, "up")
+	ns.UI.PassCamera(unit)
+	check(unit.passed == nil, "a frame that keeps every button was written to anyway")
+end
+
 slots[SLOT] = nil
 guids.target = nil
 

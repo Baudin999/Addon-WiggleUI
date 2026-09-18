@@ -263,17 +263,12 @@ end
 -- Building
 --------------------------------------------------------------------------
 
--- The tooltip on a hover, which is the client's own for the unit. Hung by
--- hand rather than through ns.Tip.Hang, because Hang passes the right button
--- through to the camera and the right button is the menu here.
+-- The tooltip on a hover, which is the client's own for the unit. The button
+-- keeps every mouse button it registered, so the right one stays the menu.
 local function Hover(entry)
-	local frame = entry.frame
 	entry.subject = { kind = "unit", unit = entry.spec.unit }
-	frame:SetScript("OnEnter", function(self)
-		ns.Tip.Open(self, entry.subject)
-	end)
-	frame:SetScript("OnLeave", function()
-		ns.Tip.Close()
+	ns.Tip.Hang(entry.frame, function()
+		return entry.subject
 	end)
 end
 

@@ -65,8 +65,8 @@ ns.MerchantGrid = Grid
 -- equip, open, sell or attach depending on what is in front of you, and the
 -- rules for which are inside the client. Buying is one call with one meaning
 -- and picking up is another, so the card is an ordinary button. What it does
--- share with a bag square is the price named in UI/Tip.lua: a card whose right
--- click spends cannot hand the right button to the camera, so a right drag
+-- share with a bag square is the price named in UI/Press.lua: a card whose right
+-- click spends keeps the right button from the camera, so a right drag
 -- begun on a card does not turn the view. The gaps and the frame around the
 -- rack are where a drag starts.
 --------------------------------------------------------------------------

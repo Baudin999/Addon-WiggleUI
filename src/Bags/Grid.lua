@@ -97,17 +97,11 @@ ns.BagsGrid = Grid
 -- palette with the client's tiled parchment opening over it is two designs on
 -- one screen, which is the defect the addon's own box exists to stop.
 --
--- **Nothing here hands the right button to the camera.** UI.PassCamera is on
--- every other hoverable frame in the addon and it is deliberately off these, for
--- the reason Character/Paperdoll.lua spells out at its own squares: a square
--- whose right click is an action cannot also pass the right button through. The
--- right click on a bag slot is the whole of eat, equip, open, sell, attach and
--- put a stone on your axe, and with the button passed through every one of them
--- went to the camera instead. The square drew, hovered and said what was in it,
--- and a right click turned the view.
---
--- The price is the one named in UI/Tip.lua and it is paid here on purpose: a
--- right drag begun on a square does not turn the camera. There are two pixels
+-- **Nothing here hands the right button to the camera.** The right click on a
+-- bag slot is the whole of eat, equip, open, sell, attach and put a stone on
+-- your axe, and when the button was passed through every one of them went to
+-- the camera instead. The price is the one named in UI/Press.lua: a right drag
+-- begun on a square does not turn the camera. There are two pixels
 -- between squares and a frame around the window, so there is somewhere on it to
 -- start a drag; there is nowhere else to put a right click.
 --------------------------------------------------------------------------

@@ -377,6 +377,7 @@ local function Cell(index)
 			Window.Back()
 		end
 	end)
+	ns.UI.Press.Keep(row, "RightButton")
 
 	-- The hover is hung once and reads whatever link the row is carrying now,
 	-- rather than being re-hung per repaint. A row with no link answers nothing
