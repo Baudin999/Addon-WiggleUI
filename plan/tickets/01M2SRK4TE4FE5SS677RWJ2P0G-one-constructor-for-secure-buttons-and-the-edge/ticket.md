@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SRK4TE4FE5SS677RWJ2P0G
 type: task
-status: doing
+status: done
 title: One constructor for secure buttons and the edge they fire on
 ---
 
