@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2TB3B0GDK6BHGE5H7J0WP64
 type: task
-status: todo
+status: doing
 title: The pet bar draws its keys at twice the action bars' size
 ---
 
