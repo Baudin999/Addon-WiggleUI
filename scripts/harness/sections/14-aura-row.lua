@@ -424,6 +424,35 @@ do
 		end
 	end
 	check(perLine < 10, "ten buffs on you all stayed on one line")
+
+	-- Every square has the button that cancels it over its art, and that
+	-- button holds the square's own aura. The client's header lays its grid
+	-- out and Flow lays the squares out, and this is where the two agree, on
+	-- both lines of a wrapped row.
+	-- Measured edge for edge rather than by pointing at the middle: a grid a
+	-- gap off still has the middle of every square under some button.
+	local function edges(frame)
+		local scale = frame:GetEffectiveScale()
+		return frame:GetLeft() * scale, frame:GetBottom() * scale,
+			frame:GetWidth() * scale, frame:GetHeight() * scale
+	end
+	for index = 1, 10 do
+		local x, y = H.mouse.Point(mine[index].box)
+		local over = H.mouse.At(x, y, "RightButton")
+		check(over ~= nil and over ~= mine[index]
+			and over:GetAttribute("index") == index,
+			("the press over buff %d of ten lands on %s, which cancels aura %s")
+				:format(index, tostring(over and (over:GetName() or over:GetObjectType())),
+					tostring(over and over:GetAttribute("index"))))
+		if over and over ~= mine[index] then
+			local bl, bb, bw, bh = edges(mine[index].box)
+			local ol, ob, ow, oh = edges(over)
+			check(math.abs(bl - ol) < 1e-6 and math.abs(bb - ob) < 1e-6
+				and math.abs(bw - ow) < 1e-6 and math.abs(bh - oh) < 1e-6,
+				("buff %d's art is %.2f,%.2f %.2fx%.2f and the button over it is"
+					.. " %.2f,%.2f %.2fx%.2f"):format(index, bl, bb, bw, bh, ol, ob, ow, oh))
+		end
+	end
 	local tail = mine[perLine + 1]
 	check(underTop(tail) < top,
 		"your wrapped buff line went down into the block instead of up over it")
@@ -462,6 +491,14 @@ do
 		"the enchant square drew no art, and it borrows the weapon's")
 	check(mine[2].shownIcon == "shout",
 		"the enchant pushed your buffs off the row instead of leading it")
+	do
+		local over = H.mouse.At(H.mouse.Point(mine[1].box))
+		check(over ~= nil and over:GetAttribute("target-slot") == ns.Gear.MAINHAND,
+			"the button over the enchant square does not stand for the main hand")
+		over = H.mouse.At(H.mouse.Point(mine[2].box))
+		check(over ~= nil and over:GetAttribute("index") == 1,
+			"the enchant did not push the cancel buttons along with the squares")
+	end
 	own.main, own.mainLeft, H.swing.mainhand = false, 0, nil
 
 	debuffs.player, own.auras = nil, heldAuras
@@ -511,31 +548,42 @@ do
 	check(poison ~= nil and poison:IsShown() and poison.shownIcon == "poison",
 		"the debuff on your pet is not drawn under the pet block")
 
-	-- Right click takes a buff off your own row, the way the client's own buff
-	-- button does, and only out of combat, where the call is allowed. Not off
-	-- the pet's: CancelUnitBuff answers "pet" by doing nothing on the live
-	-- client, so a pet square that took the click would be a dead one. A
-	-- debuff has nothing to cancel either.
+	-- Right click takes a buff off your own row, in combat as well, through
+	-- the client's secure header laid over the squares. Not off the pet's:
+	-- CancelUnitBuff answers "pet" by doing nothing on the live client, so a
+	-- pet square that took the click would be a dead one. A debuff has nothing
+	-- to cancel and a left click cancels nothing either.
 	local realCancel, realLockdown, realOwn = _G.CancelUnitBuff, _G.InCombatLockdown, own.auras
 	local cancelled = {}
 	_G.CancelUnitBuff = function(unit, index, filter)
 		cancelled[#cancelled + 1] = ("%s %d %s"):format(unit, index, filter)
 	end
-	own.auras = { { name = "Battle Shout", icon = "shout", expires = now + 100 } }
+	--
+	-- Somebody else's buff first and yours second, because the header numbers
+	-- them in the client's order and a row that drew yours first would put
+	-- Battle Shout's square under Fortitude's button.
+	own.auras = {
+		{ name = "Power Word: Fortitude", icon = "fort", expires = now + 900,
+			source = "party2" },
+		{ name = "Battle Shout", icon = "shout", expires = now + 100 },
+	}
 	tick()
-	local shout = squares(_G.WarriorKitPlayerBuffs)[1]
+	local yours = squares(_G.WarriorKitPlayerBuffs)
+	check(yours[2].shownIcon == "shout",
+		"your buff row is not in the client's order, so its squares are not the"
+			.. " auras the buttons over them cancel")
 	H.mouse.On(poison, "RightButton")
 	H.mouse.On(mend, "RightButton")
-	H.mouse.On(shout, "LeftButton")
-	_G.InCombatLockdown = function() return true end
-	H.mouse.On(shout, "RightButton")
-	_G.InCombatLockdown = realLockdown
+	local shoutX, shoutY = H.mouse.Point(yours[2].box)
+	H.mouse.Click(shoutX, shoutY)
 	check(#cancelled == 0,
-		("a pet buff, a debuff, a left click or a right click in combat cancelled %s")
+		("a pet buff, a debuff or a left click cancelled %s")
 			:format(tostring(cancelled[1])))
-	H.mouse.On(shout, "RightButton")
-	check(cancelled[1] == "player 1 HELPFUL",
-		("a right click on Battle Shout cancelled %s rather than your buff 1")
+	_G.InCombatLockdown = function() return true end
+	H.mouse.Click(shoutX, shoutY, "RightButton")
+	_G.InCombatLockdown = realLockdown
+	check(cancelled[1] == "player 2 HELPFUL",
+		("a right click in combat on Battle Shout cancelled %s rather than your buff 2")
 			:format(tostring(cancelled[1])))
 	_G.CancelUnitBuff, own.auras = realCancel, realOwn
 	tick()

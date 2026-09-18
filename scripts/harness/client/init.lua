@@ -300,6 +300,9 @@ for _, part in ipairs({
 	-- any other file left. It takes IsAddOnLoaded over from 07-chat.lua, so it
 	-- has to be under it and is under everything else for no other reason.
 	"24-addons",
+	-- Last, and it wraps CreateFrame the way 09-group.lua does for the group
+	-- header, so it has to sit over every file that replaces the call.
+	"25-aura-header",
 }) do
 	load("client/" .. part .. ".lua")(H)
 end

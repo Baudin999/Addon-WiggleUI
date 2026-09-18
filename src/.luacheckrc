@@ -44,6 +44,9 @@ globals = {
 	-- handing out a reference to its own tables.
 	"WarriorKitTargetDebuffs", "WarriorKitTargetBuffs",
 	"WarriorKitPlayerDebuffs", "WarriorKitPlayerBuffs",
+	-- the secure header over your buff row whose buttons cancel a buff on a
+	-- right click, named off the row by UI.Press.Cancels
+	"WarriorKitPlayerBuffsCancel",
 	"WarriorKitChargeButton",
 	-- The performance window and the button Ctrl-R presses. The window is named
 	-- so Escape closes it through UISpecialFrames, which is a list of names;
@@ -383,10 +386,6 @@ read_globals = {
 	-- and tests it the same way, reaction <= 4 is something you can attack.
 	"UnitReaction",
 	"UnitDetailedThreatSituation", "UnitAura", "C_UnitAuras",
-	-- right click on a buff square, UnitFrames/Auras.lua. Both are what the
-	-- client's own BuffFrame.lua calls on 2.5.6 and both are type-checked at
-	-- the point of use.
-	"CancelUnitBuff", "CancelItemTempEnchantment",
 	"GetNumGroupMembers", "SetRaidTargetIconTexture",
 	-- The group, for the party and raid blocks. UnitInRange, UnitIsGhost and
 	-- UnitIsDeadOrGhost are what say a block has no reading to take;

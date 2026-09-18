@@ -67,6 +67,22 @@ local function secure(self, button, down)
 		end
 	end
 
+	-- Taking a buff off, in the client's SECURE_ACTIONS.cancelaura order: a
+	-- weapon slot is the enchant on that hand, and anything else is buff
+	-- `index` on the player, whatever unit the button was built over.
+	if attribute("type") == "cancelaura" then
+		local slot = tonumber(attribute("target-slot"))
+		local hand = (slot == 16 and 1) or (slot == 17 and 2) or nil
+		if hand then
+			if _G.CancelItemTempEnchantment then
+				_G.CancelItemTempEnchantment(hand)
+			end
+		elseif _G.CancelUnitBuff then
+			_G.CancelUnitBuff("player", attribute("index") or self:GetID(),
+				attribute("filter"))
+		end
+	end
+
 	if _G.SpellCanTargetItem and _G.SpellCanTargetItem() then
 		local slot = attribute("target-slot")
 		if slot and _G.UseInventoryItem then

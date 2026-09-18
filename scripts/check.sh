@@ -688,14 +688,15 @@ done < <(grep -rn 'GameTooltip' --include='*.lua' . \
 # the player kept a client setting on. Nine files wrote the pair by hand.
 #
 # UI.Press.Button takes one edge and writes both, and UI.Press.Key does the same
-# for the snippet keys a binding presses. Outside that file nothing names the
-# action template or the attribute, and outside UI/ nothing names the snippet
-# template, which UI/Window.lua's close box is built on. Comments are read too,
-# for the reason the GameTooltip rule reads them.
+# for the snippet keys a binding presses, and UI.Press.Cancels for a row of
+# buffs a right click takes off in combat. Outside that file nothing names the
+# action template, the aura header or the attribute, and outside UI/ nothing
+# names the snippet template, which UI/Window.lua's close box is built on.
+# Comments are read too, for the reason the GameTooltip rule reads them.
 while IFS= read -r bad; do
 	echo "only UI/Press.lua may build a secure action button or name the edge it fires on, use UI.Press.Button: $bad"
 	status=1
-done < <(grep -rnE 'SecureActionButtonTemplate|useOnKeyDown' --include='*.lua' . \
+done < <(grep -rnE 'SecureActionButtonTemplate|SecureAuraHeaderTemplate|useOnKeyDown' --include='*.lua' . \
 	| grep -v '^\./UI/Press\.lua:' || true)
 while IFS= read -r bad; do
 	echo "only UI/ may build a snippet button, use UI.Press.Key for a bound key: $bad"

@@ -52,7 +52,8 @@ ns.FrameAuras = Auras
 -- The client's own buffs and debuffs are hidden the same way the target's are,
 -- by name and one at a time, because BuffButton1 and DebuffButton1 are built
 -- the same way on demand. Right click to cancel a buff comes back on your own
--- squares, out of combat only; the pet's cannot, see Hover.
+-- row, in combat too; see "Right click" below for how and for why the pet's
+-- row cannot have it.
 --
 -- The temporary weapon enchant does come back, and it has to. It sits at no
 -- aura index at all, so the walk below cannot find it and GetWeaponEnchantInfo
@@ -144,6 +145,10 @@ local TIMER_CEILING, COUNT_CEILING = 14, 11
 --             screen. Three of them across the four rows, because the target's
 --             buffs and debuffs are one row of icons over one frame and nobody
 --             wants half of it
+--   secure    lay the client's secure aura header over this row, so a right
+--             click cancels the buff under it in combat as well as out of
+--             it. Only your own buffs, because the client cancels nothing on
+--             any other unit; see "Right click" below
 --   global    what this row is called, for the reason UnitFrames/Skin.lua
 --             names the block: a row that lands in the wrong place can then be
 --             measured from a macro or from the harness without this file
@@ -154,7 +159,7 @@ local ROWS = {
 			max = "DEBUFF_MAX_DISPLAY", ceiling = 16, hides = "hideBlizzDebuffs",
 			global = "WarriorKitPlayerDebuffs" },
 		{ key = "buffs", filter = "HELPFUL", head = "BuffButton", below = false,
-			max = "BUFF_MAX_DISPLAY", ceiling = 32, enchants = true,
+			max = "BUFF_MAX_DISPLAY", ceiling = 32, enchants = true, secure = true,
 			hides = "hideBlizzBuffs", global = "WarriorKitPlayerBuffs" },
 	},
 	target = {
@@ -321,7 +326,11 @@ local function Scan(row, unit, now)
 
 	local found, filter = row.found, row.filter
 	local taken = Enchants(row, found, wanted, 0, now)
-	for pass = 1, 2 do
+	-- A secure row is drawn in the client's own order, because the buttons
+	-- over it are laid out by the client in that order and a square has to be
+	-- the aura its button cancels. See "Right click" below.
+	local passes = row.secure and 1 or 2
+	for pass = 1, passes do
 		local index = 1
 		while taken < wanted do
 			local name, icon, expires, duration, count, source =
@@ -330,7 +339,7 @@ local function Scan(row, unit, now)
 				break
 			end
 			local mine = source == "player"
-			if mine == (pass == 1) then
+			if passes == 1 or mine == (pass == 1) then
 				taken = taken + 1
 				local slot = found[taken]
 				if not slot then
@@ -596,44 +605,141 @@ local function Hover(square, unit, filter)
 			unit = unit, index = self.auraIndex, place = BESIDE }
 	end)
 
-	-- Right click takes a buff off, which is what the client's own buff button
-	-- does and the one thing these squares dropped when they replaced it. Only
-	-- on your own buff row, and only out of combat: the cancel calls are
-	-- protected in combat, and an addon that makes one there gets the client's
-	-- "interface action failed" box instead of the cancel.
-	--
-	-- Not the pet's. CancelUnitBuff takes the player or the player's vehicle
-	-- and answers "pet" by doing nothing, which is what the live client did
-	-- when this shipped for the pet too, and WowClassic.exe carries no other
-	-- call that cancels an aura on another unit. A square that took the click
-	-- and did nothing would say the feature is there, so the pet's squares
-	-- answer no click, the same as the client's own pet frame.
-	--
-	-- Tip.Hang hands the right button to the camera on a client that has
-	-- SetPassThroughButtons, which would eat the click before it got here, so
-	-- the square keeps only the middle button passed. 2.5.6 has no such call
-	-- and the pcall says so.
-	if filter ~= "HELPFUL" or unit ~= "player" then
+end
+
+--------------------------------------------------------------------------
+-- Right click
+--
+-- A right click on one of your buffs takes it off, in combat as well, which is
+-- what the client's own buff frame does and the one thing these squares
+-- dropped when they replaced it. The squares cannot do it themselves: the
+-- cancel is refused to an addon in combat. So your buff row carries the
+-- client's own mechanism over it, out of UI.Press.Cancels: a secure header
+-- that hands each of its buttons the index of one of your buffs from secure
+-- code, and buttons whose right click cancels that index. They are invisible.
+-- The squares underneath are what you see, and the buttons are what you touch.
+--
+-- Two things have to agree for that to be honest, and both are held here.
+--
+-- The order. The header walks your buffs in the client's own order, enchants
+-- first, and nothing about its sort is Lua this addon can change. So a secure
+-- row is drawn in that order too, rather than yours first, which is Scan's one
+-- concession: button 3 cancels aura 3, and square 3 has to be aura 3.
+--
+-- The grid. The header lays its buttons out from four numbers, and Flow lays
+-- the squares out from the row's width and gap. Place works the four numbers
+-- out from the same width and gap with Flow's own line-breaking rule, so each
+-- button lands on its square's art, and the aura section in the harness
+-- measures that it does.
+--
+-- Only yours. The client's cancel is written against the player and nothing
+-- else, and CancelUnitBuff answers "pet" by doing nothing, which is what the
+-- live client did when this shipped for the pet. So the pet's squares answer
+-- no click, the same as the client's own pet frame.
+--
+-- The header is protected, so where it sits, how big its buttons are and
+-- whether it is shown are written out of combat only. A change that arrives in
+-- a fight is remembered and written on the first pass after it, the way every
+-- other half of the skin that a lockdown can turn down is.
+--------------------------------------------------------------------------
+
+-- What a button over a square says when the pointer rests on it: the buff at
+-- the index the header gave it, or the hand an enchant button stands for. It
+-- asks the button rather than the square, because the button is what the
+-- header numbered, and it answers beside it for the reason Hover gives.
+local function Tell(self)
+	local place = ns.UI.Tooltip.BESIDE
+	local slot = self:GetAttribute("target-slot")
+	if slot then
+		ns.Tip.Open(self, { kind = "inventory", unit = "player", slot = slot,
+			place = place })
 		return
 	end
-	if type(square.SetPassThroughButtons) == "function" then
-		pcall(square.SetPassThroughButtons, square, "MiddleButton")
+	local index = self:GetAttribute("index")
+	if index then
+		ns.Tip.Open(self, { kind = "buff", unit = "player", index = index,
+			place = place })
 	end
-	square:SetScript("OnMouseUp", function(self, button)
-		if button ~= "RightButton" or InCombatLockdown() then
-			return
+end
+
+local function Untell()
+	ns.Tip.Close()
+end
+
+-- The header over a secure row, above the squares so the pointer finds its
+-- buttons first. Nil where the client has no such header, and then the row is
+-- an ordinary one: tooltips, no cancel.
+local function Cover(spec, parent, frame, ceiling)
+	local header, buttons = ns.UI.Press.Cancels(parent, spec.global .. "Cancel",
+		spec.filter, ceiling, spec.enchants)
+	if not header then
+		return nil
+	end
+	header:SetFrameLevel(frame:GetFrameLevel() + 8)
+	for index = 1, #buttons do
+		buttons[index]:SetFrameLevel(frame:GetFrameLevel() + 9)
+		buttons[index]:SetScript("OnEnter", Tell)
+		buttons[index]:SetScript("OnLeave", Untell)
+	end
+	return header, buttons
+end
+
+-- The four numbers the header lays its grid out from, and the size of each
+-- button, off the numbers Place just laid the squares out from. A button is
+-- the square's art and not the strip over it, which is also all the square
+-- itself answers the mouse on. Only a row over the block is ever secure.
+local function Grid(row, square, px, timer, gap, width, mirror)
+	local wide, tall = Aura.Extent(square, px, timer)
+	-- Flow's own rule for where a line breaks, in Flow's own arithmetic, so
+	-- the two cannot round a borderline width differently.
+	local across, perLine = wide, 1
+	while across + gap + wide <= width do
+		across = across + gap + wide
+		perLine = perLine + 1
+	end
+	row.grid = { point = row.edge, corner = row.corner, lift = gap,
+		step = (mirror and 1 or -1) * (wide + gap), perLine = perLine,
+		rise = tall + gap, side = wide }
+	row.gridDirty = true
+end
+
+-- Write the grid and the header's visibility, or remember that combat
+-- refused. True when there was nothing left to write.
+local function Lay(row, box)
+	local header, grid = row.header, row.grid
+	if not header or not grid then
+		return true
+	end
+	if not row.gridDirty and header:IsShown() == row.covered then
+		return true
+	end
+	if InCombatLockdown() then
+		row.gridStale = true
+		return false
+	end
+	row.gridStale = nil
+	if row.gridDirty then
+		row.gridDirty = nil
+		header:ClearAllPoints()
+		header:SetPoint(grid.point, box, grid.corner, 0, grid.lift)
+		for index = 1, #row.cancels do
+			row.cancels[index]:SetSize(grid.side, grid.side)
 		end
-		-- The stone on your weapon answers to the hand, not to an aura index:
-		-- 1 is the main hand and 2 the off hand, which is how the client's own
-		-- enchant button counts them.
-		if self.auraGear then
-			if type(CancelItemTempEnchantment) == "function" then
-				CancelItemTempEnchantment(self.auraGear == ns.Gear.MAINHAND and 1 or 2)
-			end
-		elseif self.auraIndex and type(CancelUnitBuff) == "function" then
-			CancelUnitBuff(unit, self.auraIndex, filter)
-		end
-	end)
+		-- The header sizes itself to its buttons and to this with none, and a
+		-- frame measuring nothing is a frame the client need not draw.
+		header:SetAttribute("minWidth", grid.side)
+		header:SetAttribute("minHeight", grid.side)
+		header:SetAttribute("point", grid.point)
+		header:SetAttribute("xOffset", grid.step)
+		header:SetAttribute("wrapAfter", grid.perLine)
+		header:SetAttribute("wrapYOffset", grid.rise)
+	end
+	if row.covered then
+		header:Show()
+	else
+		header:Hide()
+	end
+	return true
 end
 
 -- The squares a row has turned out to need, built and placed.
@@ -674,7 +780,12 @@ function Grow(row, count)
 		local held = row.squares[slot]
 		if not held then
 			held = Aura.New(row.frame)
-			Hover(held, plan.unit, row.filter)
+			if row.header then
+				-- The button over it answers; see "Right click".
+				held:EnableMouse(false)
+			else
+				Hover(held, plan.unit, row.filter)
+			end
 			row.squares[slot] = held
 		end
 		-- The height is what comes back rather than the square, because the
@@ -729,10 +840,16 @@ function Auras.Build(entry)
 			runs[#runs + 1] = Run(ENCHANT_HEAD, ENCHANT_COUNT)
 		end
 
+		local header, cancels
+		if spec.secure then
+			header, cancels = Cover(spec, entry.frame, frame, ceiling)
+		end
+
 		list[index] = {
 			key = spec.key, filter = spec.filter, below = spec.below, enchants = spec.enchants, hides = spec.hides,
 			frame = frame, squares = {}, found = {},
 			runs = runs, ceiling = ceiling, stripped = {},
+			header = header, cancels = cancels, secure = header ~= nil, covered = false,
 			-- `wanted` is the longest this row may ever be and `drawn` is how
 			-- much of it has been built and placed. The second starts at nothing
 			-- and Grow is the only thing that moves it.
@@ -838,6 +955,10 @@ function Auras.Place(entry, px, width, mirror)
 			plan.timer = math.floor(TIMER_CEILING * unit + 0.5)
 			plan.count = math.floor(COUNT_CEILING * unit + 0.5)
 
+			if row.header then
+				Grid(row, square, px, plan.timer, gap, width, mirror)
+			end
+
 			row.frame:ClearAllPoints()
 			row.frame:SetPoint(row.edge, entry.box, row.corner, 0, 0)
 			row.frame:SetWidth(width)
@@ -863,6 +984,8 @@ function Auras.Place(entry, px, width, mirror)
 		-- the only thing that shows a row, so it says so on every pass rather than
 		-- on the pass that happens to lay one out.
 		row.frame:SetShown(on and row.wanted > 0)
+		row.covered = on and row.wanted > 0
+		Lay(row, entry.box)
 	end
 end
 
@@ -897,7 +1020,11 @@ function Auras.Unstyle(entry)
 	for index = 1, #list do
 		local row = list[index]
 		row.frame:Hide()
+		row.covered = false
 		if not Unsweep(row) then
+			complete = false
+		end
+		if not Lay(row, list.box) then
 			complete = false
 		end
 	end
@@ -921,6 +1048,9 @@ function Auras.Update(entry)
 	for index = 1, #list do
 		local row = list[index]
 		Groom(row)
+		if row.gridStale then
+			Lay(row, list.box)
+		end
 		if row.wanted > 0 then
 			Fill(row, unit, now)
 		end

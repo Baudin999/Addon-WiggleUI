@@ -9,8 +9,8 @@ UI.Press = Press
 --
 -- Every button in this addon that makes a protected call is built here, and
 -- check.sh holds every other file to that: nothing outside this file names
--- SecureActionButtonTemplate or useOnKeyDown, and nothing outside UI/ names
--- SecureHandlerClickTemplate.
+-- SecureActionButtonTemplate, SecureAuraHeaderTemplate or useOnKeyDown, and
+-- nothing outside UI/ names SecureHandlerClickTemplate.
 --
 -- The reason is one bug, shipped three times. A secure action button does not
 -- act on the edge it registered for. It asks its own `useOnKeyDown` attribute,
@@ -42,6 +42,7 @@ UI.Press = Press
 
 local ACTION = "SecureActionButtonTemplate"
 local HANDLER = "SecureHandlerClickTemplate"
+local AURAS = "SecureAuraHeaderTemplate"
 
 -- The registration for one edge, for every mouse button named or for all of
 -- them. Built into a list the caller's varargs fill, because RegisterForClicks
@@ -97,4 +98,65 @@ function Press.Edge(button)
 	end
 	local cvar = type(GetCVarBool) == "function" and GetCVarBool("ActionButtonUseKeyDown")
 	return cvar and "down" or "up", "ActionButtonUseKeyDown setting"
+end
+
+--------------------------------------------------------------------------
+-- Cancelling your own buffs
+--
+-- A right click on a buff takes it off, and the call that does it is refused
+-- to an addon in combat. The client's own buff frame makes it through
+-- SecureAuraHeaderTemplate: a header that walks your auras from secure code
+-- on every UNIT_AURA, hands each child button the index of the aura it stands
+-- for, and lays the children out in a grid. The child's `type2` is
+-- `cancelaura`, and the secure template cancels buff `index` on the player
+-- when the right button is released over it. Nothing in that chain is Lua this
+-- addon wrote, so it runs in combat.
+--
+-- Only the player. The client's cancelaura is written against "player" and
+-- nothing else, and CancelUnitBuff answers any other unit by doing nothing.
+--
+-- The children are built here, out of combat, rather than left to the header.
+-- A child the header builds itself is registered by its template for the
+-- right button's press, and restricted code cannot re-register it, so it would
+-- be the dead-click shape this file exists to stop. The header uses a child it
+-- is handed before it builds one, so it is handed all of them: `count` buffs,
+-- capped with maxAuraCount so it never reaches for a thirty-third, and the two
+-- weapon enchants when `hands` is set, which cancelaura answers by the hand's
+-- inventory slot.
+--
+-- Where the grid goes is the caller's: the header's point, xOffset,
+-- wrapAfter and wrapYOffset attributes, and the children's size, all written
+-- out of combat. Returns nil on a client with no such template.
+--------------------------------------------------------------------------
+
+local function Cancel(header)
+	local button = Press.Button(header, nil, "up", "RightButton")
+	button:SetAttribute("type2", "cancelaura")
+	button:Hide()
+	return button
+end
+
+function Press.Cancels(parent, name, filter, count, hands)
+	local ok, header = pcall(CreateFrame, "Frame", name, parent, AURAS)
+	if not ok or not header then
+		return nil
+	end
+	header:SetAttribute("unit", "player")
+	header:SetAttribute("filter", filter)
+	header:SetAttribute("template", ACTION)
+	header:SetAttribute("sortMethod", "INDEX")
+	header:SetAttribute("maxAuraCount", count)
+	local buttons = {}
+	for index = 1, count do
+		buttons[index] = Cancel(header)
+		header:SetAttribute("child" .. index, buttons[index])
+	end
+	if hands then
+		header:SetAttribute("includeWeapons", 1)
+		for hand = 1, 2 do
+			buttons[count + hand] = Cancel(header)
+			header:SetAttribute("tempEnchant" .. hand, buttons[count + hand])
+		end
+	end
+	return header, buttons
 end

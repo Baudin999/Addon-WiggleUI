@@ -225,6 +225,23 @@ function Aura.New(parent)
 	return w
 end
 
+-- The rectangle one widget takes, without a widget: the width, the height, and
+-- the type size the timer is drawn at. Aura.Size draws to it, and the secure
+-- half of your buff row in UnitFrames/Auras.lua lays its buttons out from it
+-- before any square exists.
+--
+-- The height is the square plus the strip the number stands in: its own type
+-- height and a pixel of air under it, taken up to whole pixels so the square
+-- below still starts on one. Off the size asked for rather than off the
+-- string, because a font string measures 0 tall until it has text in it and a
+-- square with nothing on it yet is most of the row.
+function Aura.Extent(side, px, timerCeiling)
+	local timerSize = math.max(TIMER_FLOOR,
+		math.min(timerCeiling, math.floor(side * TIMER_SHARE)))
+	local lift = (math.ceil(timerSize / px) + 1) * px
+	return side, side + lift, timerSize
+end
+
 -- `side` is in the frame's own units. The conversion belongs at the call site,
 -- which is the rule UnitFrames/Skin.lua and UI/Ability.lua already follow. `px`
 -- is one screen pixel and is for the hairline and the two insets, which stay
@@ -243,17 +260,10 @@ end
 -- the strip over each square would land on the row above it.
 -- cold: a settings change and a rescale, never a tick, as Ability.Size is.
 function Aura.Size(w, side, px, timerCeiling, countCeiling)
-	local timerSize = math.max(TIMER_FLOOR,
-		math.min(timerCeiling, math.floor(side * TIMER_SHARE)))
+	local _, tall, timerSize = Aura.Extent(side, px, timerCeiling)
+	local lift = tall - side
 	w.timer:SetFontObject(UI.NumberFont(timerSize))
-
-	-- The strip the number stands in: its own type height and a pixel of air
-	-- under it, taken up to whole pixels so the square below still starts on
-	-- one. Off the size we just asked for rather than off the string, because a
-	-- font string measures 0 tall until it has text in it and a square with
-	-- nothing on it yet is most of the row.
-	local lift = (math.ceil(timerSize / px) + 1) * px
-	w:SetSize(side, side + lift)
+	w:SetSize(side, tall)
 
 	-- The mouse stays on the square. The strip is empty most of the time and a
 	-- tooltip that opens when you pass over blank sky above an icon is a
