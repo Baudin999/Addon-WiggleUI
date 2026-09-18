@@ -934,6 +934,13 @@ local function Layout(box)
 				row.track:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -y)
 				row.track:SetSize(content, height)
 				row.track:Show()
+				-- The text on its middle rather than its top. A line is at
+				-- least two units taller than its glyphs, and top-anchored
+				-- the spare lands under the text, where a bar shows it.
+				row.left:ClearAllPoints()
+				row.left:SetPoint("LEFT", row.track, "LEFT", inset, 0)
+				row.right:ClearAllPoints()
+				row.right:SetPoint("RIGHT", row.track, "RIGHT", -inset, 0)
 				local filled = UI.Round(frame, content * row.bar)
 				if filled > 0 then
 					row.fill:ClearAllPoints()
