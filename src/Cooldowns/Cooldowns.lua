@@ -737,6 +737,39 @@ function Cooldowns.SetWatched(key, on)
 	Cooldowns.Rebuild()
 end
 
+-- Both trinkets on one line, or off the row, as one answer.
+--
+-- Which line a trinket sits on is a choice about trinkets rather than about a
+-- trinket, and dragging each one across was the only way to make it. The page
+-- asks it as two tick boxes and this is what they read and write: the line both
+-- are on, or nil when they are off or were dragged apart. It writes the same
+-- two tables a drag does, so there is no third place a trinket's line is kept.
+function Cooldowns.TrinketLine()
+	local line
+	for index = 1, #TRINKETS do
+		local entry = TRINKETS[index]
+		if not Cooldowns.Watched(entry.key) then
+			return nil
+		end
+		local here = LineOf(entry, LONG)
+		if line and here ~= line then
+			return nil
+		end
+		line = here
+	end
+	return line
+end
+
+function Cooldowns.SetTrinketLine(line)
+	for index = 1, #TRINKETS do
+		local key = TRINKETS[index].key
+		Cooldowns.SetWatched(key, line ~= nil)
+		if line then
+			Cooldowns.SetLine(key, line)
+		end
+	end
+end
+
 -- What you have added, in one phrase, for the panel to read back. The count
 -- against the ceiling as well as the names, because the refusal when the list
 -- is full is otherwise the first anybody hears of there being a ceiling.
@@ -786,26 +819,6 @@ function Cooldowns.Refit()
 		entry.item = item
 		entry.texture = spell and icon or nil
 	end
-end
-
--- What is in one trinket slot, in the panel's words. Three answers and the
--- middle one is the whole reason the slot can be empty on the row while
--- something is sitting in it: a trinket with no use effect is worn rather than
--- pressed, and nothing about wearing it is worth a square.
-function Cooldowns.Worn(slot)
-	for index = 1, #TRINKETS do
-		local entry = TRINKETS[index]
-		if entry.slot == slot then
-			if not entry.item then
-				return "empty"
-			end
-			if not entry.name then
-				return entry.item .. ", worn rather than pressed"
-			end
-			return entry.item .. ", " .. entry.name
-		end
-	end
-	return "empty"
 end
 
 -- Rebuild the drawn list out of what this character has, has learned and has

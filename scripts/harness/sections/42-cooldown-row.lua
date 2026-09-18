@@ -537,10 +537,42 @@ local pressed = Cooldowns.Entry(Cooldowns.Count())
 check(pressed.name == "Increased Strength",
 	("the trinket square is named %q rather than after its use effect")
 		:format(tostring(pressed.name)))
-check(Cooldowns.Worn(13):find("Bloodlust Brooch", 1, true) ~= nil,
-	("the panel reads trinket 1 as %q"):format(Cooldowns.Worn(13)))
-check(Cooldowns.Worn(14):find("worn rather than pressed", 1, true) ~= nil,
-	("the panel reads a passive trinket as %q"):format(Cooldowns.Worn(14)))
+
+-- Where both go is one choice on the page, and it moves the square it names.
+-- Ships with the major cooldowns, the docked line; minor is the rotation line,
+-- and neither takes both off the row.
+check(Cooldowns.TrinketLine() == Cooldowns.LONG,
+	("the trinkets ship on line %s rather than with the major cooldowns")
+		:format(tostring(Cooldowns.TrinketLine())))
+Cooldowns.SetTrinketLine(Cooldowns.ROTATION)
+tick()
+check(Cooldowns.TrinketLine() == Cooldowns.ROTATION,
+	"ticking minor cooldowns left the trinkets where they were")
+local moved
+for index = 1, Cooldowns.Count() do
+	if Cooldowns.Entry(index).name == "Increased Strength" then
+		moved = Cooldowns.Entry(index)
+	end
+end
+check(moved and moved.layer == Cooldowns.ROTATION,
+	"the trinket square did not move to the rotation line")
+Cooldowns.SetTrinketLine(nil)
+tick()
+check(Cooldowns.TrinketLine() == nil and Cooldowns.Count() == before,
+	("unticking both left %d trinket squares on the row"):format(Cooldowns.Count() - before))
+Cooldowns.SetTrinketLine(Cooldowns.LONG)
+tick()
+check(Cooldowns.TrinketLine() == Cooldowns.LONG and Cooldowns.Count() == before + 1,
+	"ticking major cooldowns did not put the trinket back on the docked line")
+
+-- Back to the row as shipped. A trinket moved away and back keeps its place
+-- in the order the way a dragged square does, and what follows reads the
+-- trinket as the last square on the row.
+Cooldowns.ResetRow()
+tick()
+pressed = Cooldowns.Entry(Cooldowns.Count())
+check(pressed.name == "Increased Strength",
+	"the row put back did not end on the trinket")
 
 -- A worn item answers a different call from a spell, which is the one thing
 -- about a trinket square that cannot be read off a spell id.

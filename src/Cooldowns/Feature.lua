@@ -294,6 +294,23 @@ ns.Register({
 			end)
 		ui.Hint("For the ones you cannot drag: a rank you have not trained, or a spell an item casts. The id is the last part of the spell's Wowhead address.")
 
+		-- Where both trinkets go, as one choice. Major is the docked line with
+		-- the minutes on it, minor the line of rotation cooldowns, and a box
+		-- unticked with nothing else ticked takes both off the row.
+		ui.Check("trinkets in major cooldowns",
+			function() return ns.Cooldowns.TrinketLine() == ns.Cooldowns.LONG end,
+			function(value)
+				ns.Cooldowns.SetTrinketLine(value and ns.Cooldowns.LONG or nil)
+				ns.Options.Refresh()
+			end)
+		ui.Hint("Only a trinket with a use effect takes a square. One you merely wear is skipped, and the client decides which is which.")
+		ui.Check("trinkets in minor cooldowns",
+			function() return ns.Cooldowns.TrinketLine() == ns.Cooldowns.ROTATION end,
+			function(value)
+				ns.Cooldowns.SetTrinketLine(value and ns.Cooldowns.ROTATION or nil)
+				ns.Options.Refresh()
+			end)
+
 		ui.Action(function() return "back to the row your class ships" end, function()
 			ns.Cooldowns.ResetRow()
 			ns.Options.Refresh()
@@ -301,16 +318,6 @@ ns.Register({
 
 		ui.Reading("your own", ns.Cooldowns.Own)
 
-		ui.Section("Trinkets", "Fighting")
-		ui.Lede("Both trinket slots are on the row, and only while what is in them is something you press.")
-
-		ui.Reading("trinket 1", function()
-			return ns.Cooldowns.Worn(ns.Gear.TRINKET1)
-		end)
-		ui.Reading("trinket 2", function()
-			return ns.Cooldowns.Worn(ns.Gear.TRINKET2)
-		end)
-		ui.Hint("A trinket with no use effect is worn rather than pressed, so it takes no square. The client is what decides that, not a list in the addon.")
 	end,
 })
 
