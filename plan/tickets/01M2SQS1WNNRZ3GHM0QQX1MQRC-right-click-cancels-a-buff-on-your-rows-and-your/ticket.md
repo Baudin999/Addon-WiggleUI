@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SQS1WNNRZ3GHM0QQX1MQRC
 type: task
-status: todo
+status: doing
 title: Right click cancels a buff on your rows and your pet's
 ---
 
