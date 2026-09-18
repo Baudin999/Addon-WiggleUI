@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2GT6AFRHHF84X1DCZB2A8JN
 type: task
-status: doing
+status: done
 title: The pet bar draws no keys on the live client
 ---
 
