@@ -192,6 +192,8 @@ UI\Ability.lua
 # squares the action bars build on one, and before every part that binds a key
 # or makes a protected call from a click.
 UI\Press.lua
+# After UI\Press.lua, whose buttons its keys press.
+UI\Bound.lua
 
 # The widget library, on top of that grid. Theme is the palette and the pixel
 # metrics, Stack lays a column out and asks every row how tall it is, Scroll

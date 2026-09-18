@@ -188,20 +188,7 @@ local function KeysFor(command)
 	return first, second
 end
 
--- What the binding set holds for a key, under every override on it. Read this
--- way round rather than GetBindingKey walked for the key, because a key with
--- an override on it stops answering to its command from that side, and every
--- key this is asked about has one.
-local function Under(key)
-	if type(GetBindingAction) ~= "function" or type(key) ~= "string" or key == "" then
-		return nil
-	end
-	local ok, action = pcall(GetBindingAction, key)
-	if ok and type(action) == "string" and action ~= "" then
-		return action
-	end
-	return nil
-end
+local Under = ns.UI.Bound.Under
 
 -- The key the mouseover part holds over this command, or nil. Two things follow
 -- from one being there. The bar does not bind it, because two overrides on one
@@ -468,11 +455,9 @@ local function ClaimKey(owner, key, name)
 	-- Read the layer back rather than believe the call. A client that accepts
 	-- the call and does nothing with it leaves no other trace, and the whole
 	-- feature is worth nothing if the keys do not arrive.
-	if type(GetBindingAction) == "function" then
-		local ok, action = pcall(GetBindingAction, key, true)
-		if ok and type(action) == "string" and action ~= "" then
-			proven = action == ("CLICK %s:LeftButton"):format(name)
-		end
+	local reads = ns.UI.Bound.Reads(key, name)
+	if reads ~= nil then
+		proven = reads
 	end
 	return true
 end

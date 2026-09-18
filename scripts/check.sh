@@ -732,6 +732,23 @@ while IFS= read -r bad; do
 done < <(grep -rnE 'SetPassThroughButtons|SetMouseClickEnabled' --include='*.lua' . \
 	| grep -v '^\./UI/Press\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
 
+# One file takes a key for a button, and it is UI/Bound.lua.
+#
+# Taking a key is five steps and six files wrote all five: refuse in combat,
+# refuse a bare mouse button, let go of the key, write down what it carried,
+# take it and read the layer back. Perf/Key.lua and Dungeons/Key.lua were one
+# file with the names changed, the charge key skipped the bare button check,
+# and seven files kept their own copy of the two buttons nobody may take. The
+# client call that reads the binding layer, the bare button table, the combat
+# refusal and the displaced write are the four marks a copy leaves, and none
+# of them is allowed outside that file. Comment lines are skipped, because
+# several files explain what the layer holds.
+while IFS= read -r bad; do
+	echo "only UI/Bound.lua may take a key or read the binding layer, use ns.UI.Bound: $bad"
+	status=1
+done < <(grep -rnE 'GetBindingAction|BUTTON1 = true|cannot be rebound in combat|Displaced = displaced' \
+	--include='*.lua' . | grep -v '^\./UI/Bound\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
+
 # One file spells the tooltip subjects more than one part asks about, and it is
 # UI/Tip.lua.
 #

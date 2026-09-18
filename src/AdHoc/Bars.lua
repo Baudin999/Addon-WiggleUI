@@ -387,37 +387,19 @@ end
 -- The key
 --------------------------------------------------------------------------
 
--- Reads the override layer back rather than reporting what this file meant to
--- set. A client that takes the call and does nothing with it leaves no other
--- trace. Nil means the question could not be asked.
-local function Holds(index, key)
-	if type(GetBindingAction) ~= "function" then
-		return nil
-	end
-	local ok, action = pcall(GetBindingAction, key, true)
-	if not ok or type(action) ~= "string" then
-		return nil
-	end
-	return action == ("CLICK %s:LeftButton"):format(KeyName(index))
+local function Reads(index, key)
+	return ns.UI.Bound.Reads(key, KeyName(index), "LeftButton", false)
 end
 
 -- Returns the binding the key was carrying, "" when it carried none, or nil
--- plus a reason when the key cannot be taken. The displaced action is read
--- with our own override dropped, so it reports the real binding rather than
--- the click binding this file left there last time.
+-- plus a reason when the key cannot be taken. UI/Bound.lua takes it, once this
+-- has said whether the bar exists and whether another bar has the key.
 function Bars.Bind(index, key)
 	local bar = ns.AdHoc.Get(index)
 	if not bar then
 		return nil, "no such bar."
 	end
-	if InCombatLockdown() then
-		return nil, "keys cannot be rebound in combat."
-	end
-
 	key = key or ""
-	if ns.AdHoc.BARE[key] then
-		return nil, ("%s belongs to targeting and the camera. Hold a modifier."):format(key)
-	end
 	if key ~= "" then
 		for other, each in ipairs(ns.AdHoc.All()) do
 			if other ~= index and each.key == key then
@@ -426,18 +408,15 @@ function Bars.Bind(index, key)
 		end
 	end
 
-	bar.key = ""
-	Bars.Apply()
-
-	local displaced = key ~= "" and GetBindingAction(key) or ""
-	bar.key = key
-	bar.displaced = displaced
-	Bars.Apply()
-
-	if key ~= "" and Holds(index, key) == false then
-		return nil, ("this client would not take %s."):format(key)
-	end
-	return displaced
+	return ns.UI.Bound.Take(key, function(taken, displaced)
+		bar.key = taken
+		if displaced then
+			bar.displaced = displaced
+		end
+		Bars.Apply()
+	end, function(taken)
+		return Reads(index, taken)
+	end)
 end
 
 function Bars.Describe(index)
@@ -445,16 +424,8 @@ function Bars.Describe(index)
 	if not bar then
 		return "unknown"
 	end
-	if bar.key == "" then
-		return "unbound"
-	end
-	if not ns.db.adhoc then
-		return bar.key .. " (the bars are off, so the key is not held)"
-	end
-	if Holds(index, bar.key) == false then
-		return bar.key .. " (the client did not take it)"
-	end
-	return bar.key
+	return ns.UI.Bound.Describe(bar.key, bar.key ~= "" and Reads(index, bar.key), nil,
+		not ns.db.adhoc and "the bars are off" or nil)
 end
 
 -- Whether that bar is on the screen right now, or nil for one not built.

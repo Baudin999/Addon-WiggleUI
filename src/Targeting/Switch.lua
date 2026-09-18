@@ -26,12 +26,6 @@ ns.Switch = Switch
 local BUTTON_NAME = "WarriorKitSwitchButton"
 Switch.BUTTON_NAME = BUTTON_NAME
 
--- The two the binding system must never lose, refused here for the reason
--- Marking/Keys.lua refuses them: a bare mouse button binding eats plain
--- targeting and the camera drag. The panel's key field refuses them too, so
--- this is the slash word's guard.
-local BARE = { BUTTON1 = true, BUTTON2 = true }
-
 -- /targetenemy is TAB's own binding, TARGETNEARESTENEMY, said as a macro
 -- command, so this cycles exactly the way TAB does and honours the same
 -- settings. /startattack carries harm and nodead because the cycle can land on
@@ -61,90 +55,21 @@ local button = ns.UI.Press.Button(UIParent, BUTTON_NAME, "down")
 button:SetAttribute("type", "macro")
 button:SetAttribute("macrotext", MACRO)
 
--- An override binding, never a real one, the same as the charge key.
--- SetBindingClick would write the key into the live binding set and the next
--- SaveBindings, which the Key Bindings panel calls when you click Okay, would
--- make that permanent and lose whatever you had on the key. An override sits
--- on top of the set instead, so TAB stays TAB in your bindings file even while
--- this holds it.
---
--- That is also why this key is set here and not in Bindings.xml: a binding
--- listed there runs ordinary Lua, and ordinary Lua may not start an attack.
-function Switch.Apply()
-	if InCombatLockdown() then
-		return false
-	end
-	ClearOverrideBindings(button)
-	local key = ns.db.switchKey or ""
-	if key ~= "" then
-		SetOverrideBindingClick(button, true, key, BUTTON_NAME, "LeftButton")
-	end
-	return true
-end
+-- An override binding held by UI/Bound.lua, and set here rather than in
+-- Bindings.xml: a binding listed there runs ordinary Lua, and ordinary Lua may
+-- not start an attack. So TAB stays TAB in your bindings file even while this
+-- holds it.
+local hold = ns.UI.Bound.Key({
+	button = button, name = BUTTON_NAME,
+	store = ns.KeySetting("switchKey"),
+})
 
--- Reads the override layer back rather than reporting what this file meant to
--- set. A client that takes the call and does nothing with it leaves no other
--- trace. Nil means the question could not be asked.
-local function Holds(key)
-	if type(GetBindingAction) ~= "function" then
-		return nil
-	end
-	local ok, action = pcall(GetBindingAction, key, true)
-	if not ok or type(action) ~= "string" then
-		return nil
-	end
-	return action == ("CLICK %s:LeftButton"):format(BUTTON_NAME)
-end
-
--- Returns the binding the key was carrying, "" when it carried none, or nil
--- plus a reason when the key cannot be taken. The displaced action is read
--- with our own override dropped, so it reports the real binding rather than
--- the click binding this file left there last time, and it is kept so the
--- panel can go on showing what is being shadowed.
-function Switch.Bind(key)
-	if InCombatLockdown() then
-		return nil, "keys cannot be rebound in combat."
-	end
-	key = key or ""
-	if BARE[key] then
-		return nil, ("%s belongs to targeting and the camera. Hold a modifier."):format(key)
-	end
-
-	ns.db.switchKey = ""
-	Switch.Apply()
-
-	local displaced = key ~= "" and GetBindingAction(key) or ""
-	ns.db.switchKey = key
-	ns.db.switchKeyDisplaced = displaced
-	Switch.Apply()
-
-	if key ~= "" and Holds(key) == false then
-		return nil, ("this client would not take %s."):format(key)
-	end
-	return displaced
-end
-
-function Switch.Describe()
-	local key = ns.db.switchKey or ""
-	if key == "" then
-		return "unbound"
-	end
-	if Holds(key) == false then
-		return key .. " (the client did not take it)"
-	end
-	return key
-end
+Switch.Apply, Switch.Bind, Switch.Describe = hold.Apply, hold.Bind, hold.Describe
 
 -- PLAYER_LOGIN rather than ADDON_LOADED, because the binding set the override
--- lands on top of is not built until then. Nothing else moves the key: Bind is
--- the only writer and it refuses in combat, so there is no deferred work to
--- pick up when a fight ends.
+-- lands on top of is not built until then.
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
 events:SetScript("OnEvent", function()
 	Switch.Apply()
 end)
-
--- And again when the client rebuilds its binding set, which drops every
--- override the addon holds. See ns.Rebind in Core/Core.lua.
-ns.Rebind(Switch.Apply)

@@ -44,12 +44,6 @@ AdHoc.PER_BAR = 16
 -- the width, so a full bar is two even rows, and a bar of six is one.
 AdHoc.COLUMNS = 8
 
--- The two the binding system must never lose, refused here for the reason
--- Marking/Keys.lua refuses them: a bare mouse button binding eats plain
--- targeting and the camera drag.
-local BARE = { BUTTON1 = true, BUTTON2 = true }
-AdHoc.BARE = BARE
-
 --------------------------------------------------------------------------
 -- The list
 --------------------------------------------------------------------------

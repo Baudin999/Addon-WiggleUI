@@ -38,10 +38,6 @@ ns.MarkKeys = Keys
 
 local BUTTON_NAME = "WarriorKitMarkButton"
 
--- The two the binding system must never lose. Anything with a modifier on it is
--- a different key string and is fine.
-local BARE = { BUTTON1 = true, BUTTON2 = true }
-
 local held = {}   -- id -> key currently on the override layer
 local heldAny     -- true while at least one is up
 local proven      -- nil until the readback has answered once
@@ -83,19 +79,10 @@ local function Clear()
 	pcall(ClearOverrideBindings, button)
 end
 
--- Reads the override layer back. A client that accepts the call and does
--- nothing with it leaves no other trace, and the difference between the key
--- working and the call merely returning is the only question this file cannot
--- answer by inspection.
+-- The override layer read back, see UI/Bound.lua. Nil where the client has not
+-- answered.
 local function Reads(key, id)
-	if type(GetBindingAction) ~= "function" then
-		return nil
-	end
-	local ok, action = pcall(GetBindingAction, key, true)
-	if not ok or type(action) ~= "string" or action == "" then
-		return nil
-	end
-	return action == ("CLICK %s:%s"):format(BUTTON_NAME, id)
+	return ns.UI.Bound.Reads(key, BUTTON_NAME, id)
 end
 
 -- ApplyDefaults fills a missing setting, not a missing key inside one, so a
@@ -145,7 +132,7 @@ function Keys.Apply()
 
 	for _, mark in ipairs(ns.Marking.MARKS) do
 		local key = Bound(mark.id)
-		if key and not BARE[key] then
+		if key and not ns.UI.Bound.Bare(key) then
 			if Set(key, mark.id) then
 				held[mark.id] = key
 				heldAny = true
@@ -183,8 +170,9 @@ end
 -- panel and the slash word report the same refusal in the same words.
 function Keys.Bind(id, key)
 	key = key or ""
-	if BARE[key] then
-		return false, ("%s would take plain left or right click away from targeting and the camera. Hold a modifier."):format(key)
+	local bare = ns.UI.Bound.Refusal(key)
+	if bare then
+		return false, bare
 	end
 
 	local clash = key ~= "" and Keys.Conflict(id, key)

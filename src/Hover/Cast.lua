@@ -175,19 +175,10 @@ local function Set(key, index)
 	return (pcall(SetOverrideBindingClick, button, true, key, BUTTON_NAME, Name(index)))
 end
 
--- Reads the override layer back. A client that accepts the call and does nothing
--- with it leaves no other trace, and the difference between the key working and
--- the call merely returning is the only question this file cannot answer by
--- inspection. Nil means the question could not be asked.
+-- The override layer read back, see UI/Bound.lua. Nil where the client has not
+-- answered.
 local function Reads(key, index)
-	if type(GetBindingAction) ~= "function" then
-		return nil
-	end
-	local ok, action = pcall(GetBindingAction, key, true)
-	if not ok or type(action) ~= "string" or action == "" then
-		return nil
-	end
-	return action == ("CLICK %s:%s"):format(BUTTON_NAME, Name(index))
+	return ns.UI.Bound.Reads(key, BUTTON_NAME, Name(index))
 end
 
 --------------------------------------------------------------------------
@@ -268,7 +259,7 @@ function Cast.Apply()
 
 	for index, bind in ipairs(ns.Hover.List()) do
 		local key = bind.key
-		if type(key) == "string" and key ~= "" and not ns.Hover.Bare(key) then
+		if type(key) == "string" and key ~= "" and not ns.UI.Bound.Bare(key) then
 			Write(index, bind)
 			if Set(key, index) then
 				held[index] = key

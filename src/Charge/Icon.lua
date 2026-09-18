@@ -18,6 +18,7 @@ local FALLBACK_TEXTURE = "Interface\\Icons\\Ability_Warrior_Charge"
 local UPDATE_INTERVAL = 0.1
 
 local frame, handle, binder
+local hold -- the key, UI/Bound.lua's, built below the binder it writes through
 local tick             -- the refresh ticker, armed once, see the foot
 local lastMacro
 local lastUnit, lastWeapon, lastEpoch
@@ -164,6 +165,7 @@ local function Build()
 	-- kept the client's key-down setting on.
 	frame = ns.UI.Ability.Dress(ns.UI.Press.Button(UIParent, BUTTON_NAME, "down"),
 		ns.UI.Ability.SHOUT)
+	hold.button = frame
 	frame:SetMovable(true)
 	frame:SetClampedToScreen(true)
 
@@ -300,49 +302,30 @@ function ChargeIcon.CanRelease()
 	return binder ~= nil
 end
 
-function ChargeIcon.ApplyBinding()
-	if not frame or InCombatLockdown() then
-		return false
-	end
-	local key = ns.db.chargeKey or ""
+-- The key, held by UI/Bound.lua. Written through the binder where the state
+-- driver came up, because the binder is what lets the key go in a fight, and
+-- as a plain override where it did not. Both are cleared every time, so
+-- switching between them cannot leave a stale override behind. Nothing is read
+-- back: the binder's key is not a plain override. No button on another class,
+-- so there is nothing for a key to press, and Bind says why before it says
+-- anything about combat.
+hold = ns.UI.Bound.Key({
+	name = BUTTON_NAME,
+	store = ns.KeySetting("chargeKey"),
+	absent = function() return ns.Charge.Refusal() .. "." end,
+	write = function(button, key)
+		ClearOverrideBindings(button)
+		if binder then
+			binder:SetAttribute("chargeKey", key)
+			binder:SetAttribute("chargeKeyRelease", ns.db.chargeKeyRelease and true or false)
+			binder:Execute("state = 'free'\n" .. BIND_SNIPPET)
+		elseif key ~= "" then
+			SetOverrideBindingClick(button, true, key, BUTTON_NAME, "LeftButton")
+		end
+	end,
+})
 
-	-- Clear both paths every time, so switching between them cannot leave a
-	-- stale override behind.
-	ClearOverrideBindings(frame)
-	if binder then
-		binder:SetAttribute("chargeKey", key)
-		binder:SetAttribute("chargeKeyRelease", ns.db.chargeKeyRelease and true or false)
-		binder:Execute("state = 'free'\n" .. BIND_SNIPPET)
-	elseif key ~= "" then
-		SetOverrideBindingClick(frame, true, key, BUTTON_NAME, "LeftButton")
-	end
-	return true
-end
-
--- Returns the binding the key was carrying, "" when it carried none, or nil
--- plus a reason when the key cannot be taken right now. The displaced action is
--- read with the override dropped, so it reports the real binding rather than
--- our own click binding, and it is kept so the UI can keep showing it.
-function ChargeIcon.Bind(key)
-	-- No button on another class, so there is nothing for a key to press. Said
-	-- before the combat check, because "not in combat" is advice that would
-	-- never come true here.
-	if not frame then
-		return nil, ns.Charge.Refusal() .. "."
-	end
-	if InCombatLockdown() then
-		return nil, "keys cannot be rebound in combat."
-	end
-	key = key or ""
-	ns.db.chargeKey = ""
-	ChargeIcon.ApplyBinding()
-
-	local displaced = key ~= "" and GetBindingAction(key) or ""
-	ns.db.chargeKey = key
-	ns.db.chargeKeyDisplaced = displaced
-	ChargeIcon.ApplyBinding()
-	return displaced
-end
+ChargeIcon.ApplyBinding, ChargeIcon.Bind = hold.Apply, hold.Bind
 
 --------------------------------------------------------------------------
 
@@ -465,8 +448,3 @@ events:SetScript("OnEvent", function(_, event)
 	ChargeIcon.Forget()
 	ChargeIcon.Update()
 end)
-
--- The client rebuilds its binding set and drops every override with it, so the
--- key is taken again each time it does. See ns.Rebind in Core/Core.lua. Silent
--- on a class with no button, because ApplyBinding refuses without one.
-ns.Rebind(ChargeIcon.ApplyBinding)

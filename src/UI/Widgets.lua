@@ -382,8 +382,6 @@ local MOUSE_KEYS = {
 	MiddleButton = "BUTTON3", Button4 = "BUTTON4", Button5 = "BUTTON5",
 }
 
-local BARE_MOUSE = { BUTTON1 = true, BUTTON2 = true }
-
 local function Combo(key)
 	if not key or key == "UNKNOWN" or MODIFIER_KEYS[key] then
 		return nil
@@ -531,7 +529,7 @@ function UI.KeyBox(parent, opts)
 		-- bare name when no modifier is down, which is the same test the
 		-- binding itself has to pass.
 		local mapped = MOUSE_KEYS[button]
-		if mapped and not BARE_MOUSE[Combo(mapped) or ""] then
+		if mapped and not UI.Bound.Bare(Combo(mapped)) then
 			Take(mapped)
 			return
 		end

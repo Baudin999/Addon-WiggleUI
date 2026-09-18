@@ -59,17 +59,6 @@ Hover.WHO = {
 	{ id = "any",    label = "anything",   clause = "exists,nodead", unless = { "noexists", "dead" }, tone = "dim" },
 }
 
--- The two the binding system must never lose, refused here for the reason
--- Marking/Keys.lua refuses them: an unmodified mouse button binding eats plain
--- targeting and the camera drag. Every writer of a key in this addon holds the
--- same rule, and each holds it where the key is written rather than trusting
--- the one above it.
-local BARE = { BUTTON1 = true, BUTTON2 = true }
-
-function Hover.Bare(key)
-	return BARE[key] == true
-end
-
 function Hover.Who(id)
 	for _, who in ipairs(Hover.WHO) do
 		if who.id == id then
@@ -215,7 +204,7 @@ end
 -- through the second line of the macro, so the bar draws it and does not bind
 -- it: two overrides on one key is whichever was set last.
 function Hover.Holds(key)
-	if not (ns.db and ns.db.hover) or type(key) ~= "string" or BARE[key] then
+	if not (ns.db and ns.db.hover) or type(key) ~= "string" or ns.UI.Bound.Bare(key) then
 		return false
 	end
 	return Hover.Owner(key) ~= nil
@@ -232,8 +221,9 @@ local function Refuses(key, mine)
 	if key == "" then
 		return "nothing was pressed."
 	end
-	if BARE[key] then
-		return ("%s belongs to targeting and the camera. Hold a modifier."):format(key)
+	local bare = ns.UI.Bound.Refusal(key)
+	if bare then
+		return bare
 	end
 	local owner = Hover.Owner(key)
 	if owner and owner ~= mine then

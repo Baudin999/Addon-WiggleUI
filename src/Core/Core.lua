@@ -2650,6 +2650,23 @@ bindings:SetScript("OnEvent", function(self)
 	self:SetScript("OnUpdate", Pass)
 end)
 
+-- A key kept in one saved field, with the binding it shadows in the field of the
+-- same name and "Displaced" on the end: what UI.Bound.Key reads and writes. Here
+-- rather than in UI/Bound.lua because UI/ does not name a setting.
+function ns.KeySetting(field)
+	local shadow = field .. "Displaced"
+	return {
+		key = function() return ns.db[field] end,
+		save = function(key, displaced)
+			ns.db[field] = key
+			if displaced then
+				ns.db[shadow] = displaced
+			end
+		end,
+		shadowed = function() return ns.db[shadow] end,
+	}
+end
+
 -- The same pass, asked for by a part rather than by the client. Buttons/Bars.lua
 -- calls it when its squares go up or down, because what a key presses
 -- underneath is an answer another take wrote down. Turned away inside a pass
