@@ -27,6 +27,12 @@ ns.BookRead = Read
 -- cannot cast or drag, which is a worse picture than a rank missing from a
 -- fold-out.
 --
+-- **Your pet's book is the last tab, while a pet is out.** The client keeps
+-- it as a second book beside the spell book rather than as a tab of it, so it
+-- is read off HasPetSpells and the "pet" book type and named after the pet the
+-- way the client's own tab is. Only its spells: Attack, Follow and the stances
+-- come back as PETACTION and live on the pet bar, not here.
+--
 -- **Read at call time, not at load.** Nothing here is on a ticker: the book
 -- is read when the window paints, which is when it opens and when the client
 -- says the book changed. Reaching through _G each time costs a lookup and
@@ -34,8 +40,9 @@ ns.BookRead = Read
 -- section without reloading it.
 --------------------------------------------------------------------------
 
--- BOOKTYPE_SPELL, written out so no global is needed.
+-- BOOKTYPE_SPELL and BOOKTYPE_PET, written out so no global is needed.
 local BOOK = "spell"
+local PET = "pet"
 
 local NEEDED = {
 	"GetNumSpellTabs", "GetSpellTabInfo",
@@ -64,10 +71,10 @@ end
 -- One entry
 --------------------------------------------------------------------------
 
-local function Texture(index, id)
+local function Texture(index, id, book)
 	local byBook = Call("GetSpellBookItemTexture")
 	if byBook then
-		local texture = byBook(index, BOOK)
+		local texture = byBook(index, book)
 		if texture then
 			return texture
 		end
@@ -79,12 +86,12 @@ local function Texture(index, id)
 	return nil
 end
 
-local function Passive(index)
+local function Passive(index, book)
 	local ask = Call("IsPassiveSpell")
 	if not ask then
 		return false
 	end
-	return ask(index, BOOK) and true or false
+	return ask(index, book) and true or false
 end
 
 -- What the client writes under a spell with no rank: nothing on a plain one,
@@ -104,29 +111,52 @@ end
 --
 -- A list of tabs. Each tab is its name, its icon and a list of spells; each
 -- spell is its name, its icon, whether it is passive and a list of ranks; each
--- rank is the book index it lives at, the spell id where the client hands
--- one over, and the rank line as the client wrote it.
+-- rank is the book index it lives at, the book that index is in, the spell
+-- id where the client hands one over, and the rank line as the client wrote
+-- it. The pet's tab says so with `pet`.
 --------------------------------------------------------------------------
 
-local function Entry(tab, index, byName)
-	local kind, id = GetSpellBookItemInfo(index, BOOK)
+local function Entry(tab, index, byName, book)
+	local kind, id = GetSpellBookItemInfo(index, book)
 	if kind ~= "SPELL" then
 		return
 	end
-	local name, sub = GetSpellBookItemName(index, BOOK)
+	local name, sub = GetSpellBookItemName(index, book)
 	if not name then
 		return
 	end
 	local spell = byName[name]
 	if not spell then
-		local passive = Passive(index)
-		spell = { name = name, icon = Texture(index, id), passive = passive, ranks = {} }
+		local passive = Passive(index, book)
+		spell = { name = name, icon = Texture(index, id, book), passive = passive, ranks = {} }
 		byName[name] = spell
 		tab.spells[#tab.spells + 1] = spell
 	end
 	spell.ranks[#spell.ranks + 1] = {
-		index = index, id = id, label = Sub(sub, spell.passive),
+		index = index, book = book, id = id, label = Sub(sub, spell.passive),
 	}
+end
+
+-- The pet's book, or nothing when there is no pet or it knows no spells. A
+-- pet whose book is all commands is no tab either: an empty page is a tab
+-- that promises something it does not have.
+local function PetTab()
+	local count = Call("HasPetSpells")
+	count = count and tonumber((count())) or 0
+	if count < 1 then
+		return nil
+	end
+	local named = Call("UnitName")
+	local name = named and named("pet")
+	local tab = { name = name or "Pet", pet = true, spells = {} }
+	local byName = {}
+	for index = 1, count do
+		Entry(tab, index, byName, PET)
+	end
+	if #tab.spells == 0 then
+		return nil
+	end
+	return tab
 end
 
 function Read.Tabs()
@@ -140,11 +170,12 @@ function Read.Tabs()
 			local tab = { name = name or ("Tab " .. at), icon = icon, spells = {} }
 			local byName = {}
 			for index = offset + 1, offset + count do
-				Entry(tab, index, byName)
+				Entry(tab, index, byName, BOOK)
 			end
 			tabs[#tabs + 1] = tab
 		end
 	end
+	tabs[#tabs + 1] = PetTab()
 	return tabs
 end
 
@@ -156,7 +187,18 @@ end
 -- gave one, which both of these clients do; the name with the rank in
 -- brackets after it where it did not, which is the form the client's own
 -- macro parser has always taken.
+--
+-- A pet's spell always goes by name. The client's own pet book casts its
+-- entries through the pet book index, and /cast by name is the one form every
+-- macro that has ever made a pet bite takes; an id handed to the secure
+-- button's cast is the player's book on a client that does not look further.
 function Read.Cast(spell, rank)
+	if rank.book == PET then
+		if rank.label ~= "" and not spell.passive then
+			return ("%s(%s)"):format(spell.name, rank.label)
+		end
+		return spell.name
+	end
 	if rank.id then
 		return rank.id
 	end
@@ -172,11 +214,11 @@ end
 function Read.Pickup(rank)
 	local byBook = Call("PickupSpellBookItem")
 	if byBook then
-		byBook(rank.index, BOOK)
+		byBook(rank.index, rank.book or BOOK)
 		return true
 	end
 	local byId = Call("PickupSpell")
-	if byId and rank.id then
+	if byId and rank.id and rank.book ~= PET then
 		byId(rank.id)
 		return true
 	end

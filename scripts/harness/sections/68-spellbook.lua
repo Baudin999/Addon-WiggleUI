@@ -353,10 +353,9 @@ do
 	_G.ToggleSpellBook("spell")
 	check(not Window.Shown(), "the P key did not close this window again")
 
-	-- The pet's book is the one page this window does not draw, and asking
-	-- for it is answered with a sentence rather than with this window.
+	-- No pet, no pet's tab: asking for its book is a sentence, not a window.
 	_G.ToggleSpellBook("pet")
-	check(not Window.Shown(), "asking for the pet's book opened the spell book")
+	check(not Window.Shown(), "asking for the pet's book with no pet out opened the spell book")
 
 	ns.db.hideBlizzSpellbook = false
 	ns.BlizzHide.Apply()
@@ -386,6 +385,56 @@ do
 		feature.switch.apply(true)
 		check(Blizz.Caged(), "turning the part back on did not cage Blizzard's frame")
 	end
+end
+
+----------------------------------------------------------------------
+-- The pet's book
+--
+-- The last tab while a pet is out, named after it, holding its spells and not
+-- its commands: the fixture's Attack is a PETACTION and belongs on the pet
+-- bar. A pet spell is armed by name and rank, and the tab goes when the pet
+-- does, taking the window back to a tab that still exists.
+----------------------------------------------------------------------
+
+do
+	local guids, names = H.guids, H.unitName
+	local had = { guid = guids.pet, name = names.pet }
+	guids.pet, names.pet = "Creature-0-0-0-0-1234-0000000002", "Kibble"
+	fire("UNIT_PET", "player")
+
+	Window.Hide()
+	_G.ToggleSpellBook("pet")
+	local PET = FURY + 1
+	check(Window.Shown() and Window.Viewing() == PET, "asking for the pet's book did not open the window on its tab")
+	local tab = Window.Book()[PET]
+	check(tab ~= nil and tab.pet and tab.name == "Kibble",
+		("the pet's tab is %s"):format(tab and tostring(tab.name) or "missing"))
+	check(tab ~= nil and #tab.spells == 2 and Spell(PET, "Bite") and Spell(PET, "Growl") and not Spell(PET, "Attack"),
+		"the pet's tab is not its two spells without its command")
+	local _, at = Spell(PET, "Bite")
+	local row = at and Window.Row(at)
+	check(row ~= nil and row.square:GetAttribute("spell") == "Bite(Rank 7)",
+		("the pet's Bite is armed with %s"):format(row and tostring(row.square:GetAttribute("spell")) or "no row"))
+	if row then
+		H.mouse.Grab(H.mouse.Point(row.square))
+		H.mouse.Drop(-5000, 5000)
+		local kind, index, book = GetCursorInfo()
+		check(kind == "spell" and index == 1 and book == "pet",
+			("a drag off the pet's Bite put %s %s from the %s book on the cursor")
+				:format(tostring(kind), tostring(index), tostring(book)))
+		_G.ClearCursor()
+	end
+
+	_G.ToggleSpellBook("pet")
+	check(not Window.Shown(), "asking for the pet's book again did not shut it")
+
+	Window.Show()
+	guids.pet, names.pet = had.guid, had.name
+	fire("UNIT_PET", "player")
+	check(#Window.Book() == FURY and Window.Viewing() == FURY,
+		("with the pet gone the book has %d tabs and shows the %dth"):format(#Window.Book(), Window.Viewing()))
+	Window.View(GENERAL)
+	Window.Hide()
 end
 
 ----------------------------------------------------------------------

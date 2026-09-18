@@ -403,11 +403,16 @@ end
 --------------------------------------------------------------------------
 
 -- The book, read again, and the strip made to match it. A tab the strip
--- already has keeps its button; one it does not is added; the count on this
--- client never goes down, so nothing is ever taken away.
+-- already has keeps its button; one it does not is added. The count goes down
+-- when the pet is dismissed, which takes its tab off the end, so a button past
+-- the book is hidden rather than unmade: a frame cannot be destroyed here and
+-- the next pet puts it back.
 function Window.Read()
 	book = Read.Tabs()
 	deepest = 1
+	for index = 1, #tabs.buttons do
+		tabs:SetShown(index, index <= #book)
+	end
 	for index = 1, #book do
 		local per = PerColumn(#book[index].spells)
 		if per > deepest then
@@ -625,6 +630,25 @@ function Window.Toggle()
 	return Window.Show()
 end
 
+-- The pet's tab, which is what the client's key asks for when it means the
+-- pet's book, and shut again when that tab is already up, the way the
+-- client's own key closes its pet page. Refused where there is no pet with a
+-- spell to draw, and in a fight for the reason Show and Hide are.
+function Window.TogglePet()
+	Window.Build()
+	Freshen()
+	for index = 1, #book do
+		if book[index].pet then
+			if Window.Shown() and viewing == index then
+				return Window.Hide()
+			end
+			viewing = index
+			return Window.Show()
+		end
+	end
+	return false
+end
+
 -- Another tab, for the harness and the slash word. A tab the book does not
 -- have is refused rather than drawn empty.
 function Window.View(index)
@@ -686,19 +710,25 @@ end
 --
 -- LEARNED_SPELL_IN_TAB is pcalled on, because the 2.5.6 client does not
 -- carry it and registering an event a client has never heard of raises.
--- SPELLS_CHANGED covers the trainer on a client without it.
+-- SPELLS_CHANGED covers the trainer on a client without it. UNIT_PET is the
+-- pet's tab coming and going, and it is the player's pet only: a party
+-- member's pet is not in this book.
 --------------------------------------------------------------------------
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("SPELLS_CHANGED")
 events:RegisterEvent("PLAYER_LEVEL_UP")
+events:RegisterEvent("UNIT_PET")
 pcall(events.RegisterEvent, events, "LEARNED_SPELL_IN_TAB")
-events:SetScript("OnEvent", function(_, event)
+events:SetScript("OnEvent", function(_, event, unit)
 	if event == "PLAYER_LOGIN" then
 		if ns.db.spellbook then
 			Window.Build()
 		end
+		return
+	end
+	if event == "UNIT_PET" and unit ~= "player" then
 		return
 	end
 	Window.Refresh()

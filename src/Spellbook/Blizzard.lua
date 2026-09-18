@@ -11,17 +11,15 @@ local ADDON, ns = ...
 -- has to put a frame back, rather than being parked off the side where a
 -- relayout could return it.
 --
--- Your pet's book goes with it, because it is a page of the same frame. This
--- addon does not draw one, and that is said in the switch's own hint rather
--- than worked around: the honest answer to a page a warrior never opens is a
--- sentence and a tick box.
+-- Your pet's book goes with it, because it is a page of the same frame, and
+-- this addon draws it as the last tab of its own window while a pet is out.
 --
 -- **The key has to come with it.** Hiding the window and leaving P bound to
 -- the client's own toggle is a spell book you cannot open, which is worse
 -- than either window on its own. ToggleSpellBook is a plain global on both of
 -- these clients and it carries which book it meant, so it is replaced with
--- one that opens this addon's window for the spell book and says so for the
--- pet's, and the original is kept so the switch can hand it back exactly.
+-- one that opens this addon's window for the spell book and on the pet's tab
+-- for the pet's, and the original is kept so the switch can hand it back exactly.
 --
 -- The key goes onto a secure button as well as onto the global, for the
 -- reason the character sheet's does: every square on the window is a secure
@@ -47,7 +45,9 @@ local PET = "pet"
 -- second forever.
 local function Toggle(bookType)
 	if bookType == PET then
-		ns.Print("this window does not draw your pet's book. Untick hiding Blizzard's spell book to get it back.")
+		if not ns.SpellWindow.TogglePet() and not InCombatLockdown() then
+			ns.Print("you have no pet with a spell to show.")
+		end
 		return
 	end
 	ns.SpellWindow.Toggle()
