@@ -16,62 +16,6 @@ ns.UnitFramesPanel = Panel
 -- The enemy bars and the frame skin are one rail entry because they are one
 -- answer to one question, which is what the units around you look like.
 
--- One row of the debuff list: the spell's own icon, its name, and the button
--- that takes it off. There is one per slot, built once at login and shown only
--- while the list is that long, because the panel is built once and the list is
--- not: a row that appears when you add a spell has to already exist.
---
--- ui.Custom is the seam for this. UI/Widgets.lua has no list widget and should
--- not grow one for a single caller; what it has is a bare row of the right
--- width that measures itself, and an unused slot measures to nothing.
-local function DebuffRow(ui, slot)
-	local M, C = ns.UI.Metric, ns.UI.Color
-	local removeWidth = 62
-	local row, art, name
-
-	local function Spell()
-		return ns.EnemyBars.Spells()[slot]
-	end
-
-	ui.Custom(function(frame)
-		row = frame
-
-		art = ns.UI.Icon(frame, "ARTWORK")
-		art:SetSize(M.control, M.control)
-		art:SetPoint("TOPLEFT")
-
-		local remove = ns.UI.Button(frame, { label = "remove", width = removeWidth,
-			onClick = function()
-				local spellID = Spell()
-				if spellID then
-					ns.EnemyBars.RemoveSpell(spellID)
-					ns.Options.Refresh()
-				end
-			end })
-		remove:SetPoint("TOPRIGHT")
-
-		name = ns.UI.Label(frame, M.font, C.text, "LEFT", ns.UI.FLAT)
-		name:SetPoint("LEFT", art, "RIGHT", M.gutter, 0)
-		name:SetPoint("RIGHT", remove, "LEFT", -M.gutter, 0)
-
-		-- An empty slot is not a short row, it is no row: zero height and no
-		-- gap under it, or ten unused slots would leave a hand's width of air
-		-- between the list and the controls below it.
-		return function(cell)
-			local used = Spell() ~= nil
-			cell.gap = used and M.rowGap or 0
-			return used and M.control or 0
-		end
-	end, { height = M.control, refresh = function()
-		local spellID = Spell()
-		row:SetShown(spellID ~= nil)
-		if spellID then
-			art:SetTexture(ns.SpellTexture(spellID))
-			name:SetText(ns.SpellName(spellID) or ("spell " .. spellID .. ", unknown to this client"))
-		end
-	end })
-end
-
 -- Three sections in two groups, one function each. They were one function
 -- while they were one rail entry called after this folder; now that a section
 -- names its own group, the enemy bars and your own frames are not the same
@@ -188,84 +132,6 @@ local function EnemyBars(ui)
 		return ns.Cast.Describe()
 	end)
 	ui.Reading("the grid", ns.UI.Describe)
-
-end
-
-local function Debuffs(ui)
-	ui.Section("Debuffs on the bar", "Frames")
-	ui.Lede("A row of icons over each bar: bright is yours, grey is somebody else's, faint is nobody's.")
-
-	for slot = 1, ns.EnemyBars.MaxSpells() do
-		DebuffRow(ui, slot)
-	end
-
-	ui.Picker("add one of your class's debuffs",
-		function() return "pick one" end,
-		function(spellID)
-			if type(spellID) ~= "number" then
-				return
-			end
-			local ok, message = ns.EnemyBars.AddSpell(spellID)
-			if not ok then
-				ns.Print(message)
-			end
-		end,
-		function()
-			local options = {}
-			for _, spellID in ipairs(ns.EnemyBars.Suggestions()) do
-				local name = ns.SpellName(spellID)
-				if name and not ns.EnemyBars.Slot(spellID) then
-					options[#options + 1] = { value = spellID, text = name,
-						icon = ns.SpellTexture(spellID) }
-				end
-			end
-			if #options == 0 then
-				options[1] = { text = "every one of them is already on the bar" }
-			end
-			return options
-		end)
-	ui.Hint("The picker is a shortlist of your class's debuffs, not the limit. Matching is by name, so rank 1 covers every rank and the same debuff from another player counts.")
-
-	ui.TextField("or add any spell by id",
-		function() return "" end,
-		function(text)
-			if text:match("^%s*$") then
-				return
-			end
-			local ok, message = ns.EnemyBars.AddSpell(text)
-			ns.Print(ok and (message .. " is on the bar.") or message)
-		end)
-	ui.Hint("Use the id of the aura that lands on the mob, not of the spell that puts it there. The Deep Wounds talent is 12162; the bleed it applies is 12721.")
-
-	-- One pixel a step. It used to be two, which stepped straight over the
-	-- sizes that draw sharp, on a range that stopped short of the biggest of
-	-- them.
-	local iconLow, iconHigh = ns.EnemyBars.IconRange()
-	ui.Slider("icon size", iconLow, iconHigh, 1,
-		function() return ns.db.barsIconSize end,
-		function(value)
-			ns.db.barsIconSize = value
-			ns.EnemyBars.ApplyLayout()
-			ns.EnemyBars.Rebuild()
-		end,
-		function(value) return value .. "px" end)
-	ui.Hint("The row packs against the right end of the gauge and wraps upwards, so a long list on a narrow bar becomes two rows rather than icons hanging off the left edge.")
-
-	ui.Action(function() return "back to the five it ships with" end, function()
-		ns.EnemyBars.ResetSpells()
-		ns.Options.Refresh()
-	end)
-
-	ui.Reading("slots used", function()
-		local spells = ns.EnemyBars.Spells()
-		local unknown = ns.EnemyBars.Unresolved()
-		if #unknown > 0 then
-			return ("%d of %d, and this client cannot name %s")
-				:format(#spells, ns.EnemyBars.MaxSpells(), table.concat(unknown, ", "))
-		end
-		return ("%d of %d"):format(#spells, ns.EnemyBars.MaxSpells())
-	end)
-	ui.Reading("icons", ns.EnemyBars.DescribeIcon)
 
 end
 
@@ -677,7 +543,7 @@ end
 
 function Panel.Draw(ui)
 	EnemyBars(ui)
-	Debuffs(ui)
+	ns.DebuffPanel.Draw(ui)
 	Frames(ui)
 	CastBar(ui)
 	Party(ui)

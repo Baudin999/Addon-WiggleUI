@@ -82,14 +82,6 @@ ns.Class.Register("PRIEST", {
 	},
 
 	--------------------------------------------------------------------------
-	-- What the picker offers
-	--
-	-- Shared by all three specs. 589 Shadow Word: Pain, 34914 Vampiric Touch,
-	-- 15407 Mind Flay, 15286 Vampiric Embrace, 14914 Holy Fire.
-	--------------------------------------------------------------------------
-	suggested = { 589, 34914, 15407, 15286, 14914 },
-
-	--------------------------------------------------------------------------
 	-- The three specs
 	--
 	-- Tree order, which is the order the client counts them in and the order the

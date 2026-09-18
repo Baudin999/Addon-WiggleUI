@@ -28,43 +28,9 @@ ns.EnemyBars = EnemyBars
 -- applies and cheap enough not to be worth arguing about.
 local MAX_SPELLS = 10
 
--- What the panel's picker offers is not here either, for the same reason and
--- with one addition: it is a class fact rather than a spec one, so it sits on
--- the class table under `suggested` and every spec of that class shares it. The
--- picker is a shortlist of what you could put on the row, and a fury warrior
--- who wants to watch Sunder for one fight should not have to type a number to
--- get at a spell his own class applies.
---
--- It is a shortlist and not a limit either way, because the panel also takes a
--- bare spell ID and so does `bars debuff add`. An ID this client cannot name is
--- dropped from the offer rather than shown as a blank row.
---
--- Every ID in those lists is the ID of the aura that lands on the mob, never
--- the ID of the spell or talent that applies it. For a ranked spell those are
--- the same thing and rank 1 covers every rank. For a proc and for a stun bolted
--- onto a charge they are two different spells with two different names, and the
--- one you find first is the wrong one. Deep Wounds is the case that got shipped
--- broken: 12162 is the talent, the picker offered it, and the square never lit
--- up once. See REPLACED below.
-
--- An ID this addon offered that no aura will ever carry, and the ID that works
--- in its place.
---
--- 12162 is the Deep Wounds talent. The client names it "Deep Wounds" and
--- ns.SpellName answers happily, so nothing looked wrong: the picker showed the
--- entry, the square drew, and it stayed dark through every fight. The aura that
--- actually lands is 12721, and the client calls that one "Deep Wound",
--- singular. Since the scan matches on the name, one letter was the whole bug.
---
--- Two doors have to be shut, not one. A saved list keeps whatever was already
--- in it, because the spec's own list is read once on a fresh character and
--- never again, so anyone who picked Deep Wounds before this fix still carries
--- the dead ID. And a bare number goes on through the panel's text field and
--- `bars debuff add`, where Wowhead's search for "deep wounds" still lands on
--- the talent first. So the swap happens at login and again inside AddSpell.
-local REPLACED = {
-	[12162] = 12721, -- the Deep Wounds talent, for the Deep Wound bleed
-}
+-- Which aura a dropped, dragged or typed spell really leaves on the mob is not
+-- here either. That is UnitFrames/Book.lua, baked out of Blizzard's spell
+-- tables, and AddSpell asks it before anything goes on the list.
 
 -- How often every bar is read off the client from the top, in seconds.
 --
@@ -510,20 +476,12 @@ function EnemyBars.Spells()
 	return list
 end
 
--- What the panel's picker offers: every debuff your class puts on a mob, off
--- the class table rather than the spec's, because a shortlist that only offered
--- what your own tree applies would be a picker you cannot use to add the one
--- thing you went looking for.
-function EnemyBars.Suggestions()
-	return ns.Class.Of("suggested") or NONE
-end
-
 function EnemyBars.MaxSpells()
 	return MAX_SPELLS
 end
 
 -- Which slot a spell is in, or nil. The panel asks so it can leave a debuff you
--- already track out of the picker.
+-- already track out of what the name box offers.
 function EnemyBars.Slot(spellID)
 	for index, id in ipairs(EnemyBars.Spells()) do
 		if id == spellID then
@@ -539,20 +497,21 @@ function EnemyBars.Unresolved()
 	return unresolved
 end
 
--- Swap every dead ID on the saved list for the one that works, once, at login.
--- It runs before the first Resolve, so no name has been taken off a dead ID yet
--- and nothing downstream has to know this happened. It edits the list and
--- nothing else, because at login the anchor does not exist and a relayout from
--- here would raise. Resolve is the next line in that handler.
+-- Swap every ID on the saved list for the one the book says lands, once, at
+-- login: a talent for the aura it procs, a dead id for the live one, a higher
+-- rank for rank 1. It runs before the first Resolve, so no name has been taken
+-- off a stale ID yet and nothing downstream has to know this happened. It edits
+-- the list and nothing else, because at login the anchor does not exist and a
+-- relayout from here would raise. Resolve is the next line in that handler.
 --
--- A list that already carries the replacement drops the dead entry rather than
--- keeping both. Two IDs that resolve to one name are two squares lighting up
--- and going out together, which is exactly what AddSpell refuses to create.
+-- A list that already carries the replacement drops the stale entry rather
+-- than keeping both. Two IDs that resolve to one name are two squares lighting
+-- up and going out together, which is exactly what AddSpell refuses to create.
 function EnemyBars.Repair()
 	local list = EnemyBars.Spells()
 	for index = #list, 1, -1 do
-		local live = REPLACED[list[index]]
-		if live then
+		local live = ns.DebuffBook.Canonical(list[index])
+		if live ~= list[index] then
 			if EnemyBars.Slot(live) then
 				table.remove(list, index)
 			else
@@ -594,15 +553,16 @@ function EnemyBars.Retrack()
 end
 
 -- Returns true and the spell's name, or false and the sentence to print.
-function EnemyBars.AddSpell(spellID)
+--
+-- `at` is the slot it goes into, pushing the rest along; without one it goes on
+-- the end. The spell is swapped for the aura it leaves first, so a talent that
+-- procs a debuff watches the debuff, and a rank watches every rank.
+function EnemyBars.AddSpell(spellID, at)
 	spellID = tonumber(spellID)
 	if not spellID or spellID <= 0 or spellID ~= math.floor(spellID) then
 		return false, "a spell id is a whole number. It is the last part of the spell's Wowhead address."
 	end
-	-- Typed the talent, got the bleed. The caller prints the name that comes
-	-- back, so the substitution says itself: you asked for Deep Wounds and the
-	-- addon tells you Deep Wound is on the bar.
-	spellID = REPLACED[spellID] or spellID
+	spellID = ns.DebuffBook.Canonical(spellID)
 
 	local name = ns.SpellName(spellID)
 	if not name then
@@ -619,9 +579,25 @@ function EnemyBars.AddSpell(spellID)
 		return false, ("the bar tracks %d debuffs at most. Take one off first."):format(MAX_SPELLS)
 	end
 
-	list[#list + 1] = spellID
+	table.insert(list, math.max(1, math.min(at or #list + 1, #list + 1)), spellID)
 	EnemyBars.Retrack()
 	return true, name
+end
+
+-- Moves the spell in slot `from` to slot `to`, which is how the row is put in
+-- the order its icons draw in. Returns whether anything moved.
+function EnemyBars.MoveSpell(from, to)
+	local list = EnemyBars.Spells()
+	if not list[from] then
+		return false
+	end
+	to = math.max(1, math.min(to, #list))
+	if to == from then
+		return false
+	end
+	table.insert(list, to, table.remove(list, from))
+	EnemyBars.Retrack()
+	return true
 end
 
 -- Returns true and the name it took off, or false when the list never had it.

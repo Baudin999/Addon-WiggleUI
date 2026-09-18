@@ -150,15 +150,6 @@ ns.Class.Register("MAGE", {
 	},
 
 	--------------------------------------------------------------------------
-	-- What the picker offers
-	--
-	-- Shared by all three specs. 12579 Winter's Chill, 116 Frostbolt, 122 Frost
-	-- Nova, 120 Cone of Cold, 118 Polymorph, 22959 Fire Vulnerability, 133
-	-- Fireball, 11366 Pyroblast, 31589 Slow.
-	--------------------------------------------------------------------------
-	suggested = { 12579, 116, 122, 120, 118, 22959, 133, 11366, 31589 },
-
-	--------------------------------------------------------------------------
 	-- The three specs
 	--
 	-- Tree order, which is the order the client counts them in and the order the

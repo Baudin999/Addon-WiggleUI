@@ -80,7 +80,7 @@ if mine then
 	local def = Class.All()[PLAYER_CLASS]
 
 	for _, field in ipairs({ "cooldowns", "rotation", "debuffs", "loadout",
-		"upkeep", "forms", "charge", "reactive", "swing", "requires", "suggested" }) do
+		"upkeep", "forms", "charge", "reactive", "swing", "requires" }) do
 		if mine[field] ~= nil then
 			check(Class.Of(field) == mine[field],
 				("the %s spec writes %s and Class.Of handed back the class's")

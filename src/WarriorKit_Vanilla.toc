@@ -269,6 +269,11 @@ UI\Feed.lua
 # either. After UI\Tip.lua, because a dot's whole answer to the mouse is one.
 UI\Chart.lua
 
+# A drag between two of the addon's windows for something the client's cursor
+# cannot hold, a passive talent. Before UI\Widgets.lua, whose drop square is
+# one of the two ends.
+UI\Carry.lua
+
 UI\Widgets.lua
 
 # The room the addon's own rows over the world go into while a screen window is
@@ -501,6 +506,11 @@ UnitFrames\Cast.lua
 # which is the cast that was interrupted.
 UnitFrames\PlayerCast.lua
 
+# The auras a class puts on a mob, baked by scripts/bake-debuffs.sh, and the
+# lookups the debuff row is filled through. Before EnemyBars.lua, which asks
+# them what a dropped or typed spell really leaves on the mob.
+UnitFrames\Debuffs.lua
+UnitFrames\Book.lua
 UnitFrames\EnemyBars.lua
 
 # The target's own buff and debuff rows, before the file that builds the block
@@ -556,6 +566,10 @@ UnitFrames\Member.lua
 # After Unit\Role.lua, which decides the band each member sorts into, and after
 # UnitFrames\Member.lua, which draws one of them. Both are far above this line.
 UnitFrames\Group.lua
+
+# The debuff row's section of the page below, which is a drop row and a name
+# box and has its own state. Before Panel.lua, which draws it in its place.
+UnitFrames\DebuffPanel.lua
 
 # The part's page in the options window, before Feature.lua, which is the only
 # file that hands it to Core. Split out of Feature.lua at the 800 line gate,

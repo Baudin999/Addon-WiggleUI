@@ -253,38 +253,6 @@ ns.Class.Register("WARRIOR", {
 	},
 
 	--------------------------------------------------------------------------
-	-- What the picker offers
-	--
-	-- Every debuff a warrior puts on a mob on these two clients, shared by all
-	-- three specs, because the shortlist is what you may add rather than what
-	-- you are handed. A fury warrior who wants Sunder for one fight finds it
-	-- here instead of typing a number.
-	--
-	-- Every ID is the ID of the aura that lands, never the spell or talent that
-	-- applies it. 7922 is the Charge stun and not Charge; 20253 is the Intercept
-	-- stun and not Intercept; 12721 is the Deep Wound bleed and not the Deep
-	-- Wounds talent, which is the one that shipped wrong and stayed dark.
-	--------------------------------------------------------------------------
-	suggested = {
-		7386,  -- Sunder Armor
-		1160,  -- Demoralizing Shout
-		6343,  -- Thunder Clap
-		772,   -- Rend
-		12721, -- Deep Wound, the bleed the Deep Wounds talent applies
-		12294, -- Mortal Strike
-		1715,  -- Hamstring
-		12323, -- Piercing Howl
-		355,   -- Taunt
-		694,   -- Mocking Blow
-		1161,  -- Challenging Shout
-		676,   -- Disarm
-		12809, -- Concussion Blow
-		5246,  -- Intimidating Shout
-		7922,  -- Charge Stun, not Charge
-		20253, -- Intercept Stun, not Intercept
-	},
-
-	--------------------------------------------------------------------------
 	-- The three specs
 	--
 	-- Tree order, which is the order the client counts them in and the order the
@@ -361,9 +329,8 @@ ns.Class.Register("WARRIOR", {
 			--
 			-- 12721 and not 12162. The talent is called Deep Wounds and the aura it
 			-- lands is called Deep Wound, the row matches on the name, and one letter
-			-- was a square that stayed dark through every fight. See REPLACED in
-			-- UnitFrames\EnemyBars.lua, which shuts the same door on a number typed
-			-- in by hand.
+			-- was a square that stayed dark through every fight. UnitFrames\Book.lua
+			-- shuts the same door on a talent dragged in and a number typed in.
 			debuffs = { 772, 12721, 12294, 6343, 1160 },
 		},
 

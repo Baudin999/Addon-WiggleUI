@@ -221,15 +221,6 @@ ns.Class.Register("SHAMAN", {
 	},
 
 	--------------------------------------------------------------------------
-	-- What the picker offers
-	--
-	-- Shared by all three specs, because the shortlist is what you may add
-	-- rather than what you are handed. 17364 Stormstrike, 8050 Flame Shock,
-	-- 8056 Frost Shock, 8042 Earth Shock, 421 Chain Lightning.
-	--------------------------------------------------------------------------
-	suggested = { 17364, 8050, 8056, 8042, 421 },
-
-	--------------------------------------------------------------------------
 	-- The three specs
 	--
 	-- Tree order, which is the order the client counts them in and the order the

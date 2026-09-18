@@ -618,6 +618,10 @@ end
 -- carried to another square without unequipping it, and picking it up is not
 -- what the drag meant.
 --
+-- opts.carried takes a drag the client's cursor cannot hold, through
+-- UI/Carry.lua: it is handed whatever that drag lifted and answers the value
+-- set() gets, or nil to refuse it, the same as opts.take does for the cursor.
+--
 -- opts.describe is what the square says to a hover, in ns.Tip's own terms. It
 -- is folded into the highlight rather than hung with ns.Tip.Hang, because both
 -- want OnEnter and the second one to be set wins.
@@ -662,6 +666,10 @@ function UI.DropSquare(parent, size, get, set, opts)
 	end
 
 	local function Carried()
+		local held = UI.Carry.Held()
+		if held ~= nil and opts.carried then
+			return opts.carried(held)
+		end
 		local kind, a, b, c = GetCursorInfo()
 		if opts.take then
 			return opts.take(kind, a, b, c)
@@ -697,6 +705,15 @@ function UI.DropSquare(parent, size, get, set, opts)
 	button:SetAllPoints(square)
 	UI.Press.Clicks(button, "up", "LeftButton", "RightButton")
 	button:SetScript("OnReceiveDrag", Drop)
+	if opts.carried then
+		UI.Carry.Target(button, function(held)
+			local value = opts.carried(held)
+			if value ~= nil then
+				set(value)
+			end
+			after()
+		end)
+	end
 	button:SetScript("OnClick", function(_, which)
 		UI.CloseDropdown()
 		UI.StopCapture()
@@ -1863,11 +1880,11 @@ function UI.Kit(host)
 	-- The escape hatch. Hands the caller a bare row of the width the stack is
 	-- laying out, so a page can carry something this file has never heard of
 	-- without this file growing a function for it. build is given the row and
-	-- returns nothing, or a measure function when the row sizes to its contents.
+	-- the frame a dropdown hangs off, and returns nothing, or a measure function.
 	function kit.Custom(build, opts)
 		opts = opts or {}
 		local row = CreateFrame("Frame", nil, Parent())
-		local measure = build(row)
+		local measure = build(row, Popup)
 		local cell = Stack():Add(row, {
 			indent = opts.indent or M.indent,
 			height = opts.height or M.row,

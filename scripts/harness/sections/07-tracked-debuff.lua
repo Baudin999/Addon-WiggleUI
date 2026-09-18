@@ -4,7 +4,7 @@
 -- one ever comes on, and that is the half that shipped broken.
 --
 -- The row matches auras by name, and the name a proc's aura carries is not the
--- name of the talent that grants it. The picker offered 12162, the Deep Wounds
+-- name of the talent that grants it. The old picker offered 12162, the Deep Wounds
 -- talent, which resolves to "Deep Wounds" and is a hidden passive no mob ever
 -- carries. What lands is 12721, and the client calls it "Deep Wound". One
 -- letter, no error anywhere, and a square that stayed dark through every fight.
@@ -17,11 +17,20 @@ local H = ...
 local debuffs, ns, check = H.debuffs, H.ns, H.check
 local CheckPacked, widget = H.carry.CheckPacked, H.carry.widget
 
--- The shortlist offers the aura, never the spell that applies it. This is
--- the assertion that fails the moment 12162 goes back in SUGGESTED.
-for _, spellID in ipairs(ns.EnemyBars.Suggestions()) do
-	check(spellID ~= 12162,
-		"the picker offers 12162, the Deep Wounds talent, which lands on nobody")
+-- Every door onto the row turns the talent into the bleed. The name box
+-- searches the book, a talent dragged out of the talent window is looked up by
+-- the Talent table's id, and a spell dropped or typed goes through Aura. 121 is
+-- Deep Wounds in the anniversary client's Talent table, which is what the
+-- talent window holds in hand; the book was baked off that table.
+local Book = ns.DebuffBook
+check(Book.ForTalent(121, "Deep Wounds") == 12721,
+	("the Deep Wounds talent dragged in leads to %s, expected the 12721 bleed")
+		:format(tostring(Book.ForTalent(121, "Deep Wounds"))))
+check(Book.Aura(12162) == 12721,
+	("12162 dropped on the row watches %s, expected the 12721 bleed")
+		:format(tostring(Book.Aura(12162))))
+for _, id in ipairs(Book.Search("deep wound", 10)) do
+	check(id ~= 12162, "the name box offers 12162, the Deep Wounds talent, which lands on nobody")
 end
 
 -- Off the list first, if this spec ships it at all. Arms does and nothing else
@@ -145,6 +154,25 @@ ns.EnemyBars.Repair()
 ns.EnemyBars.Retrack()
 check(ns.EnemyBars.Slot(12162) == nil, "the repair left the dead talent id on the list")
 check(ns.EnemyBars.Slot(12721) ~= nil, "the repair dropped the bleed instead of renaming it")
+
+-- The page's name box and its squares, at the list's end. Part of a name finds
+-- the bleed; a drop on the first square puts it first; a drag onto the last
+-- square takes it there.
+check(Book.Search("deep w", 10)[1] == 12721,
+	("typing \"deep w\" offers %s first, expected the 12721 bleed")
+		:format(tostring(Book.Search("deep w", 10)[1])))
+check(Book.Search("deep w", 10, function(id) return id == 12721 end)[1] == nil,
+	"the name box offers a debuff the row already watches")
+ns.EnemyBars.RemoveSpell(12721)
+check((ns.EnemyBars.AddSpell(12721, 1)) and ns.EnemyBars.Slot(12721) == 1,
+	("a drop on the first square put the bleed in slot %s")
+		:format(tostring(ns.EnemyBars.Slot(12721))))
+local last = #ns.EnemyBars.Spells()
+if last > 1 then
+	check(ns.EnemyBars.MoveSpell(1, last) and ns.EnemyBars.Slot(12721) == last,
+		("a drag onto the last square left the bleed in slot %s of %d")
+			:format(tostring(ns.EnemyBars.Slot(12721)), last))
+end
 
 -- Back to the shipped list, because the churn figure below is quoted against it.
 ns.db.barsIconSize = ns.DefaultFor("barsIconSize")

@@ -193,6 +193,22 @@ local function OnClick(square)
 	return Read.Learn(board.tab, square.index, board.group)
 end
 
+-- A talent dragged out of the window, onto whatever takes one: today the
+-- debuff row on the enemy bars' page, which reads it as the aura the talent
+-- puts on a mob. Through UI/Carry.lua and not the client's cursor, because a
+-- passive talent is exactly what PickupSpell refuses, and the passive ones are
+-- the ones worth dragging: Deep Wounds, Blood Frenzy, Improved Hamstring.
+--
+-- Handed on as the talent's id and name, not a spell. The window holds no
+-- spell id, and which aura a talent ends in is the debuff row's question.
+local function OnDragStart(square)
+	UI.Carry.Lift({ talent = square.id, name = square.name }, square.art:GetTexture())
+end
+
+local function OnDragStop()
+	UI.Carry.Land()
+end
+
 --------------------------------------------------------------------------
 -- Building
 --------------------------------------------------------------------------
@@ -242,6 +258,9 @@ local function Square(board, index)
 	square:SetScript("OnEnter", OnEnter)
 	square:SetScript("OnLeave", OnLeave)
 	square:SetScript("OnClick", OnClick)
+	square:RegisterForDrag("LeftButton")
+	square:SetScript("OnDragStart", OnDragStart)
+	square:SetScript("OnDragStop", OnDragStop)
 	UI.PassCamera(square)
 	board.squares[index] = square
 	return square
