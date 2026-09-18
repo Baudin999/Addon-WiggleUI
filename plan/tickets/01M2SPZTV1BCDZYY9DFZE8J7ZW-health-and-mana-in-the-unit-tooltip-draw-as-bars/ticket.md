@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SPZTV1BCDZYY9DFZE8J7ZW
 type: feature
-status: todo
+status: doing
 title: Health and mana in the unit tooltip draw as bars
 ---
 
