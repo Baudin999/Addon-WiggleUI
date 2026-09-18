@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SPDXS1VXPKVAV1B786RWEP
 type: task
-status: doing
+status: done
 title: The Cooldowns page drops the list of spells you added
 ---
 
