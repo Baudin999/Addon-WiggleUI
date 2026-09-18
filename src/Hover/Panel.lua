@@ -259,11 +259,13 @@ local function Binding(ui)
 	end, function() return #ns.Hover.List() > 0 end)
 end
 
+-- The same list drawn over the world, on the same page as the keys it lists.
+-- It was a page of its own, and a person looking for how big the list is
+-- looked on the page called Mouseover casting and did not find it.
 local function OnScreen(ui)
-	ui.Section("The list on screen", "Fighting")
-	ui.Lede("The same list drawn over the world, so what you bound is something you can see rather than remember.")
+	ui.Divider()
 
-	ui.Check("show it",
+	ui.Check("show the list on screen",
 		function() return ns.db.hoverSheet end,
 		function(value)
 			ns.db.hoverSheet = value
@@ -271,7 +273,7 @@ local function OnScreen(ui)
 		end)
 	ui.Hint("It is only up while something is bound. Red is an enemy key, green is a friend key, grey lands on either.")
 
-	ui.Opacity("background",
+	ui.Opacity("list background",
 		function() return ns.db.hoverSheetAlpha end,
 		function(value)
 			ns.db.hoverSheetAlpha = value
@@ -282,7 +284,7 @@ local function OnScreen(ui)
 		function(value)
 			ns.db.hoverSheetZoom = value
 			ns.HoverSheet.Apply()
-		end)
+		end, "list size")
 
 	ui.Action(function() return "put the list back" end, function()
 		ns.HoverSheet.Reset()
