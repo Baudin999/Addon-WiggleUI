@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2T823J20Y4CZTE60FHPFAZA
 type: task
-status: doing
+status: done
 title: "The window keys re-take through ns.Rebind, not their own event frame"
 parent: 01M1XJZTYTM8VZ58PYTW463913
 ---
