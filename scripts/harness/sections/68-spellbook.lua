@@ -428,9 +428,19 @@ do
 	_G.ToggleSpellBook("pet")
 	check(not Window.Shown(), "asking for the pet's book again did not shut it")
 
+	-- A pet arriving in a fight is a paint held to its end: every row is the
+	-- parent of a secure square, and moving one in combat is refused.
 	Window.Show()
+	local realLockdown = _G.InCombatLockdown
+	_G.InCombatLockdown = function() return true end
 	guids.pet, names.pet = had.guid, had.name
 	fire("UNIT_PET", "player")
+	-- The pet's two rows are up and Fury's third is not; a paint that went
+	-- ahead would have laid Fury's three down there and then.
+	check(not Window.Row(3):IsShown() and ns.Lockdown.Owed(Window.Paint),
+		"the pet leaving in a fight moved the rows there and then")
+	_G.InCombatLockdown = realLockdown
+	fire("PLAYER_REGEN_ENABLED")
 	check(#Window.Book() == FURY and Window.Viewing() == FURY,
 		("with the pet gone the book has %d tabs and shows the %dth"):format(#Window.Book(), Window.Viewing()))
 	Window.View(GENERAL)

@@ -447,11 +447,18 @@ function Window.Fit()
 	return true
 end
 
--- The rows of the tab that is up, laid down the columns. Every row is
--- pictured whether or not the fight lets its square be armed, because the
--- picture is ordinary Lua and the square is not.
+-- The rows of the tab that is up, laid down the columns. Held whole to the end
+-- of a fight, not only the arming: a row is the parent of a secure square, so
+-- anchoring, showing or hiding one is as protected as the square itself. A
+-- paint that went ahead in a fight was every row refused, once per event, and
+-- the pet's tab added two events that fire in one. The window a fight opens is
+-- the last paint, which is the book as it was when the fight began.
 function Window.Paint()
 	if not window then
+		return false
+	end
+	if ns.Lockdown.Held(Window.Paint) then
+		Window.Foot()
 		return false
 	end
 	-- The one place the book is read. Everything that draws a row comes through
