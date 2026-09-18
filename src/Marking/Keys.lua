@@ -38,11 +38,6 @@ ns.MarkKeys = Keys
 
 local BUTTON_NAME = "WarriorKitMarkButton"
 
-local held = {}   -- id -> key currently on the override layer
-local heldAny     -- true while at least one is up
-local proven      -- nil until the readback has answered once
-local warned
-
 -- Not a secure button, because marking is not a protected action.
 --
 -- Given no size and no anchor on purpose, which is the shape Clique's own
@@ -56,34 +51,6 @@ ns.UI.Press.Clicks(button, "down")
 button:SetScript("OnClick", function(_, click)
 	ns.Marking.Key(click)
 end)
-
--- Override bindings layer on top of the binding set and are never written into
--- it, which is the same reason Charge/Icon.lua uses one for its key. SetBinding
--- would overwrite whatever you had on ctrl-left-click, and the next
--- SaveBindings, which the Key Bindings panel calls when you click Okay, would
--- make that permanent.
---
--- pcalled because an override binding call is refused under combat lockdown and
--- because nothing here proves the call takes a mouse button name on 2.5.6.
-local function Set(key, id)
-	if type(SetOverrideBindingClick) ~= "function" then
-		return false
-	end
-	return (pcall(SetOverrideBindingClick, button, true, key, BUTTON_NAME, id))
-end
-
-local function Clear()
-	if type(ClearOverrideBindings) ~= "function" then
-		return
-	end
-	pcall(ClearOverrideBindings, button)
-end
-
--- The override layer read back, see UI/Bound.lua. Nil where the client has not
--- answered.
-local function Reads(key, id)
-	return ns.UI.Bound.Reads(key, BUTTON_NAME, id)
-end
 
 -- ApplyDefaults fills a missing setting, not a missing key inside one, so a
 -- saved markBinds from before a mark existed would leave that mark unbound
@@ -110,48 +77,36 @@ local function Bound(id)
 	return key
 end
 
+-- The keys, one per mark, on the button above. The click name each binding
+-- hands over is the mark's id, which is what the OnClick reads back out.
+--
+-- Override bindings layer on top of the binding set and are never written
+-- into it, see UI/Bound.lua. SetBinding would overwrite whatever you had on
+-- ctrl-left-click, and the next SaveBindings would make that permanent.
+local keys = ns.UI.Bound.Keys({
+	button = button,
+	name = BUTTON_NAME,
+	wanted = function()
+		return ns.db and ns.db.marking
+	end,
+	list = function()
+		local list = {}
+		for _, mark in ipairs(ns.Marking.MARKS) do
+			list[#list + 1] = { id = mark.id, key = Bound(mark.id), click = mark.id }
+		end
+		return list
+	end,
+	refused = "this client would not take a mouse button for marking. Ctrl-targeting is doing the job instead.",
+	ignored = "this client accepted the marking keys and did not bind them. Clear them in /wk to put ctrl-targeting back.",
+})
+
 -- Returns whether any override is up. Marking.lua asks before running the
 -- PLAYER_TARGET_CHANGED fallback, so the two paths are never both live.
-function Keys.Active()
-	return heldAny == true
-end
+Keys.Active = keys.Active
 
 function Keys.Apply()
 	Seed()
-
-	if ns.Lockdown.Held(Keys.Apply) then
-		return
-	end
-
-	Clear()
-	held, heldAny = {}, false
-
-	if not (ns.db and ns.db.marking) then
-		return
-	end
-
-	for _, mark in ipairs(ns.Marking.MARKS) do
-		local key = Bound(mark.id)
-		if key and not ns.UI.Bound.Bare(key) then
-			if Set(key, mark.id) then
-				held[mark.id] = key
-				heldAny = true
-
-				local reads = Reads(key, mark.id)
-				if reads ~= nil then
-					proven = reads
-				end
-			elseif not warned then
-				warned = true
-				ns.Print("this client would not take a mouse button for marking. Ctrl-targeting is doing the job instead.")
-			end
-		end
-	end
-
-	if heldAny and proven == false and not warned then
-		warned = true
-		ns.Print("this client accepted the marking keys and did not bind them. Clear them in /wk to put ctrl-targeting back.")
-	end
+	keys.Apply()
 end
 
 -- Which other mark already owns this key, or nil. Two marks on one key is the
@@ -183,15 +138,15 @@ function Keys.Bind(id, key)
 	ns.db.markBinds[id] = key
 	Keys.Apply()
 
-	-- Apply defers under lockdown and leaves the old bindings up, so `held` is
-	-- still describing the previous key here. Say that rather than read it.
-	if ns.Lockdown.Owed(Keys.Apply) then
+	-- Apply defers under lockdown and leaves the old bindings up, so the held
+	-- keys still describe the previous one here. Say that rather than read it.
+	if ns.Lockdown.Owed(keys.Apply) then
 		return false, "saved. This client will not change a binding in combat, so it takes effect when the fight ends."
 	end
 	if key == "" then
 		return true
 	end
-	if not held[id] then
+	if not keys.Holds(id) then
 		return false, ("this client would not take %s."):format(key)
 	end
 	return true
@@ -207,26 +162,10 @@ function Keys.Describe()
 		parts[#parts + 1] = ("%s %s"):format(mark.label:lower(), key or "unbound")
 	end
 	local line = table.concat(parts, ", ")
-
-	if not heldAny then
-		if ns.Lockdown.Owed(Keys.Apply) then
-			return line .. " (waiting for combat to drop)"
-		end
-		return line
-	end
-	if proven == nil then
-		return line .. " (unproven)"
-	end
-	if not proven then
-		return line .. " (the client did not take them)"
-	end
-	return line
+	local trouble = keys.Trouble()
+	return trouble and ("%s (%s)"):format(line, trouble) or line
 end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
 events:SetScript("OnEvent", Keys.Apply)
-
--- And again when the client rebuilds its binding set, which drops every
--- override the addon holds. See ns.Rebind in Core/Core.lua.
-ns.Rebind(Keys.Apply)

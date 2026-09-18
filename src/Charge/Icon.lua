@@ -314,13 +314,13 @@ hold = ns.UI.Bound.Key({
 	store = ns.KeySetting("chargeKey"),
 	absent = function() return ns.Charge.Refusal() .. "." end,
 	write = function(button, key)
-		ClearOverrideBindings(button)
+		ns.UI.Bound.Drop(button)
 		if binder then
 			binder:SetAttribute("chargeKey", key)
 			binder:SetAttribute("chargeKeyRelease", ns.db.chargeKeyRelease and true or false)
 			binder:Execute("state = 'free'\n" .. BIND_SNIPPET)
-		elseif key ~= "" then
-			SetOverrideBindingClick(button, true, key, BUTTON_NAME, "LeftButton")
+		else
+			ns.UI.Bound.Hold(button, key, BUTTON_NAME)
 		end
 	end,
 })

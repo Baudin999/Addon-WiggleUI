@@ -79,6 +79,51 @@ function Bound.Reads(key, name, click, blank)
 	return action == ("CLICK %s:%s"):format(name, click or "LeftButton")
 end
 
+-- Every override this addon writes and clears goes through the two below. Four
+-- files wrapped the calls in their own pcall and four called them bare, and
+-- none of them asked whether the button the key presses fires on an edge the
+-- key reaches. check.sh refuses the client calls anywhere else now.
+
+-- Whether this client has an override layer at all.
+function Bound.Layer()
+	return type(SetOverrideBindingClick) == "function" and type(ClearOverrideBindings) == "function"
+end
+
+-- Put `key` on the override layer as a `click` on the button called `name`,
+-- owned by `owner`. Returns whether the client took the call, and the layer
+-- read back (nil where it could not be asked).
+--
+-- Refused for a button UI/Press.lua did not build. Every key that went dead in
+-- this addon went dead on the edge: a button that registered one edge while
+-- the key was dispatched on the other binds, reads back, and does nothing.
+-- Press writes the registration and the attribute from one argument and
+-- records it, so a button without that record is a button nobody can promise
+-- the key reaches.
+--
+-- pcalled because the call is refused under lockdown and because nothing here
+-- proves it takes a mouse button name on 2.5.6.
+function Bound.Hold(owner, key, name, click)
+	if not Bound.Layer() or type(key) ~= "string" or key == "" then
+		return false
+	end
+	local target = _G[name]
+	if not (target and target.wkEdge) then
+		return false
+	end
+	click = click or "LeftButton"
+	if not pcall(SetOverrideBindingClick, owner, true, key, name, click) then
+		return false
+	end
+	return true, Bound.Reads(key, name, click)
+end
+
+-- Every override `owner` holds, gone.
+function Bound.Drop(owner)
+	if Bound.Layer() then
+		pcall(ClearOverrideBindings, owner)
+	end
+end
+
 -- The five steps. `put(key, displaced)` stores the key and applies it, and is
 -- called twice: once with "" to let go, and once with the key and what it was
 -- carrying. `reads(key)` is the readback, or nil for a key that is not held
@@ -152,7 +197,7 @@ function Bound.Key(spec)
 
 	function hold.Apply()
 		local button = hold.button
-		if not button or type(SetOverrideBindingClick) ~= "function" then
+		if not button or not Bound.Layer() then
 			return false
 		end
 		if ns.Lockdown.Held(hold.Apply) then
@@ -163,9 +208,9 @@ function Bound.Key(spec)
 			spec.write(button, key)
 			return true
 		end
-		ClearOverrideBindings(button)
+		Bound.Drop(button)
 		if key ~= "" and Wanted() then
-			SetOverrideBindingClick(button, true, key, name, "LeftButton")
+			Bound.Hold(button, key, name)
 		end
 		return true
 	end
@@ -195,4 +240,130 @@ function Bound.Key(spec)
 
 	ns.Rebind(hold.Apply)
 	return hold
+end
+
+--------------------------------------------------------------------------
+-- Several keys on one button
+--
+-- The marks and the hover list each put a list of keys on one button, telling
+-- the keys apart by the click name the binding hands over. Both files ran the
+-- same loop with the same four locals: which keys are up, whether any is,
+-- whether the readback has ever answered, and whether the one warning has
+-- been said. This is that loop.
+--
+--   spec.button   the button every key presses, built by UI/Press.lua
+--   spec.name     its global name
+--   spec.list()   the keys wanted now, as { id, key, click } in order; `id`
+--                 is what Holds is asked with
+--   spec.wanted() whether the part is on at all
+--   spec.clear()  runs after the old keys go and before the new ones
+--   spec.put(one) runs before one key goes up, to write what it presses
+--   spec.told(one, taken, reads)
+--                 after each: taken is nil for a key nobody may take, false
+--                 for one the client refused, true for one it took
+--   spec.log      a debug log taking a format, or nil
+--   spec.idle     what the log says while `wanted` answers false
+--   spec.refused  said once, the first time the client refuses a key
+--   spec.ignored  said once, when the client takes the keys and holds none
+--
+-- Apply returns false when combat held it back, and runs again at every
+-- binding rebuild, see ns.Rebind in Core/Core.lua.
+--------------------------------------------------------------------------
+
+function Bound.Keys(spec)
+	local keys = {}
+	local held = {}   -- id -> the key on the override layer
+	local heldAny     -- true while at least one is up
+	local proven      -- nil until the readback has answered once
+	local warned
+
+	local function Log(...)
+		if spec.log then
+			spec.log(...)
+		end
+	end
+
+	local function Warn(sentence)
+		if not warned then
+			warned = true
+			ns.Print(sentence)
+		end
+	end
+
+	function keys.Apply()
+		if ns.Lockdown.Held(keys.Apply) then
+			Log("in combat, so the keys are held until the fight ends")
+			return false
+		end
+		Bound.Drop(spec.button)
+		if spec.clear then
+			spec.clear()
+		end
+		held, heldAny = {}, false
+		if not spec.wanted() then
+			if spec.idle then
+				Log(spec.idle)
+			end
+			return true
+		end
+		for _, one in ipairs(spec.list()) do
+			local key = one.key
+			if type(key) ~= "string" or key == "" or Bound.Bare(key) then
+				if spec.told then
+					spec.told(one, nil)
+				end
+			else
+				if spec.put then
+					spec.put(one)
+				end
+				local taken, reads = Bound.Hold(spec.button, key, spec.name, one.click)
+				if taken then
+					held[one.id] = key
+					heldAny = true
+					if reads ~= nil then
+						proven = reads
+					end
+				else
+					Warn(spec.refused)
+				end
+				if spec.told then
+					spec.told(one, taken, reads)
+				end
+			end
+		end
+		if heldAny and proven == false then
+			Warn(spec.ignored)
+		end
+		return true
+	end
+
+	-- The key `id` holds on the layer, or nil.
+	function keys.Holds(id)
+		return held[id]
+	end
+
+	function keys.Active()
+		return heldAny == true
+	end
+
+	-- What is wrong with the keys in the words a status line uses, or nil.
+	-- Always what the layer says, never what the part meant to set.
+	function keys.Trouble()
+		if ns.Lockdown.Owed(keys.Apply) then
+			return "waiting for combat to drop"
+		end
+		if not heldAny then
+			return nil
+		end
+		if proven == nil then
+			return "unproven"
+		end
+		if not proven then
+			return "the client did not take them"
+		end
+		return nil
+	end
+
+	ns.Rebind(keys.Apply)
+	return keys
 end

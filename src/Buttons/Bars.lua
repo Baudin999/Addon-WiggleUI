@@ -445,17 +445,14 @@ end
 --------------------------------------------------------------------------
 
 local function ClaimKey(owner, key, name)
-	if type(SetOverrideBindingClick) ~= "function" or not key or key == "" then
-		return false
-	end
-	if not pcall(SetOverrideBindingClick, owner, true, key, name, "LeftButton") then
+	local taken, reads = ns.UI.Bound.Hold(owner, key, name)
+	if not taken then
 		return false
 	end
 
-	-- Read the layer back rather than believe the call. A client that accepts
+	-- The layer read back rather than the call believed. A client that accepts
 	-- the call and does nothing with it leaves no other trace, and the whole
 	-- feature is worth nothing if the keys do not arrive.
-	local reads = ns.UI.Bound.Reads(key, name)
 	if reads ~= nil then
 		proven = reads
 	end
@@ -469,13 +466,10 @@ local function DropKeys()
 	for command in pairs(held) do
 		held[command] = nil
 	end
-	if type(ClearOverrideBindings) ~= "function" then
-		return
-	end
 	for index = 1, #Which.PLAN do
 		local entry = built[Which.PLAN[index].key]
 		if entry then
-			pcall(ClearOverrideBindings, entry.header)
+			ns.UI.Bound.Drop(entry.header)
 		end
 	end
 end

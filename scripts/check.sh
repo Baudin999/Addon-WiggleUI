@@ -749,6 +749,32 @@ while IFS= read -r bad; do
 done < <(grep -rnE 'GetBindingAction|BUTTON1 = true|cannot be rebound in combat|Displaced = displaced' \
 	--include='*.lua' . | grep -v '^\./UI/Bound\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
 
+# And every override the addon writes or clears goes through the same file.
+#
+# Marking/Keys.lua and Hover/Cast.lua ran one loop for several keys on one
+# button, with the same held, heldAny, proven and warned locals and the same
+# status line, and four files wrapped SetOverrideBindingClick and
+# ClearOverrideBindings in their own pcall while four more called them bare.
+# None of them asked whether the button fires on an edge the key reaches,
+# which is the bug every dead key in this addon has been. Bound.Hold and
+# Bound.Drop are the two calls and Bound.Keys is the loop; Hold refuses a
+# button UI/Press.lua did not build. Comment lines are skipped.
+while IFS= read -r bad; do
+	echo "only UI/Bound.lua may write the override layer, use ns.UI.Bound.Hold, Drop or Keys: $bad"
+	status=1
+done < <(grep -rnE 'SetOverrideBindingClick|ClearOverrideBindings|heldAny' \
+	--include='*.lua' . | grep -v '^\./UI/Bound\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
+
+# The edge UI/Press.lua records on every button it builds is its own to write.
+# Bound.Hold reads it to know the button came from there, and Press.Edge
+# answers with it; a file that set it by hand would pass that check with a
+# button whose registration nobody wrote.
+while IFS= read -r bad; do
+	echo "only UI/Press.lua writes a button's edge, build the button with UI.Press: $bad"
+	status=1
+done < <(grep -rnE '\bwkEdge\b' --include='*.lua' . \
+	| grep -vE '^\./UI/(Press|Bound)\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
+
 # One file spells the tooltip subjects more than one part asks about, and it is
 # UI/Tip.lua.
 #

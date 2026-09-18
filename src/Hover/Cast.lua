@@ -156,31 +156,6 @@ local function Trace(_, click, down)
 	end
 end
 
-local held = {}   -- index -> the key currently on the override layer
-local heldAny     -- true while at least one is up
-local proven      -- nil until the readback has answered once
-local warned
-
--- Override bindings, never real ones, for the reason every other key in this
--- addon uses them: SetBindingClick writes into the live binding set and the next
--- SaveBindings, which the Key Bindings panel calls when you click Okay, makes
--- that permanent and loses whatever the key was carrying.
---
--- pcalled because the call is refused under lockdown and because nothing here
--- proves it takes a mouse button name on 2.5.6.
-local function Set(key, index)
-	if type(SetOverrideBindingClick) ~= "function" then
-		return false
-	end
-	return (pcall(SetOverrideBindingClick, button, true, key, BUTTON_NAME, Name(index)))
-end
-
--- The override layer read back, see UI/Bound.lua. Nil where the client has not
--- answered.
-local function Reads(key, index)
-	return ns.UI.Bound.Reads(key, BUTTON_NAME, Name(index))
-end
-
 --------------------------------------------------------------------------
 -- What one binding writes on the button
 --
@@ -239,82 +214,62 @@ local function Write(index, bind)
 	button:SetAttribute("*macrotext" .. tail, ns.Hover.Macro(bind, beneath))
 end
 
--- Returns false when combat deferred the work, so the caller can say so.
-function Cast.Apply()
-	if ns.Lockdown.Held(Cast.Apply) then
-		Log("in combat, so the keys are held until the fight ends")
-		return false
-	end
-
-	if type(ClearOverrideBindings) == "function" then
-		pcall(ClearOverrideBindings, button)
-	end
-	Wipe()
-	held, heldAny = {}, false
-
-	if not ns.db.hover then
-		Log("mouseover casting is off, so no key is up")
-		return true
-	end
-
-	for index, bind in ipairs(ns.Hover.List()) do
-		local key = bind.key
-		if type(key) == "string" and key ~= "" and not ns.UI.Bound.Bare(key) then
-			Write(index, bind)
-			if Set(key, index) then
-				held[index] = key
-				heldAny = true
-				local reads = Reads(key, index)
-				if reads ~= nil then
-					proven = reads
-				end
-				Log("%s is index %d, %s", key, index,
-					reads == nil and "the readback could not be asked"
-						or (reads and "the binding layer agrees" or "|cffff5555the binding layer does not have it|r"))
-				for line in Cast.Macro(index):gmatch("[^\n]+") do
-					Log("  %s", line)
-				end
-			else
-				Log("|cffff5555%s was refused by the client|r", key)
-				if not warned then
-					warned = true
-					ns.Print("this client would not take a key for mouseover casting.")
-				end
-			end
-		else
-			Log("|cffff5555%s is not a key this can bind|r", tostring(key))
+-- The keys, one per binding, on the button above, each handing over the
+-- binding's click name. Override bindings, never real ones, see UI/Bound.lua.
+-- A spell and an item go up the same way: the difference is the verb in the
+-- macro text Write puts on the button before the key goes on, and the key
+-- fires the button on the press its registration answers, which UI/Press.lua
+-- wrote from the one edge above.
+local keys = ns.UI.Bound.Keys({
+	button = button,
+	name = BUTTON_NAME,
+	wanted = function()
+		return ns.db.hover
+	end,
+	list = function()
+		local list = {}
+		for index, bind in ipairs(ns.Hover.List()) do
+			list[index] = { id = index, key = bind.key, click = Name(index), bind = bind }
 		end
-	end
+		return list
+	end,
+	clear = Wipe,
+	put = function(one)
+		Write(one.id, one.bind)
+	end,
+	told = function(one, taken, reads)
+		if taken == nil then
+			Log("|cffff5555%s is not a key this can bind|r", tostring(one.key))
+		elseif not taken then
+			Log("|cffff5555%s was refused by the client|r", one.key)
+		else
+			Log("%s is index %d, %s", one.key, one.id,
+				reads == nil and "the readback could not be asked"
+					or (reads and "the binding layer agrees" or "|cffff5555the binding layer does not have it|r"))
+			for line in Cast.Macro(one.id):gmatch("[^\n]+") do
+				Log("  %s", line)
+			end
+		end
+	end,
+	log = Log,
+	idle = "mouseover casting is off, so no key is up",
+	refused = "this client would not take a key for mouseover casting.",
+	ignored = "this client accepted the mouseover keys and did not bind them.",
+})
 
-	if heldAny and proven == false and not warned then
-		warned = true
-		ns.Print("this client accepted the mouseover keys and did not bind them.")
-	end
-	return true
-end
+-- Returns false when combat deferred the work, so the caller can say so.
+Cast.Apply = keys.Apply
 
 -- Whether a key this file put up is actually holding. The panel draws a bound
 -- key in the quiet grey when this comes back false, so a key the client refused
 -- looks different from a key that is doing its job.
 function Cast.Holding(index)
-	return held[index] ~= nil
+	return keys.Holds(index) ~= nil
 end
 
 -- Always reports what the binding layer says, never what this file meant to set.
 function Cast.Describe()
-	if ns.Lockdown.Owed(Cast.Apply) then
-		return "waiting for combat to drop"
-	end
-	if not heldAny then
-		return "no key is up"
-	end
-	if proven == nil then
-		return "unproven"
-	end
-	if not proven then
-		return "the client did not take them"
-	end
-	return "the keys are up"
+	return keys.Trouble() or (keys.Active() and "the keys are up" or "no key is up")
 end
 
 -- What one binding is carrying, read back off the button rather than built again.
@@ -366,7 +321,3 @@ function Cast.Watch()
 		events:UnregisterEvent("UNIT_SPELLCAST_SENT")
 	end
 end
-
--- The client rebuilds its binding set and drops every override with it, so the
--- keys are taken again each time it does. See ns.Rebind in Core/Core.lua.
-ns.Rebind(Cast.Apply)

@@ -357,14 +357,12 @@ function Bars.Apply()
 			entry = Build(index)
 		end
 		if entry then
-			ClearOverrideBindings(entry.key)
+			ns.UI.Bound.Drop(entry.key)
 			if bar then
 				Arm(entry, bar)
 				Arrange(entry, bar)
 				entry.frame:SetAttribute("wk-close", ns.AdHoc.Closes(index))
-				if bar.key ~= "" then
-					SetOverrideBindingClick(entry.key, true, bar.key, KeyName(index), "LeftButton")
-				end
+				ns.UI.Bound.Hold(entry.key, bar.key, KeyName(index))
 			else
 				entry.frame:Hide()
 			end

@@ -409,18 +409,18 @@ function Adapter.Cage(d)
 		if not d.bind or not dirty then
 			return true
 		end
-		if type(_G.SetOverrideBindingClick) ~= "function" then
+		local Bound = ns.UI.Bound
+		if not Bound.Layer() then
 			return false
 		end
 		local button = ns[d.window].Key()
 		if not button or InCombatLockdown() then
 			return false
 		end
-		ClearOverrideBindings(button)
+		Bound.Drop(button)
 		local keys = Keys()
 		for index = 1, #keys do
-			SetOverrideBindingClick(button, true, keys[index],
-				ns[d.window].KeyName(), "LeftButton")
+			Bound.Hold(button, keys[index], ns[d.window].KeyName())
 		end
 		dirty, bound = false, keys[1]
 		return bound ~= nil
@@ -434,7 +434,7 @@ function Adapter.Cage(d)
 		if not button or InCombatLockdown() then
 			return false
 		end
-		ClearOverrideBindings(button)
+		ns.UI.Bound.Drop(button)
 		dirty, bound = true, nil
 		return true
 	end

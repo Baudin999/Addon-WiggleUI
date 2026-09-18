@@ -50,6 +50,7 @@ local AURAS = "SecureAuraHeaderTemplate"
 -- takes its names loose. What it registers is what the button keeps from the
 -- camera, see Press.Keep at the foot of this file.
 local function Register(button, edge, ...)
+	button.wkEdge = edge
 	local suffix = edge == "down" and "Down" or "Up"
 	local count = select("#", ...)
 	if count == 0 then
@@ -83,6 +84,7 @@ end
 function Press.Key(name, edge)
 	assert(edge == "down" or edge == "both", "Press.Key: edge is \"down\" or \"both\"")
 	local key = CreateFrame("Button", name, UIParent, HANDLER)
+	key.wkEdge = edge
 	if edge == "both" then
 		key:RegisterForClicks("AnyDown", "AnyUp")
 	else
@@ -103,11 +105,18 @@ function Press.Clicks(button, edge, ...)
 	return button
 end
 
--- Which edge a secure action button fires on, worked out the way the client
--- works it out, and where the answer came from. The button's own attribute,
--- and the player's setting where the button does not answer. A button this
--- file built always answers; the client's own buttons do not.
+-- Which edge a button fires on, and where the answer came from. A button
+-- this file built says what it registered, which is the only answer for a
+-- plain button: it has no attribute, and the player's setting said "down" for
+-- a Press.Clicks "up" button, so a `/click` sent from the hover macro onto one
+-- arrived on the edge it drops. "both" answers "down", the half a single
+-- `/click` can send. For anything else, the way the client works it out: the
+-- button's own attribute, and the player's setting where it does not answer.
 function Press.Edge(button)
+	local built = button and button.wkEdge
+	if built then
+		return built == "up" and "up" or "down", "UI.Press"
+	end
 	local set = button and button.GetAttribute and button:GetAttribute("useOnKeyDown")
 	if set ~= nil then
 		return set and "down" or "up", "useOnKeyDown attribute"
