@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SP34SBHQEZBBFB4EFZ1849
 type: task
-status: todo
+status: doing
 title: "Trinkets are a flag on Cooldowns, and the Trinkets page goes"
 ---
 
