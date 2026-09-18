@@ -237,6 +237,26 @@ local TIMER_SHARE = 0.42
 local COUNT_SHARE = 0.30
 local KEY_SHARE = 0.26
 
+-- Dark enough that a white key reads over a white icon, light enough that the
+-- corner of the art still shows through it.
+local KEY_PLATE_ALPHA = 0.7
+
+-- A dark plate under the key, drawn only while there is a key. Seven pixels
+-- with a one pixel shadow vanished into the corner of a bright icon: the pet
+-- bar's claws and fangs took G, T and R off the screen whole. UI/Text.lua puts
+-- an outline out of reach under fourteen pixels, so the key gets a ground this
+-- file painted instead. On ARTWORK above the icon rather than on OVERLAY,
+-- because a texture and a string on one layer and one sublevel draw in no
+-- promised order.
+local function Key(w)
+	local plate = ns.Fill(w, "ARTWORK", 0, 0, 0, KEY_PLATE_ALPHA)
+	if plate.SetDrawLayer then
+		plate:SetDrawLayer("ARTWORK", 7)
+	end
+	plate:Hide()
+	return UI.Label(w, 10, nil, "RIGHT", UI.SHADOW), plate
+end
+
 -- A square drawn onto a frame the caller already has. The caller owns the
 -- frame's identity: a square you can press is a button UI/Press.lua built,
 -- because that file is the only one allowed to build a secure button, and this
@@ -342,7 +362,7 @@ function Ability.Dress(w, palette)
 
 	-- The key that presses it. Set once by the caller and never touched by the
 	-- tick, because a binding changes when you change it and not otherwise.
-	w.key = UI.Label(w, 10, nil, "RIGHT", UI.SHADOW)
+	w.key, w.keyPlate = Key(w)
 
 	-- How much of the look's own alpha to draw at, which is the caller's half
 	-- of visibility. A look says how loud a status is; a fade says whether the
@@ -469,13 +489,20 @@ function Ability.Size(w, side)
 	w.count:SetPoint("BOTTOMRIGHT", w, "BOTTOMRIGHT", -edge, edge)
 	w.key:ClearAllPoints()
 	w.key:SetPoint("TOPRIGHT", w, "TOPRIGHT", -edge, -edge)
+	-- Flush in the art's corner and one pixel wider than the string on the left,
+	-- so the plate follows the key's width from "E" to "sM4".
+	w.keyPlate:ClearAllPoints()
+	w.keyPlate:SetPoint("TOPRIGHT", w.icon, "TOPRIGHT")
+	w.keyPlate:SetPoint("BOTTOMLEFT", w.key, "BOTTOMLEFT", -edge, 0)
 
 	return side
 end
 
 -- The key that presses this square, or "" for none. Once per binding change.
 function Ability.Bind(w, text)
-	w.key:SetText(text or "")
+	text = text or ""
+	w.key:SetText(text)
+	w.keyPlate:SetShown(text ~= "")
 end
 
 --------------------------------------------------------------------------

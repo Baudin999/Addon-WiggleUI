@@ -71,6 +71,10 @@ do
 	check(squares[6].key:GetText() == "sR",
 		("pet square 6 draws %q for the key SHIFT-R"):format(tostring(squares[6].key:GetText())))
 	check(squares[5].key:GetText() == "", "pet square 5 draws a key with none bound")
+	-- The plate is what makes the key readable over bright art, and a plate on
+	-- a square with no key is a dark corner that means nothing.
+	check(squares[4].keyPlate:IsShown(), "pet square 4 draws its key with no plate under it")
+	check(not squares[5].keyPlate:IsShown(), "pet square 5 draws a key plate with no key bound")
 
 	check(theirs:GetParent() == ns.Attic.Frame(),
 		"Blizzard's pet bar is not in the attic with the clone on")
