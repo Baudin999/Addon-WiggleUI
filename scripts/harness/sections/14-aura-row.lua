@@ -511,6 +511,28 @@ do
 	check(poison ~= nil and poison:IsShown() and poison.shownIcon == "poison",
 		"the debuff on your pet is not drawn under the pet block")
 
+	-- Right click takes the buff off, the way the client's own buff button
+	-- does, and only out of combat, where the call is allowed. A debuff has
+	-- nothing to cancel and answers no click at all.
+	local realCancel, realLockdown = _G.CancelUnitBuff, _G.InCombatLockdown
+	local cancelled = {}
+	_G.CancelUnitBuff = function(unit, index, filter)
+		cancelled[#cancelled + 1] = ("%s %d %s"):format(unit, index, filter)
+	end
+	H.mouse.On(poison, "RightButton")
+	H.mouse.On(mend, "LeftButton")
+	_G.InCombatLockdown = function() return true end
+	H.mouse.On(mend, "RightButton")
+	_G.InCombatLockdown = realLockdown
+	check(#cancelled == 0,
+		("a debuff, a left click or a right click in combat cancelled %s")
+			:format(tostring(cancelled[1])))
+	H.mouse.On(mend, "RightButton")
+	check(cancelled[1] == "pet 1 HELPFUL",
+		("a right click on Mend Pet cancelled %s rather than the pet's buff 1")
+			:format(tostring(cancelled[1])))
+	_G.CancelUnitBuff = realCancel
+
 	buffs.pet, debuffs.pet = nil, nil
 	tick()
 	check(not mend:IsShown() and not poison:IsShown(),

@@ -51,9 +51,8 @@ ns.FrameAuras = Auras
 --
 -- The client's own buffs and debuffs are hidden the same way the target's are,
 -- by name and one at a time, because BuffButton1 and DebuffButton1 are built
--- the same way on demand. One thing goes with them and does not come back:
--- right click to cancel a buff, because cancelling one is a protected call and
--- a square drawn here cannot make it.
+-- the same way on demand. Right click to cancel a buff comes back on our
+-- squares, yours and your pet's, out of combat only; see Hover.
 --
 -- The temporary weapon enchant does come back, and it has to. It sits at no
 -- aura index at all, so the walk below cannot find it and GetWeaponEnchantInfo
@@ -595,6 +594,38 @@ local function Hover(square, unit, filter)
 		end
 		return { kind = filter == "HARMFUL" and "debuff" or "buff",
 			unit = unit, index = self.auraIndex, place = BESIDE }
+	end)
+
+	-- Right click takes a buff off, which is what the client's own buff button
+	-- does and the one thing these squares dropped when they replaced it. Only
+	-- on a buff row, only yours or your pet's, and only out of combat: the
+	-- cancel calls are protected in combat, and an addon that makes one there
+	-- gets the client's "interface action failed" box instead of the cancel.
+	--
+	-- Tip.Hang hands the right button to the camera on a client that has
+	-- SetPassThroughButtons, which would eat the click before it got here, so
+	-- the square keeps only the middle button passed. 2.5.6 has no such call
+	-- and the pcall says so.
+	if filter ~= "HELPFUL" or (unit ~= "player" and unit ~= "pet") then
+		return
+	end
+	if type(square.SetPassThroughButtons) == "function" then
+		pcall(square.SetPassThroughButtons, square, "MiddleButton")
+	end
+	square:SetScript("OnMouseUp", function(self, button)
+		if button ~= "RightButton" or InCombatLockdown() then
+			return
+		end
+		-- The stone on your weapon answers to the hand, not to an aura index:
+		-- 1 is the main hand and 2 the off hand, which is how the client's own
+		-- enchant button counts them.
+		if self.auraGear then
+			if type(CancelItemTempEnchantment) == "function" then
+				CancelItemTempEnchantment(self.auraGear == ns.Gear.MAINHAND and 1 or 2)
+			end
+		elseif self.auraIndex and type(CancelUnitBuff) == "function" then
+			CancelUnitBuff(unit, self.auraIndex, filter)
+		end
 	end)
 end
 
