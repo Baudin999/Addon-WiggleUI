@@ -64,6 +64,10 @@ local VISIBILITY = "[pet] show; hide"
 local AUTO_SIDE = 5
 local AUTO_ON, AUTO_OFF = 1, 0.35
 
+-- The keys at twice the action bars' size. A pet key is one letter you press
+-- rarely and look for when you do, and the squares have the room.
+local KEY_SCALE = 2
+
 -- The key the square size is asked under. No record is ever written for it, so
 -- Buttons/Look.lua answers the size every bar ships at and the argument for
 -- that number stays in one file.
@@ -130,6 +134,7 @@ local function Square(index)
 	local w = Ability.Dress(ns.UI.Press.Button(bar,
 		("WarriorKitPetButton%d"):format(index), "up"), Ability.QUIET)
 	w.slot = index
+	w.keyScale = KEY_SCALE
 	w:SetAttribute("type", "pet")
 	w:SetAttribute("action", index)
 	local theirs = _G["PetActionButton" .. index]

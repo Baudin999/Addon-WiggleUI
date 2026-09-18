@@ -479,7 +479,9 @@ function Ability.Size(w, side)
 	-- of these want: they sit on a spell icon this addon did not paint.
 	local timer = math.max(math.floor(side * TIMER_SHARE), 8)
 	local count = math.max(math.floor(side * COUNT_SHARE), 7)
-	local key = math.max(math.floor(side * KEY_SHARE), 7)
+	-- A caller that wants its keys louder sets w.keyScale; the pet bar does,
+	-- because its keys are single letters and there is room.
+	local key = math.max(math.floor(side * KEY_SHARE * (w.keyScale or 1)), 7)
 
 	w.timer:SetFontObject(UI.NumberFont(timer))
 	w.count:SetFontObject(UI.NumberFont(count))
