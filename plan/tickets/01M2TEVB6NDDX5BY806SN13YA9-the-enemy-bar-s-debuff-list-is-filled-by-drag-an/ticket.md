@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2TEVB6NDDX5BY806SN13YA9
 type: feature
-status: doing
+status: done
 title: "The enemy bar's debuff list is filled by drag and by name, not by id"
 ---
 
