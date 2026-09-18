@@ -534,9 +534,10 @@ do
 	-- A key on the client's own character page. This fixture spends C and
 	-- SHIFT-C on the cloned bars, so the page is bound to a key nothing else
 	-- here holds, and the pass is told the binding set moved the way the client
-	-- tells it.
+	-- tells it, with the frame after it that ns.Rebind answers on.
 	_G.WarriorKitBindings.TOGGLECHARACTER0 = { "ALT-C" }
 	fire("UPDATE_BINDINGS")
+	H.rebound()
 	ns.BlizzHide.Apply()
 
 	local key = Window.Key()

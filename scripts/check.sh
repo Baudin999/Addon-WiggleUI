@@ -765,6 +765,19 @@ while IFS= read -r bad; do
 done < <(grep -rnE 'SetOverrideBindingClick|ClearOverrideBindings|heldAny' \
 	--include='*.lua' . | grep -v '^\./UI/Bound\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
 
+# A key the client throws away at a binding rebuild is taken back through
+# ns.Rebind in Core/Core.lua, and nowhere else listens for the rebuild to do
+# it. Core/BlizzAdapter.lua kept a frame of its own on UPDATE_BINDINGS beside
+# Core's until 01M2T823. Two files are allowed, each for a stated reason:
+#   Buttons/Bars.lua   answers the event with its own pass, which Core's
+#                      header allows: its keys are read off the binding set
+#   Buttons/Pet.lua    only reads keys to draw them in the square's corner
+while IFS= read -r bad; do
+	echo "take a key back through ns.Rebind, not a frame of your own on UPDATE_BINDINGS: $bad"
+	status=1
+done < <(grep -rn 'RegisterEvent("UPDATE_BINDINGS")' --include='*.lua' . \
+	| grep -vE '^\./(Core/Core|Buttons/Bars|Buttons/Pet)\.lua:' || true)
+
 # The edge UI/Press.lua records on every button it builds is its own to write.
 # Bound.Hold reads it to know the button came from there, and Press.Edge
 # answers with it; a file that set it by hand would pass that check with a

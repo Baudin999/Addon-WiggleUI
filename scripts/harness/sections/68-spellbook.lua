@@ -322,6 +322,7 @@ end
 do
 	_G.WarriorKitBindings.TOGGLESPELLBOOK = { "P" }
 	fire("UPDATE_BINDINGS")
+	H.rebound()
 	ns.BlizzHide.Apply()
 
 	local key = Window.Key()

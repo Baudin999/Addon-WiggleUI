@@ -215,6 +215,21 @@ function H.tick(name)
 	return tick
 end
 
+-- The frame after the binding set moved, for a section that has just fired
+-- UPDATE_BINDINGS. Core/Core.lua takes every key back one frame after the
+-- event, on a one-shot OnUpdate, so a section that reads a key straight after
+-- the event reads the moment before the take. The pass may already be booked before the event, so the frame is
+-- picked by the file that owns it rather than by whether this event set its
+-- script. Core/Core.lua sets no other OnUpdate.
+function H.rebound()
+	for _, f in ipairs(H.frames) do
+		local pass = f.origin:match("Core/Core%.lua$") and f.scripts.OnUpdate
+		if pass then
+			pass(f, 0)
+		end
+	end
+end
+
 local failures = 0
 function H.check(ok, message)
 	if not ok then

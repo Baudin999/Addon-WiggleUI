@@ -29,22 +29,14 @@ local ATTACK = "Interface\\Icons\\Ability_GhoulFrenzy"
 local FRAME = 0.15 -- past the tenth of a second the pet tick asks for
 
 -- The client building its binding set again, and the frame after it. The build
--- drops every key the addon took, and Core/Core.lua takes them back one frame
--- later on a one-shot OnUpdate. A rebuild with no frame after it hands every
--- section below a client with no dungeon key, which no player is ever in: that
--- was Shift-L carrying "" in 56-dungeon-log as HUNTER, the one run that stands
--- the pet bar up. The pass may already be booked before the rebuild, by the
--- bars going up, so the frame is picked by the file that owns it rather than by
--- whether the rebuild was what set its script. Core/Core.lua sets no other
--- OnUpdate.
+-- drops every key the addon took, and H.rebound is the frame Core/Core.lua
+-- takes them back on. A rebuild with no frame after it hands every section
+-- below a client with no dungeon key, which no player is ever in: that was
+-- Shift-L carrying "" in 56-dungeon-log as HUNTER, the one run that stands the
+-- pet bar up.
 local function Rebuild()
 	_G.WarriorKitRebuildBindings()
-	for _, f in ipairs(H.frames) do
-		local pass = f.origin:match("Core/Core%.lua$") and f.scripts.OnUpdate
-		if pass then
-			pass(f, 0)
-		end
-	end
+	H.rebound()
 end
 
 do

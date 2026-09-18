@@ -568,11 +568,10 @@ function Adapter.Cage(d)
 
 	-- The client's own binding set moved, so whatever this took has to be taken
 	-- again off the new one. The pass does the work; this only says that there
-	-- is work.
+	-- is work. Through ns.Rebind in Core/Core.lua like every other key, rather
+	-- than a frame of its own on the same event.
 	if d.bind then
-		local keys = CreateFrame("Frame")
-		keys:RegisterEvent("UPDATE_BINDINGS")
-		keys:SetScript("OnEvent", function()
+		ns.Rebind(function()
 			dirty = true
 		end)
 	end
