@@ -188,9 +188,21 @@ do
 		"the box does not say how much health the mob has: " .. tostring(health))
 	check(healthAt == 4, ("health landed on line %s rather than under the client's three")
 		:format(tostring(healthAt)))
-	local rage = beside("Rage")
+	local rage, rageAt = beside("Rage")
 	check(rage == "40 / 100",
 		"the box does not say what is in the mob's pool: " .. tostring(rage))
+
+	-- Both lines sit on a gauge in the unit frames' colours: health in what
+	-- Color.OfUnit answers, which is the class for a player and the reaction
+	-- for this mob, and the pool in its power colour.
+	local healthBar, healthHue = Box.Bar(healthAt or 0)
+	check(healthBar and math.abs(healthBar - 4200 / 9000) < 1e-6,
+		"the health line has no gauge at the mob's health: " .. tostring(healthBar))
+	check(healthHue == ns.Unit.Color.OfUnit("mouseover"),
+		"the health gauge is not in the unit's colour")
+	local rageBar, rageHue = Box.Bar(rageAt or 0)
+	check(rageBar == 0.4, "the rage line has no gauge at 40 of 100: " .. tostring(rageBar))
+	check(rageHue == ns.Unit.Color.power[1], "the rage gauge is not in the rage colour")
 
 	------------------------------------------------------------------
 	-- The hook, from the other end

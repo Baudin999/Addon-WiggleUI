@@ -98,6 +98,7 @@ local OFFSET = 4    -- the owner to the tooltip
 -- art that hangs down and to the right of the hotspot, so a box four units off
 -- the hotspot opens underneath the arrow that opened it.
 local POINTER = 20
+local INSET = 3     -- a bar's edge to the text drawn on it
 
 -- Where the client parks its own tooltip when nothing has anchored it: the
 -- bottom right corner of the screen, held clear of the bags and of however many
@@ -327,6 +328,15 @@ local function Row(box, index)
 	UI.Wrap(row.left, true)
 	row.right = UI.Label(box.frame, BODY, C.text, "RIGHT", UI.FLAT)
 
+	-- A gauge behind the line, for the rows that carry one. BORDER sits over
+	-- the window's fill and under the text, so the line reads on top of it.
+	-- Made for every row rather than on demand because the pool is never
+	-- freed and a texture left hidden costs nothing.
+	row.track = box.frame:CreateTexture(nil, "BORDER", nil, 0)
+	row.track:Hide()
+	row.fill = box.frame:CreateTexture(nil, "BORDER", nil, 1)
+	row.fill:Hide()
+
 	box.rows[index] = row
 	return row
 end
@@ -359,6 +369,7 @@ local function Add(box, size, left, lr, lg, lb, right, rr, rg, rb)
 	row.size = size
 	row.paired = right ~= nil
 	row.spacer = false
+	row.bar = nil
 	-- What the line wants if nothing stops it. Measured before any width is
 	-- written, because a font string that has been given a width answers that
 	-- width rather than its own.
@@ -387,6 +398,7 @@ local function Spacer(box)
 	row.right:SetText("")
 	row.right:Hide()
 	row.size, row.paired, row.natural, row.spacer = BODY, false, 0, true
+	row.bar = nil
 	return row
 end
 
@@ -432,6 +444,9 @@ end
 --   { "a sentence", color = C.dim }  the same, in a colour of its own
 --   { "Label", "value" }             the two pushed to opposite edges
 --   { "Label", "value", tone = X }   the same, with the value in its own colour
+--   { "Label", "value", bar = 0.4, fill = X }
+--                                    the same, over a gauge that far full in
+--                                    X, which has to be a shaped bar fill
 --   { blank = true }                 air between two groups
 --
 -- Data rather than a run of calls because a tooltip is a description of one
@@ -467,8 +482,28 @@ local function Line(box, spec)
 	end
 
 	local tone = spec.tone or C.text
-	return Add(box, BODY, spec[1] or "", color[1], color[2], color[3],
+	local row = Add(box, BODY, spec[1] or "", color[1], color[2], color[3],
 		spec[2], tone[1], tone[2], tone[3])
+
+	-- The gauge. The text keeps its own colours on top: the fill is shaped
+	-- under Unit/Color.lua's ceiling so that text can be read over it, which
+	-- is the same trade every unit frame's bar makes.
+	if spec.bar and spec.fill then
+		local fraction = spec.bar
+		if fraction < 0 then
+			fraction = 0
+		elseif fraction > 1 then
+			fraction = 1
+		end
+		row.bar, row.hue = fraction, spec.fill
+		UI.Gauge.Paint(nil, row.track, spec.fill)
+		row.fill:SetColorTexture(spec.fill[1], spec.fill[2], spec.fill[3], 1)
+		row.natural = row.natural + INSET * 2
+		if row.natural > box.widest then
+			box.widest = row.natural
+		end
+	end
+	return row
 end
 
 local function Render(box, data)
@@ -874,20 +909,38 @@ local function Layout(box)
 		if row.spacer then
 			height = SPACER
 		else
+			-- A line on a gauge gives up INSET at either end, so the text
+			-- starts inside the bar rather than on its edge.
+			local inset = row.bar and INSET or 0
 			-- A paired line never wraps. Its right hand side is a number or a
 			-- word and its left is a label, and a label that folded onto a
 			-- second line would put the value beside the wrong half of it.
 			if row.paired then
-				row.left:SetWidth(math.max(content - COLUMN - (row.right:GetStringWidth() or 0), 1))
+				row.left:SetWidth(math.max(content - inset * 2 - COLUMN - (row.right:GetStringWidth() or 0), 1))
 			else
-				row.left:SetWidth(content)
+				row.left:SetWidth(content - inset * 2)
 			end
 			height = UI.Round(frame, UI.TextHeight(row.left, row.size + 2))
 			row.left:ClearAllPoints()
-			row.left:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -y)
+			row.left:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD + inset, -y)
 			if row.paired then
 				row.right:ClearAllPoints()
-				row.right:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -PAD, -y)
+				row.right:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(PAD + inset), -y)
+			end
+			if row.bar then
+				-- The line's own height and no more, so the GAP between two
+				-- gauges in a row is the seam that keeps them two.
+				row.track:ClearAllPoints()
+				row.track:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -y)
+				row.track:SetSize(content, height)
+				row.track:Show()
+				local filled = UI.Round(frame, content * row.bar)
+				if filled > 0 then
+					row.fill:ClearAllPoints()
+					row.fill:SetPoint("TOPLEFT", row.track, "TOPLEFT", 0, 0)
+					row.fill:SetSize(filled, height)
+					row.fill:Show()
+				end
 			end
 		end
 
@@ -917,6 +970,8 @@ local function Reset(box)
 		box.rows[index].left:ClearAllPoints()
 		box.rows[index].right:Hide()
 		box.rows[index].right:ClearAllPoints()
+		box.rows[index].track:Hide()
+		box.rows[index].fill:Hide()
 	end
 	box.count, box.widest, box.titled = 0, 0, false
 	box.rule:Hide()
@@ -1309,6 +1364,17 @@ function Tooltip.Tone(index, which)
 		return nil
 	end
 	return { row.right:GetTextColor() }
+end
+
+-- How full the gauge behind that line is, and in what, or nil for a line with
+-- none. Handed out for the reason Tone is: the bar is what the health line
+-- says at a glance, and nothing outside this file can see the pool.
+function Tooltip.Bar(index, which)
+	local row = At(index, which)
+	if not row or not row.bar then
+		return nil
+	end
+	return row.bar, row.hue
 end
 
 -- And what size it was drawn at. Handed out for the reason the rest of these

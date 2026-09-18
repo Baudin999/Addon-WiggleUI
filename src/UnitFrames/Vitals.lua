@@ -2,6 +2,7 @@ local ADDON, ns = ...
 
 local C = ns.UI.Color
 local Unit = ns.Unit
+local Color = Unit.Color
 
 --------------------------------------------------------------------------
 -- Health and power, on every hover of a unit
@@ -28,9 +29,13 @@ local Unit = ns.Unit
 -- than an empty one. Happiness is a hunter pet's mood and not a pool, so it
 -- has no label here and draws nothing.
 --
--- **Plain text, not the bar colours.** Unit/Color.lua's power colours are
--- fills, darkened under a ceiling so a name reads on top of them. The same
--- numbers used as text on a dark box are the unreadable half of that trade.
+-- **Each line sits on a gauge in the unit frame's colours.** Health fills in
+-- the class colour for a player and the reaction colour for anything else,
+-- which is Color.OfUnit and the same answer the unit frames give; the pool
+-- fills in its power colour. The text stays plain and goes on top, because
+-- those colours are fills shaped under a ceiling so text reads over them, and
+-- the same numbers used as text on a dark box are the unreadable half of that
+-- trade.
 --------------------------------------------------------------------------
 
 -- What the client answers as a max when the figure is a percentage.
@@ -64,17 +69,18 @@ local function Health(subject)
 	if not unit then
 		return nil
 	end
+	local fill = Color.OfUnit(unit)
 	if UnitIsDeadOrGhost(unit) then
-		return { "Health", "dead", tone = C.quiet }
+		return { "Health", "dead", tone = C.quiet, bar = 0, fill = fill }
 	end
 	local health, max, percent = Unit.Health(unit)
 	if max <= 0 then
 		return nil
 	end
 	if max == PERCENT then
-		return { "Health", ("%d%%"):format(health) }
+		return { "Health", ("%d%%"):format(health), bar = health / max, fill = fill }
 	end
-	return { "Health", ("%d / %d (%d%%)"):format(health, max, percent) }
+	return { "Health", ("%d / %d (%d%%)"):format(health, max, percent), bar = health / max, fill = fill }
 end
 
 local function Power(subject)
@@ -87,7 +93,7 @@ local function Power(subject)
 	if max <= 0 or not label then
 		return nil
 	end
-	return { label, ("%d / %d"):format(power, max) }
+	return { label, ("%d / %d"):format(power, max), bar = power / max, fill = Color.power[pool] }
 end
 
 ns.Tip.Source({
