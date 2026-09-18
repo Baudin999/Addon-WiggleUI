@@ -59,5 +59,5 @@ that first by reading `src/Buffs/Panel.lua:1-60`.
   local `Lift` + `Landed` pair or calls `ns.SpellIdOnCursor` from a
   `take` of its own, with an allow-list that needs a reason per entry.
 - The harness sections that drive these pages still pass: `30-buff-page`,
-  `42-cooldown-row`, `07-tracked-debuff`, and the AdHoc one.
+  `42-cooldown-row`, `07-tracked-debuff`, and `76-adhoc`.
 - `./scripts/check.sh` at 0 warnings, 0 errors.
