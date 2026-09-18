@@ -235,7 +235,9 @@ local FALLBACK_TEXTURE = "Interface\\Icons\\INV_Misc_QuestionMark"
 -- right at 54 and unreadable at 27.
 local TIMER_SHARE = 0.42
 local COUNT_SHARE = 0.30
-local KEY_SHARE = 0.26
+-- The key is half the square's side: 14 px on a 27 px square. At a quarter it
+-- was seven pixels, which on the live client read as a smudge in the corner.
+local KEY_SHARE = 0.52
 
 -- Dark enough that a white key reads over a white icon, light enough that the
 -- corner of the art still shows through it.
@@ -479,9 +481,7 @@ function Ability.Size(w, side)
 	-- of these want: they sit on a spell icon this addon did not paint.
 	local timer = math.max(math.floor(side * TIMER_SHARE), 8)
 	local count = math.max(math.floor(side * COUNT_SHARE), 7)
-	-- A caller that wants its keys louder sets w.keyScale; the pet bar does,
-	-- because its keys are single letters and there is room.
-	local key = math.max(math.floor(side * KEY_SHARE * (w.keyScale or 1)), 7)
+	local key = math.max(math.floor(side * KEY_SHARE), 7)
 
 	w.timer:SetFontObject(UI.NumberFont(timer))
 	w.count:SetFontObject(UI.NumberFont(count))
