@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SKHEB1SM4JDKY9FPFEH3ZG
 type: task
-status: doing
+status: done
 title: "Mouseover casting is one page, with its on-screen list on it"
 ---
 
