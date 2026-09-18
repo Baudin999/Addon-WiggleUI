@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SZJ3G9ZTF9A2DA7AK4H8Z6
 type: task
-status: doing
+status: done
 title: "One helper takes a key for a button, and the six copies of Bind go"
 ---
 
