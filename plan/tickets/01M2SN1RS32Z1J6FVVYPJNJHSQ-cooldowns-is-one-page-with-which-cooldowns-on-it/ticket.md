@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SN1RS32Z1J6FVVYPJNJHSQ
 type: task
-status: doing
+status: done
 title: "Cooldowns is one page, with which cooldowns on it"
 ---
 
