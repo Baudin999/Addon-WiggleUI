@@ -367,19 +367,16 @@ local CLICK = "Click it to open the page this row is set up on."
 -- has a handle for. Everything under the head is the same lines whichever one
 -- it picks.
 local function Subject(entry)
-	local subject = {
-		kind = "note",
-		title = Word(entry),
-		lines = { Detail(entry), CLICK },
-	}
+	local subject
 	if entry.spell then
-		subject.kind = "spell"
-		subject.spell = entry.spell
+		subject = { kind = "spell", spell = entry.spell }
 	elseif entry.hand then
-		subject.kind = "inventory"
-		subject.unit = "player"
-		subject.slot = entry.hand
+		subject = ns.Tip.Worn("player", entry.hand)
+	else
+		subject = { kind = "note" }
 	end
+	subject.title = Word(entry)
+	subject.lines = { Detail(entry), CLICK }
 	return subject
 end
 

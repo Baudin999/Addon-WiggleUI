@@ -596,8 +596,7 @@ end
 local function Subject(entry)
 	local link = ns.Worn.Link(entry.slot)
 	if link then
-		return { kind = "inventory", unit = "player", slot = entry.slot,
-			title = (ns.ItemInfo(link)) or entry.label }
+		return ns.Tip.Worn("player", entry.slot, (ns.ItemInfo(link)) or entry.label)
 	end
 	return { kind = "note", title = entry.label,
 		lines = { { "empty", color = C.dim } } }

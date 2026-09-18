@@ -588,22 +588,18 @@ local function Hover(square, unit, filter)
 	-- and count squares to be sure it was the one under the cursor. The corner
 	-- is for the box about a creature out in the world, which is a thing you
 	-- cannot point at.
-	local BESIDE = ns.UI.Tooltip.BESIDE
-
 	ns.Tip.Hang(square, function(self)
 		-- A weapon enchant answers to the hand it is on rather than to an aura
 		-- index, which is the same question Blizzard's own enchant button asks:
 		-- the item's tooltip carries the enchant line.
 		if self.auraGear then
-			return { kind = "inventory", unit = unit, slot = self.auraGear,
-				place = BESIDE }
+			return ns.Tip.Worn(unit, self.auraGear)
 		end
 		if not self.auraIndex then
 			return nil
 		end
-		return { kind = filter == "HARMFUL" and "debuff" or "buff",
-			unit = unit, index = self.auraIndex, place = BESIDE }
-	end)
+		return ns.Tip.Aura(unit, self.auraIndex, filter)
+	end, nil, ns.UI.Tooltip.BESIDE)
 
 end
 
@@ -650,14 +646,12 @@ local function Tell(self)
 	local place = ns.UI.Tooltip.BESIDE
 	local slot = self:GetAttribute("target-slot")
 	if slot then
-		ns.Tip.Open(self, { kind = "inventory", unit = "player", slot = slot,
-			place = place })
+		ns.Tip.Open(self, ns.Tip.Worn("player", slot), nil, place)
 		return
 	end
 	local index = self:GetAttribute("index")
 	if index then
-		ns.Tip.Open(self, { kind = "buff", unit = "player", index = index,
-			place = place })
+		ns.Tip.Open(self, ns.Tip.Aura("player", index, "HELPFUL"), nil, place)
 	end
 end
 

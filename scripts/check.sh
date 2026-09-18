@@ -732,6 +732,22 @@ while IFS= read -r bad; do
 done < <(grep -rnE 'SetPassThroughButtons|SetMouseClickEnabled' --include='*.lua' . \
 	| grep -v '^\./UI/Press\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
 
+# One file spells the tooltip subjects more than one part asks about, and it is
+# UI/Tip.lua.
+#
+# A worn item was written out by hand in the aura rows, the gear rows, the buff
+# nag and the item comparison, and an aura in two places in the aura rows, each
+# as a table whose fields drifted with the file. ns.Tip.Worn and ns.Tip.Aura
+# build them. Where the box opens was the same kind of copy: a field on the
+# subject in five places and an argument to Tip.Open in fourteen, and Tip.Open
+# read both. It reads the argument now, Tip.Hang takes it too, and a field on a
+# subject is refused here because nothing reads it any more.
+while IFS= read -r bad; do
+	echo "a worn item or an aura is ns.Tip.Worn or ns.Tip.Aura, and where a box opens is an argument to Tip.Open or Tip.Hang: $bad"
+	status=1
+done < <(grep -rnE 'kind = "(inventory|buff|debuff)"|(^[[:space:]]*|[{,][[:space:]]*)place = [^=]*(Tooltip\.|BESIDE|ANCHOR|DOCK)|above = true' \
+	--include='*.lua' . | grep -v '^\./UI/Tip\.lua:' || true)
+
 # One file runs the work a fight refused, and it is Core/Lockdown.lua.
 #
 # The client refuses every protected write in combat and forgets it. Twenty

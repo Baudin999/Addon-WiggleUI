@@ -131,7 +131,7 @@ local function For(subject)
 		local link = ns.Worn.Link(slot)
 		if link and link ~= subject.link then
 			worn = worn or {}
-			worn[#worn + 1] = { kind = "inventory", unit = "player", slot = slot }
+			worn[#worn + 1] = ns.Tip.Worn("player", slot)
 		end
 	end
 	return worn

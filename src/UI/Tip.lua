@@ -459,18 +459,39 @@ local function Thin(subject, data)
 	return UI.Scan.Waiting(Carried(subject))
 end
 
+--------------------------------------------------------------------------
+-- The subjects more than one part describes
+--
+-- A worn item and an aura are asked about from several places: the aura rows,
+-- the gear rows, the buff nag and the comparison under a hovered item. Each
+-- wrote the table by hand and the fields drifted with the file, so the kind
+-- this file answers to is spelled here and check.sh refuses it anywhere else.
+--------------------------------------------------------------------------
+
+-- An item a unit is wearing, by inventory slot. `title` is for the second the
+-- client knows the slot holds an item and does not yet say which.
+function Tip.Worn(unit, slot, title)
+	return { kind = "inventory", unit = unit, slot = slot, title = title }
+end
+
+-- One aura on a unit, by the index the client lists it at. `filter` is the
+-- client's own word, and HARMFUL is a debuff.
+function Tip.Aura(unit, index, filter)
+	return { kind = filter == "HARMFUL" and "debuff" or "buff", unit = unit, index = index }
+end
+
 -- Open on an owner, describing a subject.
 --
 -- `above` opens the box over the owner rather than beside it, which is what
--- anything smaller than the cursor has to ask for. It is an argument as well as
--- a field on the subject because a caller with a fixed answer says it once at
--- the call site, and a caller whose answer depends on what it is describing
--- says it on the subject.
+-- anything smaller than the cursor has to ask for.
 --
 -- `place` is where the box goes, for a hover that is not willing to take the
 -- setting's answer. An icon standing for an object is the whole of that list:
--- the box is that object's label and it belongs on it. Same two ways of saying
--- it as `above`, and for the same reason.
+-- the box is that object's label and it belongs on it.
+--
+-- Both are arguments and never fields on the subject. Every caller's answer is
+-- fixed at the call, and a subject that carried them was a second way to say
+-- the same thing.
 function Tip.Open(owner, subject, above, place)
 	if type(subject) ~= "table" then
 		open = nil
@@ -491,8 +512,7 @@ function Tip.Open(owner, subject, above, place)
 	-- same subject table and must not read as a new hover. UI/Fresh.lua's Arm
 	-- says what happens if it does.
 	UI.Fresh.Arm(subject)
-	return UI.Tooltip.Show(owner, data, above or subject.above,
-		place or subject.place, Beside(subject))
+	return UI.Tooltip.Show(owner, data, above, place, Beside(subject))
 end
 
 -- The same hover again, from nothing but a key going down.
@@ -730,14 +750,15 @@ end
 
 -- The convenience for the ordinary case: a frame whose whole answer to the
 -- mouse is a tooltip. `describe` is handed the frame and answers a subject, or
--- nothing at all for a frame with nothing to say.
+-- nothing at all for a frame with nothing to say. `above` and `place` are
+-- Tip.Open's.
 --
 -- A caller that also wants to paint on the way in and out, which every row in a
 -- feed does, hangs its own scripts and calls Tip.Open and Tip.Close from inside
 -- them, and calls UI.PassCamera itself.
-function Tip.Hang(owner, describe)
+function Tip.Hang(owner, describe, above, place)
 	owner:SetScript("OnEnter", function(self)
-		Tip.Open(self, describe(self))
+		Tip.Open(self, describe(self), above, place)
 	end)
 	owner:SetScript("OnLeave", function()
 		Tip.Close()
