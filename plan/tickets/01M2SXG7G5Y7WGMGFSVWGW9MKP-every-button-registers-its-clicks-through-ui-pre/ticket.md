@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SXG7G5Y7WGMGFSVWGW9MKP
 type: task
-status: doing
+status: done
 title: Every button registers its clicks through UI.Press.Clicks
 ---
 
