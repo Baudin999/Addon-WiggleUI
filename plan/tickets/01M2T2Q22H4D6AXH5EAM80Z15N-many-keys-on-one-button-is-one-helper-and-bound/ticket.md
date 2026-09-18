@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2T2Q22H4D6AXH5EAM80Z15N
 type: task
-status: doing
+status: done
 title: "Many keys on one button is one helper, and Bound holds every override"
 ---
 
