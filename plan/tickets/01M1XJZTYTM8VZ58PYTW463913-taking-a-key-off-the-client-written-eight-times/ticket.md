@@ -2,7 +2,7 @@
 revision: 1
 id: 01M1XJZTYTM8VZ58PYTW463913
 type: feature
-status: todo
+status: done
 title: "Taking a key off the client, written eight times."
 parent: 01M1XJZSDGJ90YGY9ZP6HBYPS9
 labels: [item-26]
