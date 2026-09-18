@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2SXPVV41JSXXZMQKJBMZNXV
 type: task
-status: doing
+status: done
 title: UI.PassCamera hands the camera only what a frame does not keep
 ---
 
