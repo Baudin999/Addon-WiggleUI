@@ -72,13 +72,9 @@ local petLevel, left = 0, 0
 -- The secure buttons
 --------------------------------------------------------------------------
 
--- The up edge and the attribute that says so, in agreement, for the reason
--- Hover/Cast.lua gives: a secure button acts only on the edge useOnKeyDown
--- names, whatever it registered for.
+-- The release, because the mouse is what presses these.
 local function Secure(name)
-	local button = CreateFrame("Button", name, UIParent, "SecureActionButtonTemplate")
-	button:RegisterForClicks("AnyUp")
-	button:SetAttribute("useOnKeyDown", false)
+	local button = ns.UI.Press.Button(UIParent, name, "up")
 	button:Hide()
 	return button
 end

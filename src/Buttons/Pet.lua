@@ -127,15 +127,10 @@ local function Drop(self)
 end
 
 local function Square(index)
-	local w = Ability.New(bar, ("WarriorKitPetButton%d"):format(index),
-		"SecureActionButtonTemplate", Ability.QUIET)
+	-- The release, for the reason the action bars give in Buttons/Bars.lua.
+	local w = Ability.Dress(ns.UI.Press.Button(bar,
+		("WarriorKitPetButton%d"):format(index), "up"), Ability.QUIET)
 	w.slot = index
-
-	-- The up edge on both switches, which is the pairing Buttons/Bars.lua
-	-- argues for: the registration the mouse obeys and the attribute the
-	-- secure half reads have to agree, or the square pushes and does nothing.
-	w:RegisterForClicks("AnyUp")
-	w:SetAttribute("useOnKeyDown", false)
 	w:SetAttribute("type", "pet")
 	w:SetAttribute("action", index)
 	local theirs = _G["PetActionButton" .. index]

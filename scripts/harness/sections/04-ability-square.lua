@@ -591,7 +591,7 @@ local function countWrites(host, method)
 	host[method] = function() writes = writes + 1 end
 end
 
-local w = Ability.New(_G.UIParent, nil, nil, Ability.QUIET)
+local w = Ability.New(_G.UIParent, nil, Ability.QUIET)
 Ability.Size(w, 27)
 countWrites(w.icon, "SetTexture")
 countWrites(w.icon, "SetDesaturated")
@@ -640,7 +640,7 @@ Ability.Draw(w, ART, "range")
 -- reading a texture or a string back off it answers whatever was there
 -- before the shadow went on. These checks are readbacks, so they need a
 -- square nobody has instrumented.
-local feel = Ability.New(_G.UIParent, nil, "SecureActionButtonTemplate",
+local feel = Ability.Dress(ns.UI.Press.Button(_G.UIParent, nil, "up"),
 	Ability.QUIET)
 Ability.Size(feel, 27)
 
@@ -711,7 +711,7 @@ check(feel.hover and feel.hover.layer == "HIGHLIGHT",
 check(feel.pushed ~= nil,
 	"a button draws nothing on the way down, so a click has no answer")
 
-local drawn = Ability.New(_G.UIParent, nil, nil, Ability.SHOUT)
+local drawn = Ability.New(_G.UIParent, nil, Ability.SHOUT)
 check(drawn.pushed == nil, "a plain frame was given a pushed texture it cannot draw")
 
 -- A running cooldown writes the timer, and only when the number it would

@@ -278,18 +278,12 @@ local function Row(index)
 	row = CreateFrame("Frame", nil, grid)
 	row:SetSize(ROW_WIDTH, UI.SLOT)
 
-	-- The square. Two edges, and they are two separate switches: the
-	-- registration is what the mouse obeys, and it is the up edge because a
-	-- square you can drag a spell off must not cast on the press that starts
-	-- the drag. Which edge a bound key fires on is the attribute, said out
-	-- loud rather than left to the player's settings; Buttons/Bars.lua carries
-	-- the proof.
-	local square = CreateFrame("Button", nil, row, "SecureActionButtonTemplate")
+	-- The square, on the release, because a square you can drag a spell off
+	-- must not cast on the press that starts the drag.
+	local square = UI.Press.Button(row, nil, "up")
 	square:SetSize(UI.SLOT, UI.SLOT)
 	square:SetPoint("LEFT")
 	UI.Dress(square, UI.SLOT)
-	square:RegisterForClicks("AnyUp")
-	square:SetAttribute("useOnKeyDown", false)
 	square:RegisterForDrag("LeftButton")
 	square:SetScript("PreClick", PreClick)
 	square:SetScript("OnDragStart", OnDragStart)
@@ -572,12 +566,9 @@ function Window.Key()
 	if not Window.Build() then
 		return nil
 	end
-	key = CreateFrame("Button", KEY, UIParent, "SecureHandlerClickTemplate")
-	-- The down edge, which is the one a key bound with SetOverrideBindingClick
-	-- is dispatched on with no useOnKeyDown attribute set. Registering both
-	-- edges would run the snippet twice and the window would open and shut in
-	-- one press.
-	key:RegisterForClicks("AnyDown")
+	-- Once per press. Both edges would run the snippet twice and the window
+	-- would open and shut in one press.
+	key = UI.Press.Key(KEY, "down")
 	key:SetFrameRef("window", window.frame)
 	key:SetAttribute("_onclick", [[
 		local book = self:GetFrameRef("window")

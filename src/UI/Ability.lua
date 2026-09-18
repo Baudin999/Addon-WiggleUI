@@ -237,18 +237,17 @@ local TIMER_SHARE = 0.42
 local COUNT_SHARE = 0.30
 local KEY_SHARE = 0.26
 
--- A square. The caller owns the frame's identity: `template` is what makes it
--- pressable, and passing nil makes a plain frame that only draws, which is
--- what the world marker is.
+-- A square drawn onto a frame the caller already has. The caller owns the
+-- frame's identity: a square you can press is a button UI/Press.lua built,
+-- because that file is the only one allowed to build a secure button, and this
+-- one only paints it. Ability.New below is the square that only draws.
 --
 -- `palette` is one of the two above, or any table with the same five keys.
 -- Held on the widget rather than passed to every Draw, because it never
 -- changes for the life of a button and a per-tick argument that never changes
 -- is an argument that gets passed wrongly once.
-function Ability.New(parent, name, template, palette)
-	local kind = template and "Button" or "Frame"
-	local w = CreateFrame(kind, name, parent, template)
-
+function Ability.Dress(w, palette)
+	local name = w:GetName()
 	w.palette = palette or Ability.SHOUT
 
 	-- The backing, which is what shows through as the one pixel frame around
@@ -310,7 +309,7 @@ function Ability.New(parent, name, template, palette)
 	-- and mouse up, whatever RegisterForClicks says the press is worth, so a
 	-- click has an answer even on a spell whose whole cooldown is the global.
 	-- A Frame has no pushed state and SetPushedTexture is not on it.
-	if kind == "Button" then
+	if w:GetObjectType() == "Button" then
 		w:SetPushedTexture("Interface\\Buttons\\WHITE8X8")
 		local pushed = w:GetPushedTexture()
 		if pushed then
@@ -367,6 +366,11 @@ function Ability.New(parent, name, template, palette)
 	w.shownEquipped = nil
 
 	return w
+end
+
+-- A square that only draws: the world marker, the cooldown row, the buff nag.
+function Ability.New(parent, name, palette)
+	return Ability.Dress(CreateFrame("Frame", name, parent), palette)
 end
 
 -- Lay the square out. Everything inside is derived from the one number: the

@@ -678,6 +678,31 @@ while IFS= read -r bad; do
 done < <(grep -rn 'GameTooltip' --include='*.lua' . \
 	| grep -v '^\./UI/Scan\.lua:' || true)
 
+# One file builds a secure button, and it is UI/Press.lua.
+#
+# A secure action button acts on the edge its useOnKeyDown attribute names and
+# ignores the edge it registered for, so the registration and the attribute are
+# one decision written in two places. Four files got them out of step and each
+# shipped a button that bound, drew and did nothing: the cloned bars, the hover
+# keys, the gear squares, and the charge and switch keys that only worked while
+# the player kept a client setting on. Nine files wrote the pair by hand.
+#
+# UI.Press.Button takes one edge and writes both, and UI.Press.Key does the same
+# for the snippet keys a binding presses. Outside that file nothing names the
+# action template or the attribute, and outside UI/ nothing names the snippet
+# template, which UI/Window.lua's close box is built on. Comments are read too,
+# for the reason the GameTooltip rule reads them.
+while IFS= read -r bad; do
+	echo "only UI/Press.lua may build a secure action button or name the edge it fires on, use UI.Press.Button: $bad"
+	status=1
+done < <(grep -rnE 'SecureActionButtonTemplate|useOnKeyDown' --include='*.lua' . \
+	| grep -v '^\./UI/Press\.lua:' || true)
+while IFS= read -r bad; do
+	echo "only UI/ may build a snippet button, use UI.Press.Key for a bound key: $bad"
+	status=1
+done < <(grep -rn 'SecureHandlerClickTemplate' --include='*.lua' . \
+	| grep -v '^\./UI/' || true)
+
 # One file talks to Questie, and it is Core/Core.lua.
 #
 # Questie is another addon. Every question this one asks it starts at

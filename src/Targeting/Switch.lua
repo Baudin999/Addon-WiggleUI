@@ -53,8 +53,11 @@ local MACRO = table.concat({
 -- its own global button. It is never meant to be hit by a real cursor, and a
 -- frame with no size cannot be. It is left shown, because a click delivered by
 -- the binding system is only proven to arrive on a shown frame.
-local button = CreateFrame("Button", BUTTON_NAME, UIParent, "SecureActionButtonTemplate")
-button:RegisterForClicks("AnyDown")
+--
+-- The press, because only the key ever fires it. It used to register the press
+-- and leave the attribute unset, which worked only while the player kept the
+-- client's key-down setting on.
+local button = ns.UI.Press.Button(UIParent, BUTTON_NAME, "down")
 button:SetAttribute("type", "macro")
 button:SetAttribute("macrotext", MACRO)
 

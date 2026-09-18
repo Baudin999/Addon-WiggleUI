@@ -63,19 +63,6 @@ end
 -- The lines
 --------------------------------------------------------------------------
 
--- Which edge this square's secure half acts on, worked out the way the client
--- works it out: the button's own attribute, and the player's setting where the
--- button does not answer. This is the line that mattered: a square registered
--- for the release while this says down is a square that draws and does nothing.
-local function Edge(button)
-	local keyDown = button:GetAttribute("useOnKeyDown")
-	if keyDown ~= nil then
-		return keyDown and "down" or "up", "useOnKeyDown attribute"
-	end
-	local cvar = Ask("GetCVarBool", "ActionButtonUseKeyDown")
-	return cvar and "down" or "up", "ActionButtonUseKeyDown setting"
-end
-
 -- What the client is holding. SpellIsTargeting is the wider question and the
 -- other two are the one the page acts on, so all three are said: a spell that is
 -- waiting for something that is not an item reads as the first alone.
@@ -123,7 +110,7 @@ function Trace.Press(button, which, down)
 		return
 	end
 	local entry = square.entry
-	local edge, source = Edge(button)
+	local edge, source = ns.UI.Press.Edge(button)
 	Say(("%s (%d): %s %s, registered %s"):format(entry.label, entry.slot,
 		tostring(which), down and "down" or "up", square.clicks))
 	Say(("  acts on %s, by the %s; mouse on %s, cursor %s"):format(edge, source,
@@ -208,7 +195,7 @@ function Trace.Describe()
 	for button, square in pairs(squares) do
 		count = count + 1
 		if square.entry.slot == 16 then
-			edge, source = Edge(button)
+			edge, source = ns.UI.Press.Edge(button)
 		end
 	end
 	return ("on, %d squares, main hand acts on %s by the %s; %s")

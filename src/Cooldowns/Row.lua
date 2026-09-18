@@ -178,7 +178,7 @@ end
 -- the row changes shape, never on the tick that draws it.
 local function Stock(wanted)
 	for slot = #icons + 1, wanted do
-		icons[slot] = ns.UI.Ability.New(frame, nil, nil, ns.UI.Ability.SHOUT)
+		icons[slot] = ns.UI.Ability.New(frame, nil, ns.UI.Ability.SHOUT)
 		icons[slot]:Hide()
 		-- The scripts go on once. Whether the square answers them is EnableMouse,
 		-- written by Place every time the row changes.

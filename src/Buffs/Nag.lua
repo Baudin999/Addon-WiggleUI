@@ -654,7 +654,7 @@ events:SetScript("OnEvent", function(_, event, token)
 		-- this client and a pool sized to the list would leak a square every
 		-- time you added one.
 		for slot = 1, ns.Upkeep.Ceiling() do
-			icons[slot] = ns.UI.Ability.New(frame, nil, nil, MISSING)
+			icons[slot] = ns.UI.Ability.New(frame, nil, MISSING)
 			icons[slot]:Hide()
 			-- The scripts go on once. Whether the square answers them is
 			-- EnableMouse, written by Place every time the row changes.

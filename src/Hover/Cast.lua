@@ -62,25 +62,12 @@ Cast.BUTTON_NAME = BUTTON_NAME
 -- The bare `type` is never set. A stray click that arrives with no name on it
 -- finds nothing and does nothing, which is the right answer for a button whose
 -- only real callers name themselves.
-local button = CreateFrame("Button", BUTTON_NAME, UIParent, "SecureActionButtonTemplate")
-
--- One edge, and the attribute that names it beside it.
 --
--- Buttons/Bars.lua settled this on a live client and its header carries the
--- proof: a key bound with SetOverrideBindingClick fires on whichever edge
--- useOnKeyDown names, and with the attribute unset that edge is the down one.
--- Charge/Icon.lua registers AnyDown, sets nothing, and its key has always
--- worked; the cloned bars registered AnyUp against an unset attribute and went
--- dark under the key while casting nothing.
---
--- So the two are set to agree rather than to cover each other. Both edges
--- registered against an unset attribute was the shape this file shipped, and it
--- is one dispatch either way: registering the edge that is never dispatched buys
--- nothing and hides which edge is live. Clique pairs the same two settings on
--- its own global button and ships them on the down edge, which is what a key
--- that casts should feel like.
-button:RegisterForClicks("AnyDown")
-button:SetAttribute("useOnKeyDown", true)
+-- The press, which is what a key that casts should feel like and what Clique
+-- ships on its own global button. UI/Press.lua writes the registration and the
+-- attribute to agree; both edges registered against an unset attribute was the
+-- shape this file shipped, and the keys cast nothing.
+local button = ns.UI.Press.Button(UIParent, BUTTON_NAME, "down")
 
 --------------------------------------------------------------------------
 -- What one binding is called

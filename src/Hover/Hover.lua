@@ -15,8 +15,8 @@ ns.Hover = Hover
 -- buttons through SetOverrideBindingClick and marks `mouseover`, out in the
 -- world and on a nameplate both, and the whole of the reasoning for that is in
 -- its header. The one thing marking did not need is the one thing this needs:
--- casting is protected, so the click has to land on a SecureActionButtonTemplate
--- rather than on a plain button running Lua.
+-- casting is protected, so the click has to land on a secure button out of
+-- UI/Press.lua rather than on a plain button running Lua.
 --
 -- This file is the model and nothing else. What a binding is, what the cursor is
 -- carrying, which key is free, and what macro one binding turns into. Cast.lua

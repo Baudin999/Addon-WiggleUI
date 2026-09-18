@@ -184,6 +184,11 @@ UI\Flow.lua
 # castable square on the screen.
 UI\Ability.lua
 
+# Every secure button and the edge it fires on. After UI\Ability.lua, whose
+# squares the action bars build on one, and before every part that binds a key
+# or makes a protected call from a click.
+UI\Press.lua
+
 # The widget library, on top of that grid. Theme is the palette and the pixel
 # metrics, Stack lays a column out and asks every row how tall it is, Scroll
 # clips and scrolls, Widgets is the kit a page is built from, Placeable is the

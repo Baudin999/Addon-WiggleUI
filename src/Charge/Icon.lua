@@ -158,11 +158,14 @@ local function Build()
 	-- edge textures that carry the status colour. What is left in this file is
 	-- what makes it a charge button rather than a square, which is the macro,
 	-- the key and the drag handle.
-	frame = ns.UI.Ability.New(UIParent, BUTTON_NAME, "SecureActionButtonTemplate",
+	--
+	-- The press, because the key is what fires it. It used to register the
+	-- press and leave the attribute unset, which worked only while the player
+	-- kept the client's key-down setting on.
+	frame = ns.UI.Ability.Dress(ns.UI.Press.Button(UIParent, BUTTON_NAME, "down"),
 		ns.UI.Ability.SHOUT)
 	frame:SetMovable(true)
 	frame:SetClampedToScreen(true)
-	frame:RegisterForClicks("AnyDown")
 
 	-- The drag handle, which is a plain frame laid over the button and shown
 	-- only while the frames are unlocked.

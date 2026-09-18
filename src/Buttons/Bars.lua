@@ -218,15 +218,10 @@ local function Lent(command)
 	return nil
 end
 
--- Which edge a button fires on, in the shape `/click` takes it. The attribute
--- where the button has one, the player's setting where it does not, which is
--- the client's own order of asking.
+-- Which edge a button fires on, in the shape `/click` takes it: true for the
+-- press. UI/Press.lua asks the client's own question.
 local function Edge(frame)
-	local set = frame and frame.GetAttribute and frame:GetAttribute("useOnKeyDown")
-	if set == nil then
-		set = type(GetCVarBool) == "function" and GetCVarBool("ActionButtonUseKeyDown")
-	end
-	return set and true or false
+	return ns.UI.Press.Edge(frame) == "down"
 end
 
 -- What a key presses under every override, for the mouseover part to put on
@@ -328,25 +323,13 @@ local function BuildBar(entry)
 	entry.buttons = {}
 	for index = 1, PER_BAR do
 		pool = pool + 1
-		local w = Ability.New(header, ("WarriorKitBarButton%d"):format(pool),
-			"SecureActionButtonTemplate", Ability.QUIET)
-		-- Two edges, and they are two separate switches. The registration is
-		-- what the mouse obeys, and it is the up edge because that is what this
-		-- client's own action buttons register and because a square you can
-		-- drop a spell onto must not cast on the press that starts the drag.
-		--
-		-- Which edge a bound key fires on is the attribute, and a binding made
-		-- with SetOverrideBindingClick reads it. With nothing to read it
-		-- dispatches on the down edge, which is where the two disagreed and is
-		-- what a dead square looked like: the client pushes a button on the
-		-- down edge whichever edge it dispatches, so the square went dark under
-		-- the key and the click that would have cast was thrown away by AnyUp
-		-- on the way past. Pressed, and inert.
-		--
-		-- Charge/Icon.lua is the other half of the proof. It registers AnyDown,
-		-- sets nothing here, and its key has always worked.
-		w:RegisterForClicks("AnyUp")
-		w:SetAttribute("useOnKeyDown", false)
+		-- The release, because that is what this client's own action buttons
+		-- register and because a square you can drop a spell onto must not cast
+		-- on the press that starts the drag. UI/Press.lua writes the attribute a
+		-- bound key reads to agree with it; the square went dark under its key
+		-- while the two disagreed.
+		local w = Ability.Dress(ns.UI.Press.Button(header,
+			("WarriorKitBarButton%d"):format(pool), "up"), Ability.QUIET)
 		w:SetAttribute("type", "action")
 		ns.Square.Handle(w)
 		entry.buttons[index] = w

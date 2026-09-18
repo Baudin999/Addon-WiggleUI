@@ -89,13 +89,10 @@ local C, M = UI.Color, UI.Metric
 -- to be disarmed and nothing has to stand down in a fight. A left click with
 -- nothing waiting reaches PostClick and is still the swap.
 --
--- **The edge is named.** A secure button does not act on the edge it registered
--- for: it asks its own `useOnKeyDown` attribute, and a button that does not
--- answer gets the player's ActionButtonUseKeyDown setting instead, which is on
--- by default here. Registered for the release and acting on the press, the
--- square drew, hovered and did nothing at all, which is the same bug the action
--- bars shipped once already. The attribute is written, so the answer is this
--- addon's and not a setting's.
+-- **The edge is named.** Registered for the release and acting on the press,
+-- the square drew, hovered and did nothing at all, which is the same bug the
+-- action bars shipped once already. UI/Press.lua builds it now, and that file
+-- is where the rule is written down.
 --
 -- **The action is the size of the icon, and the rest of the row is the
 -- camera's.** A square whose right click is an action cannot also pass the
@@ -783,20 +780,11 @@ local function Press(pane, entry, box)
 
 	-- The disc and not the row. See the note at the head of the file: the row is
 	-- the camera's and the button is the thirty-six pixels of icon in it.
-	local button = CreateFrame("Button", nil, pane.frame, "SecureActionButtonTemplate")
+	--
+	-- On the release, for both buttons, because the mouse is what presses it.
+	local button = ns.UI.Press.Button(pane.frame, nil, "up", "LeftButton", "RightButton")
 	button:SetAllPoints(box.face)
 	button:SetFrameLevel(box:GetFrameLevel() + 1)
-	button:RegisterForClicks("LeftButtonUp", "RightButtonUp")
-
-	-- Which edge the secure half acts on, said out loud rather than left to the
-	-- player's settings. The client works it out from `useOnKeyDown`, falls back
-	-- to the ActionButtonUseKeyDown setting when the button does not answer, and
-	-- that setting is on by default on this client: a square registered for the
-	-- release alone was then asked to act on a press it never receives, so it
-	-- drew, hovered and did nothing. The client's own action buttons answer this
-	-- by registering both edges. A gear square is not an action bar and answers
-	-- it by naming the edge, which keeps one click one click.
-	button:SetAttribute("useOnKeyDown", false)
 
 	button:SetAttribute("type2", "macro")
 	button:SetAttribute("macrotext2", use)

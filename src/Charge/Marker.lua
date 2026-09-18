@@ -33,7 +33,7 @@ local function Build()
 	-- The same square the HUD icon is, out of the same file, so the two cannot
 	-- drift apart again. What is left here is where it sits: a nameplate the
 	-- addon does not own, at a scale that has to be cancelled out.
-	frame = ns.UI.Ability.New(UIParent, "WarriorKitChargeMarker", nil, ns.UI.Ability.SHOUT)
+	frame = ns.UI.Ability.New(UIParent, "WarriorKitChargeMarker", ns.UI.Ability.SHOUT)
 	frame:EnableMouse(false) -- never steal a click meant for the nameplate underneath
 	frame:Hide()
 end

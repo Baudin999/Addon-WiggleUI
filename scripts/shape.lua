@@ -69,7 +69,7 @@ local ALLOWED = {
 	  why = "places every region of one block in one pass" },
 	{ path = "./UI/Widgets.lua", fn = "UI.Kit", own = 119,
 	  why = "the kit's own body, one closure per control, returned as a table" },
-	{ path = "./UI/Ability.lua", fn = "Ability.New", own = 123,
+	{ path = "./UI/Ability.lua", fn = "Ability.Dress", own = 121,
 	  why = "builds one ability square and every region on it" },
 	{ path = "./Breakdown/Breakdown.lua", fn = "Breakdown.OnLog", branches = 37,
 	  why = "combat log dispatch, one branch per event the record counts" },

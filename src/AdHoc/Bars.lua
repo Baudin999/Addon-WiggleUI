@@ -16,8 +16,8 @@ local C = ns.UI.Color
 -- of totems is pressed in one.
 --
 --   Showing it. A frame with a secure button inside it may not be shown or
---   hidden by an addon under lockdown. The key is bound to a button built on
---   SecureHandlerClickTemplate, and the button's own snippet is what shows or
+--   hidden by an addon under lockdown. The key is bound to a UI/Press.lua
+--   key, and the button's own snippet is what shows or
 --   hides the bar: the same shape Character/Window.lua uses for the C key on a
 --   sheet with nineteen secure squares on it. The key is held rather than
 --   pressed. The down edge shows the bar and the up edge puts it away, which is
@@ -248,14 +248,12 @@ local function Build(index)
 	})
 
 	for at = 1, PER_BAR do
-		local w = Ability.New(frame, ButtonName(index, at), "SecureActionButtonTemplate", Ability.QUIET)
+		-- The release, for the reason the action bars give in Buttons/Bars.lua:
+		-- a square you drop a spell onto must not cast on the press that starts
+		-- the drag.
+		local w = Ability.Dress(ns.UI.Press.Button(frame, ButtonName(index, at), "up"),
+			Ability.QUIET)
 		w.bar, w.at = index, at
-		-- The up edge, and the attribute agreeing with it, for the reason
-		-- Buttons/Bars.lua writes both: a square you drop a spell onto must not
-		-- cast on the press that starts the drag, and a button whose two edges
-		-- disagree is a button that goes dark under the key and does nothing.
-		w:RegisterForClicks("AnyUp")
-		w:SetAttribute("useOnKeyDown", false)
 		if type(frame.WrapScript) == "function" then
 			frame:WrapScript(w, "OnClick", "", CLOSE)
 			entry.closes = true
@@ -268,8 +266,7 @@ local function Build(index)
 	-- edge puts the bar up and the up edge takes it away, and the snippet tells
 	-- them apart by the argument the handler is given rather than by counting
 	-- presses.
-	local key = CreateFrame("Button", KeyName(index), UIParent, "SecureHandlerClickTemplate")
-	key:RegisterForClicks("AnyDown", "AnyUp")
+	local key = ns.UI.Press.Key(KeyName(index), "both")
 	key:SetFrameRef("bar", frame)
 	key:SetAttribute("_onclick", HOLD)
 	entry.key = key

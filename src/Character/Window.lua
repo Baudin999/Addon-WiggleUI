@@ -333,13 +333,9 @@ function Window.Key()
 	if not Window.Build() then
 		return nil
 	end
-	key = CreateFrame("Button", KEY, UIParent, "SecureHandlerClickTemplate")
-	-- The down edge, which is the one a key bound with SetOverrideBindingClick
-	-- is dispatched on with no useOnKeyDown attribute set. Hover/Cast.lua's
-	-- header carries the proof off a live client, and every keyed button in this
-	-- addon is registered the same way. Registering both edges here would run
-	-- the snippet twice and the window would open and shut in one press.
-	key:RegisterForClicks("AnyDown")
+	-- Once per press. Both edges would run the snippet twice and the window
+	-- would open and shut in one press.
+	key = ns.UI.Press.Key(KEY, "down")
 	key:SetFrameRef("window", window.frame)
 	key:SetAttribute("_onclick", [[
 		local sheet = self:GetFrameRef("window")
