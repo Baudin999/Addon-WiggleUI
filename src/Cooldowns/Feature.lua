@@ -316,8 +316,6 @@ ns.Register({
 			ns.Options.Refresh()
 		end)
 
-		ui.Reading("your own", ns.Cooldowns.Own)
-
 	end,
 })
 

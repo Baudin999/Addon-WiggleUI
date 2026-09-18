@@ -770,22 +770,6 @@ function Cooldowns.SetTrinketLine(line)
 	end
 end
 
--- What you have added, in one phrase, for the panel to read back. The count
--- against the ceiling as well as the names, because the refusal when the list
--- is full is otherwise the first anybody hears of there being a ceiling.
-function Cooldowns.Own()
-	local own = Cooldowns.Mine()
-	if #own == 0 then
-		return "nothing, the row is what your class file lists"
-	end
-	local names = ""
-	for index = 1, #own do
-		names = names .. (index > 1 and ", " or "")
-			.. (ns.SpellName(own[index]) or ("spell " .. own[index]))
-	end
-	return ("%d of %d: %s"):format(#own, MAX_MINE, names)
-end
-
 -- How many are switched off, and their names in one phrase, so a silenced entry
 -- is visible somewhere. A square you turned off six weeks ago and cannot find
 -- any trace of is the same defect as one you learned to ignore.
