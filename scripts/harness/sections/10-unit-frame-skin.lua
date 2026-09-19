@@ -277,9 +277,12 @@ for _, block in ipairs(blocks) do
 			("%s: the health bar is painted %s,%s,%s and not the unit's %.2f,%.2f,%.2f")
 				:format(key, tostring(healthBar.barR), tostring(healthBar.barG),
 					tostring(healthBar.barB), tint[1], tint[2], tint[3]))
-		check(paints(skinTrack(healthBar), tint[1] * TRACK, tint[2] * TRACK,
-			tint[3] * TRACK, 0.9), key .. ": the spent part of the health gauge is not "
-				.. "the unit's colour at ns.Unit.Color.track")
+		-- The spent part is one grey on every block, whatever the unit's colour,
+		-- so colour is what is left and grey is what is gone.
+		local spent = ns.Unit.Color.spent
+		check(paints(skinTrack(healthBar), spent[1] * TRACK, spent[2] * TRACK,
+			spent[3] * TRACK, 0.9), key .. ": the spent part of the health gauge is not "
+				.. "ns.Unit.Color.spent at ns.Unit.Color.track")
 		local dimmed = 0
 		for _, region in ipairs(button.regions) do
 			if paints(region, tint[1] * EDGE_DIM, tint[2] * EDGE_DIM, tint[3] * EDGE_DIM, 1) then

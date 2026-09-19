@@ -429,19 +429,16 @@ function Member.Shade(block, unit)
 	return nil
 end
 
--- The fill, the ground behind it and the outline, in one colour.
---
--- Gauge.Paint draws the ground as the fill dimmed, which is the same bar the
--- player frame is, so a tile's missing end and the player's are one mark. A
--- drained tile hands the dimmed fill over and gets a ground dimmed twice, which
--- is darker than any healthy tile's spent end and is what keeps the two
--- states apart.
+-- The fill and the outline in the unit's colour, and the ground behind the
+-- fill in Color.spent, which is the same grey the player frame's missing end
+-- is, so a tile's missing end and the player's are one mark. A drained tile
+-- dims its fill, which is what keeps it apart from a healthy one.
 --
 -- Color.Dim writes into one scratch table and the next call overwrites it, so
 -- each answer is handed straight to a setter before the next is asked for.
 function Member.Paint(block, tint, shade)
-	Gauge.Paint(block.health, block.health.track,
-		shade and Color.Dim(tint, Color.track) or tint)
+	Gauge.Paint(block.health, nil, shade and Color.Dim(tint, Color.track) or tint)
+	Gauge.Paint(nil, block.health.track, Color.spent)
 	ns.Recolor(block.box.edges,
 		ns.Theme.Modern() and RIM or Color.Dim(tint, Color.edgeDim))
 end

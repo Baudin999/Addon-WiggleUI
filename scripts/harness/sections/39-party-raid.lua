@@ -401,11 +401,11 @@ do
 		"the rogue's health fill is not the rogue class colour")
 	check(fills(priest.health, Color.Class("PRIEST")),
 		"the priest's health fill is not the priest class colour")
-	-- The missing end is the fill dimmed, the same track the player frame
-	-- keeps behind its own bar, and nothing is drawn over it. A tile and the
-	-- player's bar are one instrument saying "lost" one way.
-	check(tracks(rogue.health, Color.Class("ROGUE")),
-		"the missing end of the rogue's tile is not their colour dimmed to the track")
+	-- The missing end is Color.spent, the same grey the player frame keeps
+	-- behind its own bar, whatever the class, and nothing is drawn over it. A
+	-- tile and the player's bar are one instrument saying "lost" one way.
+	check(tracks(rogue.health, Color.spent) and tracks(priest.health, Color.spent),
+		"the missing end of a tile is not the one spent grey the player frame shows")
 	check(rogue.weave == nil,
 		"a tile still draws a weave over its missing end")
 

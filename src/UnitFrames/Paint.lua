@@ -325,7 +325,8 @@ function Paint.Refresh(entry)
 	local tint = Color.OfUnit(unit)
 	if entry.tint ~= tint then
 		entry.tint = tint
-		Gauge.Paint(entry.healthBar, entry.healthTrack, tint)
+		Gauge.Paint(entry.healthBar, nil, tint)
+		Gauge.Paint(nil, entry.healthTrack, Color.spent)
 		local edge = ns.Theme.Modern() and RIM or Color.Dim(tint, Color.edgeDim)
 		ns.Recolor(entry.edges, edge)
 		entry.divider:SetColorTexture(edge[1], edge[2], edge[3], 1)

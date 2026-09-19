@@ -323,6 +323,15 @@ Color.reaction = {
 	idle     = HUE.slate,
 }
 
+-- What the spent part of a unit frame's health is drawn from, on every unit:
+-- the idle slate, at Color.track through Gauge.Paint, which is the same grey an
+-- empty power bar already shows. Tinted like the nameplates, a hostile target
+-- at a fifth of its health was a maroon box with a red chunk at one end, red on
+-- dark red at the moment you watch it most. Here colour is what is left and
+-- grey is what is gone. The nameplates keep the tint, because there the track
+-- carries threat across the whole plate; see Color.track.
+Color.spent = Color.reaction.idle
+
 -- What killing it is worth, on the client's own XP scale.
 Color.xp = {
 	none   = HUE.grey,
