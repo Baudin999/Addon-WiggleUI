@@ -776,7 +776,7 @@ do
 	------------------------------------------------------------------
 
 	local shadeLow, shadeHigh = Box.ShadeRange()
-	check(Box.Shade() == 0, "the floor ships darker than the palette draws it")
+	check(Box.Shade() == 75, ("the floor ships %d%% darker rather than 75%%"):format(Box.Shade()))
 	check(ns.Settings.SetTipShade(40) == 40, "a shade of forty did not save as forty")
 	local found
 	for _, region in ipairs({ box:GetRegions() }) do
@@ -789,7 +789,7 @@ do
 	check(Box.Shade() == shadeHigh, ("a shade past the ceiling landed on %s"):format(Box.Shade()))
 	Box.SetShade(-5)
 	check(Box.Shade() == shadeLow, ("a shade under the floor landed on %s"):format(Box.Shade()))
-	ns.Settings.SetTipShade(0)
+	ns.Settings.SetTipShade(ns.DefaultFor("tipShade"))
 	screen:SetSize(0, 0)
 	Box.Close(true)
 

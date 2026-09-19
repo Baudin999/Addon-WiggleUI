@@ -293,9 +293,10 @@ ns.Register({
 		-- ever stopped. A default of off would be shipping the bug.
 		tipCompare = true,
 
-		-- Nought. The floor is the palette's until somebody finds it too light
-		-- to read over the world, and the slider is how they say so.
-		tipShade = 0,
+		-- Seventy five. The palette's floor as drawn is a window's, read at
+		-- rest, and a tooltip over a bright zone lost its text into it. Picked
+		-- in play rather than reasoned to; nought is still on the slider.
+		tipShade = 75,
 	}),
 
 	words = {
