@@ -63,7 +63,7 @@ Themes.ORDER = { "informational", "immersive", "exploration" }
 Themes.LABEL = {
 	informational = "everything the addon draws, as it draws it",
 	immersive = "you and the game: your frame and your target's at a fifth, nothing else",
-	exploration = "chat, quests and bars wait under the pointer, the rest as drawn",
+	exploration = "chat, quests and bars wait under the pointer; no meters, no feeds",
 }
 
 -- Where your frame and your target's rest in the immersive theme. Enough to
@@ -125,7 +125,9 @@ Themes.immersive = {
 -- a fight needs stays up, because a bar you have to find with the mouse in the
 -- middle of a pull is a bar you do not have. The loadout bars stay as drawn:
 -- they come up only while their key is held, and a bar that then waited for
--- the pointer as well would be a key that shows nothing.
+-- the pointer as well would be a key that shows nothing. The meters and the
+-- loot and combat feeds go: they report on a fight after it, and exploring is
+-- not reading a report.
 Themes.exploration = {
 	player     = "show",
 	target     = "show",
@@ -143,8 +145,8 @@ Themes.exploration = {
 	chat       = "hover",
 	quests     = "hover",
 	minimap    = "show",
-	meters     = "show",
-	feeds      = "show",
+	meters     = "hide",
+	feeds      = "hide",
 	standing   = "show",
 	experience = "show",
 	keys       = "show",
