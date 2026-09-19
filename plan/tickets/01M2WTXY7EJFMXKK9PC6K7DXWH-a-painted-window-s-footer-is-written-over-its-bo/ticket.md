@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WTXY7EJFMXKK9PC6K7DXWH
 type: bug
-status: todo
+status: doing
 title: A painted window's footer is written over its bottom corners
 ---
 
