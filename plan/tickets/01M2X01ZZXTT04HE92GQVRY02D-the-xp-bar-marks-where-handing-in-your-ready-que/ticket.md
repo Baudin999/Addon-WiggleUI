@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2X01ZZXTT04HE92GQVRY02D
 type: feature
-status: doing
+status: done
 title: The XP bar marks where handing in your ready quests lands you
 ---
 
