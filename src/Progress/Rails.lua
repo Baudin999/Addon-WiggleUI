@@ -52,9 +52,6 @@ local FRAME_NAME = "WarriorKitProgress"
 local GAP = 2
 
 local PAD = 5
-
--- The painted frame's scale round the rails, against the bag window's.
-local BORDER = 0.2
 local TEXT_FLOOR = 7
 local TEXT_CEILING = 12
 
@@ -87,7 +84,6 @@ local NAME_TEXT = Color.text.name
 local VALUE_TEXT = Color.text.value
 
 local frame, xp, faction, place
-local border -- the painted frame round the rails, when the palette has one
 local built = false
 
 -- One design pixel in this frame's units, which is exactly 1 once ns.UI.Adopt
@@ -152,14 +148,8 @@ local function BuildRail(bubbles)
 	-- order is the order the textures were made and the rim has to stay on top
 	-- of both.
 	bar.edges = ns.Outline(bar, EDGE[1], EDGE[2], EDGE[3], 1, "OVERLAY")
-	-- The palette's floor under the empty end, and no hairline round a rail
-	-- the painted frame is round. See Build.
+	-- The palette's floor under the empty end, when it has one.
 	Gauge.Floor(bar)
-	if border then
-		for _, edge in ipairs(bar.edges) do
-			edge:Hide()
-		end
-	end
 
 	-- Both strings on the bar rather than on the frame, so they sit over the
 	-- fill. Flat and unshadowed: this is an opaque surface the addon painted
@@ -256,13 +246,6 @@ local function Build()
 	})
 	ns.Theme.Wear("experience", frame)
 
-	-- The palette's painted frame round both rails, at BORDER of the bag
-	-- window's scale: the slim version, whose rails are a few pixels wide and
-	-- whose corners stop short of the text at each end. Drawn on the frame and
-	-- under the rails, which are its children, so the part of it that reaches
-	-- in over the rails is covered by them and only the outside shows.
-	border = ns.UI.Backdrop(frame, { floor = false })
-
 	xp = BuildRail(true)
 	faction = BuildRail(false)
 	Gauge.Paint(xp.bar, xp.bar.track, XP_FILL)
@@ -357,10 +340,6 @@ function Rails.Apply()
 	local total = rows * height + math.max(0, rows - 1) * GAP
 	frame:SetSize(width * unit, math.max(1, total) * unit)
 	frame:SetShown(rows > 0)
-	if border then
-		border:SetScale(BORDER * unit)
-		border:Layout(width * unit, math.max(1, total) * unit)
-	end
 
 	Rails.Lock()
 	Rails.Paint()
