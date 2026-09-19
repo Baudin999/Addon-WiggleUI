@@ -111,6 +111,13 @@ if bar1 then
 	box:Hide()
 end
 
+-- A painted window: no flat fill, no chrome strip across the top, and a rule
+-- under the title the way the footer has one over it.
+local painted = UI.Window({ title = "Painted", width = 300, height = 200, backdrop = true })
+check(painted.backdrop ~= nil and painted.bg == nil, "a painted window has the painting and no fill")
+check(painted.titleRule ~= nil, "a painted window's header is ruled like its footer")
+painted:Hide()
+
 frame:Hide()
 UI.ChooseBackdrop(nil)
 check(Gauge.Floor(Gauge.New(CreateFrame("Frame", nil, UIParent))) == nil,

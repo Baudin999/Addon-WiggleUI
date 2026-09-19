@@ -252,10 +252,19 @@ end
 
 local function TitleBar(window, px, title)
 	local frame = window.frame
-	local bar = ns.Fill(frame, "ARTWORK", C.chrome[1], C.chrome[2], C.chrome[3], 1)
-	bar:SetPoint("TOPLEFT", px, -px)
-	bar:SetPoint("TOPRIGHT", -px, -px)
-	bar:SetHeight(M.title)
+	-- On a painted window the strip would be a slab of flat colour over the
+	-- painting, so the header is drawn the way the footer is: the painting
+	-- showing through, and one rule under it at the footer's inset.
+	if window.backdrop then
+		window.titleRule = UI.Rule(frame, C.hairline)
+		window.titleRule:SetPoint("TOPLEFT", M.pad, -M.title - px)
+		window.titleRule:SetPoint("TOPRIGHT", -M.pad, -M.title - px)
+	else
+		local bar = ns.Fill(frame, "ARTWORK", C.chrome[1], C.chrome[2], C.chrome[3], 1)
+		bar:SetPoint("TOPLEFT", px, -px)
+		bar:SetPoint("TOPRIGHT", -px, -px)
+		bar:SetHeight(M.title)
+	end
 
 	window.title = UI.Label(frame, M.heading, C.heading, "LEFT", UI.FLAT)
 	window.title:SetPoint("TOPLEFT", M.pad, -math.floor((M.title - M.heading) / 2) - px)
