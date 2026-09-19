@@ -39,11 +39,12 @@ local Level = Unit.Level
 local Gauge = ns.UI.Gauge
 local IDLE = Color.reaction.idle
 
--- The modern bar look's edge: the palette's accent, one colour round every
--- unit, rather than the flat look's dimmed copy of the fill. UI.Color's own
--- table, which the palette is painted into in place, so this reference follows
--- the palette.
-local ACCENT = ns.UI.Color.accent
+-- The modern bar look's edge: the palette's chrome, the dark its windows are
+-- framed in, one colour round every unit rather than the flat look's dimmed
+-- copy of the fill. The accent was tried first and drew a bright line round
+-- every unit that fought each fill. UI.Color's own table, which the palette is
+-- painted into in place, so this reference follows the palette.
+local RIM = ns.UI.Color.chrome
 
 -- What the level tag reads as on something that is not a kill. The XP scale is
 -- an answer to "what is this worth", and your own frame and a friendly target
@@ -325,7 +326,7 @@ function Paint.Refresh(entry)
 	if entry.tint ~= tint then
 		entry.tint = tint
 		Gauge.Paint(entry.healthBar, entry.healthTrack, tint)
-		local edge = ns.Theme.Modern() and ACCENT or Color.Dim(tint, Color.edgeDim)
+		local edge = ns.Theme.Modern() and RIM or Color.Dim(tint, Color.edgeDim)
 		ns.Recolor(entry.edges, edge)
 		entry.divider:SetColorTexture(edge[1], edge[2], edge[3], 1)
 	end

@@ -127,8 +127,10 @@ end
 -- way the bar runs, and drawn once here: the tick paints the fill through the
 -- status bar's own colour and never touches these. One sublevel up in the
 -- fill's layer, which keeps it under every label, all of which are OVERLAY.
-local SHINE = { 1, 1, 1, 0.16 }
-local SHADE = { 0, 0, 0, 0.24 }
+-- Half what shipped first. At 0.16 and 0.24 the bottom of every bar went
+-- muddy, an olive fill read brown, and the sheen was seen before the colour.
+local SHINE = { 1, 1, 1, 0.08 }
+local SHADE = { 0, 0, 0, 0.12 }
 local SHEEN_LAYER = 1
 
 local function Sheen(bar, fill)

@@ -86,8 +86,8 @@ local TEXT_CEILING = 20
 local BACKDROP = Color.backdrop
 local NAME_TEXT = Color.text.name
 local IDLE = Color.reaction.idle
--- The modern bar look's edge, the palette's accent. See UnitFrames/Paint.lua.
-local ACCENT = ns.UI.Color.accent
+-- The modern bar look's edge, the palette's chrome. See UnitFrames/Paint.lua.
+local RIM = ns.UI.Color.chrome
 
 -- The four states that all drain the tile to the track colour. Three of them
 -- put a word where the name was, because a member who is dead or gone is not
@@ -443,7 +443,7 @@ function Member.Paint(block, tint, shade)
 	Gauge.Paint(block.health, block.health.track,
 		shade and Color.Dim(tint, Color.track) or tint)
 	ns.Recolor(block.box.edges,
-		ns.Theme.Modern() and ACCENT or Color.Dim(tint, Color.edgeDim))
+		ns.Theme.Modern() and RIM or Color.Dim(tint, Color.edgeDim))
 end
 
 -- Health and power, compared as the integers that get drawn.

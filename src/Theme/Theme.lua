@@ -123,7 +123,7 @@ end
 
 -- How a gauge is drawn: flat, the fill as one colour and a hairline round
 -- everything, or modern, a sheen down the fill, the bars of one unit stacked
--- with no line between them and the unit's edge in the palette's accent.
+-- with no line between them and the unit's edge in the palette's dark.
 --
 -- Drawn at the reload like the palette and for its reason, and read through
 -- here rather than off ns.db by the parts that draw it. A relayout runs
@@ -396,7 +396,7 @@ ns.Register({
 			function() return ns.db.gaugeLook end,
 			function(value) ns.db.gaugeLook = value end,
 			function() return looks end)
-		ui.Hint("Modern shades each bar light to dark, stacks health on power with no line between, and edges each unit in the palette's accent.")
+		ui.Hint("Modern shades each bar light to dark, stacks health on power with no line between, and edges each unit in the palette's dark.")
 
 		ui.Check("portraits on the player and target frames",
 			function() return ns.db.portraits ~= false end,
