@@ -255,10 +255,10 @@ local function BarsPage(ui)
 			ns.Bars.ApplyMark()
 		end)
 
-	ui.Check("clone this bar",
+	ui.Check("show this bar",
 		function() return ns.WhichBars.Wanted(Chosen()) end,
 		function(value) SetBar(Chosen(), value) end)
-	ui.Hint("Left alone, a bar follows your own interface options, so turning it on there clones it too. Ticking it here is a decision that outlasts those options.")
+	ui.Hint("Left alone, a bar follows your own interface options, so turning it on there shows it here too. Ticking it here is a decision that outlasts those options.")
 
 	ui.Count("rows", ns.BarLook.ROWS[1], ns.BarLook.ROWS[#ns.BarLook.ROWS],
 		function() return ns.BarLook.Rows(Chosen()) end,
@@ -267,6 +267,26 @@ local function BarsPage(ui)
 			Restyle()
 		end)
 	ui.Hint("Twelve buttons fold into 1, 2, 3, 4, 6 or 12 rows and the pet bar's ten into 1, 2, 5 or 10. The stepper walks between them.")
+
+	ui.Picker("clone from",
+		function() return ns.BarLook.From(Chosen()) end,
+		function(value)
+			if not ns.BarLook.SetFrom(Chosen(), value) then
+				ns.Print("those two bars already clone each other the other way round.")
+			end
+			Restyle()
+		end,
+		function()
+			local chosen = Chosen()
+			local options = { { value = "none", text = "none" } }
+			for _, def in ipairs(ns.BarLook.Tabs()) do
+				if def ~= chosen then
+					options[#options + 1] = { value = def.key, text = def.tab }
+				end
+			end
+			return options
+		end)
+	ui.Hint("Takes that bar's square, key and background and keeps following it. Rows and keybinds stay this bar's own. Moving any of the three below ends the clone.")
 
 	local sizeLow, sizeHigh = ns.BarLook.SizeRange()
 	ui.Slider("square", sizeLow, sizeHigh, 1,
@@ -345,7 +365,7 @@ end
 -- The words this owns, as a lookup rather than a chain of comparisons, so
 -- adding the next one is a line and not a branch.
 local LOOK_WORDS = {
-	rows = true, square = true, background = true,
+	rows = true, square = true, background = true, from = true,
 	combat = true, key = true, centre = true,
 }
 
@@ -398,6 +418,12 @@ local function LookWord(word, rest)
 		-- buttons on the page say "left to right" and "up and down", and a
 		-- command that says something else is a second name for one thing.
 		CentreWord(def, value)
+	elseif word == "from" then
+		-- `actionbars from pet bar1`: the pet bar takes bar 1's look.
+		ok = ns.BarLook.SetFrom(def, value)
+		if not ok then
+			ns.Print("from takes another bar, one that does not already clone this one, or none.")
+		end
 	elseif word == "background" then
 		local alpha = ns.Command.Step(value, ns.UI.ALPHA_LOW, ns.UI.ALPHA_HIGH,
 			ns.UI.ALPHA_STEP, "background")

@@ -230,9 +230,76 @@ function Look.StepRows(def, value)
 	return Look.SetRows(def, rows)
 end
 
+--------------------------------------------------------------------------
+-- Cloned from another bar
+--
+-- A bar can take its square, its key and its background from another bar and
+-- keep taking them: `from` names the bar, and the three readers below ask
+-- that bar instead. Rows are not in it, since ten squares and twelve do not
+-- fold the same way, and neither is anything a key presses.
+--
+-- Setting any of the three on a cloned bar ends the clone. The bar keeps what
+-- it was showing and changes the one thing you moved, rather than the other
+-- two jumping back to whatever it carried before.
+--------------------------------------------------------------------------
+
+-- The bar whose look this one shows: itself, or the end of its `from` chain.
+-- SetFrom refuses a loop, and the bound is there for a saved variable that
+-- holds one anyway.
+function Look.Source(def)
+	for _ = 1, 8 do
+		local from = Field(def, "from")
+		local source = from and Look.Find(from)
+		if not source or source == def then
+			return def
+		end
+		def = source
+	end
+	return def
+end
+
+-- The key of the bar this one clones, or "none".
+function Look.From(def)
+	return Field(def, "from") or "none"
+end
+
+-- The clone ended, with the source's three values written into this bar so
+-- nothing on the screen moves.
+local function Unlink(def)
+	if not Field(def, "from") then
+		return
+	end
+	local source = Look.Source(def)
+	local size = Field(source, "size")
+	local key = Field(source, "keySize")
+	local alpha = Field(source, "alpha")
+	Write(def, "from", nil, nil)
+	Write(def, "size", size or DEFAULT_SIZE, DEFAULT_SIZE)
+	Write(def, "keySize", key, nil)
+	Write(def, "alpha", alpha or DEFAULT_ALPHA, DEFAULT_ALPHA)
+end
+
+-- Clone another bar's look, or "none" to stop. Refused for the bar itself, for
+-- a name that is no bar, and for a bar that already clones this one, which
+-- would be a loop with no look at either end.
+function Look.SetFrom(def, key)
+	if key == "none" then
+		Unlink(def)
+		return true
+	end
+	local source = Look.Find(key)
+	if not source or source == def or Look.Source(source) == def then
+		return false
+	end
+	Write(def, "size", nil, nil)
+	Write(def, "keySize", nil, nil)
+	Write(def, "alpha", nil, nil)
+	return Write(def, "from", source.key, nil)
+end
+
 -- One square's edge, in pixels.
 function Look.Size(def)
-	return Field(def, "size") or DEFAULT_SIZE
+	return Field(Look.Source(def), "size") or DEFAULT_SIZE
 end
 
 -- The range the panel and the slash word both clamp to, handed out rather than
@@ -245,20 +312,21 @@ function Look.SetSize(def, size)
 	if size < SIZE_LOW or size > SIZE_HIGH or size ~= math.floor(size) then
 		return false
 	end
+	Unlink(def)
 	return Write(def, "size", size, DEFAULT_SIZE)
 end
 
 -- The key's font size on one bar's squares. Unset, it follows the square, which
 -- is the size it has always been drawn at.
 function Look.KeySize(def)
-	return Field(def, "keySize") or UI.Ability.KeySize(Look.Size(def))
+	return Field(Look.Source(def), "keySize") or UI.Ability.KeySize(Look.Size(def))
 end
 
 -- Whether the bar's key is its own number rather than the square's share.
 -- Asked by the layout, which passes nil on to Ability.Size for a bar that has
 -- not decided, so resizing the square still resizes its key.
 function Look.KeyDecided(def)
-	return Field(def, "keySize")
+	return Field(Look.Source(def), "keySize")
 end
 
 function Look.KeyRange()
@@ -272,6 +340,7 @@ function Look.SetKeySize(def, size)
 	if size < KEY_LOW or size > KEY_HIGH or size ~= math.floor(size) then
 		return false
 	end
+	Unlink(def)
 	return Write(def, "keySize", size, nil)
 end
 
@@ -294,13 +363,14 @@ end
 --------------------------------------------------------------------------
 
 function Look.Alpha(def)
-	return Field(def, "alpha") or DEFAULT_ALPHA
+	return Field(Look.Source(def), "alpha") or DEFAULT_ALPHA
 end
 
 function Look.SetAlpha(def, alpha)
 	if alpha < UI.ALPHA_LOW or alpha > UI.ALPHA_HIGH then
 		return false
 	end
+	Unlink(def)
 	return Write(def, "alpha", alpha, DEFAULT_ALPHA)
 end
 
@@ -507,9 +577,11 @@ end
 function Look.Shape(def)
 	local rows = Look.Rows(def)
 	local size = Look.Size(def)
-	return ("%d row%s of %d at %dpx%s, ground at %d%%"):format(
+	local source = Look.Source(def)
+	return ("%d row%s of %d at %dpx%s, ground at %d%%%s"):format(
 		rows, rows == 1 and "" or "s", Look.Columns(def), size,
-		Look.Sharp(size) and "" or ", blended", Look.Alpha(def))
+		Look.Sharp(size) and "" or ", blended", Look.Alpha(def),
+		source == def and "" or (", cloned from " .. source.label))
 end
 
 -- And when it is on the screen, which is the other readout and is a different

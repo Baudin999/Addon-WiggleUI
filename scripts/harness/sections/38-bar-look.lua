@@ -475,6 +475,25 @@ do
 	check(macro == "[nopet] hide; [mod:shift] show; hide",
 		("the pet bar on shift is driven by %q"):format(tostring(macro)))
 
+	-- Cloned from bar 1: its square, key and ground, followed as bar 1 moves,
+	-- and a loop refused. Moving one of the three ends the clone and keeps
+	-- the other two where they were.
+	local one = ns.WhichBars.PLAN[1]
+	check(Look.SetSize(one, 30) and Look.SetAlpha(one, 60), "bar 1 refused a square or a ground")
+	check(Look.SetFrom(Pet.DEF, "bar1"), "the pet bar would not clone bar 1")
+	check(Look.Size(Pet.DEF) == 30 and Look.Alpha(Pet.DEF) == 60,
+		"the pet bar cloned bar 1 and did not take its square and ground")
+	check(Look.Rows(Pet.DEF) == 2, "cloning bar 1 took its rows as well")
+	check(not Look.SetFrom(one, "pet"), "bar 1 cloned the pet bar that clones it")
+	check(Look.SetSize(one, 32) and Look.Size(Pet.DEF) == 32,
+		"bar 1 grew and the pet bar cloning it did not follow")
+	check(Look.SetSize(Pet.DEF, 40) and Look.From(Pet.DEF) == "none",
+		"a square set on a cloned bar left the clone standing")
+	check(Look.Size(Pet.DEF) == 40 and Look.Alpha(Pet.DEF) == 60,
+		"ending the clone did not keep the ground bar 1 had given it")
+	Look.SetSize(one, 27)
+	Look.SetAlpha(one, 95)
+
 	check(Look.SetRows(Pet.DEF, 1) and Look.SetKey(Pet.DEF, "none") and Pet.Restyle(),
 		"the pet bar would not go back to its shipping look")
 	check(_G.WarriorKitDriver(bar, "visibility") == "[nopet] hide; show",
