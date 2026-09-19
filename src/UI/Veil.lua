@@ -75,12 +75,15 @@ end
 -- entry edge to edge, and in the exploration theme it never came up. Nothing
 -- under it is visible at rest, so nothing is lost by covering it.
 --
--- Once the frame is up the catcher lets go of the mouse, so the buttons, links
--- and scrolling under it answer as drawn, and the recheck asks the rectangle
--- whether the pointer is still inside. It stops itself the moment the answer
--- is no and the catcher takes the hover back. SetAlpha and the mouse flags on an
--- insecure child are not protected writes, so this answers in a fight on a
--- secure bar the same as out of one.
+-- Once the frame is up the catcher is hidden, so the buttons, links and
+-- scrolling under it answer as drawn, and the recheck asks the rectangle
+-- whether the pointer is still inside. Hidden rather than told to let go of
+-- the mouse: with its motion and clicks both off it still took the press on
+-- the chat window's rooms on the live client. The recheck runs on the veil for
+-- that reason, because a hidden frame runs no OnUpdate. It stops itself the
+-- moment the answer is no and the catcher is shown again. SetAlpha, Show and
+-- Hide on an insecure child are not protected writes, so this answers in a
+-- fight on a secure bar the same as out of one.
 --------------------------------------------------------------------------
 
 -- The highest level among a frame's descendants, which is where the catcher
@@ -112,15 +115,13 @@ local function Rest(catcher)
 	if catcher:GetFrameLevel() ~= level then
 		catcher:SetFrameLevel(level)
 	end
-	-- The motion alone. The clicks went off once in UI.Reveal and stay off;
-	-- EnableMouse(true) would turn them back on and eat the first click on a
-	-- resting bar.
-	if not catcher:IsMouseMotionEnabled() then
-		catcher:SetMouseMotionEnabled(true)
+	if not catcher:IsShown() then
+		catcher:Show()
 	end
 end
 
-local function Recheck(_, catcher)
+local function Recheck(_, veil)
+	local catcher = veil.wkRevealCatcher
 	if catcher.wkRevealFrame:IsVisible() and catcher.wkRevealFrame:IsMouseOver() then
 		return
 	end
@@ -129,11 +130,11 @@ end
 
 local function Enter(catcher)
 	catcher.wkRevealVeil:SetAlpha(1)
-	catcher:SetMouseMotionEnabled(false)
+	catcher:Hide()
 	if catcher.wkRevealTick then
 		catcher.wkRevealTick:Start()
 	else
-		catcher.wkRevealTick = UI.Ticker(catcher, RECHECK, "reveal", Recheck)
+		catcher.wkRevealTick = UI.Ticker(catcher.wkRevealVeil, RECHECK, "reveal", Recheck)
 	end
 end
 
@@ -150,10 +151,10 @@ function UI.Reveal(frame, rest)
 		catcher:SetScript("OnEnter", Enter)
 		catcher.wkRevealFrame = frame
 		catcher.wkRevealVeil = veil
+		veil.wkRevealCatcher = catcher
 		frame.wkReveal = catcher
 	end
 	catcher.wkRevealRest = rest
-	catcher:Show()
 	Rest(catcher)
 	return catcher
 end

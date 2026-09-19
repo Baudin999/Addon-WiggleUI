@@ -75,8 +75,10 @@ mouse.Deliver(catcher, "OnEnter")
 check(veil:GetAlpha() == 1, "the pointer on the frame did not bring it up")
 check(mouse.At(mouse.Point(child)) == child,
 	"the frame came up and the catcher still covers its buttons")
+check(not catcher:IsShown(),
+	"the frame came up and the catcher is still there to take a press")
 
-local tick = UI.Ticking("reveal", catcher)
+local tick = UI.Ticking("reveal", veil)
 check(tick ~= nil, "the frame came up without arming the recheck")
 if tick then
 	over(child)

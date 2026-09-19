@@ -95,9 +95,8 @@ end
 
 -- Whether this frame would take that button at all.
 --
--- Four separate refusals and the client keeps them apart. A frame that does
--- not answer the mouse is not there as far as the pointer is concerned, and one
--- with the motion off is not there for the hover. A frame
+-- Three separate refusals and the client keeps them apart. A frame that does
+-- not answer the mouse is not there as far as the pointer is concerned. A frame
 -- with the mouse on and clicks off hovers and hands every button to the world,
 -- which is how a tooltip goes on something without eating the camera drag. And
 -- a frame may hand one named button through and keep the rest, which is what
@@ -107,7 +106,7 @@ local function takes(frame, button)
 		return false
 	end
 	if button == nil then
-		return frame:IsMouseMotionEnabled()
+		return true
 	end
 	if not frame:IsMouseClickEnabled() then
 		return false
