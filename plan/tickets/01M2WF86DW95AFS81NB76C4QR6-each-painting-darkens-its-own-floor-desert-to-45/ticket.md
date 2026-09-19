@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WF86DW95AFS81NB76C4QR6
 type: task
-status: doing
+status: done
 title: Each painting darkens its own floor; desert to 45%
 ---
 
