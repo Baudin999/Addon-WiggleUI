@@ -691,7 +691,7 @@ do
 		local Tip = ns.UI.Tooltip
 		local size = Tip.Scale()
 		local function Wanted()
-			return ns.UI.ScreenZoom() * Tip.Scale()
+			return Tip.Scale()
 		end
 
 		ns.db.combatFeedZoom = 2

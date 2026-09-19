@@ -5,14 +5,15 @@ local C, M = UI.Color, UI.Metric
 local Previews = ns.SetupPreviews
 
 --------------------------------------------------------------------------
--- The setup: four questions, asked once
+-- The setup: five questions, asked once
 --
--- A new player opens the options window and finds forty pages. Four of the
+-- A new player opens the options window and finds forty pages. Five of the
 -- answers on them decide what the game looks like, and the rest are numbers
 -- that were dragged into place on the author's screen and ship as they are. So
--- the four are asked on the first login, one page each, as cards with a
+-- the five are asked on the first login, one page each, as cards with a
 -- picture of the answer on them:
 --
+--   size      how big everything is, ns.db.generalSize, shown live
 --   mode      how much of the addon is on the screen, ns.db.theme
 --   colours   the palette, ns.db.palette
 --   frames    modern or flat unit frames; modern takes the portraits off
@@ -24,9 +25,9 @@ local Previews = ns.SetupPreviews
 -- screen, and the setup never comes up on its own again: it is under the game
 -- menu as WarriorKit Setup, and /wk setup.
 --
--- Three of the four are drawn at a /reload, for the reason Theme/Theme.lua
--- gives, so finishing reloads when one of those three moved. The tooltips
--- apply on the spot.
+-- Three of the five are drawn at a /reload, for the reason Theme/Theme.lua
+-- gives, so finishing reloads when one of those three moved. The size and the
+-- tooltips apply on the spot.
 --
 -- Finishing also lays the chosen mode's shipped screen over the profile this
 -- character wears, windows and sizes included. Setup.Apply says why.
@@ -67,9 +68,31 @@ local function PaletteCards()
 	return cards
 end
 
+-- The sizes the first page offers. 1 is the author's screen on whatever monitor
+-- this is, because the grid already scales by the monitor's height. Snapped,
+-- because the saved value is, and 1.2 off the zoom step is not 1.2 in a double.
+local SIZES = { UI.ZoomSnap(0.9), UI.ZoomSnap(1), UI.ZoomSnap(1.2), UI.ZoomSnap(1.4) }
+local LARGEST = SIZES[#SIZES]
+
 -- The modes run from the one that shows least to the one that shows most, which
 -- is also from the player who knows the game best to the one who is new to it.
 Setup.STEPS = {
+	{
+		key = "size",
+		rail = "size",
+		question = "How big should everything be?",
+		lede = "Picking a card sizes your real screen behind this window. Every part can still be sized on its own later, on the zoom page.",
+		columns = 4,
+		draw = function(preview, width, height, value)
+			return Previews.Size(preview, width, height, value, LARGEST)
+		end,
+		cards = {
+			{ value = SIZES[1], title = "Smaller", blurb = "More of the world, less of the addon." },
+			{ value = SIZES[2], title = "As shipped", blurb = "The author's screen, on your monitor." },
+			{ value = SIZES[3], title = "Larger", blurb = "Easier to read from the couch." },
+			{ value = SIZES[4], title = "Largest", blurb = "For a big screen far away." },
+		},
+	},
 	{
 		key = "theme",
 		rail = "mode",
@@ -160,6 +183,7 @@ end
 -- light when the window opens. Running the setup again starts on your screen.
 function Setup.Current()
 	return {
+		size = UI.ZoomSnap(ns.db.generalSize),
 		theme = ns.db.theme,
 		palette = ns.db.palette,
 		plates = ns.db.gaugeLook == "modern" and "modern" or "flat",
@@ -189,6 +213,8 @@ end
 -- square the look exists to give to the bars.
 function Setup.Apply(answers)
 	ns.RestoreDefaults(answers.theme)
+	ns.db.generalSize = UI.ZoomSnap(answers.size)
+	UI.SetGeneral(ns.db.generalSize)
 	ns.db.theme = answers.theme
 	ns.db.palette = answers.palette
 	ns.db.gaugeLook = answers.plates
@@ -204,7 +230,8 @@ end
 -- new player gives these four, and a capture of the author's screen shipping
 -- its own would make the cards the author's choice with a picture on it.
 function Setup.Asks(key)
-	if key == "theme" or key == "palette" or key == "gaugeLook" or key == "portraits" then
+	if key == "generalSize" or key == "theme" or key == "palette"
+		or key == "gaugeLook" or key == "portraits" then
 		return true
 	end
 	for _, each in ipairs(UI.Tooltip.TYPES) do
@@ -301,7 +328,7 @@ local function Page(step)
 	return page
 end
 
--- The four steps across the top, numbered, the one you are on in the accent
+-- The steps across the top, numbered, the one you are on in the accent
 -- and the ones behind you in the text colour. Pressing one goes back to it.
 local function Rail()
 	local labels = {}
@@ -363,6 +390,7 @@ local function Build()
 	-- every login until the last button was pressed would be a nag, and the
 	-- way back to it is on the game menu.
 	window.frame:HookScript("OnHide", function()
+		UI.SetGeneral(UI.ZoomSnap(ns.db.generalSize))
 		if not ns.db.setupDone then
 			ns.db.setupDone = true
 			ns.Print("the setup is under Escape, WarriorKit Setup, or /wk setup, whenever you want it.")
@@ -423,8 +451,16 @@ function Setup.Where()
 	return at, answers and answers[Setup.STEPS[at or 1].key]
 end
 
+-- The size is the one answer shown before it is written: the whole screen is
+-- re-scaled to it on the pick, because a card cannot show how big your own
+-- frames are on your own monitor. Nothing is saved until the last page, and
+-- the window's OnHide puts the saved size back, which after a finish is the
+-- size just written.
 function Setup.Pick(key, value)
 	answers[key] = value
+	if key == "size" then
+		UI.SetGeneral(value)
+	end
 	Paint()
 end
 

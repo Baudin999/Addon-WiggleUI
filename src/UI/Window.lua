@@ -22,11 +22,9 @@ local C, M = UI.Color, UI.Metric
 -- pixels. The cost is the cost the enemy bars already pay: a window 540 pixels
 -- wide is 540 pixels on a laptop and 540 on a 4K panel, which on the 4K panel
 -- is small. Zoom is the answer there, and it comes from two places that
--- multiply: UI.ScreenZoom, a whole step the screen height picks on its own, and
--- UI.Size, the slider the player drags in the settings panel. A screen that
--- doubles everything and a player who halves it land back on the design size,
--- which is the arithmetic you want and the reason they are one number by the
--- time a window sees them.
+-- multiply: UI.ScreenZoom in UI/Pixel.lua, the screen's height over the
+-- author's times the player's general size, which the grid puts on every frame
+-- itself, and the window's own number, which is all a window is handed.
 --
 -- **The size is deliberate and the window does not resize.** The old panel grew
 -- to whatever its tallest page needed, which on this screen was 773 physical
@@ -43,19 +41,6 @@ local C, M = UI.Color, UI.Metric
 -- the same way rather than through a hook cut into each window for its benefit.
 UI.Windows = {}
 
--- What the screen asks for, before the player has said anything. Whole steps
--- only: below a 1600 pixel tall screen the pixel metrics are already
--- comfortable, above 2000 they are half the size they should be, and a
--- fractional step chosen on the player's behalf would put every edge in the
--- window onto a half pixel to buy a size nobody asked for.
-function UI.ScreenZoom()
-	local height = UI.ScreenHeight()
-	if height >= 2000 then
-		return 2
-	end
-	return 1
-end
-
 -- What the boxes this layer draws itself are sized at.
 --
 -- There was one of these for the whole addon, called UI size, and every window
@@ -68,10 +53,8 @@ end
 -- not allowed to know the name of a setting. Settings/Settings.lua reads the
 -- saved value and pushes it in, the same way a widget takes a getter rather than a key.
 --
--- The screen's step and the player's multiply. On a 4K panel the screen has
--- already doubled everything, so half size lands back on the design size and is
--- exact; on a 1080p panel the screen contributes 1 and half size is genuinely
--- half.
+-- The player's number only. The screen's share is put on at the grid, in
+-- UI/Pixel.lua, for every frame at once, so it is not multiplied in here.
 local chosen = 1
 
 function UI.Size()
@@ -92,7 +75,7 @@ function UI.SetSize(scale)
 end
 
 function UI.DialogZoom()
-	return UI.ScreenZoom() * chosen
+	return chosen
 end
 
 -- Whether one unit is a whole number of physical pixels at the zoom in force.
@@ -100,7 +83,7 @@ end
 -- step is whole and why the panel says out loud which stops of the slider are
 -- and which are not.
 function UI.Exact(zoom)
-	zoom = zoom or UI.DialogZoom()
+	zoom = zoom or UI.ScreenZoom() * UI.DialogZoom()
 	return math.abs(zoom - math.floor(zoom + 0.5)) < 1e-6
 end
 
@@ -640,7 +623,7 @@ local SCREEN_SHARE = 0.5
 function Window:Screen()
 	local across, down
 	if UI.Supported() then
-		across, down = UI.ScreenWidth() / self.zoom, UI.ScreenHeight() / self.zoom
+		across, down = UI.RoomAcross(self.zoom), UI.Room(self.zoom)
 	else
 		across, down = UIParent:GetWidth() or 0, UIParent:GetHeight() or 0
 	end
@@ -703,8 +686,8 @@ function Window:Resize(width, height)
 		-- SetIgnoreParentScale, the window is in UIParent's units and UIParent is
 		-- what to ask. Getting this the wrong way round on the second client puts a
 		-- window taller than the screen on it and nothing here would say so.
-		local room = UI.Supported() and (UI.ScreenHeight() / self.zoom) or UIParent:GetHeight()
-		local budget = math.floor((room or UI.ScreenHeight()) * 0.86)
+		local room = UI.Supported() and UI.Room(self.zoom) or UIParent:GetHeight()
+		local budget = math.floor((room or UI.Room()) * 0.86)
 		if height > budget then
 			height = budget
 		end

@@ -104,7 +104,7 @@ for _, entry in ipairs(ns.UI.Windows) do
 	end
 end
 check(window ~= nil, "the standings window is not in the addon's own list of windows")
-check(window.zoom == ns.UI.ScreenZoom() * ns.Zoom("characterZoom"),
+check(window.zoom == ns.Zoom("characterZoom"),
 	("the standings window is at zoom %s and the sheet's is %s")
 		:format(tostring(window.zoom), tostring(ns.Zoom("characterZoom"))))
 check(ns.db.reputationZoom == nil,

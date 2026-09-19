@@ -299,18 +299,19 @@ end
 -- kept a key, and every window in the addon shared one number called uiSize, so
 -- shrinking the map to fit beside the quest log shrank the quest log with it.
 --
--- The screen's own contribution is still shared, because it is not a
--- preference. A 4K panel halves the size of every metric the addon is drawn in
--- and doubling it back is arithmetic, not taste. What the player chose
--- multiplies on top of that, per screen, which is the whole of the change.
+-- The screen's own contribution is shared, because it is not a preference: the
+-- grid in UI/Pixel.lua scales every frame by the screen's height over the
+-- author's, times the general size the setup asks. What the player chose here
+-- multiplies on top of that, per screen.
 --------------------------------------------------------------------------
 
--- The zoom one screen is drawn at, screen contribution included. Handed to
+-- The zoom one screen is drawn at, over the screen's share. Handed to
 -- UI.Window and to UI.Rezoom as a number, or as a closure over this for a frame
 -- that has to ask again after the grid moves.
 function ns.Zoom(key)
-	local chosen = ns.UI.ZoomSnap(ns.db and ns.db[key] or 1)
-	return ns.UI.ScreenZoom() * chosen
+	-- The screen's share is not in here: UI/Pixel.lua puts it on every frame on
+	-- the grid, so this is the player's number for this one screen and no more.
+	return ns.UI.ZoomSnap(ns.db and ns.db[key] or 1)
 end
 
 -- Every registered screen, in feature order, so the zoom page can list them

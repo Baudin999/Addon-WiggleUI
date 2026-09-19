@@ -547,7 +547,7 @@ end
 -- the setting moved has to arrive at the size the boxes beside it are already
 -- drawn at.
 local function Wanted()
-	return ((UI.ScreenZoom and UI.ScreenZoom()) or 1) * chosen
+	return chosen
 end
 
 -- The two units of shadow that stick out past the bottom and the right. A

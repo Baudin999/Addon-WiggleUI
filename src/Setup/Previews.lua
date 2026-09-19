@@ -288,6 +288,19 @@ function Previews.Plate(preview, width, height, modern)
 	return unit
 end
 
+-- The same frame at one general size against the largest card: drawn in a box
+-- that share of the card, so the smallest card shows the smallest frame and the
+-- largest fills its card. Sized in whole units rather than scaled, because a
+-- scale inside a window on the grid puts every edge under it between pixels.
+function Previews.Size(preview, width, height, size, largest)
+	local share = size / largest
+	local frame = CreateFrame("Frame", nil, preview)
+	local wide, tall = math.floor(width * share / 2) * 2, math.floor(height * share / 2) * 2
+	frame:SetSize(wide, tall)
+	frame:SetPoint("CENTER")
+	return Previews.Plate(frame, wide, tall, true)
+end
+
 --------------------------------------------------------------------------
 -- The tooltip
 --------------------------------------------------------------------------

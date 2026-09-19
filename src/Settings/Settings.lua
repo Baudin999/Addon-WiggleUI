@@ -76,7 +76,16 @@ function Settings.Apply()
 	Settings.ApplyAnchor()
 	Settings.LockAnchor()
 	UI.Tooltip.SetZoom(Settings.Snap(ns.db.tipZoom))
+	UI.SetGeneral(Settings.Snap(ns.db.generalSize))
 	return UI.SetSize(Settings.Snap(ns.db.dialogZoom))
+end
+
+-- The size of everything at once, which every screen's own number multiplies.
+-- The setup asks it; the zoom page carries it over every other row.
+function Settings.SetGeneral(scale)
+	ns.db.generalSize = Settings.Snap(scale)
+	UI.SetGeneral(ns.db.generalSize)
+	return ns.db.generalSize
 end
 
 -- The confirm box's own size. The hover box's is beside the rest of the hover

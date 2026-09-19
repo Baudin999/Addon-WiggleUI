@@ -210,7 +210,7 @@ local function Room()
 	local zoom = ns.Zoom("questsZoom")
 	local tall
 	if UI.Supported() and zoom > 0 then
-		tall = UI.ScreenHeight() / zoom
+		tall = UI.Room(zoom)
 	else
 		tall = UIParent:GetHeight() or 0
 	end

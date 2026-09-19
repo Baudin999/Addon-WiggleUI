@@ -58,6 +58,24 @@ local deferred = setmetatable({}, { __mode = "k" })
 
 local physical = BASE
 local perfect = 1
+
+-- The screen every size in the addon was dragged into place on: the author's,
+-- 1440 pixels tall. A frame on the grid is drawn at the height of the screen
+-- it is on over this, so a party frame takes the same share of a 4K panel, of
+-- a 1080p laptop and of the author's monitor, and a layout captured on one is
+-- the same layout on the others. The price is that off 1440 a unit is not a
+-- whole number of pixels, so a box edge can land half on one; UI.Pixel is
+-- worked out per frame, so a hairline is still one pixel wide.
+--
+-- It used to be whole steps, 1 below 2000 pixels and 2 above, taken by the
+-- windows and not by the rest. On a 4K panel that drew the chat at a third
+-- over the author's size and every bar and frame at two thirds of it.
+local REFERENCE = 1440
+
+-- The player's own multiplier on the whole screen, the setup's size question.
+-- Held here rather than read out of the saved variables, because this layer
+-- does not know the name of a setting; Settings/Settings.lua pushes it in.
+local general = 1
 local parentScale = 1
 local supported -- probed on the first adoption
 
@@ -88,6 +106,12 @@ local function ReadPhysicalHeight()
 	return BASE
 end
 
+-- What every frame on the grid is multiplied by before its own zoom: the
+-- screen over the reference, times the player's general size.
+function UI.ScreenZoom()
+	return physical / REFERENCE * general
+end
+
 local function Rescale(frame, zoom)
 	if ns.Blocked(frame) then
 		deferred[frame] = zoom
@@ -95,7 +119,7 @@ local function Rescale(frame, zoom)
 		return false
 	end
 	deferred[frame] = nil
-	frame:SetScale(perfect * zoom) -- unguarded: UI.Rezoom compares the zoom this frame is already drawn at and returns before calling here, and UI.Flush only reaches it for a frame combat refused
+	frame:SetScale(perfect * UI.ScreenZoom() * zoom) -- unguarded: UI.Rezoom compares the zoom this frame is already drawn at and returns before calling here, and UI.Flush only reaches it for a frame combat refused
 	return true
 end
 
@@ -243,7 +267,7 @@ function UI.Adopt(frame, zoom)
 	end
 	grid[frame] = zoom or 1
 	frame:SetIgnoreParentScale(true)
-	frame:SetScale(perfect * (zoom or 1))
+	frame:SetScale(perfect * UI.ScreenZoom() * (zoom or 1))
 	return true
 end
 
@@ -283,7 +307,7 @@ function UI.Adrift(frame, zoom)
 		return false
 	end
 	frame:SetIgnoreParentScale(true)
-	frame:SetScale(perfect * (zoom or 1))
+	frame:SetScale(perfect * UI.ScreenZoom() * (zoom or 1))
 	return true
 end
 
@@ -361,6 +385,36 @@ function UI.Refresh()
 
 	UI.Notify()
 	return true
+end
+
+-- The screen in design units at a zoom: how tall a frame on the grid can be
+-- at that zoom before it runs off the bottom. For the windows that size
+-- themselves against the monitor.
+function UI.Room(zoom)
+	return physical / (UI.ScreenZoom() * (zoom or 1))
+end
+
+function UI.RoomAcross(zoom)
+	return UI.ScreenWidth() / (UI.ScreenZoom() * (zoom or 1))
+end
+
+-- The general size. Every frame on the grid is re-scaled, the path a monitor
+-- swap takes, and the listeners lay out again. Returns whether it moved.
+function UI.SetGeneral(size)
+	size = tonumber(size) or 1
+	if size <= 0 or size == general then
+		return false
+	end
+	general = size
+	for frame, zoom in pairs(grid) do
+		Rescale(frame, zoom)
+	end
+	UI.Notify()
+	return true
+end
+
+function UI.General()
+	return general
 end
 
 function UI.Describe()

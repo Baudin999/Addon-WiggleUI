@@ -252,6 +252,9 @@ end
 -- client has no copy of it, and `fight` that a screen drawn over the
 -- world is one you read while something is hitting you.
 local function Where(zoom)
+	if zoom.all then
+		return "all"
+	end
 	if zoom.window ~= true then
 		return zoom.fight and "fight" or "screen"
 	end
@@ -268,6 +271,11 @@ ns.Register({
 	-- and a confirm box is asked by whoever is about to do something you cannot
 	-- undo, so neither has a part to be owned by.
 	zooms = {
+		-- Every frame at once, the setup's first question. A zoom like the rest,
+		-- so `scale everything` reaches it and the page counts it, on a list of
+		-- its own over the others because every other row multiplies it.
+		{ key = "generalSize", label = "Everything", all = true,
+		  apply = function() Settings.SetGeneral(ns.db.generalSize) end },
 		-- `own` puts a window on the zoom page's second list, with the other
 		-- windows the client has no copy of; Where() on the panel below is
 		-- the whole of what reads it.
@@ -293,10 +301,14 @@ ns.Register({
 		-- 1.25 for both, which is what every window in the addon was drawn at
 		-- when they shared one number called uiSize. A window at 1 is a window
 		-- you lean in to read on the panel most people are playing on, and the
-		-- screen height already doubles this where a panel is tall enough to
-		-- need it.
+		-- grid already scales it by the screen's height over the author's.
 		panelZoom = 1.3,
 		dialogZoom = 1.3,
+
+		-- 1: the author's screen, whatever the monitor. UI/Pixel.lua already
+		-- scales everything by the screen's height over 1440, so this is taste
+		-- and nothing else.
+		generalSize = 1,
 
 		-- 1, not 1.25. A hover box is small, opens over what you are reading and
 		-- goes again, and how big its text is is already a setting of its own
@@ -438,6 +450,13 @@ ns.Register({
 		-- The alternative was every screen in the addon written out in this
 		-- file, which is the list that goes stale the first time somebody adds
 		-- a window.
+		Rows("all", "Zoom: everything",
+			"Every frame and window the addon draws, at once. Each screen's own number on the lists below multiplies this one.")
+		ui.Reading("this monitor over the author's", function()
+			return ("%.2fx, %d pixels tall against 1440"):format(
+				ns.UI.ScreenZoom() / ns.UI.General(), ns.UI.ScreenHeight())
+		end)
+
 		Rows("client", "Zoom: client windows",
 			"Every window this addon opens in place of one of the client's, on its own number. Shrink the map without shrinking the quest log beside it.")
 		Rows("own", "Zoom: own windows",
