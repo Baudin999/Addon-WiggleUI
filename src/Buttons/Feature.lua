@@ -76,6 +76,9 @@ end
 local function SetBar(def, value)
 	ns.WhichBars.Want(def.key, value)
 	local complete = ns.Bars.Apply()
+	if not ns.PetBar.Apply() then
+		complete = false
+	end
 	ns.Print(def.label .. (value and " cloned." or " handed back."))
 	if not complete then
 		ns.Print("part of that needs combat to end first, and will run then.")
@@ -90,7 +93,11 @@ end
 -- again. Restyle refuses in combat and says so, the same as everything else in
 -- this part that touches a secure frame.
 local function Restyle()
-	if not ns.Bars.Restyle() then
+	local complete = ns.Bars.Restyle()
+	if not ns.PetBar.Restyle() then
+		complete = false
+	end
+	if not complete then
 		ns.Print("part of that needs combat to end first, and will run then.")
 	end
 	ns.Options.Refresh()
@@ -100,6 +107,22 @@ end
 -- the page reads it, so a control is written once rather than five times.
 local function Chosen()
 	return ns.BarLook.Chosen()
+end
+
+-- What answers for a bar's place on the screen: Buttons/Pet.lua for the pet
+-- tab, Buttons/Bars.lua for the plan's five. Both take the def and the axis.
+local function Standing(def)
+	if def == ns.PetBar.DEF then
+		return ns.PetBar.Standing()
+	end
+	return ns.Bars.Standing(def)
+end
+
+local function MoveToCentre(def, axis)
+	if def == ns.PetBar.DEF then
+		return ns.PetBar.Centre(axis)
+	end
+	return ns.Bars.Centre(def, axis)
 end
 
 -- Every per-bar look dropped, so all five are the plan again. The counterpart
@@ -120,7 +143,7 @@ end
 -- exactly where it was, which is the whole of what the two buttons are for.
 local function Centre(axis)
 	local def = Chosen()
-	local ok, why = ns.Bars.Centre(def, axis)
+	local ok, why = MoveToCentre(def, axis)
 	if not ok then
 		ns.Print(why == "combat" and "that has to wait until combat ends."
 			or (def.label .. " is not up, so there is nothing to centre."))
@@ -136,6 +159,7 @@ end
 local function Match()
 	local dropped = ns.WhichBars.Follow()
 	ns.Bars.Apply()
+	ns.PetBar.Apply()
 	if dropped == 0 then
 		ns.Print("already following your own bars: " .. ns.Bars.Describe() .. ".")
 	else
@@ -216,7 +240,7 @@ local function BarsPage(ui)
 	ui.Tabs(
 		function()
 			local labels = {}
-			for index, def in ipairs(ns.WhichBars.PLAN) do
+			for index, def in ipairs(ns.BarLook.Tabs()) do
 				labels[index] = def.tab
 			end
 			return labels
@@ -239,7 +263,7 @@ local function BarsPage(ui)
 			ns.BarLook.StepRows(Chosen(), value)
 			Restyle()
 		end)
-	ui.Hint("Twelve buttons, so the shapes are 1, 2, 3, 4, 6 and 12 rows and the stepper walks between them.")
+	ui.Hint("Twelve buttons fold into 1, 2, 3, 4, 6 or 12 rows and the pet bar's ten into 1, 2, 5 or 10. The stepper walks between them.")
 
 	local sizeLow, sizeHigh = ns.BarLook.SizeRange()
 	ui.Slider("square", sizeLow, sizeHigh, 1,
@@ -309,10 +333,10 @@ local function BarsPage(ui)
 	ui.ActionPair(
 		function() return "centre left to right" end,
 		function() Centre("x") end,
-		function() return ns.Bars.Standing(Chosen()) end,
+		function() return Standing(Chosen()) end,
 		function() return "centre up and down" end,
 		function() Centre("y") end,
-		function() return ns.Bars.Standing(Chosen()) end)
+		function() return Standing(Chosen()) end)
 
 	ui.Check("lock the bars",
 		function() return ns.db.barsLocked end,
@@ -373,7 +397,7 @@ local function CentreWord(def, value)
 		ns.Print("centre takes across or down.")
 		return
 	end
-	local moved, why = ns.Bars.Centre(def, axis)
+	local moved, why = MoveToCentre(def, axis)
 	if moved then
 		ns.Print(def.label .. " centred.")
 	elseif why == "combat" then
@@ -384,7 +408,6 @@ local function CentreWord(def, value)
 end
 
 local function LookWord(word, rest)
-	local ROWS = ns.BarLook.ROWS
 	if not LOOK_WORDS[word] then
 		return false
 	end
@@ -392,16 +415,18 @@ local function LookWord(word, rest)
 	local name, value = rest:match("^(%S*)%s*(.-)%s*$")
 	local def = ns.BarLook.Find(name)
 	if not def then
-		ns.Print("name a bar: bar1, bottomleft, bottomright, right or right2.")
+		ns.Print("name a bar: bar1, bottomleft, bottomright, right, right2 or pet.")
 		return true
 	end
 
 	local ok = false
 	if word == "rows" then
-		local rows = ns.Command.Number(value, ROWS[1], ROWS[#ROWS], "rows")
+		local shapes = ns.BarLook.Shapes(def)
+		local rows = ns.Command.Number(value, shapes[1], shapes[#shapes], "rows")
 		ok = rows ~= nil and ns.BarLook.SetRows(def, rows)
 		if rows and not ok then
-			ns.Print("twelve buttons make 1, 2, 3, 4, 6 or 12 rows and nothing else.")
+			ns.Print(("%s makes %s rows and nothing else."):format(
+				def.label, table.concat(shapes, ", ")))
 		end
 	elseif word == "square" then
 		local low, high = ns.BarLook.SizeRange()

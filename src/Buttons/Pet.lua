@@ -55,8 +55,6 @@ local UPDATE_INTERVAL = 0.1
 -- has already said everything.
 local GCD = 1.5
 
-local VISIBILITY = "[pet] show; hide"
-
 -- The autocast mark, a gold corner at the bottom left of the art, where no
 -- number on a square is drawn. Full while the ability casts itself and faint
 -- while it could and is switched off, which are the two states Blizzard draws
@@ -64,19 +62,20 @@ local VISIBILITY = "[pet] show; hide"
 local AUTO_SIDE = 5
 local AUTO_ON, AUTO_OFF = 1, 0.35
 
--- The key the square size is asked under. No record is ever written for it, so
--- Buttons/Look.lua answers the size every bar ships at and the argument for
--- that number stays in one file.
-local LOOK = { key = "pet" }
-
 -- Where the bar ships, in the shape of a bar in Buttons/Which.lua's plan, so
 -- `actionbars where` prints a dragged pet bar as a line to paste over this one.
 -- Centred on top of the bottom right bar, which the plan puts at 150 and which
 -- is 33 high with its pad.
+--
+-- The same def is the key Buttons/Look.lua keeps this bar's look under and the
+-- sixth tab on the bars page. `slots` gives it ten squares' worth of shapes and
+-- `needs` keeps it down without a pet whatever else its look says.
 local DEF = {
-	key = "pet", label = "pet bar",
+	key = "pet", label = "pet bar", tab = "pet",
+	slots = SLOTS, columns = SLOTS, needs = "pet",
 	point = "BOTTOM", to = "BOTTOM", x = 0, y = 184,
 }
+Pet.DEF = DEF
 
 -- What the drag handle says, where a bar in the plan says its shape and hours.
 function DEF.note()
@@ -156,19 +155,27 @@ end
 -- The bar
 --------------------------------------------------------------------------
 
--- One row of ten, with the gap and the pad the action bars use, so the two read
--- as one set of bars.
+-- The ten in the rows Buttons/Look.lua says, with the gap and the pad the
+-- action bars use, so the two read as one set of bars.
 local function Arrange()
-	local size = ns.BarLook.Size(LOOK)
+	local columns = ns.BarLook.Columns(DEF)
+	local size = ns.BarLook.Size(DEF)
+	local key = ns.BarLook.KeyDecided(DEF)
 	local gap = ns.Bars.GAP
-	local row = { direction = "row", gap = gap }
+	local rows = { direction = "column", gap = gap, pad = ns.Bars.PAD }
+	local row
 	for index = 1, SLOTS do
+		if (index - 1) % columns == 0 then
+			row = { direction = "row", gap = gap }
+			rows[#rows + 1] = row
+		end
 		local w = squares[index]
-		Ability.Size(w, size)
+		Ability.Size(w, size, key)
 		w.auto:SetSize(AUTO_SIDE, AUTO_SIDE)
-		row[index] = { frame = w, width = size, height = size }
+		row[#row + 1] = { frame = w, width = size, height = size }
 	end
-	Flow.Arrange(bar, { direction = "column", gap = gap, pad = ns.Bars.PAD, row })
+	Flow.Arrange(bar, rows)
+	ns.BarLook.Paint(entry)
 end
 
 -- Built once, at the first apply that wants it. Ten secure buttons cannot be
@@ -212,7 +219,7 @@ local function Drive()
 	Release()
 	bar:Show()
 	if ns.BarLook.CanDrive()
-		and pcall(RegisterStateDriver, bar, "visibility", VISIBILITY) then
+		and pcall(RegisterStateDriver, bar, "visibility", ns.BarLook.Visibility(DEF)) then
 		driven = true
 		return
 	end
@@ -257,7 +264,10 @@ function Pet.Apply()
 		return false
 	end
 
-	if not ns.db.actionBars then
+	-- Its own tick on the bars page as well as the clone's switch, kept where
+	-- the plan's bars keep theirs. Buttons/Which.lua answers yes for a bar with
+	-- no client frame to follow, so the pet bar is on until it is unticked.
+	if not ns.db.actionBars or not ns.WhichBars.Wanted(DEF) then
 		live = false
 		if bar then
 			Release()
@@ -276,6 +286,49 @@ function Pet.Apply()
 	-- that comes up while the frames are unlocked comes up with its handle.
 	ns.Bars.ApplyLock()
 	return Cage(true)
+end
+
+-- Drawn again to what Buttons/Look.lua now says, which is the bars page
+-- changing a setting on the pet tab. Held to the end of a fight for
+-- Buttons/Bars.lua's reason: a layout moves ten secure buttons and a state
+-- driver is not registered in combat either.
+function Pet.Restyle()
+	if not live then
+		return true
+	end
+	if ns.Lockdown.Held(Pet.Restyle) then
+		return false
+	end
+	Arrange()
+	ns.BarPlace.Put(entry)
+	Drive()
+	ns.Bars.ApplyLock()
+	Pet.Mark()
+	return true
+end
+
+-- Up and on the screen, which is what the page's centre buttons ask of a bar.
+function Pet.Standing()
+	return live and bar ~= nil
+end
+
+-- Centred in one axis, the way Bars.Centre does it for a bar in the plan.
+function Pet.Centre(axis)
+	if not Pet.Standing() then
+		return false, "that bar is not up"
+	end
+	if InCombatLockdown() then
+		return false, "combat"
+	end
+	ns.BarPlace.Centre(entry, axis)
+	return true
+end
+
+-- The accent rim, while the bars page is on the pet tab.
+function Pet.Mark()
+	if entry then
+		ns.BarLook.Mark({ entry })
+	end
 end
 
 --------------------------------------------------------------------------
@@ -335,6 +388,9 @@ end
 function Pet.Describe()
 	if not (ns.db and ns.db.actionBars) then
 		return "off, Blizzard's pet bar is its own"
+	end
+	if not ns.WhichBars.Wanted(DEF) then
+		return "unticked, Blizzard's pet bar is its own"
 	end
 	if not bar then
 		return "not built yet"

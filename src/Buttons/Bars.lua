@@ -550,9 +550,11 @@ function Bars.ApplyLock()
 end
 
 -- The accent rim on whichever bar the options page is showing. Forwarded for
--- the reason the lock above is: `order` is this file's.
+-- the reason the lock above is: `order` is this file's. The pet bar is a tab on
+-- that page too and marks its own, so one call covers every tab.
 function Bars.ApplyMark()
 	ns.BarLook.Mark(order)
+	ns.PetBar.Mark()
 end
 
 -- Whether one bar is up right now, which is a different question from whether

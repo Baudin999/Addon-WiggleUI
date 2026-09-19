@@ -59,6 +59,28 @@ local SLOTS = 12
 -- folded.
 Look.ROWS = { 1, 2, 3, 4, 6, 12 }
 
+-- A bar that is not twelve says so in `slots`, which is the pet bar's ten, and
+-- its shapes are the ways ten breaks into a rectangle for the same reason.
+local function Slots(def)
+	return def.slots or SLOTS
+end
+
+-- The shapes one bar can take: Look.ROWS for the plan's twelve, worked out for
+-- anything else rather than written as a second table that could disagree.
+function Look.Shapes(def)
+	local slots = Slots(def)
+	if slots == SLOTS then
+		return Look.ROWS
+	end
+	local shapes = {}
+	for rows = 1, slots do
+		if slots % rows == 0 then
+			shapes[#shapes + 1] = rows
+		end
+	end
+	return shapes
+end
+
 -- 27, and it is not a taste decision. UI.IconSizes answers { 54, 27 } on this
 -- client: an icon is stored at 64 texels, the crop that takes the border baked
 -- into every one of them off leaves 54, and the client keeps each copy at half
@@ -174,19 +196,20 @@ end
 -- default, so bar 1 ships as one row of twelve and the two side bars as six
 -- rows of two, which is what the client draws them as.
 function Look.Rows(def)
-	return Field(def, "rows") or (SLOTS / def.columns)
+	return Field(def, "rows") or (Slots(def) / def.columns)
 end
 
 function Look.Columns(def)
-	return SLOTS / Look.Rows(def)
+	return Slots(def) / Look.Rows(def)
 end
 
 -- Whether a row count is one of the six. Not a clamp: a number that is not a
 -- shape has to be refused where it was typed, because rounding 5 to 6 quietly
 -- is how a macro comes to say something it does not do.
-function Look.IsShape(rows)
-	for index = 1, #Look.ROWS do
-		if Look.ROWS[index] == rows then
+function Look.IsShape(def, rows)
+	local shapes = Look.Shapes(def)
+	for index = 1, #shapes do
+		if shapes[index] == rows then
 			return true
 		end
 	end
@@ -194,10 +217,10 @@ function Look.IsShape(rows)
 end
 
 function Look.SetRows(def, rows)
-	if not Look.IsShape(rows) then
+	if not Look.IsShape(def, rows) then
 		return false
 	end
-	return Write(def, "rows", rows, SLOTS / def.columns)
+	return Write(def, "rows", rows, Slots(def) / def.columns)
 end
 
 -- The panel's stepper counts in ones and only six of the twelve numbers it can
@@ -207,19 +230,20 @@ end
 -- five, five snaps to the nearest, and the nearest is four again: a control
 -- that does nothing on every second press.
 function Look.StepRows(def, value)
+	local shapes = Look.Shapes(def)
 	local current = Look.Rows(def)
 	local rows = current
 	if value > current then
-		for index = 1, #Look.ROWS do
-			if Look.ROWS[index] > current then
-				rows = Look.ROWS[index]
+		for index = 1, #shapes do
+			if shapes[index] > current then
+				rows = shapes[index]
 				break
 			end
 		end
 	elseif value < current then
-		for index = #Look.ROWS, 1, -1 do
-			if Look.ROWS[index] < current then
-				rows = Look.ROWS[index]
+		for index = #shapes, 1, -1 do
+			if shapes[index] < current then
+				rows = shapes[index]
 				break
 			end
 		end
@@ -393,13 +417,21 @@ end
 -- for a combat rule to decide: `[mod:shift] show; [combat] hide; show` would
 -- mean a bar that is up all the time except in combat, which is the other
 -- setting wearing this one's name.
+--
+-- A bar with `needs` is down without it before anything else is asked, which is
+-- the pet bar and `[nopet] hide`. Such a bar always has a macro, because being
+-- up only with a pet out is already a condition the client has to evaluate.
 function Look.Visibility(def)
+	local gate = def.needs and ("[no%s] hide; "):format(def.needs) or ""
 	local key = Look.Key(def)
 	if key ~= Look.KEYS[1].key then
-		return ("[mod:%s] show; hide"):format(key)
+		return ("%s[mod:%s] show; hide"):format(gate, key)
 	end
 	if Look.Combat(def) then
-		return "[combat] hide; show"
+		return gate .. "[combat] hide; show"
+	end
+	if def.needs then
+		return gate .. "show"
 	end
 	return nil
 end
@@ -453,7 +485,7 @@ function Look.Decided()
 	return count
 end
 
--- Drop every one of them, so all five bars are the plan again. The counterpart
+-- Drop every one of them, so every bar is the plan again. The counterpart
 -- of Which.Follow, and a deletion for the same reason.
 function Look.Plain()
 	if not (ns.db and ns.db.barLook) then
@@ -494,8 +526,9 @@ function Look.Find(word)
 		return nil
 	end
 	local wanted = word:lower()
-	for index = 1, #ns.WhichBars.PLAN do
-		local def = ns.WhichBars.PLAN[index]
+	local tabs = Look.Tabs()
+	for index = 1, #tabs do
+		local def = tabs[index]
 		if def.key:lower() == wanted or def.tab:lower() == wanted
 			or def.label:lower() == wanted then
 			return def
@@ -530,6 +563,9 @@ function Look.Hours(def)
 	end
 	if driven and not Look.CanDrive() then
 		line = line .. ", except this client cannot, so it stays up"
+	end
+	if def.needs then
+		line = ("%s, with a %s out"):format(line, def.needs)
 	end
 	return line
 end
@@ -640,22 +676,37 @@ end
 -- which is the same thing ns.People.Shown answers and is kept the same way.
 --------------------------------------------------------------------------
 
+-- The plan's five and the pet bar after them. The pet bar is not in the plan,
+-- for the reason Buttons/Pet.lua gives, but it is a bar you shape and paint the
+-- same way, so it has a tab. Built on each call rather than once, because this
+-- file loads before Pet.lua.
+function Look.Tabs()
+	local tabs = {}
+	for index = 1, #ns.WhichBars.PLAN do
+		tabs[index] = ns.WhichBars.PLAN[index]
+	end
+	if ns.PetBar then
+		tabs[#tabs + 1] = ns.PetBar.DEF
+	end
+	return tabs
+end
+
 local shown = 1
 
 function Look.Shown()
-	if shown > #ns.WhichBars.PLAN then
+	if shown > #Look.Tabs() then
 		shown = 1
 	end
 	return shown
 end
 
 function Look.Show(index)
-	if index >= 1 and index <= #ns.WhichBars.PLAN then
+	if index >= 1 and index <= #Look.Tabs() then
 		shown = index
 	end
 	return shown
 end
 
 function Look.Chosen()
-	return ns.WhichBars.PLAN[Look.Shown()]
+	return Look.Tabs()[Look.Shown()]
 end

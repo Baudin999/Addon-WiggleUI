@@ -438,6 +438,43 @@ check(rimmed() == 0, "the panel closed and a bar kept its rim")
 ns.Options.Hide()
 
 --------------------------------------------------------------------------
+-- The pet bar's tab
+--
+-- Not in the plan, and on the page anyway: the strip's last tab, ten squares'
+-- worth of shapes, and the pet gate kept in front of whatever else its look
+-- asks the client for, so a bar held on shift still stays down with no pet.
+--------------------------------------------------------------------------
+
+do
+	local Pet = ns.PetBar
+	local tabs = Look.Tabs()
+	check(tabs[#tabs] == Pet.DEF and #tabs == #ns.WhichBars.PLAN + 1,
+		"the pet bar is not the last tab on the bars page")
+	check(Look.Find("pet") == Pet.DEF, "`pet` does not name the pet bar")
+	check(table.concat(Look.Shapes(Pet.DEF), ",") == "1,2,5,10",
+		("the pet bar folds into %s rows"):format(table.concat(Look.Shapes(Pet.DEF), ",")))
+	check(not Look.SetRows(Pet.DEF, 3), "the pet bar took three rows of ten squares")
+
+	check(Pet.Apply(), "the pet bar deferred its apply out of combat")
+	local bar = Pet.Frame()
+	check(Look.SetRows(Pet.DEF, 2) and Pet.Restyle(), "the pet bar would not fold to 2 rows")
+	width, height = shape(5, 2)
+	check(bar:GetWidth() == width and bar:GetHeight() == height,
+		("the pet bar at 2 rows is %s by %s and should be %d by %d"):format(
+			tostring(bar:GetWidth()), tostring(bar:GetHeight()), width, height))
+
+	check(Look.SetKey(Pet.DEF, "shift") and Pet.Restyle(), "the pet bar would not wait on shift")
+	local macro = _G.WarriorKitDriver(bar, "visibility")
+	check(macro == "[nopet] hide; [mod:shift] show; hide",
+		("the pet bar on shift is driven by %q"):format(tostring(macro)))
+
+	check(Look.SetRows(Pet.DEF, 1) and Look.SetKey(Pet.DEF, "none") and Pet.Restyle(),
+		"the pet bar would not go back to its shipping look")
+	check(_G.WarriorKitDriver(bar, "visibility") == "[nopet] hide; show",
+		"the pet bar lost its pet gate going back to its shipping look")
+end
+
+--------------------------------------------------------------------------
 -- Back to the plan
 --------------------------------------------------------------------------
 

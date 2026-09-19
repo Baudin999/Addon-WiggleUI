@@ -81,7 +81,7 @@ do
 	check(rawget(theirs, "wkStripped") == nil,
 		"Blizzard's pet bar had its Show written, which taints its own OnEvent")
 
-	check(_G.WarriorKitDriver(bar, "visibility") == "[pet] show; hide",
+	check(_G.WarriorKitDriver(bar, "visibility") == "[nopet] hide; show",
 		"the client is not holding the pet bar's visibility")
 	Pet.Apply()
 	check(_G.WarriorKitDrivers(bar, "visibility") == 1,
