@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WGFYSSACR388KMVAM4JBF3
 type: task
-status: todo
+status: doing
 title: "The minimap wears its palette's painted frame, at half scale"
 ---
 
