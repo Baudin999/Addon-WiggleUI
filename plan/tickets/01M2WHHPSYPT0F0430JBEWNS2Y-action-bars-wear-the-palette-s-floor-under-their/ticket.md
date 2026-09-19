@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WHHPSYPT0F0430JBEWNS2Y
 type: task
-status: doing
+status: done
 title: Action bars wear the palette's floor under their squares
 ---
 
