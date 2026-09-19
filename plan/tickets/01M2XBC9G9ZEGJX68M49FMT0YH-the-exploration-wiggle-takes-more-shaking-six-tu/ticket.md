@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2XBC9G9ZEGJX68M49FMT0YH
 type: task
-status: doing
+status: done
 title: "The exploration wiggle takes more shaking: six turns of 60 units"
 ---
 
