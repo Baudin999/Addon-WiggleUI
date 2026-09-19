@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WM848ME0EX8FHZWS546DA4
 type: task
-status: review
+status: done
 title: A quest item wears the game's quest border and its count to go
 parent: 01M2WM7H2QD0KYVCRBZZ25T564
 ---
