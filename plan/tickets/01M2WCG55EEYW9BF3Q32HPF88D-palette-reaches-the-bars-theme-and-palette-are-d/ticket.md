@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WCG55EEYW9BF3Q32HPF88D
 type: task
-status: doing
+status: done
 title: Palette reaches the bars; theme and palette are dropdowns
 parent: 01M2W8X3ZSH458FRQ1VXBS2KC1
 ---
