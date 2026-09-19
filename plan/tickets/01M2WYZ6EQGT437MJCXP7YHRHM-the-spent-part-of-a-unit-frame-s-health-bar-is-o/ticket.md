@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WYZ6EQGT437MJCXP7YHRHM
 type: task
-status: doing
+status: done
 title: The spent part of a unit frame's health bar is one neutral grey
 ---
 
