@@ -137,6 +137,15 @@ function Theme.Modern()
 	return drawnLook == "modern"
 end
 
+-- Whether the player, pet, target and target of target blocks draw their
+-- portrait. Off, the block keeps its width and the bars take the square's room.
+-- Drawn at the reload with the bar look, for the same reason.
+local drawnPortraits
+
+function Theme.Portraits()
+	return drawnPortraits ~= false
+end
+
 -- What the theme loaded with this session does to one element. Informational
 -- until the saved variables arrive, which is what a part building a frame at
 -- file scope would want: the frame as drawn, dressed a moment later.
@@ -266,6 +275,7 @@ loader:SetScript("OnEvent", function(self, _, name)
 		ns.db.barLook = "flat"
 	end
 	drawnTheme, drawnPalette, drawnLook = ns.db.theme, ns.db.palette, ns.db.barLook
+	drawnPortraits = ns.db.portraits ~= false
 	Paint(drawnPalette)
 	chosen = themed[drawnTheme]
 	Pass()
@@ -297,7 +307,7 @@ end
 
 local function Pending()
 	return ns.db.theme ~= drawnTheme or ns.db.palette ~= drawnPalette
-		or ns.db.barLook ~= drawnLook
+		or ns.db.barLook ~= drawnLook or (ns.db.portraits ~= false) ~= drawnPortraits
 end
 
 -- One word, the saved setting it writes, and the list it has to be on.
@@ -330,6 +340,7 @@ ns.Register({
 		theme = "informational",
 		palette = "dark",
 		barLook = "flat",
+		portraits = true,
 	},
 
 	words = {
@@ -386,6 +397,11 @@ ns.Register({
 			function(value) ns.db.barLook = value end,
 			function() return looks end)
 		ui.Hint("Flat is one colour per bar with a hairline round each. Modern shades every bar from light at the top to dark at the bottom, stacks health on power with no line between, and edges each unit in the palette's accent.")
+
+		ui.Check("portraits on the player and target frames",
+			function() return ns.db.portraits ~= false end,
+			function(value) ns.db.portraits = value end)
+		ui.Hint("Off, each frame keeps its width and the bars stretch into the portrait's square.")
 
 		ui.Action(function()
 			return Pending() and "reload to draw it" or "drawn now"

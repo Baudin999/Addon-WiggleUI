@@ -181,7 +181,9 @@ local function BuildAmmo(entry)
 end
 
 -- On the outer corners of the square, the two the gauge is not against,
--- each centred on its corner so it half overhangs the block.
+-- each centred on its corner so it half overhangs the block. Pinned to the
+-- block's corner, which is the square's outer corner when there is a portrait
+-- and the same pixel when there is not.
 --
 -- An even number of pixels, because the badge is centred on a corner and
 -- half of an odd one puts all four of its edges on a half pixel.
@@ -193,7 +195,7 @@ local function PlaceBadges(entry, px, side, portraitEdge)
 		local size = math.floor(side * badge.scale / 2 + 0.5) * 2 * px
 		texture:ClearAllPoints()
 		texture:SetSize(size, size)
-		texture:SetPoint("CENTER", entry.slot, badge.corner .. portraitEdge, 0, 0)
+		texture:SetPoint("CENTER", entry.frame, badge.corner .. portraitEdge, 0, 0)
 	end
 end
 
@@ -213,7 +215,7 @@ end
 -- and the number land on whole pixels either side of the middle. The icon is a
 -- square inside the outline on the portrait side, and the number is anchored
 -- between the icon and the far edge and centred there.
-local function PlaceAmmo(entry, px, level, small, font, gaugeEdge, pull)
+local function PlaceAmmo(entry, px, level, small, font, gaugeEdge, pull, side)
 	local pill = entry.ammo
 	if not pill then
 		return
@@ -233,9 +235,17 @@ local function PlaceAmmo(entry, px, level, small, font, gaugeEdge, pull)
 	pill.text:SetPoint(near, pill.icon, gaugeEdge, -pull * AMMO_GAP * px, 0)
 	pill.text:SetPoint(gaugeEdge, pill, gaugeEdge, pull * (AMMO_PAD + 1) * px, 0)
 
+	-- With the portrait switched off there is no square to dock to, and the
+	-- pill hangs off the block's own corner at the width the square would have
+	-- had, so it sits where it always sat.
 	pill:ClearAllPoints()
-	pill:SetPoint("TOP" .. near, entry.slot, "BOTTOM" .. near, 0, px)
-	pill:SetPoint("TOP" .. gaugeEdge, entry.slot, "BOTTOM" .. gaugeEdge, 0, px)
+	if entry.slot:IsShown() then
+		pill:SetPoint("TOP" .. near, entry.slot, "BOTTOM" .. near, 0, px)
+		pill:SetPoint("TOP" .. gaugeEdge, entry.slot, "BOTTOM" .. gaugeEdge, 0, px)
+	else
+		pill:SetPoint("TOP" .. near, entry.frame, "BOTTOM" .. near, 0, px)
+		pill:SetWidth(side * px)
+	end
 	entry.shownAmmo, entry.ammoIcon = nil, nil
 end
 
@@ -390,12 +400,20 @@ function Block.Place(entry)
 	--
 	-- `reverse` is the whole of the mirroring: it runs the row backwards, so the
 	-- target's three cells land the other way round with no sign anywhere here.
+	--
+	-- With the portrait switched off the square leaves the row and a pixel for
+	-- the outline takes its place. The block keeps its width, so the gauge's
+	-- grow is what stretches the bars into the room the square had.
+	local portrait = ns.Theme.Portraits()
+	entry.slot:SetShown(portrait)
+	entry.divider:SetShown(portrait)
+	local near = portrait and { frame = entry.slot, width = side * px, align = "stretch",
+		direction = "row", reverse = spec.mirror, pad = { 0, px, 0, px },
+		{ grow = 1 }, { frame = entry.divider, width = px } } or { width = px }
 	Flow.Arrange(frame, {
 		direction = "row", reverse = spec.mirror, align = "stretch",
 		width = total, height = side * px,
-		{ frame = entry.slot, width = side * px, align = "stretch",
-			direction = "row", reverse = spec.mirror, pad = { 0, px, 0, px },
-			{ grow = 1 }, { frame = entry.divider, width = px } },
+		near,
 		{ direction = "column", grow = 1, gap = seam * px, align = "stretch",
 			pad = { 0, px, 0, px },
 			{ frame = entry.healthBar, height = health * px },
@@ -448,21 +466,28 @@ function Block.Place(entry)
 	entry.healthText:ClearAllPoints()
 	entry.healthText:SetPoint(gaugeEdge, frame, "TOP" .. gaugeEdge, pull * pad, healthMid)
 
+	-- The inner edge the name and the level start from: the square's, or the
+	-- block's own when there is no square.
+	local start, startPoint = entry.slot, "TOP" .. gaugeEdge
+	if not portrait then
+		start, startPoint = frame, "TOP" .. portraitEdge
+	end
+
 	entry.nameText:ClearAllPoints()
-	entry.nameText:SetPoint(portraitEdge, entry.slot, "TOP" .. gaugeEdge, -pull * pad, healthMid)
+	entry.nameText:SetPoint(portraitEdge, start, startPoint, -pull * pad, healthMid)
 	entry.nameText:SetPoint(gaugeEdge, entry.healthText, portraitEdge, pull * pad, 0)
 
 	-- The level goes on the power bar's inner end, which is empty on every
 	-- unit in the game, and the power number on its outer end.
 	entry.levelText:ClearAllPoints()
-	entry.levelText:SetPoint(portraitEdge, entry.slot, "TOP" .. gaugeEdge, -pull * pad, powerMid)
+	entry.levelText:SetPoint(portraitEdge, start, startPoint, -pull * pad, powerMid)
 
 	entry.powerText:ClearAllPoints()
 	entry.powerText:SetPoint(gaugeEdge, frame, "TOP" .. gaugeEdge, pull * pad, powerMid)
 	entry.powerText:SetShown(power >= VALUE_FLOOR)
 
 	PlaceBadges(entry, px, side, portraitEdge)
-	PlaceAmmo(entry, px, level, small, smallFont, gaugeEdge, pull)
+	PlaceAmmo(entry, px, level, small, smallFont, gaugeEdge, pull, side)
 
 	-- Last, because a row wraps against the block's width and the block has
 	-- only just been given one.
