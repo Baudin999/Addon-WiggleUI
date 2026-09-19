@@ -601,6 +601,9 @@ local SECTIONS = {
 	-- load painted. Builds one frame, hides it at the foot, reads nothing any
 	-- other section left.
 	"88-theme-veil",
+	-- The painted frame's tiling on a frame of its own, with a palette chosen
+	-- by hand and put back to none at the foot.
+	"88-theme-backdrop",
 	-- Last, and it is the only section that changes what the client says is
 	-- installed. Everything else here runs on a client with no other addon
 	-- loaded, which is the state the notice has to stay quiet in, so this one

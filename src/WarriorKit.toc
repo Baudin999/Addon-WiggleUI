@@ -126,6 +126,9 @@ Unit\Unit.lua
 Theme\Dark.lua
 Theme\Forest.lua
 Theme\Desert.lua
+# The painted frames the bag window is drawn in, for the palettes that have
+# one. Written by scripts/bake-backdrops.sh.
+Theme\Backdrops.lua
 Unit\Color.lua
 Unit\Level.lua
 Unit\Roster.lua
@@ -140,6 +143,10 @@ UI\Pixel.lua
 # The palette and the pixel metrics, straight after the grid they are measured
 # on and before UI\Ability.lua, whose squares are drawn in its colours.
 UI\Theme.lua
+
+# The painted frame a window can ask for. Ahead of Theme\Theme.lua, which holds
+# every painting to its nine pieces at load and hands the palette's over.
+UI\Backdrop.lua
 
 # One OnUpdate, registered rather than written out. Every throttled tick in the
 # addon comes through here, which is what lets scripts/hot.lua derive the set of

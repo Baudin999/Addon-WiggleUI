@@ -90,6 +90,23 @@ for name in pairs(Palettes) do
 	assert(listed[name], ("the palette %q is not on Theme.PALETTES"):format(name))
 end
 
+-- A painting is optional and belongs to a palette on the list, and one that is
+-- there has all nine pieces, each a path and a drawn size. A painting under a
+-- misspelt palette would never be drawn and nothing would say so; a piece
+-- missing would be a hole in the frame at one corner of one window.
+for name, art in pairs(ns.Backdrops) do
+	assert(listed[name], ("the painting %q is for no palette on Theme.PALETTES"):format(name))
+	for key in pairs(UI.BACKDROP_PIECES) do
+		local piece = art[key]
+		assert(type(piece) == "table" and type(piece[1]) == "string"
+			and type(piece[2]) == "number" and piece[2] > 0
+			and type(piece[3]) == "number" and piece[3] > 0,
+			("the painting %q has no %s piece with a path and a size"):format(name, key))
+	end
+	assert(type(art.corner) == "number" and type(art.thickness) == "table",
+		("the painting %q has no corner or thickness"):format(name))
+end
+
 --------------------------------------------------------------------------
 -- What was chosen, and what is drawn
 --------------------------------------------------------------------------
@@ -207,6 +224,7 @@ local function Paint(name)
 		end
 	end
 	ns.Unit.Color.Paint(Palettes[name])
+	UI.ChooseBackdrop(ns.Backdrops[name])
 end
 
 --------------------------------------------------------------------------

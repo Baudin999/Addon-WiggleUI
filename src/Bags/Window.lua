@@ -301,6 +301,8 @@ local function Build()
 		width = Width(),
 		height = FLOOR,
 		zoom = function() return ns.Zoom("bagsZoom") end,
+		-- The palette's painted frame, when it has one.
+		backdrop = true,
 	})
 	ns.Remember(window)
 	-- Hooked rather than set, because the frame is placeable and its drag

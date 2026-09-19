@@ -218,7 +218,14 @@ local function Surface(window, frame, opts)
 	-- A screen window has none. It is the size of the screen, so a ground on it
 	-- is the game painted out, and what it draws is meant to be read against the
 	-- world rather than against a panel.
-	if not opts.screen then
+	--
+	-- A window that asks for a backdrop is drawn on the palette's painting
+	-- instead, when the palette has one, and then has no fill to thin and no
+	-- hairline: the painted frame is the edge. See UI/Backdrop.lua.
+	window.backdrop = opts.backdrop and not opts.screen and UI.Backdrop(frame) or nil
+	if window.backdrop then
+		-- Drawn by the first resize, which the constructor makes.
+	elseif not opts.screen then
 		window.bg = ns.Fill(frame, "BACKGROUND", C.window[1], C.window[2], C.window[3], C.window[4])
 		window.bg:SetAllPoints()
 	else
@@ -236,7 +243,7 @@ local function Surface(window, frame, opts)
 	-- so the line is not marking a boundary you needed marking, it is a bright
 	-- rectangle drawn round the trees. Take it off and the window is what is
 	-- written in it, which is what a chat window should be.
-	if opts.edge ~= false and not opts.screen then
+	if opts.edge ~= false and not opts.screen and not window.backdrop then
 		window.edges = ns.Outline(frame, C.edge[1], C.edge[2], C.edge[3], 1)
 		ns.EdgeSize(window.edges, px)
 	end
@@ -721,6 +728,9 @@ function Window:Resize(width, height)
 	self.width, self.height = width, height
 	self.frame:SetSize(width, height)
 	self.content:SetSize(width, self:Body(height))
+	if self.backdrop then
+		self.backdrop:Layout(width, height)
+	end
 	return width, height
 end
 
