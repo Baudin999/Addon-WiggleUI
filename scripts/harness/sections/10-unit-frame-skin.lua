@@ -220,6 +220,13 @@ for _, block in ipairs(blocks) do
 		check(slot and slot:GetWidth() == slot:GetHeight() and slot:GetHeight() == button:GetHeight(),
 			key .. ": the portrait's square is not the block's height squared")
 
+		-- The name hugs the portrait side of its span, which is the right on
+		-- the mirrored target. Justified left there, it ran into the percent.
+		local hug = entry.spec.mirror and "RIGHT" or "LEFT"
+		check(entry.nameText.justify == hug,
+			("%s: the name is justified %s and belongs on the %s")
+				:format(key, tostring(entry.nameText.justify), hug))
+
 		-- The two bars are laid out by Flow directly, whole pixels tall.
 		local healthBar, powerBar = entry.healthBar, entry.powerBar
 		check(healthBar and powerBar, key .. ": the gauges were never built")

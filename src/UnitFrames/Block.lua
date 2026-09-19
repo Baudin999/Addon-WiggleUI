@@ -307,7 +307,14 @@ function Block.Build(entry)
 	-- One shared font object per size rather than a font on each string. Place
 	-- picks the real size off the bar heights a moment later; these are only
 	-- what the strings carry until it does.
-	entry.nameText = ns.UI.Label(entry.top, BIG_MAX, NAME_TEXT, "LEFT", ns.UI.FLAT)
+	--
+	-- The name is the one string pinned at both ends, the portrait's edge and
+	-- the percent's, so its justification is what decides where in that span
+	-- it sits. It hugs the portrait side, which on the mirrored target is the
+	-- right: justified left there, it sat against the percent and both read
+	-- as one run of text.
+	entry.nameText = ns.UI.Label(entry.top, BIG_MAX, NAME_TEXT,
+		spec.mirror and "RIGHT" or "LEFT", ns.UI.FLAT)
 	entry.healthText = ns.UI.Label(entry.top, BIG_MAX, VALUE_TEXT, "RIGHT", ns.UI.FLAT)
 	entry.levelText = ns.UI.Label(entry.top, SMALL_MAX, VALUE_TEXT, "LEFT", ns.UI.FLAT)
 	entry.powerText = ns.UI.Label(entry.top, SMALL_MAX, VALUE_TEXT, "RIGHT", ns.UI.FLAT)
