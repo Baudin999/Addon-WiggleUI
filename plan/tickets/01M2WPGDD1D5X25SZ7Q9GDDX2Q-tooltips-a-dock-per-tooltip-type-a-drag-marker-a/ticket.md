@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WPGDD1D5X25SZ7Q9GDDX2Q
 type: task
-status: todo
+status: doing
 title: "Tooltips: a dock per tooltip type, a drag marker, a darker floor"
 ---
 
