@@ -50,15 +50,16 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 # One row per painting. inset is where the floor starts, left, top, right and
 # bottom, in source pixels; corner is the square that holds each corner's
 # ornament; period is the floor's repeat across and down, measured by
-# autocorrelation of the middle. The desert is the one regenerated next, and
-# its numbers are re-measured with it.
+# autocorrelation of the middle. desert02 is the same frame as the first desert
+# painting with a calmer floor, so it kept that painting's numbers; a painting
+# with a new frame needs them measured again.
 PAINTINGS = [
 	{
 		"palette": "forest", "file": "art/forrest.jpeg", "stem": "Forest",
 		"inset": (60, 55, 60, 55), "corner": 120, "period": (335, 347),
 	},
 	{
-		"palette": "desert", "file": "art/desert.jpeg", "stem": "Desert",
+		"palette": "desert", "file": "art/desert02.jpeg", "stem": "Desert",
 		"inset": (72, 100, 82, 80), "corner": 210, "period": (334, 346),
 	},
 ]
@@ -67,7 +68,7 @@ SCALE = 0.30     # window units per source pixel
 DARKEN = 0.60    # what the floor keeps of its brightness
 FADE = 16        # source pixels a rail and a corner reach into the floor
 OVERLAP = 24     # source pixels cross-faded at the start of each tile
-CLEAR = 40       # source pixels between a rail and where the middle is cut
+CLEAR = 40       # source pixels a tile is cut clear of a painted shadow or notch
 FUZZ = 30        # how far from white still counts as the margin, of 255
 EDGE = 8         # source pixels over which the darkening ramps in
 
@@ -174,8 +175,32 @@ def fade_corner(tile, inward_x, inward_y, reach_x, reach_y):
 	return tile
 
 
+def bleed(image):
+	# The colour under a transparent pixel is still the white of the margin,
+	# and both the resize here and the client's filtering read it: a visible
+	# pixel beside one comes out pale. So each transparent pixel takes the
+	# colour of the frame near it: the colour blurred with alpha as its weight,
+	# then divided by the blurred alpha so it is the frame's colour and not the
+	# frame's colour darkened toward black.
+	alpha = image.getchannel("A")
+	solid = Image.new("RGB", image.size, (0, 0, 0))
+	solid.paste(image.convert("RGB"), mask=alpha)
+	spread = solid.filter(ImageFilter.GaussianBlur(4))
+	weight = alpha.filter(ImageFilter.GaussianBlur(4)).tobytes()
+	bands = []
+	for band in spread.split():
+		bands.append(Image.frombytes("L", image.size, bytes(
+			min(255, v * 255 // w) if w else 0 for v, w in zip(band.tobytes(), weight))))
+	out = Image.composite(image.convert("RGB"), Image.merge("RGB", bands),
+		alpha.point(lambda v: 255 if v else 0))
+	out.putalpha(alpha)
+	return out
+
+
 def write_tga(image, path, size):
-	image = image.resize(size, Image.LANCZOS).convert("RGBA")
+	# Resized premultiplied, so no transparent colour is mixed in, and bled
+	# after, because the premultiplied round trip leaves transparent black.
+	image = bleed(image.convert("RGBa").resize(size, Image.LANCZOS).convert("RGBA"))
 	w, h = image.size
 	header = struct.pack("<BBBHHBHHHHBB", 0, 0, 2, 0, 0, 0, 0, 0, w, h, 32, 0x28)
 	with open(path, "wb") as f:
@@ -225,15 +250,22 @@ for p in PAINTINGS:
 	mid = ImageChops.offset(mid, CLEAR, CLEAR)
 	emit("Middle", mid, (drawn(pw), drawn(ph)))
 
-	# The rails, each starting where its corner ends, which is where the row of
-	# them is laid on the screen.
-	emit("Top", fade(seamless(src, c, 0, pw, top + FADE, True, False), "bottom", FADE),
+	# The rails, each in phase with where its corner ends, which is where the
+	# row of them is laid on the screen. Cut CLEAR further along and rolled back
+	# like the middle, because the painting's corner block meets its rail at a
+	# notch, and a tile that starts on the notch repeats it at every join.
+	def rail(x, y, width, height, across):
+		tile = seamless(src, x + (CLEAR if across else 0), y + (0 if across else CLEAR),
+			width, height, across, not across)
+		return ImageChops.offset(tile, CLEAR if across else 0, 0 if across else CLEAR)
+
+	emit("Top", fade(rail(c, 0, pw, top + FADE, True), "bottom", FADE),
 		(drawn(pw), drawn(top + FADE)))
-	emit("Bottom", fade(seamless(src, c, H - bottom - FADE, pw, bottom + FADE, True, False), "top", FADE),
+	emit("Bottom", fade(rail(c, H - bottom - FADE, pw, bottom + FADE, True), "top", FADE),
 		(drawn(pw), drawn(bottom + FADE)))
-	emit("Left", fade(seamless(src, 0, c, left + FADE, ph, False, True), "right", FADE),
+	emit("Left", fade(rail(0, c, left + FADE, ph, False), "right", FADE),
 		(drawn(left + FADE), drawn(ph)))
-	emit("Right", fade(seamless(src, W - right - FADE, c, right + FADE, ph, False, True), "left", FADE),
+	emit("Right", fade(rail(W - right - FADE, c, right + FADE, ph, False), "left", FADE),
 		(drawn(right + FADE), drawn(ph)))
 
 	emit("TopLeft", fade_corner(src.crop((0, 0, c, c)), "right", "bottom", left, top),
