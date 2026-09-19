@@ -200,6 +200,11 @@ function UI.Button(parent, opts)
 	if opts.onClick then
 		assert(not opts.template,
 			"a button built on a template hooks its click rather than setting it")
+		-- Registered through UI.Press like every other button, rather than left
+		-- on the widget's default. The default registers something the camera
+		-- pass cannot read, so a button that never said which clicks it keeps
+		-- was a button the pass and Press.Edge both had to guess about.
+		UI.Press.Clicks(button, "up", "LeftButton")
 		button:SetScript("OnClick", opts.onClick)
 	end
 	return button

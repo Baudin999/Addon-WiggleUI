@@ -138,6 +138,11 @@ do
 	row:GetScript("OnEnter")(row)
 	check(row.trash:IsShown() and row.cross:IsShown(),
 		"pointing at a row did not bring up both its buttons")
+	for _, button in ipairs({ row.cross, row.trash }) do
+		local clicks = button:GetRegisteredClicks()
+		check(button.wkEdge == "up" and clicks and clicks.LeftButtonUp,
+			"a button on a loot row did not register its click through UI.Press")
+	end
 	check(row.trash:GetRight() <= row.cross:GetLeft() + 0.01,
 		"the can is drawn over the cross rather than beside it")
 	-- Onto the can is still the row, the same as onto the cross.
