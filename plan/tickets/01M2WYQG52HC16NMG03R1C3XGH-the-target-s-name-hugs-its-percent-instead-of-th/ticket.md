@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WYQG52HC16NMG03R1C3XGH
 type: bug
-status: todo
+status: doing
 title: The target's name hugs its percent instead of the frame's outer edge
 ---
 
