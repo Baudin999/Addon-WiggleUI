@@ -10,8 +10,9 @@ local UI = ns.UI
 --
 -- The third question about a cloned bar. Buttons/Which.lua answers which bars
 -- there are and which of them you want, Buttons/Placing.lua answers where one
--- goes, and this answers what shape it is, what colour it is drawn in and
--- whether it is on the screen at all right now.
+-- goes, and this answers what shape it is, how much of its ground shows and
+-- whether it is on the screen at all right now. What colour that ground is
+-- belongs to the theme, not to one bar.
 --
 -- Its own file for the reason those two are theirs. Buttons/Bars.lua is what a
 -- bar is made of: twelve secure buttons, the slots they press, the keys they
@@ -20,9 +21,8 @@ local UI = ns.UI
 -- here knows what an action slot is.
 --
 -- Every setting is per bar and every one of them has a default that is not a
--- setting. The shape's default is the plan's `columns` in Which.lua, the
--- colour's is the window colour every other surface in the addon is painted
--- in, and both visibility answers default to no. So a bar nobody has touched
+-- setting. The shape's default is the plan's `columns` in Which.lua and both
+-- visibility answers default to no. So a bar nobody has touched
 -- carries no record at all, `ns.db.barLook` is empty on a fresh install, and
 -- `actionbars plain` is a deletion rather than a write. That is the shape
 -- Which.lua already uses for the tick boxes and the argument is the same one:
@@ -112,27 +112,6 @@ local KEY_LOW, KEY_HIGH = 7, 32
 -- number nobody can put back. Two hundredths of an alpha on a background is
 -- not a look anybody has ever seen.
 local DEFAULT_ALPHA = 95
-
--- What a bar can be painted. Eight, named rather than mixed, for the reason the
--- geometry in Which.lua is source code: this is an addon for one person who
--- wants the same interface on every install, and a colour you dialled in with
--- three sliders is a colour that lives in one WTF folder.
---
--- The first two are the theme's own, so a bar left alone matches every other
--- surface the addon paints. The six after them are deliberately dark and
--- deliberately flat: this is the ground under twelve pieces of Blizzard icon
--- art, and anything with saturation in it fights the art rather than holding
--- it.
-Look.PALETTE = {
-	{ key = "window", label = "window", color = UI.Color.window },
-	{ key = "black", label = "black", color = { 0, 0, 0 } },
-	{ key = "slate", label = "slate", color = UI.Color.control },
-	{ key = "steel", label = "steel", color = UI.Color.edge },
-	{ key = "blue", label = "blue", color = { 0.07, 0.11, 0.20 } },
-	{ key = "green", label = "green", color = { 0.06, 0.15, 0.09 } },
-	{ key = "red", label = "red", color = { 0.19, 0.06, 0.06 } },
-	{ key = "purple", label = "purple", color = { 0.14, 0.08, 0.20 } },
-}
 
 -- Which key holds a bar on the screen. `none` is the shipping answer and means
 -- the bar is up on its own account; the other three are the modifiers the
@@ -314,32 +293,6 @@ end
 -- The paint
 --------------------------------------------------------------------------
 
-function Look.Color(def)
-	return Field(def, "color") or Look.PALETTE[1].key
-end
-
--- The three components that colour name stands for, and the window colour for
--- a name that is not in the palette, which is what a saved variable written by
--- an older version of this file would carry.
-function Look.Tint(def)
-	local wanted = Look.Color(def)
-	for index = 1, #Look.PALETTE do
-		if Look.PALETTE[index].key == wanted then
-			return Look.PALETTE[index].color
-		end
-	end
-	return Look.PALETTE[1].color
-end
-
-function Look.SetColor(def, key)
-	for index = 1, #Look.PALETTE do
-		if Look.PALETTE[index].key == key then
-			return Write(def, "color", key, Look.PALETTE[1].key)
-		end
-	end
-	return false
-end
-
 function Look.Alpha(def)
 	return Field(def, "alpha") or DEFAULT_ALPHA
 end
@@ -362,7 +315,7 @@ function Look.Paint(entry)
 	if not (frame and frame.bg) then
 		return false
 	end
-	local color = Look.Tint(entry.def)
+	local color = UI.Color.window
 	local alpha = Look.Alpha(entry.def) / 100
 	frame.bg:SetColorTexture(color[1], color[2], color[3], alpha)
 	if frame.edges then
@@ -485,6 +438,26 @@ function Look.Decided()
 	return count
 end
 
+-- The colour a bar used to carry, dropped at login. It went to the theme on
+-- 2026-09-19, and a record holding nothing else would count as a decision in
+-- Decided and give Plain something to undo that nothing on screen shows.
+function Look.Retire()
+	if not (ns.db and ns.db.barLook) then
+		return 0
+	end
+	local dropped = 0
+	for key, record in pairs(ns.db.barLook) do
+		if record.color ~= nil then
+			record.color = nil
+			dropped = dropped + 1
+		end
+		if next(record) == nil then
+			ns.db.barLook[key] = nil
+		end
+	end
+	return dropped
+end
+
 -- Drop every one of them, so every bar is the plan again. The counterpart
 -- of Which.Follow, and a deletion for the same reason.
 function Look.Plain()
@@ -499,17 +472,9 @@ function Look.Plain()
 	return dropped
 end
 
--- The palette and the modifiers as a typed list, for the two slash words that
--- refuse a value. Built rather than written out, because a list in a message
--- that does not match the table above is a message that lies.
-function Look.Colours()
-	local names = {}
-	for index = 1, #Look.PALETTE do
-		names[index] = Look.PALETTE[index].key
-	end
-	return table.concat(names, ", ")
-end
-
+-- The modifiers as a typed list, for the slash word that refuses a value.
+-- Built rather than written out, because a list in a message that does not
+-- match the table above is a message that lies.
 function Look.Keys()
 	local names = {}
 	for index = 1, #Look.KEYS do
@@ -542,9 +507,9 @@ end
 function Look.Shape(def)
 	local rows = Look.Rows(def)
 	local size = Look.Size(def)
-	return ("%d row%s of %d at %dpx%s, %s at %d%%"):format(
+	return ("%d row%s of %d at %dpx%s, ground at %d%%"):format(
 		rows, rows == 1 and "" or "s", Look.Columns(def), size,
-		Look.Sharp(size) and "" or ", blended", Look.Color(def), Look.Alpha(def))
+		Look.Sharp(size) and "" or ", blended", Look.Alpha(def))
 end
 
 -- And when it is on the screen, which is the other readout and is a different

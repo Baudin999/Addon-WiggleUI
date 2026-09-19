@@ -86,7 +86,7 @@ local function SetBar(def, value)
 	ns.Options.Refresh()
 end
 
--- One bar's shape, colour or hours changed, and the screen made to agree.
+-- One bar's shape, ground or hours changed, and the screen made to agree.
 --
 -- Every control on the page below ends here, because all six of them are one
 -- job: write the record in Buttons/Look.lua and lay the standing bars out
@@ -235,7 +235,10 @@ end
 -- here is about the loadout or the spell ranks.
 local function BarsPage(ui)
 	ui.Section("Bars", "Action bars")
-	ui.Lede("One of our bars for each of yours, same slots and same keys, with Blizzard's hidden behind. Pick a bar in the strip to set it.")
+	-- Kept for On and off, which quotes it under the switch, and not drawn here,
+	-- where the strip and the controls under it say the same thing.
+	ui.Lede("One of our bars for each of yours, same slots and same keys, with Blizzard's hidden behind. Pick a bar in the strip to set it.",
+		{ drawn = false })
 
 	ui.Tabs(
 		function()
@@ -285,27 +288,13 @@ local function BarsPage(ui)
 		function(value) return value .. "px" end)
 	ui.Hint("The keybind's text, one pixel a stop, which is the finest a font draws sharp at. Left alone it is half the square and grows with it; set here it stays put.")
 
-	ui.Picker("colour",
-		function() return ns.BarLook.Color(Chosen()) end,
-		function(value)
-			ns.BarLook.SetColor(Chosen(), value)
-			Restyle()
-		end,
-		function()
-			local options = {}
-			for index, entry in ipairs(ns.BarLook.PALETTE) do
-				options[index] = { value = entry.key, text = entry.label }
-			end
-			return options
-		end)
-
 	ui.Opacity("background",
 		function() return ns.BarLook.Alpha(Chosen()) end,
 		function(value)
 			ns.BarLook.SetAlpha(Chosen(), value)
 			Restyle()
 		end)
-	ui.Hint("How much of that colour you see. At nothing the hairline goes with it and the squares stand on the world.")
+	ui.Hint("How much of the ground under the squares you see. At nothing the hairline goes with it and the squares stand on the world.")
 
 	ui.Check("down in combat",
 		function() return ns.BarLook.Combat(Chosen()) end,
@@ -331,6 +320,18 @@ local function BarsPage(ui)
 	ui.Hint("A key hides the bar until you hold it, in a fight or out of one, so a bar waiting on one leaves the switch above nothing to decide.")
 
 	ui.ActionPair(
+		function() return "match my current bars" end,
+		Match,
+		function() return ns.WhichBars.Decided() > 0 end,
+		function() return "back to the plain bars" end,
+		Plain,
+		function() return ns.BarLook.Decided() > 0 end)
+	ui.Hint("Match puts every bar back to following your interface options. Plain drops every look you set and draws the shape the plan ships.")
+
+	-- Where the chosen bar stands and whether any bar can be dragged, under a
+	-- heading of their own: everything above is what a bar looks like.
+	ui.Heading("positioning")
+	ui.ActionPair(
 		function() return "centre left to right" end,
 		function() Centre("x") end,
 		function() return Standing(Chosen()) end,
@@ -348,28 +349,6 @@ local function BarsPage(ui)
 			ns.Options.Refresh()
 		end)
 	ui.Hint("Locked, a bar moves only while /wk unlock has every frame loose. Unlocked, hold shift to drag one, and a shift-click over a bar belongs to the bar while you hold it.")
-
-	ui.ActionPair(
-		function() return "match my current bars" end,
-		Match,
-		function() return ns.WhichBars.Decided() > 0 end,
-		function() return "back to the plain bars" end,
-		Plain,
-		function() return ns.BarLook.Decided() > 0 end)
-	ui.Hint("Match puts every bar back to following your interface options. Plain drops every look you set and draws the shape the plan ships.")
-
-	ui.Reading("this bar", function() return ns.BarLook.Shape(Chosen()) end)
-	ui.Reading("on screen", function() return ns.BarLook.Hours(Chosen()) end)
-	ui.Reading("cloning", function()
-		if not ns.db.actionBars then
-			return "off, your bars are Blizzard's"
-		end
-		return ns.Bars.Describe()
-	end)
-	ui.Reading("set by hand", function()
-		local decided = ns.WhichBars.Decided()
-		return decided == 0 and "none" or (decided .. " of the bars")
-	end)
 end
 
 -- The words that set one bar's look
@@ -384,7 +363,7 @@ end
 -- The words this owns, as a lookup rather than a chain of comparisons, so
 -- adding the next one is a line and not a branch.
 local LOOK_WORDS = {
-	rows = true, square = true, colour = true, background = true,
+	rows = true, square = true, background = true,
 	combat = true, key = true, centre = true,
 }
 
@@ -437,11 +416,6 @@ local function LookWord(word, rest)
 		-- buttons on the page say "left to right" and "up and down", and a
 		-- command that says something else is a second name for one thing.
 		CentreWord(def, value)
-	elseif word == "colour" then
-		ok = ns.BarLook.SetColor(def, value)
-		if not ok then
-			ns.Print("colour takes one of: " .. ns.BarLook.Colours() .. ".")
-		end
 	elseif word == "background" then
 		local alpha = ns.Command.Step(value, ns.UI.ALPHA_LOW, ns.UI.ALPHA_HIGH,
 			ns.UI.ALPHA_STEP, "background")
@@ -524,10 +498,10 @@ ns.Register({
 		barPoints = {},
 
 		-- What each bar looks like and when it is up, keyed by the plan's bar
-		-- key: the rows the twelve fold into, the colour and the opacity of the
-		-- ground under them, whether the bar goes down in combat and which key
+		-- key: the rows the twelve fold into, the opacity of the ground under
+		-- them, whether the bar goes down in combat and which key
 		-- holds it up. Empty is the normal state and means every bar is the
-		-- plan's own shape in the window colour, always up. Buttons/Look.lua
+		-- plan's own shape, always up. Buttons/Look.lua
 		-- owns every one of those answers and the defaults behind them.
 		barLook = {},
 

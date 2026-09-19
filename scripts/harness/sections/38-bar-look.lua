@@ -1,7 +1,7 @@
 -- What one bar looks like, and when it is up
 --
 -- Five settings per bar, and every one of them is invisible in review. A row
--- count that lays out wrong is arithmetic nobody re-does by hand. A colour is a
+-- count that lays out wrong is arithmetic nobody re-does by hand. A ground is a
 -- texture nothing reads back. And the two that decide when a bar is on the
 -- screen are a macro string handed to the client to evaluate, which is the one
 -- piece of this part that is not code this addon runs: a condition in the wrong
@@ -158,19 +158,26 @@ Look.SetSize(def, 27)
 --------------------------------------------------------------------------
 -- The paint
 --
--- The colour is a name in a table in source rather than three numbers in saved
--- variables, so what has to be proved is that the name reaches the texture.
+-- The colour is the theme's window colour on every bar; only how much of it
+-- shows is per bar. A colour saved before that is dropped at login, and a
+-- record holding nothing else goes with it.
 --------------------------------------------------------------------------
 
-check(Look.SetColor(def, "blue"), "a colour in the palette was refused")
-check(not Look.SetColor(def, "puce"), "a colour that is not in the palette was taken")
+ns.db.barLook.right2 = { color = "blue" }
+ns.db.barLook.right = { color = "red", rows = 2 }
+check(Look.Retire() == 2, "retiring the bar colour dropped the wrong number of them")
+check(ns.db.barLook.right2 == nil, "a record holding only a colour outlived the retire")
+check(ns.db.barLook.right and ns.db.barLook.right.color == nil
+	and ns.db.barLook.right.rows == 2, "the retire took more than the colour")
+ns.db.barLook.right = nil
+
 check(Look.SetAlpha(def, 40), "an opacity the slider can reach was refused")
 check(ns.Bars.Restyle(), "the restyle reported combat deferring the paint")
 
-local paint = Look.Tint(def)
+local paint = ns.UI.Color.window
 check(one.frame.bg.r == paint[1] and one.frame.bg.g == paint[2]
 	and one.frame.bg.b == paint[3],
-	"the colour the palette names is not the colour the bar was painted")
+	"the bar is not painted in the window colour")
 check(math.abs((one.frame.bg.a or 1) - 0.4) < 1e-9,
 	("the background came out at %s and the setting says 40%%"):format(tostring(one.frame.bg.a)))
 check(one.frame.edges[1]:GetAlpha() == 1,
@@ -493,7 +500,7 @@ check(one.frame.edges[1]:GetAlpha() == 1, "plain left bar 1 without its hairline
 
 local sizeLow, sizeHigh = Look.SizeRange()
 print(("look   %d shapes, bar 1 folded to 4 and back to 12, squares %d to %dpx "
-	.. "and sharp at 27, %d colours, centred on either axis, shift lifts %d handles")
-	:format(#Look.ROWS, sizeLow, sizeHigh, #Look.PALETTE, #bars))
+	.. "and sharp at 27, centred on either axis, shift lifts %d handles")
+	:format(#Look.ROWS, sizeLow, sizeHigh, #bars))
 
 end

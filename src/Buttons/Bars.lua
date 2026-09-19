@@ -1024,6 +1024,9 @@ events:RegisterEvent("SPELL_UPDATE_USABLE")
 events:RegisterEvent("PLAYER_TARGET_CHANGED")
 events:SetScript("OnEvent", function(_, event, arg1)
 	if event == "PLAYER_LOGIN" or event == "PLAYER_ENTERING_WORLD" then
+		if event == "PLAYER_LOGIN" then
+			ns.BarLook.Retire()
+		end
 		Bars.Apply()
 		ns.TheirBars.Recheck()
 		-- The ticker lives on this frame, which is never hidden. On a bar it

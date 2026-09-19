@@ -6246,14 +6246,13 @@ on different realms read as the same person.
     /wk actionbars where         the plan lines for wherever you dragged them
     /wk actionbars reset         drop every dragged position
     /wk actionbars lock|unlock   whether shift and a drag moves a bar
-    /wk actionbars rows bar1 3   1, 2, 3, 4, 6 or 12 rows of the twelve
+    /wk actionbars rows bar1 3   1, 2, 3, 4, 6 or 12 rows of the twelve;
+                                 1, 2, 5 or 10 for the pet bar, named pet
     /wk actionbars square bar1 32        one square's edge, 16 to 54, sharp at
                                  27 and 54
     /wk actionbars centre bar1 across|down   its middle on the middle of the
                                  screen, one axis at a time
-    /wk actionbars colour bar1 blue      window, black, slate, steel, blue,
-                                 green, red or purple
-    /wk actionbars background bar1 40    that colour's opacity, 0 to 100 in fives
+    /wk actionbars background bar1 40    the ground's opacity, 0 to 100 in fives
     /wk actionbars combat bar1 on        the bar goes down when a fight starts
     /wk actionbars key bar1 shift        up only while that key is held
     /wk actionbars plain         every bar back to the plan's own shape

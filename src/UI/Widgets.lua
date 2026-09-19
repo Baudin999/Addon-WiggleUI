@@ -886,10 +886,16 @@ local function InstallProse(kit, ctx)
 	-- A plain string rather than a function, unlike everything below it. A lede
 	-- describes what a page is for, and what a page is for does not change while
 	-- you are looking at it. Live state is Reading's job.
-	function kit.Lede(text)
+	--
+	-- `drawn = false` hands the sentence to the host and draws nothing, for a
+	-- page whose controls already say it and whose lede On and off still quotes.
+	function kit.Lede(text, opts)
 		text = Capped("lede", text, LEDE_MAX)
 		if ctx.host.Lede then
 			ctx.host.Lede(text)
+		end
+		if opts and opts.drawn == false then
+			return nil
 		end
 
 		local stack = ctx.Stack()
@@ -1211,6 +1217,21 @@ function UI.Kit(host)
 
 	function kit.Gap(height)
 		return Stack():Space(height or M.gutter)
+	end
+
+	-- A named group of rows inside a page, in the heading colour over a
+	-- hairline. Not a section: a section is a page on the rail, and this is a
+	-- label for the last few rows of one.
+	function kit.Heading(title)
+		local row = CreateFrame("Frame", nil, Parent())
+		local text = UI.Label(row, M.font, C.heading, "LEFT", UI.FLAT)
+		text:SetPoint("BOTTOMLEFT", 0, M.rowGap)
+		text:SetText(title)
+		local rule = UI.Rule(row, C.hairline)
+		rule:SetPoint("BOTTOMLEFT")
+		rule:SetPoint("BOTTOMRIGHT", -(MARK + M.rowGap), 0)
+		return Stack():Add(row, { indent = M.indent, gap = M.gutter,
+			height = M.font + M.rowGap * 2 })
 	end
 
 	function kit.Divider()
