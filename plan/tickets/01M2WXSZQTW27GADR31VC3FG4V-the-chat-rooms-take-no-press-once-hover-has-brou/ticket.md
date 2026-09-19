@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WXSZQTW27GADR31VC3FG4V
 type: bug
-status: todo
+status: done
 title: The chat rooms take no press once hover has brought the window up
 ---
 
