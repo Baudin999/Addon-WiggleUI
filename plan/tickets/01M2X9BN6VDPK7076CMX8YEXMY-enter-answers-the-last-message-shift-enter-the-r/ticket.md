@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2X9BN6VDPK7076CMX8YEXMY
 type: feature
-status: todo
+status: doing
 title: "Enter answers the last message, Shift-Enter the room you last spoke in"
 ---
 
