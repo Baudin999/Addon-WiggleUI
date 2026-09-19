@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WS81HMRRABBTW1DEJ175G8
 type: feature
-status: todo
+status: done
 title: "Bar look: flat or modern, and a portrait switch"
 ---
 
