@@ -104,6 +104,7 @@ PAINTINGS = [
 		"inset": (78, 100, 78, 82), "corner": 210, "period": (333, 150),
 		"darken": 0.45, "margin": "blurred",
 		"floor": (381, 313), "rail": (300, 150), "clear": 105,
+		"ground": "art/horde_bg.jpeg", "dim": 0.50,
 	},
 	{
 		"palette": "alliance", "file": "art/alliance.jpeg", "stem": "Alliance",
