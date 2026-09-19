@@ -49,6 +49,12 @@ local BUTTON = "WarriorKitGameMenuButton"
 -- raises on a duplicate index.
 local AFTER = 0.5
 
+-- How far apart the buttons a part adds with Menu.Add sort, after ours and
+-- still short of Blizzard's next whole step, so they sit together under it.
+-- Four fit: a fifth would reach the next whole number and collide.
+local STEP = 0.1
+local MOST = 4
+
 -- Above whatever the menu draws inside itself. Ours is a child of the menu and
 -- the menu may hold a container with its own level, and a button behind the
 -- frame it sits on is a button you cannot click. Ten is past anything one of
@@ -62,6 +68,11 @@ local PROBE_LIST = 16
 
 -- The button, and why there is not one. Exactly one of the two is set.
 local button, refusal
+
+-- The ways in a part adds under ours, as it asked for them and then as built.
+-- `mine` is every button of ours in the column, the first included, which is
+-- what the size copy and the paint both have to step over.
+local asked, extra, mine = {}, {}, {}
 
 -- What the last attach found to copy a size from. Carried for `/wk status`,
 -- because a button at the kit's own size in a menu whose buttons are a
@@ -93,12 +104,12 @@ end
 -- with no bottom to it, and the prize here is a width.
 local function Sibling(menu)
 	for _, child in ipairs({ menu:GetChildren() }) do
-		if child ~= button and ns.Measure(child, "GetObjectType") == "Button"
+		if not mine[child] and ns.Measure(child, "GetObjectType") == "Button"
 			and ns.Measure(child, "IsShown") then
 			return child
 		end
 		for _, inner in ipairs({ child:GetChildren() }) do
-			if inner ~= button and ns.Measure(inner, "GetObjectType") == "Button"
+			if not mine[inner] and ns.Measure(inner, "GetObjectType") == "Button"
 				and ns.Measure(inner, "IsShown") then
 				return inner
 			end
@@ -115,7 +126,9 @@ local function Fit(menu)
 	end
 	local width, height = ns.Measure(twin, "GetWidth"), ns.Measure(twin, "GetHeight")
 	if width and height and width > 0 and height > 0 then
-		button:SetSize(width, height)
+		for entry in pairs(mine) do
+			entry:SetSize(width, height)
+		end
 	end
 end
 
@@ -159,17 +172,48 @@ function Menu.Attach()
 	local pool = menu.buttonPool
 	if type(pool) ~= "table" or type(pool.EnumerateActive) ~= "function" then
 		refusal = "this client's game menu keeps no column to join"
-		button:Hide()
+		for entry in pairs(mine) do
+			entry:Hide()
+		end
 		return false
 	end
 
 	Fit(menu)
-	button.layoutIndex = Slot(menu)
-	button:SetFrameLevel((ns.Measure(menu, "GetFrameLevel") or 0) + LIFT)
-	button:Show()
+	local slot = Slot(menu)
+	local level = (ns.Measure(menu, "GetFrameLevel") or 0) + LIFT
+	button.layoutIndex = slot
+	for index, entry in ipairs(extra) do
+		entry.layoutIndex = slot + index * STEP
+	end
+	for entry in pairs(mine) do
+		entry:SetFrameLevel(level)
+		entry:Show()
+	end
 
 	refusal = nil
 	return true
+end
+
+-- One of our buttons in the column: the kit's look, and a press that closes
+-- the menu before it opens what it names.
+local function Entry(menu, name, label, tip, open)
+	return ns.UI.Button(menu, {
+		name = name,
+		label = label,
+		size = ns.UI.Metric.font,
+		tip = tip,
+		onClick = function()
+			-- Closed the way Escape closes it, so the client takes it off its
+			-- own panel stack. Hide alone leaves the stack believing it is
+			-- still up.
+			if type(HideUIPanel) == "function" then
+				HideUIPanel(menu)
+			else
+				menu:Hide()
+			end
+			open()
+		end,
+	})
 end
 
 local function Build()
@@ -187,25 +231,33 @@ local function Build()
 	-- one the close box and every stepper in the window is, so the way in looks
 	-- like the place it leads to. Fit still copies the column's width so ours
 	-- lines up with the buttons above it; only the paint changed.
-	button = ns.UI.Button(menu, {
-		name = BUTTON,
-		label = LABEL,
-		size = ns.UI.Metric.font,
-		tip = "The addon's own window: what it draws, and every number it draws it with.",
-		onClick = function()
-			-- Closed the way Escape closes it, so the client takes it off its
-			-- own panel stack. Hide alone leaves the stack believing it is
-			-- still up.
-			if type(HideUIPanel) == "function" then
-				HideUIPanel(menu)
-			else
-				menu:Hide()
-			end
-			ns.Options.Show()
-		end,
-	})
+	button = Entry(menu, BUTTON, LABEL,
+		"The addon's own window: what it draws, and every number it draws it with.",
+		ns.Options.Show)
+	mine[button] = true
+	local ours = { button }
+	for index, entry in ipairs(asked) do
+		extra[index] = Entry(menu, entry.name, entry.label, entry.tip, entry.open)
+		mine[extra[index]] = true
+		ours[#ours + 1] = extra[index]
+	end
 
-	ns.MenuSkin.Watch(menu, button)
+	ns.MenuSkin.Watch(menu, ours)
+end
+
+-- A second way in, added by the part it leads to, so the base never names a
+-- feature. Called at file load, before PLAYER_LOGIN builds the column; the
+-- button sorts under ours in the order the parts asked.
+--
+--   name   the global the button is built under
+--   label  its words
+--   tip    what the hover says
+--   open   called after the menu has closed
+function Menu.Add(entry)
+	assert(not button, "a game menu button was added after the menu was built")
+	assert(#asked < MOST, "the game menu has no room under ours for another button")
+	assert(type(entry.open) == "function", "a game menu button was added with nothing to open")
+	asked[#asked + 1] = entry
 end
 
 function Menu.Describe()

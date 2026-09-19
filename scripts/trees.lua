@@ -117,6 +117,8 @@ local ALLOWED = {
 	  why = "the attachment picker reads the bag window's own squares" },
 	{ from = "Bags", sym = "MailBags", uses = 1,
 	  why = "a bag square dresses itself for the mail window that is open over it" },
+	{ from = "Setup", sym = "Settings", uses = 3,
+	  why = "one of the setup's four answers is where a tooltip opens, which Settings owns" },
 	{ from = "Settings", sym = "Compare", uses = 4,
 	  why = "the options panel owns the switch for the sheet's compare tooltip" },
 	{ from = "Meter", sym = "BreakdownWindow", uses = 1,

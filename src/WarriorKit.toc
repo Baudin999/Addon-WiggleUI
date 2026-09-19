@@ -1216,3 +1216,11 @@ EditMode\Feature.lua
 # and Feature.lua last, as everywhere else.
 Settings\Settings.lua
 Settings\Feature.lua
+
+# The four questions a new player is asked at the first login. After Settings,
+# which owns where a tooltip opens and is one of the four answers, and after
+# Theme, whose tables the pictures on the cards are drawn from. Previews.lua is
+# those pictures, Setup.lua the window, Feature.lua last.
+Setup\Previews.lua
+Setup\Setup.lua
+Setup\Feature.lua

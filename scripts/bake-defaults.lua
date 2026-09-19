@@ -73,6 +73,8 @@ assert(type(shipped) == "table" and type(shippedChar) == "table",
 	"the addon loaded and wrote no saved variables")
 assert(type(ns.Restorable) == "function",
 	"Core\\Core.lua exports no Restorable, and this cannot tell a setting from a record")
+assert(type(ns.Setup) == "table" and type(ns.Setup.Asks) == "function",
+	"Setup\\Setup.lua exports no Asks, and this cannot tell the setup's answers from the screen")
 
 --------------------------------------------------------------------------
 -- The capture
@@ -151,17 +153,18 @@ local PLANNED = {
 -- What goes in the file: every setting the capture answers differently from the
 -- code, and nothing else.
 --
--- Four kinds are stepped over, and each is skipped rather than reported. A
+-- Five kinds are stepped over, and each is skipped rather than reported. A
 -- record the reset keeps is not a default and never was. An override on the bar
--- plan belongs in the plan, for the reason above. A key the capture holds that
--- no feature registers is a setting this addon dropped, and every saved
--- variables file that has been through an upgrade has some. A setting the
+-- plan belongs in the plan, for the reason above. One of the setup's four
+-- answers is the new player's to give, and ns.Setup.Asks names them. A key the
+-- capture holds that no feature registers is a setting this addon dropped, and
+-- every saved variables file that has been through an upgrade has some. A setting the
 -- capture agrees with is what a bake is trying to produce.
 local carried, skipped, dropped = {}, 0, 0
 for key, value in pairs(live) do
 	if shipped[key] == nil then
 		dropped = dropped + 1
-	elseif PLANNED[key] or not ns.Restorable(key) then
+	elseif PLANNED[key] or not ns.Restorable(key) or ns.Setup.Asks(key) then
 		skipped = skipped + 1
 	elseif type(value) ~= type(shipped[key]) then
 		error(("%s holds %q as a %s and its feature registers a %s")

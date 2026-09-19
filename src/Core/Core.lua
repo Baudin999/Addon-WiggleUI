@@ -2850,6 +2850,12 @@ end
 -- Checked against the registry at load, below, so a key cannot be kept out of
 -- the reset and then quietly dropped from the addon.
 local KEPT = {
+	-- Whether this account has been through the setup's four questions. A note
+	-- of something that happened, not a choice: the reset puts the screen back
+	-- without asking them again, and a bake that carried the author's true
+	-- would ship a setup no new player ever sees.
+	setupDone = true,
+
 	-- The ledger: copper against every character you have played. The only
 	-- copy of it, and not a number anybody chose.
 	purse = true,

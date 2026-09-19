@@ -57,6 +57,7 @@ local NO_SWITCH = {
 	interface = "its boolean is whether a layout is imported once at login, not whether anything is on screen",
 	settings = "one slider and no boolean at all",
 	theme = "its boolean is whether the unit frames draw a portrait, a choice of look like the palette beside it, and the theme itself is never off",
+	setup = "its boolean is whether the account has been through the questions, a record the reset keeps, and there is nothing to switch off",
 	["other addons"] = "its boolean is a note that the notice has been shown, not whether anything is on screen, and a switch on it would read as turning the addon list off",
 }
 

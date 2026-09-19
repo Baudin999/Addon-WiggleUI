@@ -81,7 +81,7 @@ local UNTITLED = "Game menu"
 -- The menu, and our own button in it. Our own is skipped by every walk here:
 -- it is already the kit's, and painting it twice would strip the paint the
 -- first pass put on.
-local frame, own
+local frame, own = nil, {}
 
 -- What this file drew on the menu. One table, built on the first pass and
 -- shown and hidden after that.
@@ -420,7 +420,7 @@ end
 -- strip the first.
 local function Gather(target, depth, buttons, holders)
 	for _, child in ipairs(Children(target)) do
-		local kind = child ~= own and ns.Measure(child, "GetObjectType") or nil
+		local kind = not own[child] and ns.Measure(child, "GetObjectType") or nil
 		if kind == "Button" then
 			buttons[#buttons + 1] = child
 		elseif kind and depth > 0 then
@@ -480,11 +480,14 @@ function Skin.Apply()
 	return ns.Lockdown.Done(Skin.Apply, complete)
 end
 
--- Which menu, and which button in it is ours. Called by Core/Menu.lua once its
--- button exists, because that file owns the button and this one owns the paint
--- and neither goes looking for the other's.
+-- Which menu, and which buttons in it are ours. Called by Core/Menu.lua once its
+-- buttons exist, because that file owns them and this one owns the paint and
+-- neither goes looking for the other's.
 function Skin.Watch(menu, ours)
-	frame, own = menu, ours
+	frame, own = menu, {}
+	for _, entry in ipairs(ours) do
+		own[entry] = true
+	end
 	if type(menu.HookScript) == "function" then
 		menu:HookScript("OnSizeChanged", Lay)
 	end

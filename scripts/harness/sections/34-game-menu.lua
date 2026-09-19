@@ -23,6 +23,7 @@ local ns, check = H.ns, H.check
 local menu = H.menu
 local Menu = ns.GameMenu
 local button = _G.WarriorKitGameMenuButton
+local setup = _G.WarriorKitGameMenuSetup
 local M = ns.UI.Metric
 
 local PAD, GAP = M.pad, M.rowGap
@@ -43,16 +44,16 @@ end
 -- its font string in a field of its own and answers no text.
 local function labelled(column, text)
 	for index, entry in ipairs(column) do
-		if entry ~= button and entry:GetText() == text then
+		if entry ~= button and entry ~= setup and entry:GetText() == text then
 			return index, entry
 		end
 	end
 	return nil
 end
 
-local function ours(column)
+local function ours(column, which)
 	for index, entry in ipairs(column) do
-		if entry == button then
+		if entry == (which or button) then
 			return index
 		end
 	end
@@ -84,6 +85,9 @@ if button then
 	check(at ~= nil, "the button is not in the menu's column")
 	check(options and at == options + 1,
 		("the button is %s in the column and Options is %s"):format(tostring(at), tostring(options)))
+	check(setup ~= nil and ours(column, setup) == at + 1,
+		("the setup's button is %s in the column and ours is %s")
+			:format(tostring(setup and ours(column, setup)), tostring(at)))
 	check(column[#column]:GetText() == "Return to Game",
 		("the foot of the column is %q, not Return to Game"):format(tostring(column[#column]:GetText())))
 
@@ -257,11 +261,11 @@ local function shown(frame, where)
 	end
 end
 
--- Blizzard's own buttons in the column, which is every one but ours.
+-- Blizzard's own buttons in the column, which is every one but our two.
 local function blizzard()
 	local out = {}
 	for _, entry in ipairs(column) do
-		if entry ~= button then
+		if entry ~= button and entry ~= setup then
 			out[#out + 1] = entry
 		end
 	end
@@ -311,6 +315,8 @@ check(labels == #buttons, ("%d labels dressed across %d buttons"):format(labels,
 
 check(button == nil or button.wkPaint == nil,
 	"the skin painted the addon's own button a second time")
+check(setup == nil or setup.wkPaint == nil,
+	"the skin painted the setup's button a second time")
 
 -- The same pass again, twice. Nothing new is drawn and nothing of ours is
 -- taken off.

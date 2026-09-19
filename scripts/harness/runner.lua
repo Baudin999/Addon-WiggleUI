@@ -242,6 +242,10 @@ local SECTIONS = {
 	-- First, and it is the only section that can answer for login: every one
 	-- below it opens something. It reads H.login and asserts nothing else.
 	"00-login",
+	-- Straight after, because login is what put the setup up on this fresh
+	-- account. It answers it, shuts it and puts back every setting it wrote,
+	-- so nothing below finds its window over the screen.
+	"00-setup",
 	"01-unit-layer",
 	"02-layout-engine",
 	"03-gauge",
