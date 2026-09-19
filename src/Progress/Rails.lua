@@ -126,7 +126,13 @@ local built = false
 -- screen would stop a third of the way along it.
 local laidWidth, laidHeight = 0, 0
 
+-- In a theme that keeps things under the pointer the shake chooses rather than
+-- the setting: the thin line at rest, the placed rail while everything is
+-- pinned up, so the full reading comes with the chat and the bars.
 local function Minimal()
+	if ns.Theme.Hovering() then
+		return not ns.Theme.Pinned()
+	end
 	return ns.db.progressStyle == "minimal"
 end
 
@@ -701,6 +707,11 @@ end)
 -- watching them anyway.
 Progress.OnChange(function()
 	Rails.Refresh()
+end)
+
+-- A shake of the mouse changes the style in exploration.
+ns.Theme.OnPin(function()
+	Rails.Apply()
 end)
 
 -- A resolution change moves every size in this file at once, the same way it

@@ -253,10 +253,23 @@ end
 -- once, at login. The informational and immersive themes never read the mouse.
 --------------------------------------------------------------------------
 
+-- A part that draws differently while pinned, beyond its veil. The experience
+-- rail is one: minimal at rest in a theme that keeps things under the pointer,
+-- expressive while they are pinned up.
+local pinWatchers = {}
+
+function Theme.OnPin(fn)
+	pinWatchers[#pinWatchers + 1] = fn
+end
+
 -- cold: runs on a shake, which is a second apart at the closest, and not on the tick's own frames
 function Theme.Pin(on)
 	pinned = on and true or false
-	return Pass()
+	local complete = Pass()
+	for index = 1, #pinWatchers do
+		pinWatchers[index](pinned)
+	end
+	return complete
 end
 
 function Theme.Pinned()

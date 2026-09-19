@@ -81,3 +81,15 @@ check(not UI.WiggleFeed(state, 2000, 100.4), "a jump after a lost leg counted as
 -- pointer, so it has no reason to read the mouse.
 check(not ns.Theme.Hovering(), "informational claims to keep something under the pointer")
 check(not ns.Theme.Pinned(), "the pin is up at load")
+
+-- A part watching the pin hears both ways. The experience rail is one, and in
+-- informational its style is still the setting's, pinned or not.
+local heard = {}
+ns.Theme.OnPin(function(on) heard[#heard + 1] = on end)
+local style = ns.ProgressRails.Describe()
+ns.Theme.Pin(true)
+check(heard[#heard] == true and ns.Theme.Pinned(), "a pin was not heard by its watcher")
+check(ns.ProgressRails.Describe() == style,
+	"a pin moved the experience rail in a theme with nothing under the pointer")
+ns.Theme.Pin(false)
+check(heard[#heard] == false and not ns.Theme.Pinned(), "a pin dropped was not heard by its watcher")
