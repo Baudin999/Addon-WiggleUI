@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2W86K9F8QTA86465R3BZJD7
 type: task
-status: doing
+status: done
 title: The pet bar has no tab on the bars page
 ---
 
