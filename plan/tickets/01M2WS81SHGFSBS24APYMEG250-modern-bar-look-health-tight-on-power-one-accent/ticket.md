@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WS81SHGFSBS24APYMEG250
 type: task
-status: doing
+status: done
 title: "Modern bar look: health tight on power, one accent edge per unit"
 parent: 01M2WS81HMRRABBTW1DEJ175G8
 ---
