@@ -557,6 +557,7 @@ end
 local UnitClass = UnitClass
 local UnitReaction = UnitReaction
 local UnitIsPlayer = UnitIsPlayer
+local UnitIsUnit = UnitIsUnit
 
 -- One cache, for the classes this table does not carry. Filled the first time
 -- such a class is seen and kept for the session: the lookup is the guard the
@@ -650,8 +651,10 @@ end
 
 -- The owner behind each pet token. A pet has no class of its own, and on
 -- reaction alone a hunter's pet drew friendly green beside the hunter's class
--- green: two near greens that read as a mistake rather than a pair. Tokens
--- only, because a nameplate's token says nothing about whose pet it is.
+-- green: two near greens that read as a mistake rather than a pair. The
+-- table covers the tokens that name a pet outright; OfUnit asks the client
+-- about the rest, because "targettarget" or "mouseover" can be your pet and
+-- the token alone does not say so.
 local OWNER = { pet = "player" }
 for index = 1, 4 do
 	OWNER["partypet" .. index] = "party" .. index
@@ -664,7 +667,7 @@ end
 -- its owner's; anything else has no class and falls back to what it thinks
 -- of you.
 function Color.OfUnit(unit)
-	unit = OWNER[unit] or unit
+	unit = OWNER[unit] or (UnitIsUnit(unit, "pet") and "player") or unit
 	if UnitIsPlayer(unit) then
 		local _, class = UnitClass(unit)
 		local tint = Color.Class(class)

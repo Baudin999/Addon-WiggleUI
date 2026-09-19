@@ -489,50 +489,6 @@ end
 -- The rows we draw
 --------------------------------------------------------------------------
 
--- What a row under the block hangs from, which is not always the block.
---
--- Target of target is parked three pixels under the target block on the corner
--- the portrait is on, and the debuff row runs from the other corner, so the two
--- cannot be chained by an anchor: the row would land inset by the difference
--- between the two widths. What is taken off that frame instead is its height,
--- which is the only thing about it this row cares about, and the row goes on
--- hanging from the block's own corner with that much more drop.
---
--- The height is read on a change of head rather than every pass. The client
--- shows and hides that frame with the unit, so this measures when the target
--- picks something up or drops it, and costs one comparison against nil the
--- rest of the time. Nothing is ever parked under the player block, so over
--- there it is that comparison for the life of the session.
---
--- Writing the anchor here is allowed in combat where re-anchoring target of
--- target itself is not: this frame is ours.
-local function Hang(list)
-	local perch = list.perch
-	local shown = (perch and perch:IsShown()) and perch or nil
-	if list.head == shown then
-		return
-	end
-	list.head = shown
-
-	local drop = 0
-	if shown then
-		-- In the block's units, because that is what an anchor offset counts
-		-- in and target of target is drawn at a scale of its own.
-		local mine = ns.Measure(list.box, "GetEffectiveScale") or 1
-		local theirs = ns.Measure(shown, "GetEffectiveScale") or mine
-		if mine > 0 then
-			drop = (ns.Measure(shown, "GetHeight") or 0) * theirs / mine + list.gap
-		end
-	end
-	for index = 1, #list do
-		local row = list[index]
-		if row.below then
-			row.frame:ClearAllPoints()
-			row.frame:SetPoint(row.edge, list.box, row.corner, 0, -drop)
-		end
-	end
-end
-
 -- Declared here and written under Hover, which it calls. The tick is what finds
 -- out how long a row has to be, and this is the one thing on that path that
 -- builds anything.
@@ -909,10 +865,7 @@ function Auras.Place(entry, px, width, mirror)
 	-- portrait is on. So the four rows all run outward from the corridor in the
 	-- middle of the screen, the same way the two blocks read outward from it.
 	local hand = mirror and "LEFT" or "RIGHT"
-	-- Kept on the list because Hang re-anchors the rows under the block on the
-	-- ticker and must not work any of this out again.
-	list.box, list.gap = entry.box, gap
-	list.head = nil
+	list.box = entry.box
 
 	for index = 1, #list do
 		local row = list[index]
@@ -1038,7 +991,6 @@ function Auras.Update(entry)
 		return
 	end
 	local unit, now = entry.spec.unit, GetTime()
-	Hang(list)
 	for index = 1, #list do
 		local row = list[index]
 		Groom(row)
@@ -1046,18 +998,6 @@ function Auras.Update(entry)
 			Fill(row, unit, now)
 		end
 	end
-end
-
--- What sits between the block and the first row, or nothing. Called by
--- UnitFrames/Block.lua's Perch, which is the only thing that knows whether
--- target of target is currently parked on the corner these rows hang from.
-function Auras.Under(entry, frame)
-	local list = entry and entry.auras
-	if not list or list.perch == frame then
-		return
-	end
-	list.perch = frame
-	list.head = nil
 end
 
 -- What square one actually came out as, measured off the widget rather than

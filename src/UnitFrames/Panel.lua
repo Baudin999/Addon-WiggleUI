@@ -150,7 +150,7 @@ local function Frames(ui)
 	for _, frame in ipairs({ { "player", "the player frame" },
 		{ "pet", "your pet, left of the player frame" },
 		{ "target", "the target frame" },
-		{ "tot", "target of target, under the target frame" } }) do
+		{ "tot", "target of target, right of the target frame" } }) do
 		ui.Check("draw " .. frame[2],
 			function() return ns.db.skinFrames[frame[1]] end,
 			function(value)

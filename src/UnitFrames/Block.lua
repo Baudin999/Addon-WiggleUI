@@ -37,7 +37,7 @@ local HEALTH_SHARE = 0.70
 local MODERN_HEALTH_SHARE = 0.76
 
 -- The gap between a small block and the block it is parked against, in pixels:
--- target of target under the target, and the pet beside the player.
+-- the pet beside the player, and target of target beside the target.
 --
 -- A constant rather than the third pair of settings. The two big blocks stand
 -- side by side and the number between them is a corridor somebody wants to
@@ -640,44 +640,18 @@ function Block.Landed(entry, host)
 	return Block.Link(entry, host)
 end
 
--- Target of target, parked under the target block.
+-- A small block parked beside its host on the side the host's portrait is on:
+-- the pet beside the player, and target of target beside the target.
 --
--- Anchored by the edge the two blocks share rather than by the portrait's: the
--- target is mirrored and target of target is not, so aligning their outer
--- edges is what puts one portrait under the other. Off the target's anchor
--- rather than its button, so the perch holds while the target has nothing to
--- draw and the button is down.
---
--- Written on every pass rather than only when the switch moves, for Link's
--- third reason: PARK_GAP is three pixels and what three pixels cost in this
--- frame's units moves with the screen.
-function Block.Perch(entry, host)
-	if ns.Blocked(entry.frame) then
-		return false
-	end
-	local anchor = entry.anchor
-	local side = host.spec.mirror and "RIGHT" or "LEFT"
-	anchor:ClearAllPoints()
-	anchor:SetPoint("TOP" .. side, host.anchor, "BOTTOM" .. side, 0, -PARK_GAP * ns.Pixel(anchor))
-	entry.perched = true
-	-- What the host's aura rows now hang from. This frame is parked on exactly
-	-- the corner they hang off, so without being told, the first row would be
-	-- drawn on top of it. The button rather than the anchor, because the button
-	-- is what goes up and down with the unit and Hang asks it whether it is
-	-- shown. Told rather than worked out over there, because whether this frame
-	-- is under that block is this function's answer and nobody else's.
-	ns.FrameAuras.Under(host, entry.styled and entry.frame or nil)
-	return true
-end
-
--- The pet, parked beside the player block on the side its portrait is on.
---
--- Top edges on one line and PARK_GAP pixels between the pet's gauge end and
--- the player's square. The side is read off the host's mirror for Facing's
--- reason: a player block that stopped being mirrored takes the pet round with
--- it. Off the host's anchor and written on every pass, both for Perch's
--- reasons. Nothing hangs a row off the side the pet is on, so unlike Perch
--- there is no aura row to tell.
+-- Top edges on one line and PARK_GAP pixels between the small block's gauge
+-- end and the host's square. The side is read off the host's mirror for
+-- Facing's reason: a player block that stopped being mirrored takes the pet
+-- round with it. Off the host's anchor rather than its button, so the place
+-- holds while the host has nothing to draw and the button is down. Written on
+-- every pass rather than only when the switch moves, for Link's third reason:
+-- PARK_GAP is three pixels and what three pixels cost in this frame's units
+-- moves with the screen. The aura rows hang off the gauge end, above and below
+-- the block, so nothing parked on the portrait side is in their way.
 function Block.Flank(entry, host)
 	if ns.Blocked(entry.frame) then
 		return false
@@ -720,8 +694,7 @@ function Block.Probe(entry)
 		tostring(point), against, tostring(relativePoint),
 		math.floor((x or 0) + 0.5), math.floor((y or 0) + 0.5),
 		entry.linked and "hung off the player block" or
-			(entry.perched and "parked under the target block"
-				or (entry.flanked and "parked beside the player block" or "on its own point")),
+			(entry.flanked and ("parked beside the " .. entry.spec.flank .. " block") or "on its own point"),
 		entry.frame:IsShown() and ", on screen" or ", not drawn",
 		row)
 end

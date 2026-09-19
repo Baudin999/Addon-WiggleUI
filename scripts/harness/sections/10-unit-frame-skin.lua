@@ -208,11 +208,11 @@ for _, block in ipairs(blocks) do
 		-- The portrait's square. Read as an offset into the block rather than
 		-- as an anchor on the mirrored corner, because ns.UI.Flow pins every
 		-- frame in a tree to the root's top left corner at the offset that
-		-- came out. The target's block runs backwards, so the square is the
+		-- came out. A mirrored block runs backwards, so the square is the
 		-- last cell of the row and sits a gauge's width in.
 		local slot = entry.slot
 		local square = slot and slot.points and slot.points[1]
-		local inset = key == "target" and (button:GetWidth() - slot:GetWidth()) or 0
+		local inset = entry.spec.mirror and (button:GetWidth() - slot:GetWidth()) or 0
 		check(square and square[1] == "TOPLEFT" and square[2] == button
 			and square[3] == "TOPLEFT" and square[4] == inset and square[5] == 0,
 			("%s: the square is pinned to the block at %s, %s and belongs at %d, 0")

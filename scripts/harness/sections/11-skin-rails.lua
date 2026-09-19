@@ -48,7 +48,7 @@ for _, block in ipairs(blocks) do
 			-- Flow pins to the root's top left corner, so this is the offset
 			-- into the block: one pixel down for the health bar, past it and
 			-- the hairline under it for the power bar.
-			local left = key == "target" and px or side
+			local left = entry.spec.mirror and px or side
 			local point = bar.points and bar.points[1]
 			check(point and point[1] == "TOPLEFT" and point[2] == button
 				and point[3] == "TOPLEFT" and near(point[4], left) and near(point[5], -y),

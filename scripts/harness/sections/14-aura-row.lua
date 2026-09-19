@@ -86,18 +86,14 @@ do
 		("the target's buff row is anchored %s to %s and belongs over the block")
 			:format(tostring(bpoint), tostring(brelativePoint)))
 
-	-- Target of target is parked three pixels under the block on the corner the
-	-- portrait is on, and the debuff row runs from the other corner, so the two
-	-- cannot be chained: the row would land inset by the difference between the
-	-- two widths. It clears that frame by dropping past it instead.
-	local tot = _G.WarriorKitTargetOfTargetButton
-	check(tot:IsShown(), "nothing is parked under the target block, so the drop"
-		.. " the debuff row has to clear is not being tested at all")
-	local tall = tot:GetHeight() * tot:GetEffectiveScale() / box:GetEffectiveScale()
+	-- Flush under the block. Target of target is parked beside it, so
+	-- nothing sits between the block and the first row and the row does not
+	-- drop. A row that still dropped would leave a gap the height of a frame
+	-- that is no longer there.
 	local dropped = -select(5, anchor(rowD))
-	check(dropped > tall and dropped < tall + 2 * gap,
-		("target of target is %.2f tall and the debuff row dropped %.2f, so the"
-			.. " two are drawn on top of each other"):format(tall, dropped))
+	check(dropped == 0,
+		("the debuff row dropped %.2f under the target block and belongs flush"
+			.. " against it"):format(dropped))
 end
 
 -- The squares, in the order the row built them.

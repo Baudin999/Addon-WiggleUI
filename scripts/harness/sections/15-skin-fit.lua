@@ -22,13 +22,13 @@ local totAnchor = _G.WarriorKitTargetOfTargetFrame
 local playerButton, targetButton = _G.WarriorKitPlayerButton, _G.WarriorKitTargetButton
 local totButton = _G.WarriorKitTargetOfTargetButton
 
--- Under the target's block by the edge the two share: the target is mirrored
--- and target of target is not, so aligning their outer edges is what puts one
--- portrait under the other.
+-- Beside the target's block on the portrait's side, the pet's place mirrored:
+-- target of target's left edge against the target's right, pushed right by the
+-- gap, top edges on one line.
 local perch = totAnchor.points and totAnchor.points[1]
-check(perch ~= nil and perch[2] == targetAnchor and perch[1] == "TOPRIGHT"
-	and perch[3] == "BOTTOMRIGHT" and perch[5] < 0,
-	"target of target is not parked under the target block by their shared edge")
+check(perch ~= nil and perch[2] == targetAnchor and perch[1] == "TOPLEFT"
+	and perch[3] == "TOPRIGHT" and perch[4] > 0 and perch[5] == 0,
+	"target of target is not parked right of the target block with the two tops on one line")
 
 -- Beside the player's block on the portrait's side, top edges on one line: the
 -- pet's right edge against the player's left, pulled left by the gap.
@@ -154,10 +154,14 @@ do
 		check(math.abs(drop) < 1e-6,
 			("at ui scale %.2f level 0 left the target block %.2f pixels off the"
 				.. " player block's top edge"):format(scale, drop))
-		local under = apart(targetButton, "GetBottom", totButton, "GetTop")
-		check(math.abs(under - 3) < 1e-6,
-			("at ui scale %.2f target of target sits %.2f pixels under the target"
-				.. " block and belongs 3 under it"):format(scale, under))
+		local right = apart(totButton, "GetLeft", targetButton, "GetRight")
+		check(math.abs(right - 3) < 1e-6,
+			("at ui scale %.2f target of target sits %.2f pixels right of the target"
+				.. " block and belongs 3 right of it"):format(scale, right))
+		local even = apart(targetButton, "GetTop", totButton, "GetTop")
+		check(math.abs(even) < 1e-6,
+			("at ui scale %.2f target of target's top is %.2f pixels off the target"
+				.. " block's"):format(scale, even))
 		local beside = apart(playerButton, "GetLeft", petButton, "GetRight")
 		check(math.abs(beside - 3) < 1e-6,
 			("at ui scale %.2f the pet sits %.2f pixels left of the player block"
@@ -328,9 +332,9 @@ do
 	-- And the third link after the first two have been off and on again, which
 	-- is the pass that would leave target of target hanging off a corner the
 	-- target block no longer has.
-	local relinked = apart(targetButton, "GetBottom", totButton, "GetTop")
+	local relinked = apart(totButton, "GetLeft", targetButton, "GetRight")
 	check(math.abs(relinked - 3) < 1e-6,
-		("after a relink target of target sits %.2f pixels under the target block")
+		("after a relink target of target sits %.2f pixels right of the target block")
 			:format(relinked))
 
 	-- The distance across is not a setting and must not quietly become one
@@ -341,7 +345,7 @@ do
 		"skinGap is back in the settings and the distance across is the mirror")
 
 	print(("link   the mirror line is the middle of the screen at ui scale 0.65,"
-		.. " 1 and 0.5, 3 px under the target block; a drag reads back %d down,"
+		.. " 1 and 0.5, 3 px right of the target block; a drag reads back %d down,"
 		.. " an unlinked one writes a corner"):format(wantLevel))
 end
 

@@ -52,6 +52,12 @@ check(Color.OfUnit("nameplate1") == Color.reaction.hostile,
 	"a mob with no class did not fall back to its reaction")
 check(Color.OfUnit("pet") == Color.OfUnit("player"),
 	"your pet is not wearing your class colour, so its block and yours read as two units")
+-- Your pet under a token that does not say so: the mob it is tanking targets it,
+-- and target of target drew it friendly green beside its own olive pet block.
+unitAlias.targettarget = { pet = true }
+check(Color.OfUnit("targettarget") == Color.OfUnit("player"),
+	"your pet as target of target is not wearing your class colour")
+unitAlias.targettarget = nil
 
 -- Dimming writes into one scratch table rather than allocating.
 local dim = Color.Dim(Color.reaction.hostile, 0.5)

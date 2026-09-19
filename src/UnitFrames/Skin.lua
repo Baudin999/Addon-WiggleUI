@@ -33,7 +33,7 @@ ns.FrameSkin = Skin
 -- Building the three frames, whether each one is wanted, showing and hiding
 -- them in the order that survives combat, placing them, and what the slash
 -- commands and the panel are told. It owns the entry list, so it is the only
--- file that can answer which block a link or a perch hangs off, and it hands
+-- file that can answer which block a link or a flank hangs off, and it hands
 -- that answer to Block rather than letting Block go looking.
 --
 -- It also owns when a block is drawn. Unit events mark a block and the pass
@@ -87,7 +87,6 @@ local UnregisterUnitWatch = _G.UnregisterUnitWatch
 -- watch    the button goes up and down with the unit rather than staying up
 -- beside   the key of the frame this one hangs off sideways, gauge edge to
 --          gauge edge, while the link is on
--- under    the key of the frame this one is parked beneath
 -- flank    the key of the frame this one is parked beside, on the side that
 --          frame's portrait is on, top edges on one line
 --------------------------------------------------------------------------
@@ -108,8 +107,12 @@ local SPECS = {
 		title = "WarriorKit target", point = "skinTargetPoint",
 	},
 	{
-		key = "tot", unit = "targettarget", mirror = false, scale = GLANCE_SCALE,
-		badges = { "marker" }, under = "target", watch = true,
+		-- Off the right of the target block, the pet's place mirrored. Mirrored
+		-- itself for the pet's reason: the row reads the same way round twice,
+		-- the target's gauge, its square, this gauge, this square. Beside rather
+		-- than under, because under is where the target's debuff row goes.
+		key = "tot", unit = "targettarget", mirror = true, scale = GLANCE_SCALE,
+		badges = { "marker" }, flank = "target", watch = true,
 		global = "WarriorKitTargetOfTargetFrame",
 		button = "WarriorKitTargetOfTargetButton",
 	},
@@ -158,8 +161,8 @@ local WATCHED = {
 	"UNIT_FACTION",
 	"UNIT_PORTRAIT_UPDATE",
 	-- The one event that carries target of target: the host's target moved.
-	-- Registered against every unit and acted on by the frame under it, which
-	-- is why Touched marks the perched entry too.
+	-- Registered against every unit and acted on by the frame beside it, which
+	-- is why Touched marks the entry parked there too.
 	"UNIT_TARGET",
 }
 
@@ -171,8 +174,8 @@ local function Touched(watch, event, unit)
 	entry.dirty = true
 	if event == "UNIT_PORTRAIT_UPDATE" then
 		entry.portraitDirty = true
-	elseif event == "UNIT_TARGET" and entry.perch then
-		entry.perch.dirty = true
+	elseif event == "UNIT_TARGET" and entry.follower then
+		entry.follower.dirty = true
 	end
 end
 
@@ -197,10 +200,10 @@ end
 --
 -- The player block is placed by dragging it and nothing else is. The target
 -- block hangs off the player block while the link is on and sits on a point
--- of its own while it is off, and target of target hangs off the target block
--- always. UnitFrames/Block.lua writes the anchors; what this file adds is the
--- only part of it that needs the list, which is which entry a spec's `beside`
--- or `under` names.
+-- of its own while it is off, and target of target is parked beside the target
+-- block always. UnitFrames/Block.lua writes the anchors; what this file adds is
+-- the only part of it that needs the list, which is which entry a spec's
+-- `beside` or `flank` names.
 --------------------------------------------------------------------------
 
 local function EntryFor(key)
@@ -230,10 +233,6 @@ local function Hang(entry)
 	local flank = EntryFor(spec.flank)
 	if flank then
 		return Block.Flank(entry, flank)
-	end
-	local under = EntryFor(spec.under)
-	if under then
-		return Block.Perch(entry, under)
 	end
 	if ns.Blocked(entry.frame) then
 		return false
@@ -681,12 +680,14 @@ events:SetScript("OnEvent", function(_, event)
 				missing = true
 			end
 		end
-		-- What target of target is parked under, so the host's UNIT_TARGET can
-		-- mark it. Resolved once, here, because the list is complete now.
+		-- The frame whose unit is its host's target, so the host's UNIT_TARGET
+		-- can mark it. That is target of target beside the target and not the
+		-- pet beside you, whose unit does not move when you retarget. Resolved
+		-- once, here, because the list is complete now.
 		for _, entry in ipairs(entries) do
-			local host = EntryFor(entry.spec.under)
-			if host then
-				host.perch = entry
+			local host = EntryFor(entry.spec.flank)
+			if host and entry.spec.unit == host.spec.unit .. "target" then
+				host.follower = entry
 			end
 		end
 		Skin.Apply()
