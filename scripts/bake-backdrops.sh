@@ -85,7 +85,7 @@ PAINTINGS = [
 	{
 		"palette": "forest", "file": "art/forrest.jpeg", "stem": "Forest",
 		"inset": (60, 55, 60, 55), "corner": 120, "period": (335, 347),
-		"darken": 0.60,
+		"darken": 0.60, "ground": "art/forrest_bg.jpeg", "dim": 0.55,
 	},
 	{
 		"palette": "desert", "file": "art/desert02.jpeg", "stem": "Desert",

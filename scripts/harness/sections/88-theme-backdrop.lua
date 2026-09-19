@@ -6,16 +6,18 @@
 -- the screen as a fault until the wrong window size comes up, where it is a
 -- stripe of stretched floor or a tile hanging off the edge.
 --
--- Laid out on a frame of its own with the forest painting chosen by hand, and
+-- Laid out on a frame of its own with the desert painting chosen by hand, and
 -- the choice put back to none at the foot, which is what the default dark
--- palette the load painted left there.
+-- palette the load painted left there. Desert because its floor is a tile; the
+-- forest and arcane floors are one picture each, drawn once, and are checked
+-- as that below the tiles.
 
 local H = ...
 local ns, check = H.ns, H.check
 local UI = ns.UI
 
-local art = ns.Backdrops.forest
-check(art ~= nil, "the forest palette has a painting")
+local art = ns.Backdrops.desert
+check(art ~= nil and not art.cover, "the desert palette has a tiled painting")
 
 UI.ChooseBackdrop(nil)
 check(UI.Backdrop(CreateFrame("Frame", nil, UIParent)) == nil,
@@ -59,6 +61,28 @@ check(backdrop.pool.Top[1].layer == "BACKGROUND", "the frame is under everything
 -- Shrunk to one tile, the rest go down rather than stay where they were.
 backdrop:Layout(tileW, tileH)
 check(shown("Middle") == 1, ("a one-tile window shows one tile, got %d"):format(shown("Middle")))
+
+-- A floor that is one picture: drawn once, over the whole rectangle, and
+-- cropped to keep the picture's shape. A window narrower than the picture
+-- keeps its full height and loses the same amount off each side.
+local forest = ns.Backdrops.forest
+check(forest.cover == true, "the forest floor is one picture")
+UI.ChooseBackdrop(forest)
+local covered = UI.Backdrop(CreateFrame("Frame", nil, UIParent))
+covered:Layout(300, 200)
+local count = 0
+for _, texture in ipairs(covered.pool.Middle) do
+	count = count + (texture:IsShown() and 1 or 0)
+end
+check(count == 1, ("a picture floor is drawn once, got %d"):format(count))
+local picture = covered.pool.Middle[1]
+check(picture.width == 300 and picture.height == 200, "the picture covers the whole rectangle")
+local across = 300 / (forest.Middle[2] * (200 / forest.Middle[3]))
+check(picture.texcoord[3] == 0 and picture.texcoord[4] == 1, "a narrow window shows the picture's full height")
+check(math.abs(picture.texcoord[1] - (1 - across) / 2) < 1e-9
+	and math.abs(picture.texcoord[2] - (1 + across) / 2) < 1e-9,
+	"and crops the same off both sides")
+UI.ChooseBackdrop(art)
 
 -- The minimap's: half scale and no floor. The map is the floor, so a tile
 -- drawn there would cover the world; and every piece is half its size,
