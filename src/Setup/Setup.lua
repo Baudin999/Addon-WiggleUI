@@ -16,7 +16,8 @@ local Previews = ns.SetupPreviews
 --   mode      how much of the addon is on the screen, ns.db.theme
 --   colours   the palette, ns.db.palette
 --   frames    modern or flat unit frames; modern takes the portraits off
---   tooltips  every hover's box in the corner, or beside what you hovered
+--   tooltips  every hover's box in the corner, or beside what you hovered;
+--             a map pin's is beside the pin either way
 --
 -- Nothing is written until the last page. Skipping, closing the window or
 -- pressing Escape keeps what is there, which on a fresh install is the shipped
@@ -112,12 +113,12 @@ Setup.STEPS = {
 		key = "tips",
 		rail = "tooltips",
 		question = "Where should a tooltip open?",
-		lede = "For everything you hover: bag items, buttons, spells, units and the addon's own rows.",
+		lede = "For everything you hover: bag items, buttons, spells, units and the addon's own rows. A map pin always opens beside the pin.",
 		columns = 2,
 		draw = Previews.Tip,
 		cards = {
 			{ value = UI.Tooltip.RIGHT, title = "Bottom right",
-				blurb = "Always in the corner the game keeps its own tooltip in, out of the way of what you are looking at." },
+				blurb = "In the corner the game keeps its own tooltip in, out of the way of what you are looking at." },
 			{ value = UI.Tooltip.ATTACHED, title = "Attached",
 				blurb = "Next to whatever you hovered, so the box is on the thing it describes." },
 		},
@@ -128,13 +129,21 @@ Setup.STEPS = {
 -- What is chosen now, and what writing it does
 --------------------------------------------------------------------------
 
--- Every type of tooltip's place, counted, and the more common of the two the
--- setup offers. A screen with a mixture is one somebody set type by type, and
+-- The types the answer does not reach, and where each one always opens. A map
+-- pin is attached whatever the player picks: the map is a window you read
+-- across, and a box in the screen's corner is a long way from the pin it
+-- names, often behind the map itself.
+Setup.FIXED_TIPS = {
+	pin = UI.Tooltip.ATTACHED,
+}
+
+-- Every type of tooltip's place the answer reaches, counted, and the more
+-- common of the two the setup offers. A screen with a mixture is one somebody set type by type, and
 -- the card that describes most of it is the fair one to light.
 local function CurrentTips()
 	local right, attached = 0, 0
 	for _, each in ipairs(UI.Tooltip.TYPES) do
-		local place = ns.Settings.Place(each.key)
+		local place = not Setup.FIXED_TIPS[each.key] and ns.Settings.Place(each.key)
 		if place == UI.Tooltip.RIGHT then
 			right = right + 1
 		elseif place == UI.Tooltip.ATTACHED then
@@ -173,7 +182,7 @@ function Setup.Apply(answers)
 	ns.db.gaugeLook = answers.plates
 	ns.db.portraits = answers.plates ~= "modern"
 	for _, each in ipairs(UI.Tooltip.TYPES) do
-		ns.Settings.SetPlace(each.key, answers.tips)
+		ns.Settings.SetPlace(each.key, Setup.FIXED_TIPS[each.key] or answers.tips)
 	end
 	ns.db.setupDone = true
 end

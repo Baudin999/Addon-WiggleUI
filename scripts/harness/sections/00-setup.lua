@@ -83,6 +83,9 @@ Setup.Pick("tips", UI.Tooltip.RIGHT)
 Setup.Forward()
 check(ns.db.gaugeLook == "flat" and ns.db.portraits == true, "flat frames did not put the portraits back")
 check(ns.Settings.Place("bag") == UI.Tooltip.RIGHT, "bottom right did not reach the bag's tooltip")
+check(ns.Settings.Place("pin") == UI.Tooltip.ATTACHED,
+	("a map pin's tooltip opens %s after bottom right, and a pin is always attached")
+		:format(ns.Settings.Place("pin")))
 
 --------------------------------------------------------------------------
 -- Closed without answering
