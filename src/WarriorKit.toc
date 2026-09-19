@@ -1218,6 +1218,15 @@ EditMode\Feature.lua
 Settings\Settings.lua
 Settings\Feature.lua
 
+# Profiles, which Core.lua keeps and this folder switches, copies, deletes and
+# turns into a string to paste. After Settings, whose page group it opens under.
+# Codec.lua is the string, Profiles.lua the operations, Window.lua the box it is
+# pasted into, Feature.lua last.
+Profiles\Codec.lua
+Profiles\Profiles.lua
+Profiles\Window.lua
+Profiles\Feature.lua
+
 # The four questions a new player is asked at the first login. After Settings,
 # which owns where a tooltip opens and is one of the four answers, and after
 # Theme, whose tables the pictures on the cards are drawn from. Previews.lua is

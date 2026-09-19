@@ -373,7 +373,7 @@ read_globals = {
 	"UnitExists", "UnitGUID", "UnitClass", "UnitAffectingCombat", "IsResting", "UnitCanAttack",
 	"UnitIsDead", "UnitIsGroupLeader", "UnitIsGroupAssistant", "IsInRaid",
 	"IsControlKeyDown", "IsShiftKeyDown",
-	"UnitHealth", "UnitHealthMax", "UnitName", "UnitIsUnit", "UnitCanAttack",
+	"UnitHealth", "UnitHealthMax", "UnitName", "GetRealmName", "UnitIsUnit", "UnitCanAttack",
 	-- power, for the second gauge on the skinned unit frames. All three are
 	-- called unguarded by TitanRegen, which is loaded on this client, so they
 	-- are entries here rather than shims in Core.

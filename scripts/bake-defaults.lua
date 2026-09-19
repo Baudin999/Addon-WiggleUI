@@ -106,6 +106,17 @@ if CHARACTER and CHARACTER ~= "" then
 	assert(type(liveChar) == "table", "no WarriorKitCharDB in " .. CHARACTER)
 end
 
+-- The settings are in the profile the character wears, not flat on the
+-- account, since Core.lua split them. A file from before the split is still
+-- flat and is read as it stands. After it, the character file is what names
+-- the profile, so a bake without one cannot say which screen to capture.
+if type(live.profiles) == "table" then
+	local wearing = liveChar.profile
+	assert(type(wearing) == "string" and type(live.profiles[wearing]) == "table",
+		"the account file holds profiles and no character file names the one to bake")
+	live = live.profiles[wearing]
+end
+
 local function Same(held, want)
 	if type(held) ~= "table" or type(want) ~= "table" then
 		return held == want

@@ -2704,8 +2704,9 @@ end
 -- ADDON_LOADED fires once every file in the TOC has run, so every feature has
 -- already registered its defaults by the time this merges them.
 --
--- Two tables. WarriorKitDB is the account's and reaches ns.db, WarriorKitCharDB
--- is this character's and reaches ns.dbc. Both are declared in the TOC and both
+-- Two tables. WarriorKitDB is the account's and reaches ns.db through the
+-- profile this character wears (see Profiles below), WarriorKitCharDB is this
+-- character's and reaches ns.dbc. Both are declared in the TOC and both
 -- arrive at ADDON_LOADED, so no caller has to know which file its setting came
 -- out of, only which name to read it from.
 --------------------------------------------------------------------------
@@ -3158,6 +3159,130 @@ local function MigrateGaugeLook()
 	end
 end
 
+--------------------------------------------------------------------------
+-- Profiles
+--
+-- Every setting the reset writes lives in a named profile under
+-- WarriorKitDB.profiles, and each character points at one by name in
+-- WarriorKitCharDB.profile. Two characters can point at the same profile;
+-- a character that points at nothing gets one of its own, named after it.
+--
+-- Records stay on the account. The line between the two is Restorable, the
+-- one the reset already draws: a setting is somebody's taste and a profile is
+-- a set of tastes, while the gold ledger is the same ledger whichever screen
+-- you are wearing.
+--
+-- ns.db is the active profile's own table with a metatable over it, so no
+-- feature learns any of this. A setting is a raw field and reads at full
+-- speed. Only a key the profile does not hold reaches a metamethod, and a key
+-- that is not a setting goes through to the account table in both directions.
+--
+-- Switching reloads the interface, for the reason the reset does: every part
+-- reads its settings once, when it is built.
+--------------------------------------------------------------------------
+
+-- The profile every character copied on the first load after the split: the
+-- screen the account was wearing when all of this was one flat table.
+local SHARED = "Shared"
+
+-- Names under WarriorKitDB and WarriorKitCharDB that hold profiles rather
+-- than a setting. A feature registering one of them would be read as a
+-- setting and written over the profile list.
+local RESERVED = { profiles = true, profileUsers = true, profile = true }
+
+function ns.CharacterKey()
+	return ("%s - %s"):format(UnitName("player") or "?", GetRealmName() or "?")
+end
+
+local function Profiled(profile)
+	return setmetatable(profile, {
+		__index = function(_, key)
+			if not Restorable(key) then
+				return WarriorKitDB[key]
+			end
+		end,
+		__newindex = function(held, key, value)
+			if Restorable(key) then
+				rawset(held, key, value)
+			else
+				WarriorKitDB[key] = value
+			end
+		end,
+	})
+end
+
+-- Before profiles every setting sat flat on the account. They move into
+-- SHARED once, and the key that says it happened is the profile list itself.
+local function MigrateProfiles()
+	if type(WarriorKitDB.profiles) == "table" then
+		return
+	end
+	local shared
+	for key, value in pairs(WarriorKitDB) do
+		if Restorable(key) then
+			shared = shared or {}
+			shared[key] = value
+		end
+	end
+	for key in pairs(shared or {}) do
+		WarriorKitDB[key] = nil
+	end
+	WarriorKitDB.profiles = { [SHARED] = shared }
+end
+
+-- The profile this character wears. One it named that has since been deleted
+-- on another character is as good as none: it falls back to its own, which is
+-- a copy of SHARED where that still exists and the shipped screen where not.
+local function Chosen()
+	local profiles = WarriorKitDB.profiles
+	local name = WarriorKitCharDB.profile
+	if type(name) ~= "string" or type(profiles[name]) ~= "table" then
+		name = ns.CharacterKey()
+		if type(profiles[name]) ~= "table" then
+			profiles[name] = Copy(profiles[SHARED] or {})
+		end
+		WarriorKitCharDB.profile = name
+	end
+	WarriorKitDB.profileUsers = WarriorKitDB.profileUsers or {}
+	WarriorKitDB.profileUsers[ns.CharacterKey()] = name
+	return name
+end
+
+function ns.ProfileName()
+	return WarriorKitCharDB.profile
+end
+
+-- The profile list itself, raw. Profiles/Profiles.lua is the one reader.
+function ns.ProfileStore()
+	return WarriorKitDB.profiles, WarriorKitDB.profileUsers
+end
+
+-- Point this character at another profile. Takes effect at the next reload.
+function ns.UseProfile(name)
+	assert(type(WarriorKitDB.profiles[name]) == "table",
+		("there is no profile called %q"):format(tostring(name)))
+	WarriorKitCharDB.profile = name
+	WarriorKitDB.profileUsers[ns.CharacterKey()] = name
+end
+
+-- A profile in a table nobody else is holding, for a copy under a new name.
+function ns.ProfileCopy(name)
+	return Copy(WarriorKitDB.profiles[name])
+end
+
+-- The settings in one profile that are not what the addon ships with. An
+-- export carries only these, so a string made today still takes every default
+-- a later release moves.
+function ns.ProfileMoved(name)
+	local profile, moved = WarriorKitDB.profiles[name], {}
+	for key, value in pairs(profile or {}) do
+		if Restorable(key) and not Same(value, defaults[key]) then
+			moved[key] = value
+		end
+	end
+	return moved
+end
+
 local loader = CreateFrame("Frame")
 loader:RegisterEvent("ADDON_LOADED")
 loader:SetScript("OnEvent", function(self, _, name)
@@ -3170,7 +3295,12 @@ loader:SetScript("OnEvent", function(self, _, name)
 	Migrate()
 	MigrateGaugeLook()
 	Ship()
-	ns.db = ApplyDefaults(WarriorKitDB, defaults)
+	for key in pairs(RESERVED) do
+		assert(defaults[key] == nil and charDefaults[key] == nil,
+			("a feature registers %q, which holds the profiles"):format(key))
+	end
+	MigrateProfiles()
+	ns.db = ApplyDefaults(Profiled(WarriorKitDB.profiles[Chosen()]), defaults)
 	ns.dbc = ApplyDefaults(WarriorKitCharDB, charDefaults)
 	MigrateZooms()
 	MigrateAimPrior()

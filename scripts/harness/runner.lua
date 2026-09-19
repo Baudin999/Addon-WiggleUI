@@ -434,6 +434,9 @@ local SECTIONS = {
 	-- to what the addon ships with, twice over, which is the one thing in the
 	-- suite that would pull the scene out from under every section above it.
 	"53-shipped-defaults",
+	-- Straight after the reset, which it leans on: every profile it makes is
+	-- measured against the shipped screen the reset just put back.
+	"54-profiles",
 	-- Under the reset, which is not the exception to the line above it that it
 	-- looks like. What that section pulls out from under everything is the
 	-- settings, and the two this one needs are the two the addon ships with, so

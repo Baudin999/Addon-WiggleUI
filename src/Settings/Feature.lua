@@ -503,7 +503,7 @@ ns.Register({
 		-- destructive belongs on a page you had to open, under a sentence
 		-- saying what it spares.
 		ui.Section("Shipped defaults", "Under the hood")
-		ui.Lede("Every setting back to the answer the addon ships with. It is how a default that moved in an update reaches an account file that already had a number for it.")
+		ui.Lede("Every setting in the profile this character wears back to the answer the addon ships with. It is how a default moved in an update reaches you.")
 
 		ui.Reading("moved off the shipped answer", DefaultsReading)
 

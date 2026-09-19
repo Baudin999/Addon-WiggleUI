@@ -127,6 +127,9 @@ local tappedUnits = {}
 _G.WarriorKitTappedUnits = tappedUnits
 _G.UnitIsTapDenied = function(unit) return tappedUnits[unit] == true end
 _G.UnitName = function(unit) return unitName[unit] or "Target Dummy" end
+-- One realm, because a profile is named for the character and the realm it
+-- lives on and the harness only ever has the one.
+_G.GetRealmName = function() return "Harness" end
 -- Health by unit token, defaulting to the same 4200 of 9000 a constant pair
 -- gave. Written down per unit because a threshold read off a target is a rung
 -- of the action bar ladder now, and a fixed 46% could drive neither side of a
