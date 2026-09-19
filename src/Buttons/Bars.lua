@@ -338,6 +338,7 @@ local function Arrange(entry)
 	-- both cases.
 	local columns = ns.BarLook.Columns(entry.def)
 	local size = ns.BarLook.Size(entry.def)
+	local key = ns.BarLook.KeyDecided(entry.def)
 	local rows = { direction = "column", gap = GAP, pad = PAD }
 	local row
 
@@ -350,7 +351,7 @@ local function Arrange(entry)
 		-- setting and this is the one function that runs on every change to it.
 		-- Ability.Size re-places every region on the square, so it is the whole
 		-- of what a resize is.
-		Ability.Size(entry.buttons[index], size)
+		Ability.Size(entry.buttons[index], size, key)
 		row[#row + 1] = { frame = entry.buttons[index], width = size, height = size }
 	end
 

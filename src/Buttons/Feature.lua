@@ -251,6 +251,16 @@ local function BarsPage(ui)
 		function(value) return value .. "px" end)
 	ui.Hint("27 and 54 are the two sizes a stored icon lands on a pixel at. In between, the client blends two copies and the art softens.")
 
+	local keyLow, keyHigh = ns.BarLook.KeyRange()
+	ui.Slider("key", keyLow, keyHigh, 1,
+		function() return ns.BarLook.KeySize(Chosen()) end,
+		function(value)
+			ns.BarLook.SetKeySize(Chosen(), value)
+			Restyle()
+		end,
+		function(value) return value .. "px" end)
+	ui.Hint("The keybind's text, one pixel a stop, which is the finest a font draws sharp at. Left alone it is half the square and grows with it; set here it stays put.")
+
 	ui.Picker("colour",
 		function() return ns.BarLook.Color(Chosen()) end,
 		function(value)

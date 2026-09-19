@@ -119,11 +119,11 @@ if window then
 	-- The size slider is gone: every screen is a stepper now, because a tenth is
 	-- a step you click rather than a length you aim at. What is left on this
 	-- count is the rows that were always sliders.
-	check(sliders == 14,
+	check(sliders == 15,
 		("%d sliders in the panel, expected how long a hover's box lingers, the"
 			.. " debuff icon, six backgrounds (the meters, the chat window, one"
 			.. " per feed, the mouseover list and the bar the buttons page is"
-			.. " showing), that bar's square, and the five a floating message is"
+			.. " showing), that bar's square and its key, and the five a floating message is"
 			.. " timed and faded by: the two alphas it moves between, its travel,"
 			.. " its time on screen and the beat between arrivals"):format(sliders))
 

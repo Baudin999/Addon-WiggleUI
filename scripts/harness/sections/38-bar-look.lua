@@ -139,6 +139,22 @@ check(ns.Bars.Restyle(), "the restyle reported combat deferring the way back")
 check(not Look.Shape(def):find("blended"),
 	"a sharp size is being reported as blended")
 
+-- The key. Unset it is the square's share and follows the square; set, it is
+-- its own number in whole pixels and a resize leaves it where it was put.
+local keyLow, keyHigh = Look.KeyRange()
+check(Look.KeySize(def) == ns.UI.Ability.KeySize(27),
+	("an unset key reads %dpx, the share of a 27px square is %dpx"):format(
+		Look.KeySize(def), ns.UI.Ability.KeySize(27)))
+check(not Look.SetKeySize(def, keyHigh + 1), "a key bigger than the range was taken")
+check(not Look.SetKeySize(def, keyLow - 1), "a key smaller than the range was taken")
+check(not Look.SetKeySize(def, 12.5), "a key between two pixels was taken")
+check(Look.SetKeySize(def, 19), "a key inside the range was refused")
+Look.SetSize(def, 40)
+check(ns.Bars.Restyle(), "the restyle reported combat deferring the key")
+check(one.buttons[1].key:GetFontObject() == ns.UI.NumberFont(19),
+	"a key set to 19px did not draw at 19px once the square moved")
+Look.SetSize(def, 27)
+
 --------------------------------------------------------------------------
 -- The paint
 --

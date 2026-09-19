@@ -410,9 +410,12 @@ end
 -- one screen pixel in both cases. That is the whole of the difference between
 -- UI.Pixel and UI.Unit, stated in UI/Pixel.lua.
 --
+-- `key` is the key's font size where a setting names one, and nil where the
+-- key follows the square, which is Ability.KeySize of the side.
+--
 -- Called on a settings change and on a rescale, never on a tick.
 -- cold: a settings change and a rescale, never a tick. See above.
-function Ability.Size(w, side)
+function Ability.Size(w, side, key)
 	local edge = UI.Pixel(w)
 
 	w:SetSize(side, side)
@@ -481,7 +484,7 @@ function Ability.Size(w, side)
 	-- of these want: they sit on a spell icon this addon did not paint.
 	local timer = math.max(math.floor(side * TIMER_SHARE), 8)
 	local count = math.max(math.floor(side * COUNT_SHARE), 7)
-	local key = math.max(math.floor(side * KEY_SHARE), 7)
+	key = key or Ability.KeySize(side)
 
 	w.timer:SetFontObject(UI.NumberFont(timer))
 	w.count:SetFontObject(UI.NumberFont(count))
@@ -498,6 +501,13 @@ function Ability.Size(w, side)
 	w.keyPlate:SetPoint("BOTTOMLEFT", w.key, "BOTTOMLEFT", -edge, 0)
 
 	return side
+end
+
+-- The key's font size on a square of that side when nothing names one. Handed
+-- out so Buttons/Look.lua can start its slider where the key already is,
+-- rather than writing the share a second time.
+function Ability.KeySize(side)
+	return math.max(math.floor(side * KEY_SHARE), 7)
 end
 
 -- The key that presses this square, or "" for none. Once per binding change.

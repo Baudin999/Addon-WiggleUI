@@ -77,6 +77,14 @@ Look.ROWS = { 1, 2, 3, 4, 6, 12 }
 local DEFAULT_SIZE = 27
 local SIZE_LOW, SIZE_HIGH = 16, 54
 
+-- The key's font, in whole pixels, for the reason Ability.Size floors every
+-- string on a square: a glyph at a fractional size is rasterised across two
+-- rows. One pixel is therefore the finest step there is, and the range is kept
+-- to what a key can be on a square so every stop on the slider is a few
+-- pixels of drag apart. Seven is the floor the square already had; 32 is a
+-- key a little over the 28 a 54px square gives it.
+local KEY_LOW, KEY_HIGH = 7, 32
+
 -- Ninety five rather than the ninety seven the window colour carries, because
 -- the opacity control is in fives and a stop the panel cannot reach is a
 -- number nobody can put back. Two hundredths of an alpha on a background is
@@ -235,6 +243,33 @@ function Look.SetSize(def, size)
 		return false
 	end
 	return Write(def, "size", size, DEFAULT_SIZE)
+end
+
+-- The key's font size on one bar's squares. Unset, it follows the square, which
+-- is the size it has always been drawn at.
+function Look.KeySize(def)
+	return Field(def, "keySize") or UI.Ability.KeySize(Look.Size(def))
+end
+
+-- Whether the bar's key is its own number rather than the square's share.
+-- Asked by the layout, which passes nil on to Ability.Size for a bar that has
+-- not decided, so resizing the square still resizes its key.
+function Look.KeyDecided(def)
+	return Field(def, "keySize")
+end
+
+function Look.KeyRange()
+	return KEY_LOW, KEY_HIGH
+end
+
+-- Stored even where it equals the share, unlike every other field here. A key
+-- set to 14 on a 27px square and dropped as the default would grow the moment
+-- the square did, which is the one thing a player who set it did not ask for.
+function Look.SetKeySize(def, size)
+	if size < KEY_LOW or size > KEY_HIGH or size ~= math.floor(size) then
+		return false
+	end
+	return Write(def, "keySize", size, nil)
 end
 
 -- Whether a stored icon texel lands on a screen pixel at that size, which is
