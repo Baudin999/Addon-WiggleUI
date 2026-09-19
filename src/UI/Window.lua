@@ -223,14 +223,14 @@ local function Surface(window, frame, opts)
 	-- instead, when the palette has one, and then has no fill to thin and no
 	-- hairline: the painted frame is the edge. See UI/Backdrop.lua.
 	window.backdrop = opts.backdrop and not opts.screen and UI.Backdrop(frame) or nil
-	if window.backdrop then
-		-- Drawn by the first resize, which the constructor makes.
-	elseif not opts.screen then
-		window.bg = ns.Fill(frame, "BACKGROUND", C.window[1], C.window[2], C.window[3], C.window[4])
-		window.bg:SetAllPoints()
-	else
+	-- A backdrop is drawn by the first resize, which the constructor makes, and
+	-- a screen never has one.
+	if opts.screen then
 		Darkness(window, frame, opts)
 		Clearing(window, frame, opts)
+	elseif not window.backdrop then
+		window.bg = ns.Fill(frame, "BACKGROUND", C.window[1], C.window[2], C.window[3], C.window[4])
+		window.bg:SetAllPoints()
 	end
 
 	local px = ns.Pixel(frame)

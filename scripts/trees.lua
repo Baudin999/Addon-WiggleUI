@@ -153,6 +153,8 @@ local ALLOWED = {
 	  why = "a loot row draws why the item on it matters, and its hover says it" },
 	{ from = "Feeds", sym = "Leftovers", uses = 1,
 	  why = "a loot row and the delete list destroy through the one path that splits a stack and deletes it" },
+	{ from = "Feeds", sym = "ChatFeed", uses = 2,
+	  why = "a floating chat line wears the chat window's colour for its kind and the sender's class" },
 	{ from = "Map", sym = "QuestWhere", uses = 1,
 	  why = "the map pins the quest log's own answer for where a quest is" },
 	{ from = "Map", sym = "QuestClient", uses = 1,
