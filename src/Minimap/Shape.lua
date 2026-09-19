@@ -203,6 +203,12 @@ end
 -- something an addon gets to state. Four bands sit entirely outside the map's
 -- bounds and cover nothing whatever the client decides.
 --
+-- A palette with a painting draws that instead, round the map with no floor
+-- and at half the bag window's scale, and then there are no bands and no
+-- hairline: the painted frame is the edge, and it sits against the map with
+-- no black between. Its corners reach into the map's corners by design, the
+-- way they reach over the bag window's floor. See UI/Backdrop.lua.
+--
 -- It is a frame of ours anchored to the map rather than a texture on the map,
 -- so the client's own update code has nothing to argue with.
 --------------------------------------------------------------------------
@@ -210,6 +216,9 @@ end
 -- How wide the black is. The same number Buttons/Bars.lua pads its box by, and
 -- it is shared for the look rather than for the arithmetic.
 local PAD = 3
+
+-- The painted frame's scale round the map, against the bag window's.
+local PAINTED = 0.5
 
 local function Build(map)
 	local C = ns.UI.Color
@@ -224,18 +233,21 @@ local function Build(map)
 	end
 
 	local px = ns.Pixel(bezel)
-	local pad = PAD * px
+	bezel.backdrop = ns.UI.Backdrop(bezel, { scale = PAINTED, floor = false })
+	local pad = bezel.backdrop and 0 or PAD * px
 	bezel:SetPoint("TOPLEFT", map, "TOPLEFT", -pad, pad)
 	bezel:SetPoint("BOTTOMRIGHT", map, "BOTTOMRIGHT", pad, -pad)
 
-	bezel.bands = ns.Outline(bezel, C.window[1], C.window[2], C.window[3],
-		C.window[4], "BACKGROUND")
-	ns.EdgeSize(bezel.bands, pad)
+	if not bezel.backdrop then
+		bezel.bands = ns.Outline(bezel, C.window[1], C.window[2], C.window[3],
+			C.window[4], "BACKGROUND")
+		ns.EdgeSize(bezel.bands, pad)
 
-	-- Over the bands, so the hairline is the outside of the black rather than a
-	-- line lost somewhere inside it.
-	bezel.edges = ns.Outline(bezel, C.hairline[1], C.hairline[2], C.hairline[3], 1)
-	ns.EdgeSize(bezel.edges, px)
+		-- Over the bands, so the hairline is the outside of the black rather
+		-- than a line lost somewhere inside it.
+		bezel.edges = ns.Outline(bezel, C.hairline[1], C.hairline[2], C.hairline[3], 1)
+		ns.EdgeSize(bezel.edges, px)
+	end
 
 	bezel.pad = pad
 	bezel.hairline = px
@@ -312,6 +324,11 @@ function Shape.Apply()
 	local frame = Shape.Bezel()
 	if frame then
 		frame:SetShown(square)
+		-- Laid round the map at the size just set. The bezel has no pad when
+		-- painted, so the map's size is the bezel's.
+		if frame.backdrop then
+			frame.backdrop:Layout(size, size)
+		end
 	end
 
 	applied = square

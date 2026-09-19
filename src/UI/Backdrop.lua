@@ -73,8 +73,8 @@ end
 
 -- One rail: a row of its tile from x, y along length, across or down.
 function Backdrop:Run(key, x, y, length, across)
-	local piece = self.art[key]
-	local width, height = piece[2], piece[3]
+	local piece, scale = self.art[key], self.scale
+	local width, height = piece[2] * scale, piece[3] * scale
 	local step = across and width or height
 	local used, at = 0, 0
 	while at < length do
@@ -91,21 +91,34 @@ function Backdrop:Run(key, x, y, length, across)
 	self:Trim(key, used)
 end
 
+-- How far the frame hangs outside the rectangle it is laid round, on one
+-- side, at the scale it is drawn at. The minimap's clock tab hangs below this.
+function Backdrop:Thickness(side)
+	return self.art.thickness[side] * self.scale
+end
+
 function Backdrop:Layout(width, height)
-	local art, frame = self.art, self.frame
-	local side, corner = art.thickness, art.corner
+	local art, frame, scale = self.art, self.frame, self.scale
+	local side = {
+		left = self:Thickness("left"), top = self:Thickness("top"),
+		right = self:Thickness("right"), bottom = self:Thickness("bottom"),
+	}
+	local corner = art.corner * scale
 
 	-- The floor, from the window's top left, which is where the bake cut it to
-	-- be in phase with the painting.
-	local middle = art.Middle
+	-- be in phase with the painting. None round the minimap, whose map is the
+	-- floor.
 	local used = 0
-	for y = 0, height - 1, middle[3] do
-		for x = 0, width - 1, middle[2] do
-			local across = math.min(middle[2], width - x)
-			local down = math.min(middle[3], height - y)
-			used = used + 1
-			Put(self:Tile("Middle", used), frame, x, y, across, down,
-				across / middle[2], down / middle[3])
+	if self.floor then
+		local tileW, tileH = art.Middle[2] * scale, art.Middle[3] * scale
+		for y = 0, height - 1, tileH do
+			for x = 0, width - 1, tileW do
+				local across = math.min(tileW, width - x)
+				local down = math.min(tileH, height - y)
+				used = used + 1
+				Put(self:Tile("Middle", used), frame, x, y, across, down,
+					across / tileW, down / tileH)
+			end
 		end
 	end
 	self:Trim("Middle", used)
@@ -116,9 +129,9 @@ function Backdrop:Layout(width, height)
 	local wide = math.max(0, width + side.right - corner - left)
 	local tall = math.max(0, height + side.bottom - corner - top)
 	self:Run("Top", left, -side.top, wide, true)
-	self:Run("Bottom", left, height + side.bottom - art.Bottom[3], wide, true)
+	self:Run("Bottom", left, height + side.bottom - art.Bottom[3] * scale, wide, true)
 	self:Run("Left", -side.left, top, tall, false)
-	self:Run("Right", width + side.right - art.Right[2], top, tall, false)
+	self:Run("Right", width + side.right - art.Right[2] * scale, top, tall, false)
 
 	local far, low = width + side.right - corner, height + side.bottom - corner
 	Put(self:Tile("TopLeft", 1), frame, -side.left, -side.top, corner, corner, 1, 1)
@@ -129,12 +142,22 @@ end
 
 -- The chosen palette's painting behind a frame, or nil when the palette has
 -- none and the caller should draw its flat fill. Nothing is drawn until the
--- first Layout, which the window's resize makes.
-function UI.Backdrop(frame)
+-- first Layout, which the owner makes whenever the frame's size is decided.
+--
+-- opts.scale draws every piece at that fraction of the size the bake gave it,
+-- and opts.floor = false leaves the floor out and draws the frame alone. The
+-- minimap takes both: half, because a corner sized for a bag window reaches
+-- forty pixels into a map two hundred wide, and no floor, because the map is
+-- what it is round.
+function UI.Backdrop(frame, opts)
 	if not chosen then
 		return nil
 	end
-	local backdrop = setmetatable({ frame = frame, art = chosen, pool = {} }, Backdrop)
+	opts = opts or {}
+	local backdrop = setmetatable({
+		frame = frame, art = chosen, pool = {},
+		scale = opts.scale or 1, floor = opts.floor ~= false,
+	}, Backdrop)
 	for key in pairs(SUBLEVEL) do
 		backdrop.pool[key] = {}
 	end

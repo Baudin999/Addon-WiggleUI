@@ -154,8 +154,10 @@ local function Build()
 
 	-- One pixel of overlap, so the tab's top edge and the bezel's bottom edge
 	-- land in the same row rather than in two rows with a line of world between
-	-- them.
-	frame:SetPoint("TOP", bezel, "BOTTOM", 0, px)
+	-- them. Under a painted frame the tab hangs below the painted rail instead,
+	-- tucked the same pixel under it.
+	local below = bezel.backdrop and bezel.backdrop:Thickness("bottom") or 0
+	frame:SetPoint("TOP", bezel, "BOTTOM", 0, px - below)
 
 	text = UI.Label(frame, UI.Metric.font, C.text, "CENTER", UI.FLAT)
 	text:SetPoint("CENTER")

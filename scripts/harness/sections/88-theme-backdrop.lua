@@ -60,5 +60,17 @@ check(backdrop.pool.Top[1].layer == "BACKGROUND", "the frame is under everything
 backdrop:Layout(tileW, tileH)
 check(shown("Middle") == 1, ("a one-tile window shows one tile, got %d"):format(shown("Middle")))
 
+-- The minimap's: half scale and no floor. The map is the floor, so a tile
+-- drawn there would cover the world; and every piece is half its size,
+-- including how far the frame hangs outside, which is what the clock tab reads.
+local ring = UI.Backdrop(CreateFrame("Frame", nil, UIParent), { scale = 0.5, floor = false })
+ring:Layout(200, 200)
+check(#ring.pool.Middle == 0, "a frame with no floor lays no floor tile")
+local corner = ring.pool.TopLeft[1]
+check(corner.width == art.corner / 2, ("the corner is drawn at half, %s against %s")
+	:format(tostring(corner.width), tostring(art.corner / 2)))
+check(ring:Thickness("bottom") == art.thickness.bottom / 2, "the thickness is asked at half")
+check(ring.pool.Top[1].height == art.Top[3] / 2, "the rail is drawn at half its height")
+
 frame:Hide()
 UI.ChooseBackdrop(nil)
