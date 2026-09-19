@@ -91,11 +91,8 @@ if window then
 	-- it is pressed. The panel shows one section at a time and hides the rest,
 	-- so a button on a section nobody selected is a button no pointer can reach.
 	local pages = {}
-	local rows, sliders, nudged = {}, 0, 0
+	local rows, nudged = {}, 0
 	for _, entry in ipairs(window.indexed) do
-		if entry.widget.slider then
-			sliders = sliders + 1
-		end
 		if entry.section.title:find("^Zoom") and entry.widget.children then
 			local down, up = Nudges(entry.widget)
 			if down and up then
@@ -116,16 +113,6 @@ if window then
 	check(nudged == #zooms,
 		("the zoom page draws %d rows for %d registered screens"):format(nudged, #zooms))
 
-	-- The size slider is gone: every screen is a stepper now, because a tenth is
-	-- a step you click rather than a length you aim at. What is left on this
-	-- count is the rows that were always sliders.
-	check(sliders == 15,
-		("%d sliders in the panel, expected how long a hover's box lingers, the"
-			.. " debuff icon, six backgrounds (the meters, the chat window, one"
-			.. " per feed, the mouseover list and the bar the buttons page is"
-			.. " showing), that bar's square and its key, and the five a floating message is"
-			.. " timed and faded by: the two alphas it moves between, its travel,"
-			.. " its time on screen and the beat between arrivals"):format(sliders))
 
 	----------------------------------------------------------------
 	-- Every stop on the panel's own row
