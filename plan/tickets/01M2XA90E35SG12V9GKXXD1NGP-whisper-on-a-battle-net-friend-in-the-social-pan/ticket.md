@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2XA90E35SG12V9GKXXD1NGP
 type: bug
-status: todo
+status: doing
 title: Whisper on a Battle.net friend in the social panel opens on the room
 ---
 
