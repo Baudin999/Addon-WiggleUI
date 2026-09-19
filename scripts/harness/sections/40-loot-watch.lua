@@ -9,7 +9,7 @@
 -- the stack. Does a blue stay. Does the can sweep every row of an item, destroy
 -- what they counted, and destroy every later drop of it as it lands with no row
 -- and no floating message. Is the list impossible to miss: a red control on the
--- strip with the count on it, holding the strip up with the chips off. And does
+-- strip with the count on it, holding the strip up with the title off. And does
 -- pressing that control empty the list and let the item make a row again.
 --
 -- It runs on a bag of its own, for the reason 71-leftovers.lua gives, and puts
@@ -179,27 +179,27 @@ do
 	ns.db.lootFloat = floating
 
 	----------------------------------------------------------------------
-	-- The strip, with the chips off
+	-- The strip, with the title off
 	----------------------------------------------------------------------
 
-	local chips, header = ns.db.lootFeedFilters, ns.db.lootFeedHeader
-	ns.db.lootFeedFilters, ns.db.lootFeedHeader = false, false
+	local header = ns.db.lootFeedHeader
+	ns.db.lootFeedHeader = false
 	lootStream:Apply()
 	check(feed.head > 0 and feed.list:IsShown(),
-		"with the chips and the title off the delete list took the strip down")
+		"with the title off the delete list took the strip down")
 
 	H.mouse.On(feed.list)
 	check(Loot.List() == 0, "pressing the delete list's control left items on it")
 	check(feed.head == 0 and not feed.list:IsShown(),
-		"the strip stayed up for an empty list with the chips and the title off")
+		"the strip stayed up for an empty list with the title off")
 
 	loot(LINEN)
 	check(feed:Held(0).link == LINEN and counted(4, 1) == 4,
 		"an item taken off the list still makes no row, or is still destroyed")
 
-	ns.db.lootFeedFilters, ns.db.lootFeedHeader = chips, header
+	ns.db.lootFeedHeader = header
 	lootStream:Apply()
-	check(not feed.list:IsShown(), "the delete list's control came back with the chips")
+	check(not feed.list:IsShown(), "the delete list's control came back with the title")
 	feed:Clear()
 end
 

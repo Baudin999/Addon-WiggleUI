@@ -96,9 +96,9 @@ end
 -- The feed at the width it ships at, which is where this was found.
 combat:Clear()
 local row = swing("Plains Creeper", 137)
-check(combat:At(0).note == "from Plains Creeper",
+check(combat:Held(0).note == "from Plains Creeper",
 	"the widest thing this feed says is not what arrived: "
-		.. tostring(combat:At(0).note))
+		.. tostring(combat:Held(0).note))
 check(row.note:GetText() == "from Plains Creeper",
 	"the string never reached the row, so what follows is about nothing: "
 		.. tostring(row.note:GetText()))

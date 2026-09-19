@@ -13,19 +13,7 @@ local LOW_ROWS, HIGH_ROWS = 3, 24
 -- two glyphs each. 200 is the narrowest that still leaves a name readable once
 -- the fixed number column and half of what is left have been taken off it.
 local LOW_WIDTH, HIGH_WIDTH = 200, 520
-local LOW_QUALITY, HIGH_QUALITY = 0, 4
 local LOW_FLOOR, HIGH_FLOOR = 0, 100000
-
--- The word for a quality is Feeds/Loot.lua's, because the chips over the loot
--- feed name one and so does this page, and two tables of five words is how one
--- of them ends up saying "Grey" while the other says "Poor".
-local QualityWord = ns.QualityWord
-
--- The word a filter chip is turned on and off by, in the order the chips are
--- drawn. Typed in English rather than read off the client, because this is a
--- slash command and a command you have to type in German on a German client is
--- one nobody can write down.
-local FILTERS = { "poor", "common", "uncommon", "rare", "epic" }
 
 --------------------------------------------------------------------------
 -- The two streams, said once
@@ -106,23 +94,9 @@ local function Shown(entry, on)
 		ns.db[entry.prefix] and "is still" or "is not"))
 end
 
--- The loot feed's chips redrawn, which is what every word about what gets a row
--- has to do and none of them has to apply.
---
--- Answered with nothing while the feed is off, because a stream that is not
--- collecting has no column: Feeds/Stream.lua builds one when the switch goes on
--- and the chips are drawn with it. Every caller of this goes through here for
--- that reason.
-local function Chipped()
-	local feed = STREAMS.loot.stream:Feed()
-	if feed then
-		feed:Chipped()
-	end
-end
-
 -- What a feed is dressed in: how large the picture on a row is, whether there
--- is a word over the column, a line round the frame, a strip of chips. The
--- three switches are one entry each off the same line, because the key, the
+-- is a word over the column and a line round the frame. The two switches are
+-- one entry each off the same line, because the key, the
 -- word and the clause that says what it did are the only things that differ.
 local function ChromeEntry(entry, word, said)
 	local key = entry.prefix .. word:sub(1, 1):upper() .. word:sub(2)
@@ -164,8 +138,6 @@ local function SharedWords(entry)
 
 		ChromeEntry(entry, "header", "a word over it"),
 		ChromeEntry(entry, "edge", "a line round it"),
-		ChromeEntry(entry, "filters",
-			"filter chips, and draws everything it holds"),
 
 		{ "zoom", key = prefix .. "Zoom",
 		  number = function() return ns.UI.ZOOM_LOW, ns.UI.ZOOM_HIGH end,
@@ -209,37 +181,15 @@ local function SharedWords(entry)
 	}
 end
 
--- The words only the loot feed answers to: who it counts, and which kinds of row
--- it draws. The five quality chips are one entry each off the same list the
--- chips themselves are drawn from.
+-- The words only the loot feed answers to: who it counts, and the purse under
+-- it.
 local function LootWords()
-	local words = {
+	return {
 		{ "group", toggle = true, key = "lootFeedGroup", apply = false,
 		  say = function(on)
 			return "the loot feed " .. (on
 				and "shows what the group picks up too."
 				or "shows your own drops only.")
-		  end },
-
-		{ "quest", toggle = true, key = "lootFeedQuest", apply = Chipped,
-		  say = function(on)
-			return "quest items are " .. (on
-				and "drawn whatever their own quality chip says."
-				or "graded by their own quality like anything else.")
-		  end },
-
-		{ "reason", toggle = true, key = "lootFeedReason", apply = Chipped,
-		  say = function(on)
-			return "anything the addon has a reason for is " .. (on
-				and "drawn whatever its own quality chip says."
-				or "graded by its own quality like anything else.")
-		  end },
-
-		{ "money", toggle = true, key = "lootFeedMoney", apply = Chipped,
-		  say = function(on)
-			return "coin " .. (on
-				and "gets a row in the column."
-				or "stays out of the column and in the purse under it.")
 		  end },
 
 		{ "purse", toggle = true, key = "lootFeedPurse",
@@ -250,18 +200,6 @@ local function LootWords()
 				or "is off and the feed has the height back.")
 		  end },
 	}
-
-	for level = LOW_QUALITY, HIGH_QUALITY do
-		words[#words + 1] = { FILTERS[level + 1], run = function(value)
-			ns.LootFeed.Light(level, ns.Command.Toggle(value))
-			Chipped()
-			ns.Print(("%s items are %s the column. The feed records them either"
-				.. " way."):format(QualityWord(level),
-				ns.LootFeed.Lit(level) and "on" or "off"))
-		  end }
-	end
-
-	return words
 end
 
 -- The words only the combat feed answers to. None of them applies anything: the
@@ -500,7 +438,7 @@ local function FloatPage(ui)
 
 	ui.Check("float a drop across the screen", function() return ns.db.lootFloat end,
 		function(on) ns.db.lootFloat = on end)
-	ui.Hint("In from an edge, a moment beside the middle of the screen, then gone. Your own drops only, and it answers to nothing above: an item the chips have filtered out of the column still floats past.")
+	ui.Hint("In from an edge, a moment beside the middle of the screen, then gone. Your own drops only, and everything but what the delete list refuses.")
 
 	local side, setSide = Knob("lootFloatSide")
 	ui.Picker("crosses", side, setSide, function() return SIDES end)
@@ -577,57 +515,15 @@ end
 
 local function Panel(ui)
 	ui.Section("Loot feed", "Feeds and meters")
-	ui.Lede("What dropped, newest at the top, in the item's own quality colour, filtered by the chips over it.")
+	ui.Lede("What dropped, newest at the top, in the item's own quality colour.")
 
 	SharedPage(ui, STREAMS.loot)
 
 	ui.Divider()
 
-	ui.Check("the filter chips over the column",
-		function() return ns.db.lootFeedFilters end,
-		function(on)
-			ns.db.lootFeedFilters = on
-			STREAMS.loot.stream:Apply()
-		end)
-	ui.Hint("Five in the quality colours, then quest, reason and coin. Off, the strip goes and the column draws what it holds.")
-
-	for level = LOW_QUALITY, HIGH_QUALITY do
-		ui.Check(QualityWord(level):lower(),
-			function() return ns.LootFeed.Lit(level) end,
-			function(on)
-				ns.LootFeed.Light(level, on)
-				Chipped()
-			end)
-	end
-	ui.Hint("The same switches as the chips. The feed records everything either way, so turning one back on brings its history with it.")
-
-	ui.Check("quest items whatever their quality",
-		function() return ns.db.lootFeedQuest end,
-		function(on)
-			ns.db.lootFeedQuest = on
-			Chipped()
-		end)
-	ui.Hint("A quest item is white, the same white as linen, so this is what keeps it on screen once the whites are off.")
-
-	-- The ring is said once, here, for the switch that is about every reason
-	-- rather than about the one of them the box above it names.
-	ui.Check("anything with a reason whatever its quality",
-		function() return ns.db.lootFeedReason end,
-		function(on)
-			ns.db.lootFeedReason = on
-			Chipped()
-		end)
-	ui.Hint("An objective in your log, a reagent a profession uses, or what your loot filter would have left. Each wears a ring.")
-
 	ui.Check("the group's drops too", function() return ns.db.lootFeedGroup end,
 		function(on) ns.db.lootFeedGroup = on end)
 	ui.Hint("Off by default. Everyone else's loot is what makes the client's own chat unreadable in a raid.")
-
-	ui.Check("coin", function() return ns.db.lootFeedMoney end,
-		function(on)
-			ns.db.lootFeedMoney = on
-			Chipped()
-		end)
 
 	ui.Check("the purse along the bottom", function() return ns.db.lootFeedPurse end,
 		function(on)
@@ -725,8 +621,7 @@ ns.Register({
 		"feed loot on|off, and feed combat on|off, which is whether it collects",
 		"feed <which> show|hide takes the column off the screen and leaves it collecting",
 		"feed <which> rows 3 to 24, width 200 to 520, icon 16 to 40, zoom 1 to 3",
-		"feed <which> alpha 0 to 100, mouse|header|edge|filters on|off",
-		"feed loot poor|common|uncommon|rare|epic|quest|money on|off, which is what the column draws",
+		"feed <which> alpha 0 to 100, mouse|header|edge on|off",
 		"feed loot group on|off, purse on|off",
 		"feed combat out|in|misses on|off, floor 0",
 		"feed <which> clear empties it, reset puts it back where it started",
@@ -746,22 +641,11 @@ ns.Register({
 			-- somebody to a reset button; a feed switched off is a decision about
 			-- what the addon records, which is not this button's business.
 			for _, word in ipairs({ "Rows", "Width", "Icon", "Zoom", "Alpha", "Mouse",
-				"Shown", "Header", "Edge", "Filters" }) do
+				"Shown", "Header", "Edge" }) do
 				ns.db[entry.prefix .. word] = ns.DefaultCopy(entry.prefix .. word)
 			end
 			entry.stream:Reset(ns.DefaultCopy(entry.prefix .. "Point"))
 		end
-
-		-- The chips go back with them, for the reason Shown is in the list
-		-- above: a quality you turned off an hour ago and forgot is exactly the
-		-- "why can I not see this" that brings somebody to a reset button, and
-		-- unlike the switch beside it, it is not a decision about what the
-		-- addon records.
-		for _, key in ipairs({ "lootFeedShow", "lootFeedQuest", "lootFeedReason",
-			"lootFeedMoney" }) do
-			ns.db[key] = ns.DefaultCopy(key)
-		end
-		Chipped()
 
 		-- And the float's numbers, every one of them, minus the switch that
 		-- turns it on for the reason the feed's own switch is not here either.

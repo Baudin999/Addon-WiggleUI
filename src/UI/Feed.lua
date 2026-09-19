@@ -83,8 +83,8 @@ local ICON = 27
 local ROW_PAD = 2
 local ROW_GAP = 1
 -- The strip over the rows. It was 16, which was a heading and nothing else in
--- it; a chip is a square you have to be able to hit with a mouse at a UI scale
--- of one half, and 16 left it no air at all.
+-- it; the delete list's control is a square you have to be able to hit with a
+-- mouse at a UI scale of one half, and 16 left it no air at all.
 local HEADER = 20
 local RULE = 1
 local INSET = 3     -- the stripe to the icon
@@ -108,31 +108,20 @@ local PAD = 4       -- one text column to the next
 -- panel page and a second copy of the range is a second thing to keep in step.
 UI.FEED_ICON, UI.FEED_ICON_LOW, UI.FEED_ICON_HIGH = ICON, 16, 40
 
--- One filter chip: a cell of a bar in the strip over the rows. Sixteen units
--- inside a twenty unit header, which is the same two units of air the heading
--- text gets.
+-- One control cell: the cross and the can on a row, and the height of the
+-- delete list's control on the strip. Sixteen units inside a twenty unit
+-- header, which is the same two units of air the heading text gets.
 local CHIP = 16
--- The mark inside a cell. It was fourteen, which put a gem against the hairline
--- of its own square; eleven leaves it two and a half units of bar on each side.
+-- The mark inside a cell. It was fourteen, which put a mark against the edge
+-- of its own square; eleven leaves it two and a half units on each side.
 local CHIP_MARK = 11
--- The hollow square the reason chip draws. Even, so it centres on whole units
--- in a sixteen unit cell and its one pixel edge does not land between two.
-local CHIP_RING = 10
--- The air between one bar and the next, and the only air on the strip. The
--- cells inside a bar are flush, so six units is enough to say two questions.
-local CHIP_BREAK = 6
--- What the mark on a chip that is switched off is painted at. Not hidden and
--- not greyed: the colour and the shape are what say which chip it is, so an off
--- chip keeps both and loses its light. Low enough to read as off across the
--- room and high enough to still find with a cursor.
-local CHIP_OFF = 0.25
 -- The xmark, which is the letter scripts/bake-glyphs.sh put it on.
 local CLEAR = "x"
 -- The trash can, on a row beside the cross and on the delete list's control in
 -- the strip. scripts/bake-glyphs.sh put it on `t` for the bag window's clear.
 local TRASH = "t"
 -- The delete list's control: the can, a count beside it and the inset round
--- both. Wide enough for a two digit count at the chips' mark size.
+-- both. Wide enough for a two digit count at a cell's mark size.
 local LIST = 36
 
 -- The number column, fixed rather than grown to fit. A string that sizes itself
@@ -178,8 +167,7 @@ local HELD = 400
 --
 -- Sixteen entries is a corpse and the two before it, which is the whole of what
 -- a fold is for. The ring is the other number and it is four hundred: a walk of
--- it per arrival is four hundred comparisons on the path a pull drives, which
--- is the cost Feed:Window exists to avoid.
+-- it per arrival is four hundred comparisons on the path a pull drives.
 local LOOKBACK = 16
 
 -- How often the box over a parked cursor is filled again.
@@ -239,9 +227,9 @@ end
 --------------------------------------------------------------------------
 
 -- A button on a row: the cross that takes the row out, and the can that puts
--- its item on the delete list. The strip's reset again, the same button at the
--- same cell size with its mark dimmed, laid over the right end of the row and up
--- on the row under the cursor and no other.
+-- its item on the delete list. The addon's own button at a strip cell's size
+-- with its mark dimmed, laid over the right end of the row and up on the row
+-- under the cursor and no other.
 --
 -- Over the count rather than beside it. A row has no spare column, and a fourth
 -- one would narrow every name in the feed for a control that is up on one row
@@ -480,18 +468,6 @@ local function BuildBar(feed)
 	return bar
 end
 
--- What the strip over the rows carries beyond its heading: the chips, and the
--- delete list's control after them. The chips first, because the control is
--- placed after the last of them.
-local function BuildStrip(feed, opts)
-	if opts.chips then
-		feed:BuildChips(opts.chips)
-	end
-	if opts.watch then
-		feed:BuildList()
-	end
-end
-
 local function Repaint(_, frame)
 	local feed = frame.feed
 	if feed.stale then
@@ -513,12 +489,6 @@ end
 --                the row under the cursor
 -- opts.unit      one design pixel in the parent's units, which the caller
 --                already read off the frame it adopted
--- opts.chips     the filter strip over the rows, or nothing for a feed with
---                none. See Feed:BuildChips
--- opts.filter    function(entry), whether an entry is drawn at all. Nothing at
---                all for a feed that draws everything it holds, which is not
---                the same as a filter that always answers true: the first costs
---                nothing and the second walks the ring
 -- opts.removable the cross on the row under the cursor that takes its entry out
 --                of the feed: true, or a table of tip, the sentence the cross
 --                says, and gone(entry), called for every entry a sweep takes
@@ -545,11 +515,6 @@ function UI.Feed(parent, opts)
 		removeTip = type(opts.removable) == "table" and opts.removable.tip or nil,
 		watch = opts.watch,
 		onLayout = opts.onLayout,
-		-- The predicate as the caller wrote it, and the one the paint actually
-		-- uses. They differ while the chips are hidden, which is the only time
-		-- a feed with a filter draws everything it holds.
-		onFilter = opts.filter,
-		filter = nil,
 		cap = opts.held or HELD,
 		-- The icon size, and the row height that follows it. Both are settings
 		-- and both are written by Resize; these are what a feed draws at before
@@ -574,20 +539,6 @@ function UI.Feed(parent, opts)
 		rows = {},
 		hovered = nil,
 		width = 1,
-		-- Every entry the paint is about to draw, filled once per paint and
-		-- reused. A filtered feed cannot answer "the nth row" in one step, so
-		-- the alternative is walking the ring once per row rather than once per
-		-- paint, and a table per paint is garbage on the path a pull drives.
-		window = {},
-		-- How many entries the filter lets through, or nil for not counted
-		-- since the last thing that could have moved it. Cached rather than
-		-- walked per read, because Room, Sync and the tally all ask.
-		matching = nil,
-		chips = {},
-		-- The ground under each run of chips, and the button that turns them all
-		-- back on. Built by BuildChips and shown by Chrome.
-		bars = {},
-		reset = nil,
 		-- What ShapeRow is told, filled in by every resize and never rebuilt.
 		geom = {},
 		-- How strongly the ground under a row is painted. Full until somebody
@@ -615,65 +566,53 @@ function UI.Feed(parent, opts)
 
 	BuildHeader(feed)
 
-	BuildStrip(feed, opts)
+	-- What the strip carries beyond its heading, which is the delete list's
+	-- control for a feed that has one.
+	if opts.watch then
+		feed:BuildList()
+	end
 
 	feed.bar = BuildBar(feed)
 
-	-- The strip as it was asked for: a title if there is one, chips if there
-	-- are any. Last, because it anchors the scroll bar as well as the rows, and
+	-- The strip as it was asked for: a title if there is one. Last, because it anchors the scroll bar as well as the rows, and
 	-- Feeds/Stream.lua writes both from settings a moment later.
 	--
 	-- Chrome rather than Dress, which is what this was called for an afternoon.
 	-- Feeds/Stream.lua already has a Dress and it is the purse along the bottom;
 	-- two methods of one name on two objects in one folder, one of them called
 	-- on self and the other on self.feed, is a line nobody can read at a glance.
-	feed:Chrome(feed.title ~= nil, #feed.chips > 0)
+	feed:Chrome(feed.title ~= nil)
 	return feed
 end
 
 --------------------------------------------------------------------------
 -- The strip over the rows
 --
--- Two settings and one strip. The title is a word over a column that already
+-- One setting and one strip. The title is a word over a column that already
 -- says what it holds, which on the loot feed is an item icon, an item name in
--- the item's own quality colour and a stack size, and the chips beside it are
--- squares in the same quality colours. Nothing in that needs the word "Loot"
--- over it, and a window with no chrome on it is one more piece of the screen
--- given back to the game.
+-- the item's own quality colour and a stack size. Nothing in that needs the
+-- word "Loot" over it, and a window with no chrome on it is one more piece of
+-- the screen given back to the game.
 --
--- So both are switches and neither one implies the other. What they cannot be
--- is independent of the geometry: everything below the strip has to know
--- whether there is one, which is why one number is worked out here and Resize
--- and Sync read it rather than each deciding again.
+-- What the strip cannot be is independent of the geometry: everything below it
+-- has to know whether there is one, which is why one number is worked out here
+-- and Resize and Sync read it rather than each deciding again.
 --------------------------------------------------------------------------
 
-local function ShowAll(list, on)
-	for index = 1, #list do
-		if on then
-			list[index]:Show()
-		else
-			list[index]:Hide()
-		end
-	end
-end
-
-function Feed:Chrome(titled, chipped)
+function Feed:Chrome(titled)
 	titled = (titled and self.heading) and true or false
-	chipped = (chipped and #self.chips > 0) and true or false
 	-- A delete list with anything on it holds the strip up on its own, because
 	-- its control is the only thing on screen saying drops are being refused.
 	local count = self.list and self.watch.count() or 0
 	local listed = count > 0
-	self.head = (titled or chipped or listed) and (HEADER + RULE) or 0
-	self.titled, self.chipped, self.listed = titled, chipped, listed
+	self.head = (titled or listed) and (HEADER + RULE) or 0
+	self.titled, self.listed = titled, listed
 
-	-- After the reset's cell when the chips are up, and at the strip's own
-	-- inset when the list is the only thing on it.
+	-- At the strip's own inset, centred on the header's height.
 	if self.list then
 		self.list.count:SetText(tostring(count))
 		self.list:ClearAllPoints()
-		self.list:SetPoint("TOPLEFT", self.frame, "TOPLEFT",
-			(chipped and self.stripAt or INSET) * self.unit,
+		self.list:SetPoint("TOPLEFT", self.frame, "TOPLEFT", INSET * self.unit,
 			-math.floor((HEADER - CHIP) / 2) * self.unit)
 		self.list:SetShown(listed)
 	end
@@ -685,9 +624,6 @@ function Feed:Chrome(titled, chipped)
 			self.heading:Hide()
 		end
 	end
-	ShowAll(self.chips, chipped)
-	ShowAll(self.bars, chipped)
-	self:PaintReset()
 
 	-- The tally and the hairline are the strip rather than things on it, so
 	-- they go with it entirely. A count floating over the first row with no
@@ -699,12 +635,6 @@ function Feed:Chrome(titled, chipped)
 		self.tally:Hide()
 		self.rule:Hide()
 	end
-
-	-- The chips are the only reason a feed filters at all. Hidden, the filter
-	-- goes with them: a column quietly refusing entries with no control on
-	-- screen saying so is a feed that looks broken and cannot be argued with.
-	self.filter = chipped and self.onFilter or nil
-	self.matching = nil
 
 	self.blank:ClearAllPoints()
 	self.blank:SetPoint("TOPLEFT", self.frame, "TOPLEFT",
@@ -718,259 +648,6 @@ function Feed:Chrome(titled, chipped)
 end
 
 --------------------------------------------------------------------------
--- The filter strip
---
--- A run of small coloured squares along the top of the feed, one per kind of
--- thing the feed can hold, each of them on or off. It is the answer to a
--- question a settings page answers badly: "not right now" is a thing you decide
--- while looking at the feed, and a window you have to open, find a page in and
--- close again is a window you stop opening.
---
--- **A chip is a mark in a colour.** No word on it and no word beside it. The
--- five quality chips are one glyph, a gem, in the game's own quality ramp read
--- left to right, which is a thing every player in this game already reads
--- without being told; a word on each would be five words of English in a feed
--- whose rows are localised.
---
--- **A run of chips is one bar.** Two grounds were wrong before this one. The
--- first drew each chip as a rectangle of flat quality colour, and seven swatches
--- in a row was a colour picker left on the screen by mistake. The second gave
--- each chip its own dark square and hairline, the way an ability square is
--- drawn, and eight of those with a fourteen unit mark in each read as a row of
--- emoji: every square the same weight, every mark touching its edge, and the
--- break between the two runs lost among the gaps inside them. So a run is one
--- surface under one hairline, its cells are flush and its marks are bare. The
--- break between two bars is the only air on the strip, which makes it the one
--- thing the spacing says.
---
--- **The reason chip draws the ring.** It was the circle glyph, which at chip
--- size is a filled white disc and names nothing. What it switches is the hollow
--- square a row draws round its icon, so that square is its mark.
---
--- **The reset is up only while it would do something.** A cross after the last
--- bar turns every chip back on, and it is there while one of them is off. It
--- sits after the chips rather than before them, so its coming and going moves
--- nothing else on the strip.
---
--- **Off is a dim mark, not a gone one.** A chip that hid itself would leave a
--- strip whose chips move about as you click them, and a chip that went grey
--- would lose the one thing saying which one it is. The square and its hairline
--- never move and never change, so the strip keeps its rhythm; what goes out is
--- the coloured mark on top of it.
---
--- **The filter is what is drawn, not what is kept.** Nothing here refuses an
--- entry at the door. Everything that drops is recorded and the chips decide
--- what the column shows, which is why turning one back on brings its history
--- with it rather than starting an empty list.
---
--- The caller hands over one table per chip, in the order they are drawn:
---
---   { color = , mark = , tip = , get = function() end, set = function(on) end }
---   { color = , ring = true, tip = , get = , set = }   the hollow square
---   { gap = true }   air, for the break between one bar of chips and the next
---
--- On is the chip's resting state: the reset sets every chip back to it.
---
--- `mark` is the letter the glyph face draws its mark on. See
--- scripts/bake-glyphs.sh for which letter is which mark and why the letter
--- matters on a client that will not take the font.
---
--- `tip` is a string, or a function answering one for a chip whose sentence is
--- not knowable until somebody hovers it.
---------------------------------------------------------------------------
-
-local function PaintChip(chip)
-	local on = chip.get() and true or false
-	if chip.lit == on then
-		return false
-	end
-	chip.lit = on
-	-- The mark, not the cell. The bar and its hairline are furniture and stay
-	-- exactly where they are, so a strip of chips keeps its rhythm however many
-	-- of them are off; what goes out is the coloured thing on top.
-	chip.mark:SetAlpha(on and 1 or CHIP_OFF)
-	return true
-end
-
--- Where a thing on the strip sits, x units in from the left and centred on the
--- header's height.
-local function Place(feed, region, x)
-	region:SetPoint("TOPLEFT", feed.frame, "TOPLEFT", x * feed.unit,
-		-math.floor((HEADER - CHIP) / 2) * feed.unit)
-end
-
--- One cell of a bar.
-local function BuildChip(feed, spec, bar, x)
-	local unit = feed.unit
-	-- A child of its bar, which puts it a level over the bar and makes the bar's
-	-- surface the ground its mark is read on.
-	local chip = CreateFrame("Button", nil, bar)
-	chip:SetSize(CHIP * unit, CHIP * unit)
-	Place(feed, chip, x)
-
-	-- The hover, inset a pixel so it lights the cell and leaves the bar's
-	-- hairline standing where the cell meets it.
-	local px = ns.Pixel(chip)
-	chip.glow = ns.Fill(chip, "BACKGROUND", C.hover[1], C.hover[2], C.hover[3], 1)
-	chip.glow:SetPoint("TOPLEFT", px, -px)
-	chip.glow:SetPoint("BOTTOMRIGHT", -px, px)
-	chip.glow:Hide()
-
-	if spec.ring then
-		chip.mark = UI.Box(chip, nil, spec.color)
-		chip.mark:SetSize(CHIP_RING * unit, CHIP_RING * unit)
-	else
-		-- The glyph face, and the size raw rather than in units: inside a frame
-		-- ns.UI.Adopt has taken onto the grid a font size already is a pixel
-		-- height. Multiplied, SetFont was asked for 26.25, refused the fraction
-		-- and the chip drew nothing at all.
-		chip.mark = UI.Glyph(chip, CHIP_MARK, spec.color, "CENTER")
-		chip.mark:SetText(spec.mark)
-	end
-	chip.mark:SetPoint("CENTER")
-
-	chip.get, chip.set, chip.tip = spec.get, spec.set, spec.tip
-	chip:SetScript("OnClick", function(this)
-		this.set(not this.get())
-		PaintChip(this)
-		feed:Refilter()
-		feed:PaintReset()
-	end)
-	chip:SetScript("OnEnter", function(this)
-		this.glow:Show()
-		-- Opened above rather than beside: the pointer's hotspot is its top left
-		-- corner, so a box hung off the right of a sixteen pixel square lands
-		-- under the arrow that opened it. Called where the caller gave a
-		-- function, because a quality's name is a client global that is not
-		-- reliably in place while the addon's files are still loading.
-		local tip = this.tip
-		ns.Tip.Settle(this, { kind = "note",
-			lines = { type(tip) == "function" and tip() or tip } }, true, nil, ns.Tip.HOLD)
-	end)
-	chip:SetScript("OnLeave", function(this)
-		this.glow:Hide()
-		ns.Tip.Close()
-	end)
-	UI.PassCamera(chip)
-	PaintChip(chip)
-	return chip
-end
-
--- The cross after the last bar. The addon's own button, the one the bag window
--- clears with, at cell size and with its mark dimmed: it is the quietest
--- control on the strip and only up while there is something to undo.
-local function BuildReset(feed, x)
-	local unit = feed.unit
-	local reset = UI.Button(feed.frame, { label = CLEAR, glyph = true, size = CHIP_MARK,
-		width = CHIP * unit, height = CHIP * unit,
-		tip = "Every chip back on. The column draws everything it holds again.",
-		onClick = function() feed:Reset() end })
-	Place(feed, reset, x)
-	reset.text:SetTextColor(C.dim[1], C.dim[2], C.dim[3])
-	UI.PassCamera(reset)
-	reset:Hide()
-	return reset
-end
-
-function Feed:BuildChips(specs)
-	local x, from, bar = INSET, INSET, nil
-	for index = 1, #specs + 1 do
-		local spec = specs[index]
-		-- A gap or the end of the list closes the bar that is open, which is
-		-- when its width is known.
-		if bar and (not spec or spec.gap) then
-			bar:SetSize((x - from) * self.unit, CHIP * self.unit)
-			Place(self, bar, from)
-			bar = nil
-		end
-		if spec and spec.gap then
-			x = x + CHIP_BREAK
-		elseif spec then
-			if not bar then
-				bar = UI.Box(self.frame, C.control, C.edge)
-				self.bars[#self.bars + 1] = bar
-				from = x
-			end
-			self.chips[#self.chips + 1] = BuildChip(self, spec, bar, x)
-			x = x + CHIP
-		end
-	end
-	if #self.chips > 0 then
-		self.reset = BuildReset(self, x + CHIP_BREAK)
-		self.stripAt = x + CHIP_BREAK + CHIP + CHIP_BREAK
-	end
-	return #self.chips
-end
-
--- The reset is up while the strip is and a chip on it is off. Read off the
--- chips' own answers rather than their paint, so a setting moved from the panel
--- is seen whichever order the repaint happens in.
-function Feed:PaintReset()
-	if not self.reset then
-		return false
-	end
-	local off = false
-	for index = 1, #self.chips do
-		off = off or not self.chips[index].get()
-	end
-	if self.chipped and off then
-		self.reset:Show()
-	else
-		self.reset:Hide()
-	end
-	return off
-end
-
--- Every chip back to on, which is what the reset is pressed for and what a
--- macro can call. The button goes under the cursor that pressed it, so its
--- hover and its box are put away here rather than left to a leave that a hidden
--- frame is not promised.
-function Feed:Reset()
-	for index = 1, #self.chips do
-		local chip = self.chips[index]
-		if not chip.get() then
-			chip.set(true)
-		end
-	end
-	if self.reset then
-		UI.Tint(self.reset.bg, self.reset.tone)
-		ns.Tip.Close()
-	end
-	return self:Chipped()
-end
-
--- One chip, for scripts/harness.lua and for a macro. Handed out for the reason
--- Feed:Row is: "clicking the grey chip took the greys off the column" is a
--- claim the harness has to be able to make by clicking, and reaching into this
--- file's own list to make it would be asserting its spelling.
-function Feed:Chip(index)
-	return self.chips[index]
-end
-
--- The chips repainted from the settings behind them, which is what the panel
--- calls after a check box has moved one of them from the other end.
-function Feed:Chipped()
-	for index = 1, #self.chips do
-		PaintChip(self.chips[index])
-	end
-	self:PaintReset()
-	return self:Refilter()
-end
-
--- The filter said something different from what it last said. The count is
--- thrown away rather than adjusted, because what moved is the answer for every
--- entry at once, and the offset is clamped after the recount rather than before
--- it: turning a chip off can leave you scrolled past the end of a list that has
--- just become shorter than the screen.
-function Feed:Refilter()
-	self.matching = nil
-	if self.offset > self:Room() then
-		self.offset = self:Room()
-	end
-	return self:Paint()
-end
-
---------------------------------------------------------------------------
 -- The delete list
 --
 -- Items a player has told the feed never to draw again. The list is the
@@ -981,8 +658,8 @@ end
 -- **The strip control is loud on purpose.** A list that quietly eats drops is
 -- a feed that looks broken a week later. So it is the one thing on the strip in
 -- the danger red, it carries the count, and while the list has anything on it
--- the strip is up even with the chips and the title both off. Pressed, it
--- empties the list and goes.
+-- the strip is up even with the title off. Pressed, it empties the list and
+-- goes.
 --------------------------------------------------------------------------
 
 function Feed:BuildList()
@@ -992,7 +669,9 @@ function Feed:BuildList()
 		onClick = function() self:Unwatch() end })
 	list.text:ClearAllPoints()
 	list.text:SetPoint("LEFT", list, "LEFT", INSET * unit, 0)
-	-- Raw rather than in units, for the reason BuildChip gives its mark.
+	-- The size raw rather than in units: inside a frame ns.UI.Adopt has taken
+	-- onto the grid a font size already is a pixel height. Multiplied, SetFont
+	-- is asked for a fraction, refuses it and draws nothing at all.
 	list.count = UI.Label(list, CHIP_MARK + 1, C.text, "RIGHT", UI.SHADOW)
 	list.count:SetPoint("RIGHT", list, "RIGHT", -INSET * unit, 0)
 
@@ -1026,7 +705,7 @@ function Feed:Watched()
 		if self.onLayout then
 			self.onLayout()
 		else
-			self:Chrome(self.titled, self.chipped)
+			self:Chrome(self.titled)
 			self:Resize(self.width, self.visible, self.icon)
 		end
 	end
@@ -1066,111 +745,20 @@ end
 -- and the offset is how many have been scrolled past.
 --------------------------------------------------------------------------
 
--- How many entries the feed is holding, filter or no filter. This is what the
--- ring has in it rather than what the column is drawing, and the two are
--- different numbers the moment a chip goes off.
+-- How many entries the feed is holding, which is what the column is a view of
+-- and what the scrollbar measures against.
 function Feed:Count()
 	return self.held
 end
 
 -- The nth entry counting back through the ring, where zero is the one that
--- arrived last. Filter or no filter, and therefore not what row n draws.
+-- arrived last. This is what row n draws when the view is at the top, and what
+-- the offset counts in.
 function Feed:Held(n)
 	if n < 0 or n >= self:Count() then
 		return nil
 	end
 	return self.ring[((self.written - 1 - n) % self.cap) + 1]
-end
-
--- How many of them the chips let through, which is what the column is a view
--- of and what the scrollbar measures against.
---
--- Cached, and the cache is thrown away rather than kept in step. A filter that
--- has just changed has changed the answer for every entry at once, and an
--- arrival is one comparison on the entry that arrived. One walk of at most four
--- hundred table reads is the price of a chip click, which is a gesture.
-function Feed:Shown()
-	if not self.filter then
-		return self:Count()
-	end
-	if self.matching then
-		return self.matching
-	end
-
-	local count = 0
-	for back = 0, self:Count() - 1 do
-		if self.filter(self:Held(back)) then
-			count = count + 1
-		end
-	end
-	self.matching = count
-	return count
-end
-
--- The nth newest entry the filter lets through, where zero is the newest of
--- them. This is what row n draws and what the offset counts in.
---
--- The unfiltered case is the one line it always was, because most feeds have no
--- filter and the one that does spends most of its life with every chip on. The
--- filtered case walks, which is why Paint does not call this per row: see
--- Feed:Window.
-function Feed:At(n)
-	if not self.filter then
-		return self:Held(n)
-	end
-	if n < 0 then
-		return nil
-	end
-
-	local seen = 0
-	for back = 0, self:Count() - 1 do
-		local slot = self:Held(back)
-		if self.filter(slot) then
-			if seen == n then
-				return slot
-			end
-			seen = seen + 1
-		end
-	end
-	return nil
-end
-
--- The run of entries one paint is about to draw, written into a table this feed
--- owns and handed back with how many of its slots were filled.
---
--- One walk rather than Feed:At per row. Twenty four rows against four hundred
--- entries is nine thousand comparisons done as At and four hundred done as
--- this, and the arithmetic does not change: the offset is skipped and then the
--- next `visible` matches are kept.
-function Feed:Window()
-	local window, want = self.window, self.visible
-
-	if not self.filter then
-		for index = 1, want do
-			window[index] = self:Held(self.offset + index - 1)
-		end
-		return window, want
-	end
-
-	local skipped, filled = 0, 0
-	for back = 0, self:Count() - 1 do
-		if filled >= want then
-			break
-		end
-		local slot = self:Held(back)
-		if self.filter(slot) then
-			if skipped < self.offset then
-				skipped = skipped + 1
-			else
-				filled = filled + 1
-				window[filled] = slot
-			end
-		end
-	end
-	for index = filled + 1, want do
-		window[index] = nil
-	end
-	return window, want
 end
 
 -- The slot the next entry goes in, wiped and handed over for the caller to
@@ -1194,15 +782,7 @@ function Feed:Entry()
 		return slot
 	end
 	-- Past the cap this slot is holding the oldest entry, and wiping it is the
-	-- moment that entry leaves the feed. If the filter was letting it through,
-	-- the count goes down by it here, because in a line's time there will be
-	-- nothing left to ask.
-	--
-	-- Full rather than lapped. After a Feed:Remove the slot at the end is the
-	-- entry that was taken out, which is off the count already.
-	if self.matching and self.held >= self.cap and self.filter(slot) then
-		self.matching = self.matching - 1
-	end
+	-- moment that entry leaves the feed.
 	for key in pairs(slot) do
 		slot[key] = nil
 	end
@@ -1227,12 +807,6 @@ function Feed:Push()
 	slot.at = GetTime()
 	self.written = self.written + 1
 	self.held = math.min(self.held + 1, self.cap)
-	-- One comparison rather than a recount. What this entry pushed out of the
-	-- ring was taken off the count in Feed:Entry, where it was still there to
-	-- be asked about.
-	if self.matching and self.filter(slot) then
-		self.matching = self.matching + 1
-	end
 
 	if self.offset > 0 and self.offset < self:Room() then
 		self.offset = self.offset + 1
@@ -1253,10 +827,7 @@ end
 --
 -- What the caller may do with what comes back is write its own fields on it,
 -- `at` included, because a row that folded is a row about the last one that
--- arrived. What it may not do is change a field the filter reads: `matching`
--- was counted with the old answer and is not asked again, so a fold that turned
--- a grey row into a quest one would leave the scrollbar one out until the next
--- chip click. It may not keep the entry past the call either, for the reason
+-- arrived. What it may not do is keep the entry past the call, for the reason
 -- Feed:Entry gives: it is a ring slot, and the push a lap from now writes over
 -- it.
 --
@@ -1265,14 +836,6 @@ end
 -- folded and then jumped to the newest row would reorder the column under their
 -- eyes, which is what Feed:Push's offset arithmetic is written to prevent, and
 -- the number on the bandage row climbs where the row already is.
---
--- The count is the one thing that has to be squared up. Feed:Entry took the
--- oldest entry off `matching` on its way to handing that slot over, because a
--- push was about to carry it out of the ring, and no push is coming. What the
--- ring holds at that end now is the filled slot itself, so it is counted here
--- with the comparison Feed:Push makes. Without that a feed that folds at a full
--- ring loses one from the count per fold, and the oldest rows go out of reach
--- of a scrollbar measuring against it.
 function Feed:Fold(match)
 	local fresh = self.ring[(self.written % self.cap) + 1]
 	if not fresh then
@@ -1289,9 +852,6 @@ function Feed:Fold(match)
 			break
 		end
 		if match(slot, fresh) then
-			if self.matching and self.held >= self.cap and self.filter(fresh) then
-				self.matching = self.matching + 1
-			end
 			self.stale = true
 			return slot
 		end
@@ -1321,7 +881,7 @@ function Feed:Mark(kind, label, trailing, band)
 end
 
 function Feed:Clear()
-	self.written, self.held, self.offset, self.matching = 0, 0, 0, nil
+	self.written, self.held, self.offset = 0, 0, 0
 	self:Paint()
 	return true
 end
@@ -1340,21 +900,17 @@ end
 -- Feed:Push moves it: taking out a row you have scrolled past would otherwise
 -- move the one you are reading.
 function Feed:Sweep(match)
-	local count, filter = self:Count(), self.filter
-	local kept, gone, above, drawn = {}, {}, 0, 0
+	local count = self:Count()
+	local kept, gone, above = {}, {}, 0
 	for back = 0, count - 1 do
 		local slot = self:Held(back)
-		local passes = not filter or filter(slot)
 		if match(slot) then
 			gone[#gone + 1] = slot
-			if passes and drawn < self.offset then
+			if back < self.offset then
 				above = above + 1
 			end
 		else
 			kept[#kept + 1] = slot
-		end
-		if passes then
-			drawn = drawn + 1
 		end
 	end
 	if #gone == 0 then
@@ -1376,7 +932,7 @@ function Feed:Sweep(match)
 	for index = 1, #gone do
 		ring[((base + #kept + index - 1) % cap) + 1] = gone[index]
 	end
-	self.written, self.held, self.matching = base + #kept, #kept, nil
+	self.written, self.held = base + #kept, #kept
 	self.offset = math.max(0, math.min(self.offset - above, self:Room()))
 	self:Paint()
 	return #gone
@@ -1397,7 +953,7 @@ end
 -- How many entries are off the bottom of the view, which is how far the offset
 -- is allowed to go.
 function Feed:Room()
-	return math.max(0, self:Shown() - self.visible)
+	return math.max(0, self:Count() - self.visible)
 end
 
 function Feed:Live()
@@ -1669,15 +1225,9 @@ function Feed:MouseRows()
 	for index = 1, #self.rows do
 		self.rows[index]:EnableMouse(self.mouse and index <= self.visible or false)
 	end
-	-- And the chips go with them. The setting says this feed is a picture, and
-	-- a picture with seven clickable squares on it is a feed that still takes
-	-- the button somebody turned the setting off to get back.
-	for index = 1, #self.chips do
-		self.chips[index]:EnableMouse(self.mouse and true or false)
-	end
-	if self.reset then
-		self.reset:EnableMouse(self.mouse and true or false)
-	end
+	-- And the strip's control goes with them. The setting says this feed is a
+	-- picture, and a picture with a clickable square on it is a feed that still
+	-- takes the button somebody turned the setting off to get back.
 	if self.list then
 		self.list:EnableMouse(self.mouse and true or false)
 	end
@@ -2007,14 +1557,14 @@ function Feed:Paint()
 	end
 	self.stale = false
 
-	local count, shown = self:Count(), self:Shown()
+	local count = self:Count()
 	local room = self:Room()
 
 	-- Show and Hide rather than SetShown. Every frame on both clients answers
 	-- SetShown and this is a font string, which is a region rather than a frame,
 	-- and nothing installed here proves a region takes it on 2.5.6. The two
 	-- calls are the same write and cannot be refused.
-	local blank = shown == 0 and (self.empty or "") ~= ""
+	local blank = count == 0 and (self.empty or "") ~= ""
 	if self.blank and self.shownBlank ~= blank then
 		self.shownBlank = blank
 		if blank then
@@ -2024,9 +1574,8 @@ function Feed:Paint()
 		end
 	end
 
-	local window = self:Window()
 	for index = 1, self.visible do
-		local entry = window[index]
+		local entry = self:Held(self.offset + index - 1)
 		if entry then
 			-- The last row fades only while there is something under it to fade
 			-- into. At the bottom of the history there is nothing below and a
@@ -2041,19 +1590,9 @@ function Feed:Paint()
 		Blank(self.rows[index])
 	end
 
-	-- The count, and what a filter is keeping off the screen.
-	--
-	-- Two numbers rather than one whenever they differ, because a chip you left
-	-- off an hour ago is invisible from the column itself: a feed showing four
-	-- rows when forty things dropped looks broken, and "4/40" is the whole
-	-- explanation in four glyphs.
+	-- The count, which is what the feed holds.
 	if self.tally then
-		local held = ""
-		if shown < count then
-			held = ("%d/%d"):format(shown, count)
-		elseif count > 0 then
-			held = tostring(count)
-		end
+		local held = count > 0 and tostring(count) or ""
 		if self.shownTally ~= held then
 			self.shownTally = held
 			self.tally:SetText(held)
@@ -2122,7 +1661,7 @@ function Feed:Sync()
 
 	local height = self.visible * (self.row + ROW_GAP) - ROW_GAP
 	local size = math.max(M.thumb,
-		UI.Round(self.frame, height * self.unit * self.visible / math.max(self:Shown(), 1)))
+		UI.Round(self.frame, height * self.unit * self.visible / math.max(self:Count(), 1)))
 	if self.thumbAt ~= size then
 		self.thumbAt = size
 		bar.thumb:SetSize(M.bar, size)
@@ -2151,16 +1690,12 @@ end
 -- you are in it, because a feed that looks stuck is nearly always a feed you
 -- scrolled down an hour ago and left there.
 function Feed:Describe()
-	local count, shown = self:Count(), self:Shown()
+	local count = self:Count()
 	if count == 0 then
 		return "empty"
 	end
 
 	local line = ("%d held"):format(count)
-	if shown < count then
-		line = line .. (", %d of them drawn and the rest filtered out")
-			:format(shown)
-	end
 	if not self:Live() then
 		line = line .. (", scrolled back %d"):format(self.offset)
 	end

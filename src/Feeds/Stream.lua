@@ -41,19 +41,18 @@ local C = UI.Color
 -- find from memory.
 --------------------------------------------------------------------------
 
--- The eleven settings a stream owns beyond the one named after its prefix, as
+-- The ten settings a stream owns beyond the one named after its prefix, as
 -- the words that follow it. Named here so Feeds/Feature.lua registers the same
 -- list this file reads and neither can drift without the other failing to find
 -- a key.
 --
--- The last four arrived together and are all one subject: how much of a window
--- a feed is. Icon is the size of the picture on a row and therefore the height
--- of the row. Header is the word over the column. Edge is the hairline round
--- the whole thing. Filters is the strip of chips, which is the loot feed's and
--- which a stream with no chips ignores rather than special cases.
+-- The last three arrived together and are all one subject: how much of a
+-- window a feed is. Icon is the size of the picture on a row and therefore the
+-- height of the row. Header is the word over the column. Edge is the hairline
+-- round the whole thing.
 local KEYS = {
 	"Rows", "Width", "Zoom", "Alpha", "Mouse", "Shown", "Point",
-	"Icon", "Header", "Edge", "Filters",
+	"Icon", "Header", "Edge",
 }
 
 --------------------------------------------------------------------------
@@ -106,10 +105,6 @@ local streams = {}
 -- spec.note      how wide the dim middle column is, in units, and nothing for a
 --                stream whose rows are a name and a number
 -- spec.onTooltip function(entry), answering the table UI/Tooltip.lua renders
--- spec.chips     the filter strip over the rows, or nothing for a stream with
---                none. See UI/Feed.lua's own header for one chip's shape
--- spec.filter    function(entry), whether an entry is drawn, and nothing at all
---                for a stream that draws everything it holds
 -- spec.removable whether the row under the cursor carries a cross that takes
 --                it out of the feed
 -- spec.watch     the delete list, see UI/Feed.lua's opts.watch
@@ -127,8 +122,6 @@ function Stream.New(spec)
 		empty = spec.empty,
 		note = spec.note,
 		onTooltip = spec.onTooltip,
-		chips = spec.chips,
-		filter = spec.filter,
 		removable = spec.removable,
 		watch = spec.watch,
 		onStatus = spec.onStatus,
@@ -160,8 +153,8 @@ end
 -- `chrome` is whether this stream ships with a word over it and a line round
 -- it. It is an argument rather than a constant because the two feeds answer it
 -- differently and both answers are right: the loot feed's rows are an icon, a
--- name in the item's own colour and a count, with a row of quality chips over
--- them, and none of that needs the word "Loot" written above it. A combat feed
+-- name in the item's own colour and a count, and none of that needs the word
+-- "Loot" written above it. A combat feed
 -- is three columns of numbers and does.
 function Stream.Defaults(prefix, point, chrome)
 	return {
@@ -191,10 +184,6 @@ function Stream.Defaults(prefix, point, chrome)
 
 		[prefix .. "Header"] = chrome and true or false,
 		[prefix .. "Edge"] = chrome and true or false,
-
-		-- On for the stream that has chips, and read by the one that has none
-		-- without either of them knowing about the other.
-		[prefix .. "Filters"] = true,
 	}
 end
 
@@ -426,8 +415,6 @@ function Instance:Build()
 		empty = self.empty,
 		note = self.note,
 		onTooltip = self.onTooltip,
-		chips = self.chips,
-		filter = self.filter,
 		removable = self.removable,
 		watch = self.watch,
 		-- The strip coming up for a delete list changes the frame's height, and
@@ -473,7 +460,7 @@ function Instance:Apply()
 	-- rows is either there or not and everything below it is measured off that
 	-- answer, so a resize that ran first would place every row against the last
 	-- answer and then be told the new one.
-	self.feed:Chrome(self:Setting("header"), self:Setting("filters"))
+	self.feed:Chrome(self:Setting("header"))
 
 	local width, height = self.feed:Resize(self:Setting("width"), self:Setting("rows"),
 		self:Setting("icon"))

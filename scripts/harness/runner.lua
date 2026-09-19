@@ -308,13 +308,12 @@ local SECTIONS = {
 	-- the way that section left it: empty.
 	"39-party-told",
 	"40-loot-feed",
-	"40-loot-strip",
 	-- Taking a row out of the loot feed. A file of its own because 40-loot-feed.lua
 	-- and 31-feeds.lua are both at their ceilings, and it empties the feed it
 	-- was handed.
 	"40-loot-remove",
 	-- The delete list, under the cross it stands beside. It empties the list and
-	-- the feed and puts the chips back as it found them.
+	-- the feed it was handed.
 	"40-loot-watch",
 	"41-voice",
 	"42-cooldown-row",

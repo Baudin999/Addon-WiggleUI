@@ -30,9 +30,8 @@ ns.Floats = Floats
 --
 -- **Why it is not a branch inside that file.** The feed is a column in a
 -- window you open. This is a thing that happens on your screen while you are
--- looking at a mob. They answer to different switches, and a drop that the
--- feed's quality chips have filtered out is still a drop you want to see float
--- past. One event, two readers, no shared state.
+-- looking at a mob. They answer to different switches. One event, two
+-- readers, no shared state.
 --
 -- **Why the rows are pooled.** A pull drops six items in a second and the lane
 -- hands each row back the moment it has faded, so the pool settles at whatever

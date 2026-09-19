@@ -711,8 +711,7 @@ Feeds\Worth.lua
 Feeds\Loot.lua
 Feeds\Combat.lua
 # What you just picked up, floated across the screen. The second reader of
-# ns.LootLine after Feeds\Loot.lua, answering to its own switch because a drop
-# the feed's quality chips filtered out is still a drop you want to see. After
+# ns.LootLine after Feeds\Loot.lua, answering to its own switch. After
 # Ck\Float.lua, which is the column it pushes into.
 Feeds\Floats.lua
 # Party chat, whispers, skill-ups and system lines floated the same way, into

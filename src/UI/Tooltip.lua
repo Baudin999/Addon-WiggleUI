@@ -817,12 +817,12 @@ end
 -- is the pointer's top left corner and the arrow hangs down and to the right
 -- from there, so a box pinned to the top right of a sixteen pixel square opens
 -- underneath the arrow that opened it and you read it round the pointer. That
--- is the loot feed's filter chips, and it was the first thing anybody said
+-- was the loot feed's old filter chips, and it was the first thing anybody said
 -- about them.
 --
--- Above still picks a side, and picks it the same way, so a chip on a feed the
--- player has dragged to the right of the screen throws its box left rather than
--- off the edge.
+-- Above still picks a side, and picks it the same way, so a square on a feed
+-- the player has dragged to the right of the screen throws its box left rather
+-- than off the edge.
 --
 -- **And on the pointer itself where there is no owner at all.** That is
 -- Tooltip.CURSOR, and it is the world hover: a creature is not a frame, so

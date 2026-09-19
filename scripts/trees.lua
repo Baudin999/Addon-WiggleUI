@@ -256,10 +256,10 @@ local function Names(text)
 			if sym then
 				-- A file claims a name two ways and both are a claim.
 				-- `ns.X = X` is the one nearly every file writes, and
-				-- `function ns.X()` is the one Core writes ninety-seven times
-				-- and Feeds/Loot.lua writes once. Missing the second would
-				-- leave ns.QualityWord owned by nobody and every call to it
-				-- unchecked, which is a hole in the shape of the rule.
+				-- `function ns.X()` is the one Core writes ninety-seven times.
+				-- Missing the second would leave every name declared that way
+				-- owned by nobody and every call to it unchecked, which is a
+				-- hole in the shape of the rule.
 				-- Read off the text and not off the previous token alone. An
 				-- anonymous `function()` whose first statement writes a field
 				-- of somebody else's table puts `function` immediately before

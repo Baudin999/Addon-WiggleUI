@@ -200,6 +200,19 @@ local RETIRED = {
 	-- and a drag is written to barPoints.pet with theirs. It lived one commit
 	-- and nobody could grab it, so nothing in it is worth carrying across.
 	petBarPoint = true,
+
+	-- 1.9: the loot feed's filter strip. lootFeedShow was the five quality
+	-- chips as one bitmask, lootFeedQuest, lootFeedReason and lootFeedMoney
+	-- were the three chips after them, and <prefix>Filters switched the strip
+	-- on each stream. The strip is gone and the column draws everything it
+	-- holds, so a saved chip left off would be read by nothing and still be in
+	-- the file looking like the reason a grey is missing.
+	lootFeedShow = true,
+	lootFeedQuest = true,
+	lootFeedReason = true,
+	lootFeedMoney = true,
+	lootFeedFilters = true,
+	combatFeedFilters = true,
 }
 
 -- A key lives in exactly one scope. Checking both tables on every insert is

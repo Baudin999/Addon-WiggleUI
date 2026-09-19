@@ -16,10 +16,9 @@
 -- plus two, and the frame is the rows; write two of the three and you get a
 -- column whose rows overlap or whose last row hangs out of the bottom.
 --
--- Do the chips filter what is drawn rather than what is kept. There was a
--- quality floor here that worked at the door and could not be undone, and the
--- whole of the change is that an item a chip is refusing is still in the ring
--- and comes back when the chip does.
+-- Does everything that drops get a row. There is nothing over the column that
+-- decides what is drawn: a grey and an epic both land, and a quest item and a
+-- linen stack beside it are both on screen.
 --
 -- And is an item's hover worth opening. A vendor price the client will give you
 -- per item and never per stack, a quest item that is the same white as a stack
@@ -60,7 +59,7 @@ local function drop(format, ...)
 end
 
 local function newest()
-	return feed:At(0) or {}
+	return feed:Held(0) or {}
 end
 
 ----------------------------------------------------------------------
@@ -83,27 +82,23 @@ check(ns.db.combatFeedHeader and ns.db.combatFeedEdge,
 
 do
 	local rows, unit = ns.db.lootFeedRows, ns.UI.Unit(_G.WarriorKitLootFeed)
-	-- The chips keep the strip even with the title off, so the loot feed's
-	-- own top is the strip's. What the setting takes away is the word.
-	local bare = feed:Row(1):GetTop()
-	ns.db.lootFeedHeader = true
-	lootStream:Apply()
-	check(feed:Row(1):GetTop() == bare,
-		"turning the word on moved the first row, so the chips were not already holding the strip")
-	ns.db.lootFeedHeader = false
-	lootStream:Apply()
-
-	-- And with the chips off as well there is no strip at all, which is the
-	-- only state in which the first row sits against the top of the frame.
-	ns.db.lootFeedFilters = false
-	lootStream:Apply()
-	check(feed:Row(1):GetTop() == _G.WarriorKitLootFeed:GetTop(),
-		"with no word and no chips the first row is still hanging off a strip")
+	-- With the word off and the delete list empty there is no strip at all,
+	-- which is the only state in which the first row sits against the top of
+	-- the frame.
+	local top = _G.WarriorKitLootFeed:GetTop()
+	check(feed:Row(1):GetTop() == top,
+		"with no word and nothing on the delete list the first row is still hanging off a strip")
 	local height = feed.frame:GetHeight()
 	check(math.abs(height - (rows * (feed.row + 1) - 1) * unit) < 0.01,
 		("a headerless feed of %d rows is %.1f px and the rows are %.1f")
 			:format(rows, height, (rows * (feed.row + 1) - 1) * unit))
-	ns.db.lootFeedFilters = true
+
+	-- The word brings the strip back, and the rows move down under it.
+	ns.db.lootFeedHeader = true
+	lootStream:Apply()
+	check(feed:Row(1):GetTop() < _G.WarriorKitLootFeed:GetTop(),
+		"turning the word on left the first row against the top of the frame")
+	ns.db.lootFeedHeader = false
 	lootStream:Apply()
 end
 
@@ -306,122 +301,34 @@ do
 
 	-- And the two that were already right, checked here rather than assumed,
 	-- because the whole reason this went unnoticed is that they kept working.
-	check(newest().quality == 4, "the quality went with the globals")
+	check(newest().color == ns.UI.Quality[4], "the quality went with the globals")
 	check(newest().price == 9100, "the vendor price went with the globals")
 	_G.GetItemInfoInstant, _G.GetItemInfo = instant, cached
 end
 
 ----------------------------------------------------------------------
--- The chips
+-- Everything shows
 --
--- The quality floor that used to sit here worked at the door and this does
--- not, which is the whole of the change and is stated as three claims. An
--- item a chip is refusing is still in the ring. The column stops drawing it
--- the moment the chip goes off. And turning the chip back on brings it back
--- rather than starting an empty list, which is the thing a floor could
--- never do.
+-- The column draws what the ring holds, a grey and an epic alike. There was a
+-- strip of chips over it that could take a quality off the column, and it is
+-- gone: nothing between a drop and its row decides against it.
 ----------------------------------------------------------------------
 
 feed:Clear()
 drop("You receive loot: %s.", _G.WarriorKitItemLink("Chipped Boar Tusk"))
 drop("You receive loot: %s.", _G.WarriorKitItemLink("Arcanite Reaper"))
-check(feed:Count() == 2 and feed:Shown() == 2, "two drops did not both reach the column")
-
-Loot.Light(0, false)
-feed:Chipped()
-check(feed:Count() == 2, "turning the grey chip off threw the grey out of the ring")
-check(feed:Shown() == 1, ("the grey chip is off and the column still draws %d rows")
-	:format(feed:Shown()))
-check(feed:At(0).name == "Arcanite Reaper",
-	"the top row is not the epic with the greys filtered out: " .. tostring(feed:At(0).name))
-check(feed:Row(2).shownEntry == nil, "the second row is still drawing a filtered entry")
-
-Loot.Light(0, true)
-feed:Chipped()
-check(feed:Shown() == 2, "turning the grey chip back on did not bring the grey back")
-
--- The chip in the strip and the arithmetic behind it are one switch. A click
--- on the first chip has to move the first quality and nothing else, because
--- the panel puts the same six switches on a page and the two disagreeing is
--- a control that fights the one beside it.
-do
-	local chip = feed:Chip(1)
-	check(chip ~= nil, "the loot feed has no chips over it")
-	H.mouse.On(chip)
-	check(not Loot.Lit(0), "clicking the first chip did not turn the poor quality off")
-	check(feed:Shown() == 1, "clicking the first chip did not take the grey off the column")
-	H.mouse.On(chip)
-	check(Loot.Lit(0), "clicking the first chip twice did not put it back")
-	check(feed:Shown() == 2, "clicking the first chip twice did not bring the grey back")
-
-	-- A chip draws a mark, and the mark has a font on it.
-	--
-	-- This is the one that shipped broken. UI.Glyph takes a pixel height and
-	-- every measurement in UI/Feed.lua is a design pixel multiplied by the
-	-- zoom, so the size went in multiplied: UI.GlyphFont was asked for 26.25,
-	-- SetFont refused the fraction, GetFont came back nil and every chip drew
-	-- an empty square. Nothing measured it, because the geometry was right and
-	-- only the picture was missing.
-	check(chip.mark:GetText() == "*",
-		"the first chip carries no mark: " .. tostring(chip.mark:GetText()))
-	local face, size = chip.mark:GetFont()
-	check(face ~= nil and size ~= nil,
-		"a chip's mark has no font on it, so it draws nothing at all")
-	check(size == math.floor(size),
-		("a chip's mark is set at %s, and a font size has to be a whole number of pixels")
-			:format(tostring(size)))
-
-	-- And the tooltip opens over it rather than beside it. The cursor's
-	-- hotspot is the pointer's top left corner and the arrow hangs down and to
-	-- the right, so a box pinned beside a sixteen pixel square opens under the
-	-- arrow that opened it.
-	--
-	-- Undocked, because that is the setting the claim is about: a docked box is
-	-- in the corner whatever it was opened on, and the chip's own answer to the
-	-- cursor is still the one that has to be right for anybody who turns the
-	-- dock off.
-	local wasPlace = ns.UI.Tooltip.Place()
-	ns.UI.Tooltip.SetPlace(ns.UI.Tooltip.BESIDE)
-	ns.UI.Tooltip.Close(true)
-	chip:GetScript("OnEnter")(chip)
-	check(not ns.UI.Tooltip.IsShown(), "a chip opened its box before the hand had stopped")
-	check(H.tipHold(), "hovering a chip said nothing")
-	check(ns.Measure(ns.UI.Tooltip.Frame(), "GetBottom") >= ns.Measure(chip, "GetTop"),
-		"a chip's tooltip opens beside it, which puts it under the cursor")
-	chip:GetScript("OnLeave")(chip)
-	ns.UI.Tooltip.SetPlace(wasPlace)
-
-	-- With the mouse off the feed is a picture, and a picture does not have
-	-- seven clickable squares on it. That setting is somebody getting the
-	-- right button back for the camera, and a chip still swallowing it is the
-	-- trade they turned it off to stop making.
-	ns.db.lootFeedMouse = false
-	lootStream:Apply()
-	check(not chip:IsMouseEnabled(), "a chip still takes the mouse with the feed set to a picture")
-	ns.db.lootFeedMouse = true
-	lootStream:Apply()
-	check(chip:IsMouseEnabled(), "a chip does not take the mouse with the setting back on")
-end
-
--- With the strip hidden the filter goes with it, because a column refusing
--- rows with no control on screen saying so is one nobody can argue with.
-Loot.Light(0, false)
-ns.db.lootFeedFilters = false
-lootStream:Apply()
-check(feed:Shown() == 2, "the chips are hidden and the column is still filtering")
-ns.db.lootFeedFilters = true
-lootStream:Apply()
-check(feed:Shown() == 1, "the chips came back and the filter did not")
-Loot.Light(0, true)
-feed:Chipped()
+check(feed:Count() == 2, "two drops did not both reach the ring")
+check(feed:Row(1).shownEntry ~= nil and feed:Row(2).shownEntry ~= nil,
+	"a grey and an epic both dropped and the column does not draw both")
+check(feed.chips == nil and feed.filter == nil,
+	"the loot feed still carries a filter strip over its rows")
 
 ----------------------------------------------------------------------
 -- A quest item
 --
 -- Class 12 and white, which is the whole problem: it is the same colour as a
 -- stack of linen and the row that hands in your chain of five kills reads
--- exactly like the row that hands you a bandage. So it gets a ring, and two
--- chips draw it whatever the white chip says: its own, and the ring's.
+-- exactly like the row that hands you a bandage. So it gets a ring.
 ----------------------------------------------------------------------
 
 feed:Clear()
@@ -433,20 +340,9 @@ check(feed:Row(1).mark:IsShown(), "the ring round a quest item's icon is not dra
 drop("You receive loot: %s.", _G.WarriorKitItemLink("Linen Cloth"))
 check(not newest().quest, "an ordinary item read as a quest item")
 check(not feed:Row(1).mark:IsShown(), "an ordinary row drew a ring round its icon")
-check(newest().quality == 1, "the white item beside the quest item is not white")
-
--- White off and quest on is the combination the override exists for.
-Loot.Light(1, false)
-feed:Chipped()
-check(feed:Shown() == 1, "turning the whites off left something other than the quest item")
-check(feed:At(0).quest, "the row left standing is not the quest item")
-
-ns.db.lootFeedQuest, ns.db.lootFeedReason = false, false
-feed:Chipped()
-check(feed:Shown() == 0, "both overrides are off and a white quest item is still drawn")
-ns.db.lootFeedQuest, ns.db.lootFeedReason = true, true
-Loot.Light(1, true)
-feed:Chipped()
+check(newest().color == ns.UI.Quality[1], "the white item beside the quest item is not white")
+check(feed:Row(2).shownEntry ~= nil and feed:Row(2).shownEntry.quest,
+	"the quest item is not drawn under the linen that dropped after it")
 
 ----------------------------------------------------------------------
 -- One picture in both windows
@@ -634,17 +530,17 @@ check(Loot.Counts() == tally + 3,
 drop("You receive loot: %s.", _G.WarriorKitItemLink("Aegis"))
 drop("You receive loot: %s.", LINEN)
 check(feed:Count() == 2, "an item in between made the next one of them a new row")
-check(feed:At(0).name == "Aegis" and feed:At(1).count == 7,
+check(feed:Held(0).name == "Aegis" and feed:Held(1).count == 7,
 	"the folded row jumped to the top rather than climbing where it stood")
 
 -- Half a minute on is the same pickup, and the clock on the row moves to the
 -- one that just landed rather than staying on the one that started it.
-local was = feed:At(1).at
+local was = feed:Held(1).at
 advance(30)
 drop("You receive loot: %s.", LINEN)
-check(feed:Count() == 2 and feed:At(1).count == 8,
+check(feed:Count() == 2 and feed:Held(1).count == 8,
 	"half a minute later was read as a different afternoon")
-check(feed:At(1).at == _G.GetTime() and feed:At(1).at > was,
+check(feed:Held(1).at == _G.GetTime() and feed:Held(1).at > was,
 	"the folded row is still about the first one you picked up")
 
 -- Past sixty seconds it is a second trip and gets a second row.
@@ -701,12 +597,12 @@ do
 	drop("You receive loot: %s.", LINEN)
 	drop("%s receives loot: %sx2.", "Bram", LINEN)
 	check(feed:Count() == 2, "a second pickup each opened a row rather than folding")
-	check(feed:At(0).who == "Bram" and feed:At(0).count == 3,
+	check(feed:Held(0).who == "Bram" and feed:Held(0).count == 3,
 		("the group row says %s of them went to %s")
-			:format(tostring(feed:At(0).count), tostring(feed:At(0).who)))
-	check(feed:At(1).who == nil and feed:At(1).count == 2,
+			:format(tostring(feed:Held(0).count), tostring(feed:Held(0).who)))
+	check(feed:Held(1).who == nil and feed:Held(1).count == 2,
 		("your own row folded to %s and somebody else's pickup is in it")
-			:format(tostring(feed:At(1).count)))
+			:format(tostring(feed:Held(1).count)))
 	ns.db.lootFeedGroup = wasGroup
 end
 
@@ -758,8 +654,8 @@ check(newest().name == ns.Coined(11247),
 drop("You receive loot: %s.", _G.WarriorKitItemLink("Arcanite Reaper"))
 coin("You loot 3 Copper")
 check(feed:Count() == 2, "coin landed on the item row above it or opened a row of its own")
-check(feed:At(1).copper == 11250,
-	("the coin row under the item holds %s copper"):format(tostring(feed:At(1).copper)))
+check(feed:Held(1).copper == 11250,
+	("the coin row under the item holds %s copper"):format(tostring(feed:Held(1).copper)))
 
 -- Past the window it is a second trip, and that row is the client's sentence
 -- again rather than the total of the one above it.
@@ -900,9 +796,9 @@ ns.UI.Tooltip.Close()
 OBJECTIVE[1] = COUNTING
 fire("QUEST_LOG_UPDATE")
 
-print(("loot   no word and no line, %d chips over %d rows, icon %d px on a %d px row,"
+print(("loot   no word and no line, %d rows, icon %d px on a %d px row,"
 	.. " vendor price per item and per stack, a stub scanner asked for the auction;"
 	.. " a %d unit note column holding a quest count and nothing else, a green ring"
 	.. " where the profession would not fit, and a fold that reread the count")
-	:format(#feed.chips, ns.db.lootFeedRows, ns.db.lootFeedIcon, feed.row,
+	:format(ns.db.lootFeedRows, ns.db.lootFeedIcon, feed.row,
 		lootStream.note))

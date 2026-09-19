@@ -6,8 +6,8 @@
 --
 -- Four questions. Does a removal close the gap without reordering what is left
 -- or allocating a table. Does the count stay true once the ring has lapped,
--- where min(written, cap) could never go down. Do the filter's cached count and
--- the offset under a reader follow it. And does the cross come up on the row
+-- where min(written, cap) could never go down. Does the offset under a reader
+-- follow it. And does the cross come up on the row
 -- under the pointer, stay up while the pointer moves onto it, and take out the
 -- row it sits on when pressed.
 
@@ -97,23 +97,20 @@ do
 		"a full ring did not push its oldest entry out on the drop after it filled again")
 
 	----------------------------------------------------------------------
-	-- The filter's count and the offset
+	-- The offset
 	----------------------------------------------------------------------
 
-	check(feed.filter ~= nil, "the loot feed has no filter running, so the count below proves nothing")
-	local counted = feed:Shown()
+	local counted = feed:Count()
 	feed:Remove(feed:Held(3))
-	local after = feed:Shown()
-	feed:Refilter()
-	check(after == counted - 1 and feed:Shown() == after,
-		("a removal left the count at %d, a recount says %d, from %d"):format(after, feed:Shown(), counted))
+	check(feed:Count() == counted - 1,
+		("a removal left the count at %d, from %d"):format(feed:Count(), counted))
 
 	feed:ScrollTo(20)
 	local reading = feed:Row(1).shownEntry
-	feed:Remove(feed:At(2))
+	feed:Remove(feed:Held(2))
 	check(feed:Offset() == 19 and feed:Row(1).shownEntry == reading,
 		"taking out a row above the view moved the one being read")
-	feed:Remove(feed:At(feed:Offset() + 3))
+	feed:Remove(feed:Held(feed:Offset() + 3))
 	check(feed:Offset() == 19 and feed:Row(1).shownEntry == reading,
 		"taking out a row inside the view moved the row above it")
 	feed:ToTop()

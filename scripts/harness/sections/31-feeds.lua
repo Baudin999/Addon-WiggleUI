@@ -89,7 +89,7 @@ local function drop(format, ...)
 end
 
 local function newest()
-	return feed:At(0) or {}
+	return feed:Held(0) or {}
 end
 
 local live, total = Loot.Rules()
@@ -113,7 +113,7 @@ check(newest().name == "Tattered Cloth",
 
 -- A sentence that is not loot, and one that matches the shape while
 -- carrying no item link in it. Neither may become a row.
-local held, drawn = feed:Count(), feed:Shown()
+local held = feed:Count()
 fire("CHAT_MSG_LOOT", "You receive loot: a rumour.")
 fire("CHAT_MSG_LOOT", "Ragnaros says something about firelands.")
 check(feed:Count() == held, "a sentence with no item link in it became a row")
@@ -160,18 +160,12 @@ check(newest().money, "coin did not reach the feed")
 check(newest().name == "12 Silver, 39 Copper",
 	"the coin phrase did not survive the sentence around it: " .. tostring(newest().name))
 
--- Coin is recorded whatever its chip says, and the purse along the bottom has
--- the number either way. The feed's tally is what says it arrived, because a
--- second coin inside the fold window is the row above and rows cannot see it.
-ns.db.lootFeedMoney = false
-feed:Chipped()
-held, drawn = ns.LootFeed.Counts(), feed:Shown()
+-- A second coin is recorded too. The feed's tally is what says it arrived,
+-- because a second coin inside the fold window is the row above and rows
+-- cannot see it.
+held = ns.LootFeed.Counts()
 fire("CHAT_MSG_MONEY", "You loot 4 Copper")
-check(ns.LootFeed.Counts() == held + 1, "coin did not reach the ring with its chip off")
-check(feed:Shown() == drawn, "coin got a row with its chip off")
-ns.db.lootFeedMoney = true
-feed:Chipped()
-check(feed:Shown() == drawn + 1, "turning the coin chip back on did not bring the coin row back")
+check(ns.LootFeed.Counts() == held + 1, "a second coin did not reach the ring")
 
 ----------------------------------------------------------------------
 -- Which way it reads, and scrolling back
@@ -209,7 +203,7 @@ end
 -- the whole of "it scrolls top to bottom" stated as two comparisons.
 check(feed:Row(1).amount:GetText() == newest().amount,
 	"the newest entry is not the top row")
-check(feed:Row(2).amount:GetText() == feed:At(1).amount,
+check(feed:Row(2).amount:GetText() == feed:Held(1).amount,
 	"the second row is not the entry before the newest")
 check(feed:Row(1).amount:GetText() ~= feed:Row(2).amount:GetText(),
 	"two rows are drawing the same entry")
@@ -217,7 +211,7 @@ check(feed:Row(1).amount:GetText() ~= feed:Row(2).amount:GetText(),
 check(feed:Live(), "the feed was not at the top after an arrival")
 check(feed:Scroll(3), "the feed refused to scroll back")
 check(feed:Offset() == 3, ("scrolling back three left the offset at %d"):format(feed:Offset()))
-check(feed:Row(1).amount:GetText() == feed:At(3).amount,
+check(feed:Row(1).amount:GetText() == feed:Held(3).amount,
 	"scrolling down three did not put the fourth newest at the top")
 
 -- The one that cannot be seen in a screenshot. Scrolled back, an arrival
@@ -251,11 +245,11 @@ feed:ToTop()
 ----------------------------------------------------------------------
 
 local lap = feed.cap
-local slot = feed:At(0)
+local slot = feed:Held(0)
 for index = 1, lap do
 	drop("You receive loot: %s.", _G.WarriorKitItemLink("Aegis", index))
 end
-check(feed:At(0) == slot,
+check(feed:Held(0) == slot,
 	"a full lap of the ring did not come back to the same table, so every drop allocates")
 check(feed:Count() == lap,
 	("the ring holds %d once it has been filled past its cap of %d")
@@ -267,9 +261,9 @@ check(feed:Count() == lap,
 
 do
 	feed:Scroll(2)
-	local into, shown, written = feed:Held(3), feed:Shown(), feed.written
+	local into, written = feed:Held(3), feed.written
 	local walked, fresh = 0, feed:Entry()
-	fresh.name, fresh.quality = into.name, into.quality
+	fresh.name = into.name
 	local took = feed:Fold(function(entry, one)
 		walked = walked + 1
 		return entry == into and one == fresh
@@ -278,10 +272,6 @@ do
 		"a fold came back with the wrong entry, or moved the row it folded into")
 	check(feed.written == written and feed:Count() == lap and feed:Offset() == 2 and feed.stale,
 		"a fold pushed, scrolled the history under a reader, or left the column unmarked")
-	local counted = feed:Shown()
-	feed:Refilter()
-	check(counted == shown and feed:Shown() == shown,
-		("a fold left the count at %d, a recount says %d, from %d"):format(counted, feed:Shown(), shown))
 	check(feed:Fold(function() walked = walked + 1 end) == nil and walked == 20,
 		("a fold bounded at sixteen walked %d, the first fold's four included"):format(walked))
 	feed:ToTop()
@@ -436,41 +426,41 @@ do
 	-- the preposition that says which way it went.
 	log("SWING_DAMAGE", "Creature-77", "Ragged Wolf", me, "Baudin", { [12] = 137 })
 	check(combat:Count() == 1, "a swing on you did not get a row")
-	check(combat:At(0).name == "Attack",
+	check(combat:Held(0).name == "Attack",
 		"a swing is not named with the client's own word for one: "
-			.. tostring(combat:At(0).name))
-	check(combat:At(0).note == "from Ragged Wolf",
-		"an incoming swing does not say who swung: " .. tostring(combat:At(0).note))
-	check(combat:At(0).amount == "137", "an incoming swing lost its number")
+			.. tostring(combat:Held(0).name))
+	check(combat:Held(0).note == "from Ragged Wolf",
+		"an incoming swing does not say who swung: " .. tostring(combat:Held(0).note))
+	check(combat:Held(0).amount == "137", "an incoming swing lost its number")
 
 	-- A spell you cast. It has a name and that is what you want to read.
 	log("SPELL_DAMAGE", me, "Baudin", "Creature-77", "Ragged Wolf",
 		{ [12] = 12294, [13] = "Mortal Strike", [15] = 871, [21] = true })
-	check(combat:At(0).name == "Mortal Strike",
-		"an outgoing spell is not named after the spell: " .. tostring(combat:At(0).name))
-	check(combat:At(0).note == "on Ragged Wolf",
-		"an outgoing spell does not say what it landed on: " .. tostring(combat:At(0).note))
-	check(combat:At(0).crit, "a critical read as an ordinary hit")
-	check(combat:At(0).tone ~= combat:At(1).tone,
+	check(combat:Held(0).name == "Mortal Strike",
+		"an outgoing spell is not named after the spell: " .. tostring(combat:Held(0).name))
+	check(combat:Held(0).note == "on Ragged Wolf",
+		"an outgoing spell does not say what it landed on: " .. tostring(combat:Held(0).note))
+	check(combat:Held(0).crit, "a critical read as an ordinary hit")
+	check(combat:Held(0).tone ~= combat:Held(1).tone,
 		"a critical draws its number in the same colour as an ordinary hit")
 
 	-- And the half of that a colourblind player has. Gold was the whole of
 	-- how a critical announced itself, which is a hue and nothing else, on
 	-- the one row in the feed that exists to be noticed.
-	check(combat:At(0).amount == "871!",
+	check(combat:Held(0).amount == "871!",
 		"a critical carries no mark on its number, so the crit is a colour and nothing else: "
-			.. tostring(combat:At(0).amount))
-	check(combat:At(1).amount == "137", "an ordinary hit picked up the critical's mark")
+			.. tostring(combat:Held(0).amount))
+	check(combat:Held(1).amount == "137", "an ordinary hit picked up the critical's mark")
 
 	-- Which way it went, as the colour that carries the whole row.
-	check(combat:At(0).stripe ~= combat:At(1).stripe,
+	check(combat:Held(0).stripe ~= combat:Held(1).stripe,
 		"what you do and what hits you draw the same stripe")
 
 	-- A miss is a row with no number on it.
 	log("SWING_MISSED", "Creature-77", "Ragged Wolf", me, "Baudin", { [12] = "DODGE" })
-	check(combat:At(0).amount == "dodge",
-		"a dodge did not reach the feed as a word: " .. tostring(combat:At(0).amount))
-	check(combat:At(0).value == nil, "a miss carried a number")
+	check(combat:Held(0).amount == "dodge",
+		"a dodge did not reach the feed as a word: " .. tostring(combat:Held(0).amount))
+	check(combat:Held(0).value == nil, "a miss carried a number")
 
 	ns.db.combatFeedMisses = false
 	held = combat:Count()
@@ -543,9 +533,9 @@ do
 	fire("PLAYER_REGEN_DISABLED")
 	frame(combat)
 	check(combat:Count() == 1, "entering combat drew no marker")
-	check(combat:At(0).mark == "in",
+	check(combat:Held(0).mark == "in",
 		"the marker for entering combat is not marked as one: "
-			.. tostring(combat:At(0).mark))
+			.. tostring(combat:Held(0).mark))
 
 	log("SPELL_DAMAGE", me, "Baudin", "Creature-77", "Ragged Wolf",
 		{ [12] = 12294, [13] = "Mortal Strike", [15] = 400 })
@@ -554,13 +544,13 @@ do
 
 	check(combat:Count() == 3, ("a pull came out as %d rows rather than a marker, a hit and a marker")
 		:format(combat:Count()))
-	check(combat:At(0).mark == "out", "leaving combat drew no marker")
-	check(combat:At(1).mark == nil, "the hit between the two markers is marked as one")
-	check(combat:At(2).mark == "in",
+	check(combat:Held(0).mark == "out", "leaving combat drew no marker")
+	check(combat:Held(1).mark == nil, "the hit between the two markers is marked as one")
+	check(combat:Held(2).mark == "in",
 		"the markers did not arrive in the order the fight did")
-	check((combat:At(0).amount or ""):match("^%d+%.%d+s$") ~= nil,
+	check((combat:Held(0).amount or ""):match("^%d+%.%d+s$") ~= nil,
 		"the end of a fight does not say how long it lasted: "
-			.. tostring(combat:At(0).amount))
+			.. tostring(combat:Held(0).amount))
 
 	do
 		local band, hit = combat:Row(1), combat:Row(2)
@@ -629,9 +619,9 @@ do
 	log("SPELL_DAMAGE", me, "Baudin", "Creature-77", "Ragged Wolf",
 		{ [12] = 1464, [13] = "Slam", [15] = 700 })
 	check(combat:Count() == held + 1, "a hidden feed stopped collecting")
-	check(combat:At(0).name == "Slam",
+	check(combat:Held(0).name == "Slam",
 		"the entry a hidden feed collected is not the one that arrived: "
-			.. tostring(combat:At(0).name))
+			.. tostring(combat:Held(0).name))
 	check(combat:Row(1).name:GetText() == "Mortal Strike",
 		"a hidden feed repainted its rows, which is the whole cost it exists to save")
 

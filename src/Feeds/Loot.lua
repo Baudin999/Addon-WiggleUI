@@ -51,12 +51,6 @@ local C = ns.UI.Color
 -- palette and the metrics above it.
 local QUALITY = ns.UI.Quality
 
--- The number of qualities the chips and the filter know about, which is the
--- five the game grades an item on. Six and seven exist and are the heirloom and
--- the artifact, neither of which drops on this client; anything at that end of
--- the scale is drawn in its own colour above and filtered with the epics.
-local QUALITIES = 4
-
 -- What class the client files a quest item under. Comfort/Clutter.lua reads the
 -- same number off the same call and says so in its own header; this is the
 -- second reader, and the two are deliberately not sharing a constant, because
@@ -64,37 +58,12 @@ local QUALITIES = 4
 -- one decision.
 local QUEST_CLASS = 12
 
--- The ring round a quest item's icon, and the chip that says whether those
--- items are drawn.
+-- The ring round a quest item's icon, and the line on its hover.
 --
 -- Orange rather than the heading gold beside it. Gold is what the coin rows are
 -- and what the account's own accent is, and a quest marker in that colour is a
 -- marker you have to work out. This is the only orange in the addon.
 local QUEST = { 0.98, 0.55, 0.15 }
-
--- The three letters the glyph face draws the chips' marks on. A gem for the
--- thing that grades an item, the quest bang and a stack of coins. The fourth
--- chip draws the ring an item wears rather than a glyph for it. Named rather
--- than written at the call site because scripts/bake-glyphs.sh is what decides
--- which letter carries which mark, and a literal `*` sitting in a table would
--- give nobody reading this file a way to find that out.
-local GEM, BANG, COINS = "*", "!", "$"
-
--- What the client calls each quality in its own language. ITEM_QUALITY0_DESC
--- and its siblings are the strings the client's own tooltips use, so a player
--- reading "Uncommon" on a chip reads the same word the item does; the English
--- list behind them is for a client that carries neither.
---
--- Here rather than in Feeds/Feature.lua, where it was, because the chips over
--- the rows name a quality and the panel page names the same quality, and the
--- two of them reading different tables is how one ends up saying "Poor" while
--- the other says "Grey".
-local QUALITY_WORDS = { [0] = "Poor", "Common", "Uncommon", "Rare", "Epic" }
-
-function ns.QualityWord(quality)
-	local named = _G["ITEM_QUALITY" .. quality .. "_DESC"]
-	return (type(named) == "string" and named) or QUALITY_WORDS[quality] or tostring(quality)
-end
 
 local COIN = "Interface\\Icons\\INV_Misc_Coin_01"
 
@@ -109,8 +78,7 @@ local UNKNOWN = "Interface\\Icons\\INV_Misc_QuestionMark"
 -- Feed:Fold is bounded at sixteen entries. Bandages come off a craft one a
 -- second and belong on one row; a vendor run an hour ago is a different
 -- afternoon and belongs on its own. The window is not a setting, because a
--- slider on it would be the third control over what this column shows and the
--- header over the filter is an argument against the second.
+-- slider on it would be one more control over what this column shows.
 local FOLD_WINDOW = 60
 
 -- Need/Need.lua's word for the one reason this feed draws differently from the
@@ -118,154 +86,6 @@ local FOLD_WINDOW = 60
 -- brightness of a ring is the only thing in this file that has to tell the three
 -- answers apart and the word is what the call hands over.
 local TRASH = "trash"
-
-
-
---------------------------------------------------------------------------
--- What the column shows
---
--- Eight chips over the rows: one per quality, two that override them and one
--- for coin. Each is on or off, each says which of them it is by its colour, and
--- between them they are the whole of what is drawn.
---
--- **The feed records everything either way.** There was a quality floor here
--- and it worked at the door: an item under it never became a row and could not
--- be got back by changing your mind. That is the wrong end to filter at for a
--- window whose whole job is answering "what did I just get", and it was also
--- the second control doing this job, which is one more than a feature should
--- have. It is gone. Everything that drops is written down, the chips decide
--- what you are looking at, and turning one back on brings its history with it.
---
--- **A quest item is not a quality.** It is white, the same white as a stack of
--- linen, so what says it is the ring rather than a colour of its own, and its
--- chip is an override rather than a seventh tier: on, a quest item is drawn
--- whatever its own quality chip says. That is the combination that makes the
--- feed useful while questing, which is turning the whites off and still seeing
--- the five wolf livers you need.
---
--- **A reason is not a quality either, and it is the same override.**
--- Need/Need.lua answers quest, skill or trash for an item and the row wears
--- that answer as the ring round its icon, so this chip is that field: on, a row
--- with a ring is drawn whatever its quality chip says. Greys and whites off
--- with it on is the column cut down to the handful of things this hour that you
--- were actually looking for.
---
--- The quest chip is a special case of this one and stays. Somebody who wants
--- quest items and not reagents has to be able to say so, and the two chips
--- together are what says it.
---
--- Trash is one of the three, so a grey the loot filter would have left comes
--- through this chip with the grey chip off. That is the point of it rather than
--- a leak. Comfort/Loot.lua empties a corpse before a window is drawn, so this
--- feed is the only place a rule set too tight is ever found out, and the row
--- stays quiet at that: trash sets no `look`, so its ring rests with the stripe
--- instead of being held at full.
---
--- It wears none of the three reason colours, because it stands for all three
--- and a chip in the orange would be claiming the quest chip's job. The mark is
--- the ring itself, a hollow square, which is the thing on the row this switch
--- decides about.
---
--- The five qualities are one saved number rather than five saved booleans. A
--- table of five would be five keys the defaults have to backfill and five
--- things a reset has to walk; a bitmask is one of each, and nothing outside
--- this pair of functions ever sees it.
---------------------------------------------------------------------------
-
-local function Lit(quality)
-	return math.floor(ns.db.lootFeedShow / 2 ^ quality) % 2 == 1
-end
-
-local function Light(quality, on)
-	if Lit(quality) == (on and true or false) then
-		return false
-	end
-	local flag = 2 ^ quality
-	ns.db.lootFeedShow = on and (ns.db.lootFeedShow + flag) or (ns.db.lootFeedShow - flag)
-	return true
-end
-
--- Handed out, because the panel puts the same six switches on a page and the
--- two have to be the same switch. A second copy of this arithmetic behind a
--- check box is a check box that disagrees with the chip beside it.
-function LootFeed.Lit(quality)
-	return Lit(quality)
-end
-
-function LootFeed.Light(quality, on)
-	return Light(quality, on)
-end
-
--- Whether one entry is drawn. This is the function UI/Feed.lua walks the ring
--- with, so it reads settings and asks the entry, and does no work of its own.
-local function Passes(entry)
-	if entry.money then
-		return ns.db.lootFeedMoney and true or false
-	end
-	if entry.quest and ns.db.lootFeedQuest then
-		return true
-	end
-	-- The ring rather than ns.Need again. Reason writes the field on the arrival
-	-- and again on every fold, so having a reason is already a fact on the entry,
-	-- and this is the function UI/Feed.lua walks the whole ring with.
-	if entry.ring and ns.db.lootFeedReason then
-		return true
-	end
-	return Lit(math.min(entry.quality or 1, QUALITIES))
-end
-
--- The chips, in the order they are drawn: the quality ramp read left to right,
--- then a break, then the two that are not a quality.
-local function Chips()
-	local chips = {}
-	for quality = 0, QUALITIES do
-		chips[#chips + 1] = {
-			color = QUALITY[quality],
-			mark = GEM,
-			-- A function rather than a string, because the word is the client's
-			-- and its global is not reliably in place while this file is still
-			-- loading. Built on the hover, which is a moment and can afford it.
-			tip = function()
-				return ("%s items. Click to take them off the column; the feed"
-					.. " goes on recording them either way.")
-					:format(ns.QualityWord(quality))
-			end,
-			get = function() return Lit(quality) end,
-			set = function(on) Light(quality, on) end,
-		}
-	end
-
-	chips[#chips + 1] = { gap = true }
-
-	chips[#chips + 1] = {
-		color = QUEST,
-		mark = BANG,
-		tip = "Quest items, whatever their own quality chip says. The ring round"
-			.. " an icon says why an item matters to you, and orange on it is"
-			.. " one of these.",
-		get = function() return ns.db.lootFeedQuest end,
-		set = function(on) ns.db.lootFeedQuest = on end,
-	}
-	chips[#chips + 1] = {
-		color = C.text,
-		ring = true,
-		tip = "Anything this addon has a reason for, whatever its quality chip"
-			.. " says: an objective in your log, a reagent one of your"
-			.. " professions uses, and something your loot filter would have"
-			.. " left. The ring round an icon is the same answer in colour.",
-		get = function() return ns.db.lootFeedReason end,
-		set = function(on) ns.db.lootFeedReason = on end,
-	}
-	chips[#chips + 1] = {
-		color = C.heading,
-		mark = COINS,
-		tip = "Coin. Off, what you picked up is still in the purse along the"
-			.. " bottom and out of the column.",
-		get = function() return ns.db.lootFeedMoney end,
-		set = function(on) ns.db.lootFeedMoney = on end,
-	}
-	return chips
-end
 
 --------------------------------------------------------------------------
 -- The delete list
@@ -276,11 +96,10 @@ end
 -- row of it out of the column, and from then on a drop of it never becomes a
 -- row at all.
 --
--- **Refused at the door, which is the chips' argument the other way round.** A
--- chip is "not right now" and has to bring its history back. This is "never",
--- asked for one item at a time, and a listed item taking slots in the ring
--- would push out the drops you do want to scroll back to. What it refused is
--- counted, so the strip's hover can say what the list has kept off the feed.
+-- **Refused at the door.** This is "never", asked for one item at a time, and a
+-- listed item taking slots in the ring would push out the drops you do want to
+-- scroll back to. What it refused is counted, so the strip's hover can say what
+-- the list has kept off the feed.
 --
 -- **Deleted means destroyed.** The rows the can takes out are destroyed from
 -- the bags, and so is every later drop of a listed item, through
@@ -480,8 +299,6 @@ local stream = ns.Stream.New({
 	-- sentence on the hover and a green ring on the row.
 	note = 48,
 	onTooltip = Fill,
-	chips = Chips(),
-	filter = Passes,
 	-- A cross on the row under the cursor, which destroys what the row counts
 	-- and takes the row out. LootFeed.Counts still counts it, because that
 	-- number is what reached the feed.
@@ -509,10 +326,9 @@ end
 -- your eye already is when something dies.
 function LootFeed.Defaults()
 	-- No word over it and no line round it, which is the third argument. The
-	-- rows are an icon, a name in the item's own quality colour and a count,
-	-- with the same quality colours as chips over them; there is nothing about
-	-- that column the word "Loot" adds, and the edge was a window frame round
-	-- something that is not a window.
+	-- rows are an icon, a name in the item's own quality colour and a count;
+	-- there is nothing about that column the word "Loot" adds, and the edge
+	-- was a window frame round something that is not a window.
 	local defaults = ns.Stream.Defaults("lootFeed",
 		{ "RIGHT", "UIParent", "RIGHT", -119, 17 }, false)
 
@@ -538,24 +354,6 @@ function LootFeed.Defaults()
 	-- own loot spam unreadable in a raid, and a feed that reproduced it would
 	-- have replaced one unreadable column with a prettier one.
 	defaults.lootFeedGroup = false
-
-	-- Every quality lit, greys included, because Comfort/Vendor.lua sells that
-	-- trash for you on this addon's own defaults and the feed is the only place
-	-- you will ever see what it was. Five bits, one per quality, and the
-	-- arithmetic that reads them is at the top of this file.
-	defaults.lootFeedShow = 2 ^ (QUALITIES + 1) - 1
-
-	-- Quest items through whatever their quality chip says, because the reason
-	-- to turn the whites off is the linen and the reason not to is the wolf
-	-- liver, and this is the switch that has both.
-	defaults.lootFeedQuest = true
-
-	-- And anything else the addon has a reason for, on for the reason above it
-	-- is. It changes nothing while every quality is lit, and the moment you turn
-	-- a quality off it is what leaves the rows you were looking for standing.
-	defaults.lootFeedReason = true
-
-	defaults.lootFeedMoney = true
 
 	-- The status strip's, folded in here rather than registered on their own.
 	-- Feeds/Feature.lua merges one table per stream and the strip belongs to
@@ -594,8 +392,8 @@ local seen = 0
 -- Trash is also the one reason that does not light the ring. It is the
 -- commonest answer of the three and the one nobody is looking for, so it is
 -- drawn at the row's own brightness with the stripe rather than held at full: a
--- column of greys each wearing a bright ring is this feed back where it started,
--- which is the argument the chips already won.
+-- column of greys each wearing a bright ring is a column where nothing stands
+-- out.
 --
 -- The ring falls back to the quest colour for an item the client files as a
 -- quest item. Core/Need.lua matches an objective by the name the client writes
@@ -669,11 +467,10 @@ local function AddItem(who, link, count)
 	entry.link = link
 	entry.count = count
 	entry.who = who
-	-- The three the filter and the row read. Quality is what the chips grade it
-	-- by, quest is the chip that overrides them, and the price is the vendor's,
-	-- kept because the client will answer for an item in your bags and go quiet
-	-- about one you sold.
-	entry.quality = quality
+	-- The two the ring and the hover read. Quest is what the ring falls back to
+	-- and the destroy refuses, and the price is the vendor's, kept because the
+	-- client will answer for an item in your bags and go quiet about one you
+	-- sold.
 	entry.quest = (class == QUEST_CLASS) or nil
 	entry.price = price
 	-- After `quest`, which is one of the two things the ring is read off.
@@ -686,9 +483,9 @@ local function AddItem(who, link, count)
 
 	if into then
 		-- What the row says and what the tooltip says, and nothing else. The
-		-- three the filter reads are this same item's already and were counted
-		-- with the old answer, and the entry itself is the feed's slot rather
-		-- than something to keep past this call.
+		-- quest and price are this same item's already, and the entry
+		-- itself is the feed's slot rather than something to keep past this
+		-- call.
 		into.count = (into.count or 1) + count
 		into.amount = "x" .. into.count
 		into.picks = (into.picks or 1) + 1
@@ -778,9 +575,6 @@ function LootFeed.OnMoney(text)
 	if not ns.db.lootFeed or type(text) ~= "string" then
 		return false
 	end
-	-- The coin chip is not consulted here. It decides whether a coin row is
-	-- drawn, the same as every other chip, and a capture that read it would put
-	-- the setting back at the door this file spent its filter getting away from.
 	return AddMoney(text)
 end
 
@@ -817,8 +611,8 @@ end
 --
 -- One number rather than the two it was. The second was what a quality floor
 -- turned away at the door, and there is no door any more: everything that drops
--- is recorded and the chips decide what is drawn, which is a number the feed
--- itself already carries and puts in its own tally.
+-- is recorded and drawn, which is a number the feed itself already carries and
+-- puts in its own tally.
 function LootFeed.Counts()
 	return seen
 end

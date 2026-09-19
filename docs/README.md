@@ -5428,30 +5428,22 @@ combat log event in the zone, and the meters and the breakdown already answer
 "how did that fight go" off the same log without a row per swing. `feed combat
 on` for the pull you want to read back.
 
-**The loot feed ships bare and filters with chips.** No word over the column and
+**The loot feed ships bare and draws everything.** No word over the column and
 no line round the frame: the rows say what they are by the colour of the name on
 them and the chrome was carrying nothing. Both are settings, `feed loot header`
 and `feed loot edge`, and the combat feed keeps both because its rows are three
 columns of numbers.
 
-Over the rows are seven small squares of the addon's own furniture, each with a
-mark on it: five gems in the quality colours and then, past a break, a quest bang
-and a stack of coins. An off chip keeps its square and dims its mark, so the
-strip holds its rhythm however many are off. They filter
-what is drawn rather than what is kept: everything that drops is recorded either
-way, so turning a chip back on brings its history with it. The tally on the right
-of the strip reads "4/40" whenever a chip is hiding something, because a column
-of four rows on an evening that dropped forty things otherwise looks broken.
-
-Quest is an override rather than an eighth quality. On, a quest item is drawn
-whatever the white chip says, which is the combination worth having while
-questing: the whites off and the five wolf livers still on screen.
-
-Every quality ships lit, grey vendor trash included, because this addon sells
-that trash for you at the next merchant and the feed is the only place you will
-ever see what it was. The group's drops are off by default: everyone else's loot
-is what makes the client's own chat unreadable in a raid, and a feed that
-reproduced it would have replaced one unreadable column with a prettier one.
+Nothing over the rows decides what is drawn. A strip of filter chips sat there
+for a while, five qualities plus quest, reason and coin, and nobody used it, so
+it is gone: every drop gets a row, grey vendor trash included, because this
+addon sells that trash for you at the next merchant and the feed is the only
+place you will ever see what it was. What stands out is the ring round an icon,
+which says why an item matters to you. The one thing kept off the column is
+what the delete list refuses. The group's drops are off by default: everyone
+else's loot is what makes the client's own chat unreadable in a raid, and a feed
+that reproduced it would have replaced one unreadable column with a prettier
+one.
 
 **Hovering a loot row says what the thing is worth, twice.** The vendor price is
 the client's own and is per item, so a stack gets a second line with the total on
@@ -7332,12 +7324,6 @@ Everything below was written from the API contract and has never executed:
   of on a classic realm, because `Auctionator.API.v1` is a retail-era shape and
   the classic build may only carry `Atr_GetAuctionBuyout`. Both are in the list
   and the second is tried after the first.
-- Whether the seven filter chips fit the strip at every width the loot feed
-  goes to. Seven squares of eleven units plus their gaps is about a hundred and
-  ten, the strip is the feed's full width, and the narrowest a feed goes is two
-  hundred, so the arithmetic says yes at every stop. What it does not say is
-  whether eleven units reads as a square you can hit with a mouse at UI scale
-  0.53, which is a thing you look at.
 - Whether a row's icon at 16 pixels is still an icon. The floor is set by the
   text rather than the art and the art is the client's own 54 texel crop being
   resampled down, so a small row is legible by construction and recognisable by
