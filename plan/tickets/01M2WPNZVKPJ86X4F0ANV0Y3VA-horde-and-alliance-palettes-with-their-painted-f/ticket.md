@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WPNZVKPJ86X4F0ANV0Y3VA
 type: task
-status: doing
+status: done
 title: "Horde and alliance palettes, with their painted frames"
 parent: 01M1XJZYMA3V0YPE58CH5H938J
 ---
