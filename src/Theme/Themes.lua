@@ -68,6 +68,11 @@ Themes.LABEL = {
 	exploration = "chat, quests and bars wait under the pointer; drops and messages but no meters or feeds",
 }
 
+-- How the experience rail is drawn in a theme that decides it, over the style
+-- setting. Exploration keeps the thin line along the bottom edge, and a wiggle
+-- to informational brings the placed rail with its reading back with the rest.
+Themes.RAIL = { exploration = "minimal" }
+
 -- Where your frame and your target's rest in the immersive theme. Enough to
 -- read a health bar in the corner of your eye and not enough to be furniture.
 local FAINT = 0.2
@@ -135,7 +140,8 @@ Themes.immersive = {
 -- loot and combat feeds go: they report on a fight after it, and exploring is
 -- not reading a report. The drops and messages sliding in stay, because they
 -- say what you just picked up or were just told and then leave, and with chat
--- under the pointer a floated whisper is how you hear one at all.
+-- under the pointer a floated whisper is how you hear one at all. The report
+-- is a wiggle away: exploration swaps to informational out of the box.
 Themes.exploration = {
 	player     = "show",
 	target     = "show",

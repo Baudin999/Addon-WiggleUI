@@ -22,7 +22,8 @@ ns.Theme = Theme
 -- one, and the theme's promise is that it costs nothing once you are in the
 -- world. Two exceptions. The frames being placed: /wk unlock brings every
 -- element up so it can be dragged, and locking puts the theme back. And the
--- pin: a shake of the mouse brings up what the theme keeps under the pointer.
+-- wiggle: a shake of the mouse swaps the theme for the one it is set to wiggle
+-- to, and the next shake swaps it back.
 --------------------------------------------------------------------------
 
 -- The palettes in the order the options page cycles them. Every palette file
@@ -87,6 +88,12 @@ for _, name in ipairs(Theme.PALETTES) do
 	Match(name, palette.unit, Palettes.dark.unit, "unit")
 	listed[name] = true
 end
+for name, style in pairs(Themes.RAIL) do
+	assert(themed[name], ("Themes.RAIL names %q, which is not a theme"):format(name))
+	assert(style == "minimal" or style == "expressive",
+		("Themes.RAIL draws %s as %s, which is not a rail style"):format(name, tostring(style)))
+end
+
 for name in pairs(Palettes) do
 	assert(listed[name], ("the palette %q is not on Theme.PALETTES"):format(name))
 end
@@ -116,7 +123,11 @@ end
 -- move away from these in the options window, and the difference is what the
 -- reload button is for.
 local drawnTheme, drawnPalette
-local chosen
+
+-- The theme on the screen this moment: drawnTheme's table at rest, its wiggle
+-- target's while the wiggle is up. Every read of a mode goes through this, so
+-- a part asking from a ticker follows a wiggle without being told.
+local chosen, showing
 
 function Theme.Drawn()
 	return drawnTheme, drawnPalette
@@ -167,12 +178,22 @@ end
 
 local worn = {} -- { key, frame } for every frame a part has handed over
 
--- Every element the theme keeps under the pointer brought up at once and held
--- there, by a shake of the mouse. See the pin, below.
+-- The theme a wiggle swaps in, nil when the drawn theme wiggles to nothing,
+-- and whether it is the one up. See the wiggle, below.
+local rest, target, drawnTarget
 local pinned = false
 
-local function Dress(frame, mode)
-	if mode == "show" and not UI.Veiled(frame) then
+-- Whether an element can leave its frame as drawn for the whole session: shown
+-- at rest and shown in the target. Every other element is veiled when it is
+-- worn, because a protected frame cannot take its veil in a fight and a wiggle
+-- in the middle of a pull has to find the action bars already under one.
+local function Untouched(key)
+	return rest[key] == "show" and (not target or target[key] == "show")
+end
+
+local function Dress(frame, key)
+	local mode = chosen[key]
+	if mode == "show" and not UI.Veiled(frame) and Untouched(key) then
 		return true
 	end
 	if ns.Blocked(frame) then
@@ -189,15 +210,16 @@ local function Dress(frame, mode)
 		veil:Show()
 		return true
 	end
-	if mode == "hide" then
-		veil:Hide()
-	elseif mode == "hover" and pinned then
-		veil:Show()
-		UI.Unreveal(frame)
-		veil:SetAlpha(1)
-	elseif mode == "hover" then
+	if mode == "hover" then
 		veil:Show()
 		UI.Reveal(frame, 0)
+		return true
+	end
+	-- Off the reveal first: a wiggle can take a frame from under the pointer
+	-- to shown, and a catcher left standing over it would take every press.
+	UI.Unreveal(frame)
+	if mode == "hide" then
+		veil:Hide()
 	else
 		veil:Show()
 		veil:SetAlpha(mode == "show" and 1 or mode)
@@ -214,7 +236,7 @@ local function Pass()
 	local complete = true
 	for index = 1, #worn do
 		local entry = worn[index]
-		if not Dress(entry.frame, chosen[entry.key]) then
+		if not Dress(entry.frame, entry.key) then
 			complete = false
 		end
 	end
@@ -225,8 +247,8 @@ end
 -- The key is a row in Themes.ELEMENTS. An element may be several frames, the
 -- action bars are, and each is worn under the same key.
 --
--- An element the theme leaves as drawn costs one comparison here and nothing
--- else, ever: no veil, no reparent.
+-- An element both the theme and its wiggle target leave as drawn costs two
+-- comparisons here and nothing else, ever: no veil, no reparent.
 function Theme.Wear(key, frame)
 	assert(known[key], ("%q is not an element in Themes.lua"):format(tostring(key)))
 	assert(type(frame) == "table", ("the element %q was worn with no frame"):format(key))
@@ -235,27 +257,46 @@ function Theme.Wear(key, frame)
 	end
 	frame.wkWorn = key
 	worn[#worn + 1] = { key = key, frame = frame }
-	if chosen and not Dress(frame, chosen[key]) then
+	if chosen and not Dress(frame, key) then
 		ns.Lockdown.Done(Pass, false)
 	end
 end
 
 --------------------------------------------------------------------------
--- The pin
+-- The wiggle
 --
--- A shake of the mouse brings every element the theme keeps under the pointer
--- up at once, and the next shake puts them back. It sits beside the reveal
--- rather than instead of it: at rest the pointer on one frame still brings
--- that frame up alone. Pinned, the catchers are gone and the recheck stopped,
--- so a frame stays up with the pointer anywhere.
+-- Every theme can name a second theme to wiggle to. A shake of the mouse
+-- redresses every worn frame with the target's modes, and the next shake puts
+-- the theme at rest back. Exploration wiggles to informational out of the box,
+-- so everything it keeps under the pointer or off the screen is one shake away;
+-- the other two wiggle to nothing until somebody says otherwise.
 --
--- Only a theme with something under the pointer arms the tick, and it arms it
--- once, at login. The informational and immersive themes never read the mouse.
+-- The target is a saved setting per theme and takes effect when it is set,
+-- unlike the theme itself: a swap is the same redress a wiggle already is.
+-- Whether the wiggle is up is saved too, so a player who lives in the target
+-- does not shake the mouse after every loading screen.
+--
+-- The tick runs only while the theme has a target. With none, nothing reads
+-- the mouse.
 --------------------------------------------------------------------------
 
--- A part that draws differently while pinned, beyond its veil. The experience
--- rail is one: minimal at rest in a theme that keeps things under the pointer,
--- expressive while they are pinned up.
+-- The saved setting holding one theme's target, "none" or a theme's name.
+local function TargetKey(name)
+	return "wiggle" .. name:gsub("^%l", string.upper)
+end
+
+-- The target a theme is set to, nil for none or for anything the list does not
+-- hold. A theme never wiggles to itself.
+local function TargetOf(name)
+	local wanted = ns.db[TargetKey(name)]
+	if wanted ~= name and themed[wanted] then
+		return wanted
+	end
+	return nil
+end
+
+-- A part that draws differently in a wiggle, beyond its veil. The experience
+-- rail is one: its style can be the theme's rather than the setting's.
 local pinWatchers = {}
 
 function Theme.OnPin(fn)
@@ -264,7 +305,10 @@ end
 
 -- cold: runs on a shake, which is a second apart at the closest, and not on the tick's own frames
 function Theme.Pin(on)
-	pinned = on and true or false
+	pinned = (on and target) and true or false
+	ns.db.wiggled = pinned
+	chosen = pinned and target or rest
+	showing = pinned and drawnTarget or drawnTheme
 	local complete = Pass()
 	for index = 1, #pinWatchers do
 		pinWatchers[index](pinned)
@@ -276,17 +320,19 @@ function Theme.Pinned()
 	return pinned
 end
 
--- Whether the theme drawn this session keeps anything under the pointer.
-function Theme.Hovering()
-	for _, mode in pairs(chosen or Themes.informational) do
-		if mode == "hover" then
-			return true
-		end
-	end
-	return false
+-- The name of the theme on the screen this moment.
+function Theme.Showing()
+	return showing
+end
+
+-- How the experience rail is drawn in the theme on the screen, or nil where
+-- the theme leaves it to the setting.
+function Theme.RailStyle()
+	return showing and Themes.RAIL[showing]
 end
 
 local shake = UI.Wiggle()
+local shaking
 
 local function Shake()
 	if IsMouselooking() then
@@ -299,14 +345,20 @@ local function Shake()
 	end
 end
 
-local shaker = CreateFrame("Frame")
-shaker:RegisterEvent("PLAYER_LOGIN")
-shaker:SetScript("OnEvent", function(self)
-	self:UnregisterEvent("PLAYER_LOGIN")
-	if Theme.Hovering() then
-		UI.Ticker(UI.Forever, 0.02, "wiggle", Shake)
+-- Read the drawn theme's target off the settings, redress for it, and run the
+-- tick only if there is one. At load, and whenever the target is set.
+function Theme.Aim()
+	drawnTarget = TargetOf(drawnTheme)
+	target = drawnTarget and themed[drawnTarget]
+	if target and not shaking then
+		shaking = UI.Ticker(UI.Forever, 0.02, "wiggle", Shake)
+	elseif target and not shaking:Running() then
+		shaking:Start()
+	elseif not target and shaking then
+		shaking:Stop()
 	end
-end)
+	return Theme.Pin(ns.db.wiggled)
+end
 
 --------------------------------------------------------------------------
 -- The palette
@@ -352,8 +404,8 @@ loader:SetScript("OnEvent", function(self, _, name)
 	drawnTheme, drawnPalette, drawnLook = ns.db.theme, ns.db.palette, ns.db.gaugeLook
 	drawnPortraits = ns.db.portraits ~= false
 	Paint(drawnPalette)
-	chosen = themed[drawnTheme]
-	Pass()
+	rest = themed[drawnTheme]
+	Theme.Aim()
 end)
 
 --------------------------------------------------------------------------
@@ -380,13 +432,25 @@ local function Choices(names)
 	return options
 end
 
+-- What a theme can wiggle to: nothing, or any other theme.
+local function Targets(name)
+	local names = { "none" }
+	for _, other in ipairs(Themes.ORDER) do
+		if other ~= name then
+			names[#names + 1] = other
+		end
+	end
+	return names
+end
+
 local function Pending()
 	return ns.db.theme ~= drawnTheme or ns.db.palette ~= drawnPalette
 		or ns.db.gaugeLook ~= drawnLook or (ns.db.portraits ~= false) ~= drawnPortraits
 end
 
--- One word, the saved setting it writes, and the list it has to be on.
-local function Word(setting, names, arg, noun)
+-- One word, the saved setting it writes, and the list it has to be on. Live is
+-- a setting that takes effect when it is written rather than at the reload.
+local function Word(setting, names, arg, noun, live)
 	local wanted = arg:match("^(%S*)"):lower()
 	local valid = {}
 	for _, candidate in ipairs(names) do
@@ -402,7 +466,7 @@ local function Word(setting, names, arg, noun)
 		return
 	end
 	ns.db[setting] = wanted
-	ns.Print(("%s %s from the next /reload."):format(noun, wanted))
+	ns.Print(("%s %s%s."):format(noun, wanted, live and "" or " from the next /reload"))
 end
 
 ns.Register({
@@ -416,6 +480,14 @@ ns.Register({
 		palette = "dark",
 		gaugeLook = "flat",
 		portraits = true,
+		-- What each theme swaps to on a shake of the mouse. Exploration's is
+		-- the point of it: everything it leaves under the pointer or off the
+		-- screen, one shake away. The other two change nobody's screen.
+		wiggleInformational = "none",
+		wiggleImmersive = "none",
+		wiggleExploration = "informational",
+		-- Whether the wiggle was up at logout, so it is up again at login.
+		wiggled = false,
 	},
 
 	words = {
@@ -428,12 +500,18 @@ ns.Register({
 		gauges = function(arg)
 			Word("gaugeLook", Theme.BAR_LOOKS, arg, "bar look")
 		end,
+		wiggle = function(arg)
+			Word(TargetKey(ns.db.theme), Targets(ns.db.theme), arg,
+				("wiggle target for %s:"):format(ns.db.theme), true)
+			Theme.Aim()
+		end,
 	},
 
 	help = {
 		"theme informational|immersive|exploration, how much of the addon is on the screen, from the next /reload",
 		"palette dark|forest|desert|arcane, the addon's colours, from the next /reload",
 		"gauges flat|modern, how every health, power and cast bar is drawn, from the next /reload",
+		"wiggle none|<theme>, what the theme swaps to on a shake of the mouse",
 	},
 
 	status = function()
@@ -461,6 +539,15 @@ ns.Register({
 			function(value) ns.db.theme = value end,
 			function() return themes end)
 		ui.Hint(function() return Themes.LABEL[ns.db.theme] end)
+
+		ui.Picker("wiggle to",
+			function() return ns.db[TargetKey(ns.db.theme)] end,
+			function(value)
+				ns.db[TargetKey(ns.db.theme)] = value
+				Theme.Aim()
+			end,
+			function() return Choices(Targets(ns.db.theme)) end)
+		ui.Hint("Shake the mouse side to side and the screen swaps to this theme; shake again and it swaps back. Takes effect at once, and a swap is held across a reload.")
 
 		ui.Picker("palette",
 			function() return ns.db.palette end,

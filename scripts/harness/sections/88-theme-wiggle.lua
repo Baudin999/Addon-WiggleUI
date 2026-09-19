@@ -77,19 +77,63 @@ check(Drive(state, Shake(3, 80, 5)) == nil, "three legs read as a shake")
 UI.WiggleLose(state)
 check(not UI.WiggleFeed(state, 2000, 100.4), "a jump after a lost leg counted as travel")
 
--- The harness loads the informational theme, which keeps nothing under the
--- pointer, so it has no reason to read the mouse.
-check(not ns.Theme.Hovering(), "informational claims to keep something under the pointer")
-check(not ns.Theme.Pinned(), "the pin is up at load")
+-- The swap
+--
+-- The harness loads informational, which wiggles to nothing out of the box, so
+-- a pin there changes nothing. Aimed at exploration, a pin redresses every worn
+-- frame with exploration's modes, and dropping it puts informational back.
 
--- A part watching the pin hears both ways. The experience rail is one, and in
--- informational its style is still the setting's, pinned or not.
+local Theme = ns.Theme
+check(Theme.Showing() == "informational", "the harness is not showing informational at load")
+check(not Theme.Pinned(), "a theme with no target loaded wiggled")
+Theme.Pin(true)
+check(not Theme.Pinned(), "a wiggle with no target was taken")
+
 local heard = {}
-ns.Theme.OnPin(function(on) heard[#heard + 1] = on end)
+Theme.OnPin(function(on) heard[#heard + 1] = on end)
 local style = ns.ProgressRails.Describe()
-ns.Theme.Pin(true)
-check(heard[#heard] == true and ns.Theme.Pinned(), "a pin was not heard by its watcher")
-check(ns.ProgressRails.Describe() == style,
-	"a pin moved the experience rail in a theme with nothing under the pointer")
-ns.Theme.Pin(false)
-check(heard[#heard] == false and not ns.Theme.Pinned(), "a pin dropped was not heard by its watcher")
+
+-- A frame of every mode exploration has, worn the way a part wears one.
+local function Worn(key)
+	local frame = CreateFrame("Frame", nil, UIParent)
+	frame:SetSize(40, 40)
+	frame:SetPoint("CENTER")
+	Theme.Wear(key, frame)
+	return frame
+end
+local chat, meters, player = Worn("chat"), Worn("meters"), Worn("player")
+check(UI.Veiled(player) == nil, "an element shown in both themes took a veil")
+
+ns.db.wiggleInformational = "exploration"
+Theme.Aim()
+check(UI.Ticking("wiggle") ~= nil, "a theme with a target does not read the mouse")
+check(UI.Veiled(chat) and UI.Veiled(meters),
+	"aiming at a target that dresses differently left an element unveiled")
+check(UI.Veiled(chat):GetAlpha() == 1 and UI.Veiled(meters):IsShown(), "aiming alone changed the screen")
+
+Theme.Pin(true)
+check(Theme.Pinned() and Theme.Showing() == "exploration" and ns.db.wiggled,
+	"the wiggle did not swap to its target, or did not save it")
+check(heard[#heard] == true, "the wiggle was not heard by its watcher")
+check(Theme.Mode("meters") == "hide", "a part asking for a mode still reads the theme at rest")
+check(not UI.Veiled(meters):IsShown(), "the wiggle to exploration left the meters up")
+check(UI.Veiled(chat):GetAlpha() == 0 and chat.wkReveal and chat.wkReveal:IsShown(),
+	"the wiggle to exploration did not put the chat under the pointer")
+check(ns.ProgressRails.Describe():find("minimal", 1, true),
+	"exploration on the screen did not draw the minimal rail")
+
+Theme.Pin(false)
+check(not Theme.Pinned() and Theme.Showing() == "informational" and not ns.db.wiggled,
+	"the second wiggle did not swap back")
+check(heard[#heard] == false, "the swap back was not heard by its watcher")
+check(UI.Veiled(meters):IsShown() and UI.Veiled(chat):GetAlpha() == 1,
+	"the swap back left an element dressed for exploration")
+check(not chat.wkReveal:IsShown(), "the swap back left a catcher over the chat window")
+check(ns.ProgressRails.Describe() == style, "the swap back did not put the rail's style back")
+
+ns.db.wiggleInformational = "none"
+Theme.Aim()
+check(not UI.Ticking("wiggle"), "a theme aimed at nothing still reads the mouse")
+chat:Hide()
+meters:Hide()
+player:Hide()

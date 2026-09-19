@@ -193,7 +193,7 @@ ns.Register({
 				ns.db.progressStyle = value
 				Rails.Apply()
 			end)
-		ui.Hint("Expressive is a rail you place and size, its reading written on it. Minimal is a thin line along the bottom edge; hover to read it. In exploration a shake of the mouse picks between the two.")
+		ui.Hint("Expressive is a rail you place and size, its reading written on it. Minimal is a thin line along the bottom edge; hover to read it. The exploration theme always draws minimal.")
 
 		ui.Check("the reputation rail",
 			function() return ns.db.progressFaction end,
