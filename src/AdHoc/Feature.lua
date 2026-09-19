@@ -47,11 +47,6 @@ local Word = ns.Command.Word({
 		ns.Print(index and ("added " .. ns.AdHoc.Get(index).name .. ".") or why)
 	end },
 
-	{ "reset", run = function()
-		ns.AdHocBars.Reset()
-		ns.Print("every ad hoc bar is back where it started.")
-	end },
-
 	{ "on", toggle = true, key = "adhoc", what = "adhoc",
 		say = function(on) return "ad hoc bars " .. (on and "on." or "off.") end },
 
@@ -111,7 +106,7 @@ ns.Register({
 	-- ApplyDefaults copies a default one level deep and a list of tables would
 	-- hand every character the same rows.
 	charDefaults = {
-		adhocBars = {},   -- { name, key, displaced, point, columns, close, buttons = { { kind, name, id, icon } } }
+		adhocBars = {},   -- { name, key, displaced, buttons = { { kind, name, id, icon } } }
 		adhocShown = 1,   -- which one the page is showing
 	},
 
@@ -120,9 +115,8 @@ ns.Register({
 	help = {
 		"adhoc, every bar, its key and how many squares it holds",
 		"adhoc add <name>, a new bar",
-		"adhoc <bar> <key|none>, the key that shows and hides that bar",
+		"adhoc <bar> <key|none>, the key you hold to open that ring",
 		"adhoc zoom 1.5, the bars' zoom, 0.5 to 3",
-		"adhoc reset, every bar back where it started",
 		"adhoc on|off",
 	},
 
@@ -139,10 +133,6 @@ ns.Register({
 		end
 		return table.concat(parts, ", ")
 	end,
-
-	-- The lock does not reach a bar: it is dragged from a snippet, which no Lua
-	-- flag can hold, and it is only on the screen while you are using it.
-	reset = function() ns.AdHocBars.Reset() end,
 
 	panel = function(ui) ns.AdHocPanel.Build(ui) end,
 })

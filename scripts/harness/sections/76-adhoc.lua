@@ -1,18 +1,20 @@
 -- Ad hoc bars
 --
--- A bar you made yourself is a list, a key and a frame, and this section
+-- A bar you made yourself is a list, a key and a ring, and this section
 -- asserts the seams between the three: that a bar added to the list gets a
--- frame that starts hidden and a key button carrying the snippet that shows
--- it; that what the cursor was holding lands on the square as the attribute a
--- press would cast; that a key is read back off the binding layer rather than
--- trusted; that a fight defers the whole apply; that deleting a bar moves the
--- bar under it, key and all, onto a different frame; and that a square on a
--- shown bar is drawn on the tick.
+-- ring that starts hidden and a key the ring's snippet is wrapped round; that
+-- what the cursor was holding lands on the square as the attribute a press
+-- would cast; that the squares sit on the circle in the order the pick counts
+-- in; that holding the key, pushing toward a square and letting go casts that
+-- square and only that square; that a key is read back off the binding layer
+-- rather than trusted; that a fight defers the whole apply; that deleting a
+-- bar moves the bar under it, key and all, onto a different frame; and that a
+-- square on a shown ring is drawn on the tick.
 --
--- What this cannot prove: that the restricted environment shows a secure
--- frame off a click snippet, or hides one off a wrapped OnClick. Both are
--- recorded here as strings and never run, which is the limit the state driver
--- stub already states. Those two answers are a key press in game.
+-- The snippets run, through 21-restricted.lua, and the key is pressed through
+-- the binding layer on both edges. What this cannot prove is that the client's
+-- own parser takes the snippet and that its GetMousePosition agrees with the
+-- stub's. Those are a key press in game.
 
 local H = ...
 local ns, fire, check = H.ns, H.fire, H.check
@@ -39,6 +41,39 @@ local function holds(index)
 	return ("CLICK %s:LeftButton"):format(Bars.KeyName(index))
 end
 
+-- A key on the keyboard going down or coming up, delivered to whatever the
+-- binding layer says it clicks. The layer is read rather than the button named,
+-- so a key this section never bound presses nothing.
+local function press(combo, down)
+	local action = bound(combo)
+	local name, button = tostring(action):match("^CLICK ([^:]+):(.+)$")
+	if not name then
+		return false
+	end
+	return _G[name]:Click(button, down)
+end
+
+-- Where the middle of the screen is, and the pointer put a push away from it.
+local function centre()
+	return H.mouse.Point(_G.UIParent)
+end
+
+local function push(dx, dy)
+	local x, y = centre()
+	H.mouse.Place(x + dx, y + dy)
+end
+
+-- What the key sent, for as long as the section looks.
+local sent = {}
+local function spy()
+	local cast, macro = _G.CastSpellByName, _G.RunMacroText
+	_G.CastSpellByName = function(name) sent[#sent + 1] = "cast " .. tostring(name) end
+	_G.RunMacroText = function(text) sent[#sent + 1] = tostring(text) end
+	return function()
+		_G.CastSpellByName, _G.RunMacroText = cast, macro
+	end
+end
+
 check(ns.db.adhoc == true, "ad hoc bars did not ship switched on")
 check(AdHoc.Count() == 0, "a fresh character started with a bar")
 check(frame(1) == nil, "a frame was built before any bar asked for one")
@@ -53,20 +88,21 @@ check(AdHoc.Get(1).name == "trade", "the bar did not keep its name")
 check(AdHoc.Shown() == 1, "the page did not turn to the bar just added")
 
 local f = frame(1)
-check(f ~= nil, "adding a bar built no frame")
-check(f ~= nil and f:IsShown() == false, "a new bar was on the screen before its key was pressed")
+check(f ~= nil, "adding a bar built no ring")
+check(f ~= nil and f:IsShown() == false, "a new ring was on the screen before its key was held")
 
 local k = key(1)
 check(k ~= nil, "adding a bar built no key button")
-check(k ~= nil and type(k:GetAttribute("_onclick")) == "string"
-	and k:GetAttribute("_onclick"):find("Show", 1, true) ~= nil,
-	"the key button carries no snippet that shows the bar")
-check(k ~= nil and k:GetFrameRef("bar") == f, "the snippet was handed the wrong frame")
+check(k ~= nil and k.secure == true, "the key is not a secure action button, so a release cannot cast")
 check(k ~= nil and k:GetRegisteredClicks().AnyDown == true and k:GetRegisteredClicks().AnyUp == true,
-	"the key button is not registered on both edges, so letting the key go would not put the bar away")
-check(k ~= nil and k:GetAttribute("_onclick"):find("down", 1, true) ~= nil
-	and k:GetAttribute("_onclick"):find("Hide", 1, true) ~= nil,
-	"the key snippet does not read the edge of the press, so the key toggles instead of holding")
+	"the key button is not registered on both edges, so letting the key go would not fire the ring")
+check(k ~= nil and k:GetAttribute("useOnKeyDown") == false,
+	"the key acts on the press, so it would cast before the mouse moved")
+check(k ~= nil and k.wraps ~= nil and k.wraps.OnClick ~= nil and k.wraps.OnClick.header == f,
+	"the key's OnClick is not wrapped by its own ring")
+check(Bars.CanPick(1) == true, "the ring does not report that it can pick a square")
+check(f ~= nil and f:GetFrameRef("screen") ~= nil and f:GetFrameRef("screen"):IsShown() == false,
+	"the ring was not handed the hidden screen frame it reads the cursor off")
 
 local s1 = square(1, 1)
 check(s1 ~= nil and s1.secure == true, "a square is not a secure button")
@@ -75,15 +111,15 @@ check(s1 ~= nil and s1:GetRegisteredClicks().AnyUp == true and s1:GetAttribute("
 check(s1 ~= nil and s1.wraps ~= nil and s1.wraps.OnClick ~= nil
 	and s1.wraps.OnClick.header == f
 	and tostring(s1.wraps.OnClick.post):find("Hide", 1, true) ~= nil,
-	"a square's OnClick is not wrapped by the bar with a snippet that hides it")
-check(Bars.CanClose(1) == true, "the bar does not report that it can close after a press")
+	"a square's OnClick is not wrapped by the ring with a snippet that hides it")
+check(f ~= nil and f:GetFrameRef("square1") == s1, "the ring's snippet was not handed its first square")
 
 local entry = Bars.Entry(1)
 check(entry ~= nil and entry.count == 1, "an empty bar did not draw the one square a drop lands on")
 check(s1 ~= nil and s1:IsShown() == true and square(1, 2):IsShown() == false,
 	"an empty bar shows the wrong squares")
 check(s1 ~= nil and s1:GetAttribute("type") == nil, "an empty square carries a type, so a press would do something")
-check(f ~= nil and f:GetAttribute("wk-close") == true, "a new bar does not close after a press")
+check(f ~= nil and f:GetAttribute("wk-count") == 0, "an empty ring tells its snippet it holds something")
 
 --------------------------------------------------------------------------
 -- What lands on a square
@@ -153,24 +189,6 @@ end
 end
 
 --------------------------------------------------------------------------
--- The shape and the closing rule
---------------------------------------------------------------------------
-
-check(AdHoc.Columns(1) == AdHoc.COLUMNS and AdHoc.Get(1).columns == nil,
-	"a bar nobody reshaped carries a columns field")
-AdHoc.SetColumns(1, 2)
-check(AdHoc.Columns(1) == 2 and AdHoc.Get(1).columns == 2, "the columns did not take")
-AdHoc.SetColumns(1, AdHoc.COLUMNS)
-check(AdHoc.Get(1).columns == nil, "setting the columns back to the default left a record")
-
-AdHoc.SetCloses(1, false)
-check(AdHoc.Closes(1) == false and f:GetAttribute("wk-close") == false,
-	"a bar told to stay up still tells its snippet to hide it")
-AdHoc.SetCloses(1, true)
-check(AdHoc.Closes(1) == true and AdHoc.Get(1).close == nil,
-	"the closing rule set back to the default left a record")
-
---------------------------------------------------------------------------
 -- The key
 --------------------------------------------------------------------------
 
@@ -201,6 +219,99 @@ do
 	check(AdHoc.Find("totems") == 2 and AdHoc.Find("TRADE") == 1 and AdHoc.Find("2") == 2
 		and AdHoc.Find("swords") == nil, "a bar is not found by name and by number")
 
+end
+
+--------------------------------------------------------------------------
+-- The ring: hold, push, let go
+--------------------------------------------------------------------------
+
+do
+	-- The screen gets a size for the length of the ring and hands back the one
+	-- it had. The ring reads the cursor off a frame the size of the screen, and
+	-- 48-tooltips.lua leaves UIParent at none, which is a frame no cursor is
+	-- ever inside.
+	local screenWidth, screenHeight = _G.UIParent:GetWidth(), _G.UIParent:GetHeight()
+	_G.UIParent:SetSize(_G.GetScreenWidth(), _G.GetScreenHeight())
+
+	local item = AdHoc.Carry("item", 1001, H.itemLink("Bloodspiller"))
+	AdHoc.Put(1, AdHoc.PER_BAR + 1, item)
+	check(#AdHoc.Squares(1) == 3 and f:GetAttribute("wk-count") == 3,
+		"a ring of three does not tell its snippet it holds three")
+
+	-- The squares sit where the pick counts: every square, measured from the
+	-- middle of the ring, is inside its own wedge. This is what ties the
+	-- picture to the arithmetic, so a ring drawn counter-clockwise, or from
+	-- three o'clock, fails here rather than casting the neighbour in game.
+	f:Show()
+	local cx, cy = H.mouse.Point(f)
+	for at = 1, 3 do
+		local x, y = H.mouse.Point(square(1, at))
+		check(Bars.Wedge(x - cx, y - cy, 3) == at,
+			("square %d is drawn outside its own wedge"):format(at))
+	end
+	check(select(2, H.mouse.Point(square(1, 1))) > cy, "the first square is not at twelve")
+	f:Hide()
+
+	local restore = spy()
+	local reach = 100
+
+	-- Hold E. The ring comes up and nothing is sent.
+	push(0, 0)
+	press("E", true)
+	check(f:IsShown() == true, "holding the key did not open the ring")
+	check(#sent == 0, "holding the key cast something before the mouse moved")
+
+	-- Push toward the third square, down and to the left, and the plain Lua
+	-- that lights a square agrees with the snippet about which one.
+	local angle = math.rad(240)
+	push(reach * math.sin(angle), reach * math.cos(angle))
+	Bars.Aim(Bars.Entry(1))
+	check(Bars.Entry(1).aimed == 3, ("the ring lit square %s for a push toward square 3")
+		:format(tostring(Bars.Entry(1).aimed)))
+	check(square(1, 3).aim:IsShown() == true, "the square under the push is not lit")
+
+	press("E", false)
+	check(f:IsShown() == false, "letting the key go left the ring up")
+	check(#sent == 1 and sent[1] == "/use Bloodspiller",
+		("a release toward the item sent %s"):format(tostring(sent[1])))
+	check(k:GetAttribute("type") == nil, "the key kept the action after the cast, so a stray click fires it again")
+
+	-- Straight up is the first square, a spell.
+	sent = {}
+	push(0, 0)
+	press("E", true)
+	push(0, reach)
+	press("E", false)
+	check(#sent == 1 and sent[1] == "cast Thunder Clap",
+		("a release toward the first square sent %s"):format(tostring(sent[1])))
+
+	-- Let go without moving and nothing is cast.
+	sent = {}
+	push(0, 0)
+	press("E", true)
+	push(Bars.DEAD / 2, 0)
+	press("E", false)
+	check(#sent == 0 and f:IsShown() == false, "a release inside the dead zone cast something")
+
+	-- A click on a square while the ring is up casts that square and puts the
+	-- ring away, so the release after it finds nothing to do. The click is
+	-- aimed at the screen, and the windows the sections before this one left
+	-- open in the middle of it are under the ring rather than over it.
+	sent = {}
+	push(0, 0)
+	press("E", true)
+	H.mouse.Click(H.mouse.Point(square(1, 2)))
+	check(#sent == 1 and sent[1] == "cast Thunder Clap", "a click on a square did not cast it")
+	check(f:IsShown() == false, "a click on a square left the ring up")
+	push(0, reach)
+	press("E", false)
+	check(#sent == 1, "the release after a click cast a second time")
+
+	restore()
+	sent = {}
+	AdHoc.Take(1, 3)
+	H.mouse.Place(0, 0)
+	_G.UIParent:SetSize(screenWidth, screenHeight)
 end
 
 --------------------------------------------------------------------------
@@ -273,16 +384,15 @@ Bars.Apply()
 check(bound("SHIFT-T") == holds(1), "switching the bars back on did not take the key again")
 
 --------------------------------------------------------------------------
--- Placing
+-- A save from before the ring
 --------------------------------------------------------------------------
 
 AdHoc.Get(1).point = { "TOPLEFT", "UIParent", "TOPLEFT", 40, -40 }
+AdHoc.Get(1).columns, AdHoc.Get(1).close = 2, false
 Bars.Apply()
-check(frame(1):GetAttribute("wk-point") == "TOPLEFT" and frame(1):GetAttribute("wk-x") == 40,
-	"a saved anchor was not handed to the snippet that places the bar")
-Bars.Reset()
-check(AdHoc.Get(1).point == nil and frame(1):GetAttribute("wk-point") == "CENTER",
-	"a reset did not put the bar back where it started")
+check(AdHoc.Get(1).point == nil and AdHoc.Get(1).columns == nil and AdHoc.Get(1).close == nil,
+	"a bar saved before it was a ring kept the fields a ring does not read")
+check(select(1, frame(1):GetPoint(1)) == "CENTER", "the ring is not in the middle of the screen")
 
 --------------------------------------------------------------------------
 -- The page

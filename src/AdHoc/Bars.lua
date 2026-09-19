@@ -5,41 +5,47 @@ ns.AdHocBars = Bars
 
 local UI = ns.UI
 local Ability = ns.UI.Ability
-local Flow = ns.UI.Flow
 local C = ns.UI.Color
 
 --------------------------------------------------------------------------
--- The bar on the screen, and the key that puts it there
+-- The ring on the screen, and the key that opens it
 --
--- Three protected things per bar, and a snippet stands between the player and
--- each of them, because every one is refused to an addon in a fight and a bar
--- of totems is pressed in one.
+-- A bar you made is an OPie ring. Hold its key and the squares come up on a
+-- circle in the middle of the screen; push the mouse toward one and let the
+-- key go, and that one fires. Nothing is clicked. The pick is a direction, so
+-- every square owns a wedge of the whole screen rather than its own 27 units,
+-- and a mouse that overshoots still lands on the right spell.
 --
---   Showing it. A frame with a secure button inside it may not be shown or
---   hidden by an addon under lockdown. The key is bound to a UI/Press.lua
---   key, and the button's own snippet is what shows or
---   hides the bar: the same shape Character/Window.lua uses for the C key on a
---   sheet with nineteen secure squares on it. The key is held rather than
---   pressed. The down edge shows the bar and the up edge puts it away, which is
---   how every ring addon on this client reads a key, and it is why the button
---   takes both edges instead of toggling on one.
+-- The direction is measured from where the cursor stood when the key went
+-- down, not from the ring. The ring sits in the middle and the cursor sits
+-- wherever you left it, and the client has no call that moves the cursor, so
+-- the ring is drawn where it reads best and the arithmetic behaves as though
+-- the cursor had started under it. Let go without moving and nothing fires.
 --
---   Hiding it after a press. A press on a square casts the spell, and the bar
---   is meant to go away again the way an OPie ring does. The button's OnClick
---   is wrapped, and the snippet that runs after the cast hides the bar the
---   button sits on. WrapScript is what OPie does to every ring proxy on this
---   client, so it is proven here in the way Blizzard parity asks for.
+-- Why this works in a fight, link by link, because every link is a protected
+-- thing an addon is refused under lockdown:
 --
---   Moving it. The restricted environment has no StartMoving, so a secure
---   frame is placed by a point handed to a snippet; UI/Placeable.lua owns that
---   drag and the character sheet is its first caller. A bar is its second, and
---   the drag is taken by a grip along the bar's left edge rather than by the
---   bar, because the bar is squares from edge to edge and a drag started on a
---   square is a drag of what the square holds.
+--   The key is a secure action button that UI/Press.lua's Press.Held builds:
+--   registered on both edges, acting on the release. The ring wraps its
+--   OnClick, and the pre body runs on both edges before the client's half.
 --
--- Everything else about a square is UI/Ability.lua's and Buttons/Castable.lua's:
--- the picture, the swipe, the colour of the edge, the ladder that decides it.
--- Nothing here reads an action slot, because nothing here has one.
+--   The press shows the ring and writes down where the cursor is. A snippet
+--   may show a secure frame in a fight; an addon may not.
+--
+--   The release reads the cursor again, turns the angle into a wedge, and
+--   copies that square's action onto the key. Then the client's half runs,
+--   sees the release, and casts whatever the key now carries. The release is
+--   the hardware event, which is the whole reason a cast is allowed at all:
+--   a cursor passing over a button is not one, and never casts.
+--
+-- That chain is OPie's, read off the copy installed next to this addon:
+-- OPieCore.lua reads `SCREEN:GetMousePosition()` off a hidden full-screen
+-- frame, turns atan2 into a slice in ORL_GetCursorSlice, and writes the
+-- slice's macrotext onto the bound button in ORL_PerformSliceAction.
+--
+-- A square can still be clicked while the ring is up. It is a secure button
+-- of its own, and a click on it casts and puts the ring away, so the release
+-- that follows finds the ring gone and does nothing.
 --
 -- The frames are made on first use and never destroyed, because a secure frame
 -- cannot be. A bar you delete keeps its frame and the next bar you add takes
@@ -51,36 +57,27 @@ local C = ns.UI.Color
 local MAX = ns.AdHoc.MAX
 local PER_BAR = ns.AdHoc.PER_BAR
 
--- The two the state driver argument in Buttons/Bars.lua already fixed:
--- two units between squares, and four round the lot rather than three, because
--- this bar carries a grip along one edge and a frame padded evenly on all four
--- is what stops that edge reading as a mistake.
-local GAP, PAD = 2, 4
-
 -- 27, the sharp size, for the reason Buttons/Look.lua gives at length: it is
 -- the one drawn size where a stored texel lands on a pixel. The zoom is how you
--- make a bar bigger, and it scales the whole frame rather than resampling the
--- art inside it, which is why the default zoom in AdHoc/Feature.lua is not 1:
--- a bar you hold a key to read wants a square you can read at a glance, and
--- scaling the frame is the only way to get one that keeps the art sharp.
+-- make a ring bigger, and it scales the whole frame rather than resampling the
+-- art inside it, which is why the default zoom in AdHoc/Feature.lua is not 1.
 local SIZE = 27
 
--- The grip along the left edge, in units. Wide enough to land a cursor on and
--- no wider, because it is on the screen only while the bar is. It is painted
--- in the rail colour, a shade off the background, and only lifts to the edge
--- colour under the cursor: a solid chrome slab down the side of a row of icons
--- reads as a piece of the bar rather than a handle for it.
-local GRIP = 5
+-- The circle the squares sit on, in units at zoom one. Never tighter than
+-- RADIUS, so three squares are a ring and not a cluster, and otherwise wide
+-- enough that every square has SIZE plus SPACE of the circumference to itself.
+local RADIUS, SPACE = 44, 10
 
--- 120, the same depth Buttons/Placing.lua stands the cloned bars at, and for
--- its reason: Blizzard's MainActionBar takes the mouse at level 50 across the
--- bottom of the screen, and a bar that lands under it loses every click.
-local LEVEL = 120
+-- How far the cursor has to travel before a release picks anything, in units of
+-- the screen frame. Twenty is a flick; less than that is a thumb letting go of a
+-- key it pressed by mistake, and a cast nobody meant is worse than none.
+local DEAD = 20
 
--- Where a bar goes the first time it is shown. Below the middle of the screen,
--- because a bar you press a key for is one you are looking at, and the middle
--- is where your character stands.
-local DEFAULT_POINT = { "CENTER", "UIParent", "CENTER", 0, -160 }
+-- Over every window, because a ring is up for the second a key is held and has
+-- to be read over whatever is open. The bags, the quest log and the options
+-- are DIALOG, and a ring at MEDIUM came up underneath them. FULLSCREEN is where
+-- OPie's RingView.lua puts its ring on this client.
+local STRATA = "FULLSCREEN"
 
 local entries = {}
 
@@ -98,43 +95,105 @@ end
 
 Bars.KeyName = KeyName
 Bars.ButtonName = ButtonName
+Bars.DEAD = DEAD
+
+-- The radius a ring of `count` squares is drawn at.
+local function Radius(count)
+	return math.max(RADIUS, count * (SIZE + SPACE) / (2 * math.pi))
+end
+
+-- Which square a push of dx, dy points at, on a ring of `count`, or nil inside
+-- the dead zone. Square one is at twelve and the rest follow clockwise, and a
+-- wedge is centred on its square, which is the half wedge added before the
+-- floor. atan2 is handed x first so the angle is measured from straight up
+-- toward the right, which is clockwise from twelve.
+--
+-- The snippet below does the same sum in the restricted environment. The two
+-- are one rule written twice because a snippet cannot call Lua, and
+-- 76-adhoc.lua holds them to the same answer at every square.
+function Bars.Wedge(dx, dy, count)
+	if count < 1 or dx * dx + dy * dy < DEAD * DEAD then
+		return nil
+	end
+	local wedge = 360 / count
+	return math.floor(((math.deg(math.atan2(dx, dy)) + wedge / 2) % 360) / wedge) + 1
+end
 
 --------------------------------------------------------------------------
 -- The snippets
 --------------------------------------------------------------------------
 
--- What the key runs, on both edges of the press. The bar is handed over as a
--- frame reference because a snippet may only touch what it has been given.
+-- The key's wrap, run with the key as self and the ring as owner, on both
+-- edges and before the client's half. The start point goes on the ring as two
+-- attributes rather than into the snippet's own scope, so the plain Lua that
+-- lights the square under the cursor reads the same two numbers.
 --
--- `down` is the third argument the click handler is given, and it is what makes
--- this a hold rather than a toggle: a toggle on the down edge alone needs a
--- second press to put the bar away, and a bar of totems is opened in a fight
--- with a thumb that is already going somewhere else.
+-- `down` nil is the arm the old key had and the reason is the same: nothing
+-- installed proves the client hands a wrap the edge, and a client that hands
+-- over nothing would otherwise leave a ring up that never goes away. There the
+-- key toggles, a press to open and a press to fire.
 --
--- The nil arm is not dead code. Nothing installed on this box hands a snippet
--- that third argument, so it is the client's word and not a proven call, and a
--- client that hands over nothing would otherwise leave the key showing a bar
--- that never goes away. On that client the key is the toggle it used to be,
--- which is worse than a hold and better than a bar you cannot dismiss.
-local HOLD = [[
-	local bar = self:GetFrameRef("bar")
+-- Returning false stops the click before the client's half runs, which is how
+-- the press, the dead zone and an empty square all cast nothing. Returning a
+-- message is what makes the client run the post body, and the post body is
+-- what takes the action back off the key.
+local PICK = ([[
+	local screen = owner:GetFrameRef("screen")
 	if down == nil then
-		if bar:IsShown() then bar:Hide() else bar:Show() end
-	elseif down then
-		bar:Show()
-	else
-		bar:Hide()
+		down = not owner:IsShown()
 	end
+	if down then
+		local x, y = screen:GetMousePosition()
+		owner:SetAttribute("wk-from-x", x)
+		owner:SetAttribute("wk-from-y", y)
+		owner:Show()
+		return false
+	end
+	if not owner:IsShown() then
+		return false
+	end
+	owner:Hide()
+	local x, y = screen:GetMousePosition()
+	local fromX, fromY = owner:GetAttribute("wk-from-x"), owner:GetAttribute("wk-from-y")
+	local count = owner:GetAttribute("wk-count") or 0
+	if not (x and fromX) or count < 1 then
+		return false
+	end
+	local dx = (x - fromX) * screen:GetWidth()
+	local dy = (y - fromY) * screen:GetHeight()
+	if dx * dx + dy * dy < %d then
+		return false
+	end
+	local wedge = 360 / count
+	local at = floor(((math.deg(math.atan2(dx, dy)) + wedge / 2) %% 360) / wedge) + 1
+	local square = owner:GetFrameRef("square" .. at)
+	local kind = square and square:GetAttribute("type")
+	if not kind then
+		return false
+	end
+	self:SetAttribute("type", kind)
+	self:SetAttribute("spell", square:GetAttribute("spell"))
+	self:SetAttribute("macro", square:GetAttribute("macro"))
+	self:SetAttribute("macrotext", square:GetAttribute("macrotext"))
+	return nil, at
+]]):format(DEAD * DEAD)
+
+-- After the cast. A key that kept the last action would fire it again for a
+-- stray /click, and a stray /click is how the hover macro reaches a button.
+local DISARM = [[
+	self:SetAttribute("type", nil)
 ]]
 
--- What runs after a press on a square, once the client has cast whatever the
--- square held. The bar decides whether it goes away, and says so in an
--- attribute because a snippet cannot read a saved variable.
+-- A click on a square, with the square as self and the ring as owner. The
+-- message is only there so the client runs the post body: a wrap whose pre body
+-- returns nothing never runs its post body, which is SecureHandlers.lua's
+-- Wrapped_Click on 2.5.6 read straight, and why the old close never ran.
+local CLICKED = [[
+	return nil, true
+]]
+
 local CLOSE = [[
-	local bar = self:GetParent()
-	if bar and bar:GetAttribute("wk-close") then
-		bar:Hide()
-	end
+	owner:Hide()
 ]]
 
 --------------------------------------------------------------------------
@@ -146,24 +205,36 @@ local CLOSE = [[
 -- neither draws an item with no swipe rather than an error a tick.
 local ItemCooldown = (C_Container and C_Container.GetItemCooldown) or _G.GetItemCooldown
 
--- What a square says to a hover. A note rather than the client's own spell
--- text, because the name is the whole of what you need to read off a bar you
--- designed yourself, and the sentence under it is the one thing a square on
--- this bar does that a square on any other does not.
+-- One hidden frame over the whole screen, shared by every ring, for the
+-- snippet to read the cursor off. A handle answers GetMousePosition as a
+-- fraction of its own rectangle and nil outside it, so a frame the size of the
+-- screen is one that always answers. Hidden, because it is a ruler and nothing
+-- else, and OPie's SCREEN is hidden too. Built on SecureFrameTemplate because a
+-- snippet only gets a handle to a protected frame.
+local screen
+
+local function Screen()
+	if not screen then
+		screen = CreateFrame("Frame", "WarriorKitAdHocScreen", UIParent, "SecureFrameTemplate")
+		screen:SetAllPoints(UIParent)
+		screen:Hide()
+	end
+	return screen
+end
+
+-- What a square says to a hover.
 local function Says(w)
 	local record = w.record
 	if not record then
 		return { kind = "note", title = "an empty square",
 			lines = { "Drag a spell, an item or a macro here." } }
 	end
-	local closes = ns.AdHoc.Closes(w.bar)
 	return { kind = "note", title = record.name,
-		lines = { closes and "A press uses it and puts the bar away."
-			or "A press uses it. The bar stays up until you let the key go.",
+		lines = { "Push toward it and let the key go, or click it.",
 			"Drop something else on it to replace it." } }
 end
 
--- A drop on a square, off the bar itself. OnReceiveDrag and PostClick both,
+-- A drop on a square, off the ring itself. OnReceiveDrag and PostClick both,
 -- for the reason Buttons/Square.lua registers both: a spell let go over a
 -- square arrives as a drag, and one clicked onto it arrives as a click. Neither
 -- is protected, which is why a secure button takes them in plain Lua.
@@ -196,55 +267,80 @@ local function Handle(w)
 	w:SetScript("PostClick", Drop)
 end
 
+-- Where the cursor is, as the same fractions of the screen the snippet reads.
+-- The cursor counts from the bottom left of the screen and the screen frame is
+-- the whole of it, so the fraction is the cursor over the screen's size and no
+-- frame edge comes into it.
+local function Cursor()
+	local x, y = GetCursorPosition()
+	local own = UIParent:GetEffectiveScale()
+	return x / (own * GetScreenWidth()), y / (own * GetScreenHeight())
+end
+
+-- The square the cursor points at, lit, while the ring is up. Plain Lua on a
+-- plain child of the ring: OnUpdate runs only while the ring is shown, and it
+-- is never inside the snippet's own call, so nothing it does can reach the
+-- cast. It reads the start point the snippet wrote rather than keeping its
+-- own, so the lit square and the square that fires are one answer.
+local function Aim(entry)
+	local x, y = Cursor()
+	local fromX, fromY = entry.frame:GetAttribute("wk-from-x"), entry.frame:GetAttribute("wk-from-y")
+	local at
+	if fromX then
+		at = Bars.Wedge((x - fromX) * GetScreenWidth(), (y - fromY) * GetScreenHeight(), entry.count)
+		if at and not entry.buttons[at].record then
+			at = nil
+		end
+	end
+	if at == entry.aimed then
+		return
+	end
+	if entry.aimed then
+		entry.buttons[entry.aimed].aim:Hide()
+	end
+	entry.aimed = at
+	local w = at and entry.buttons[at]
+	if w then
+		w.aim:Show()
+		entry.name:SetText(w.record.name)
+	else
+		entry.name:SetText("")
+	end
+end
+
+Bars.Aim = Aim
+
+local function Aiming(aim)
+	Aim(aim.entry)
+end
+
 local function Build(index)
-	-- The attribute template rather than a plain frame, because the drag a
-	-- secure frame gets is a point written into an attribute and a snippet on
-	-- this template is what places it. UI/Placeable.lua says why.
+	-- The attribute template because the frame is the header every snippet here
+	-- runs under, and a header has to carry a secure handler.
 	local frame = CreateFrame("Frame", FrameName(index), UIParent, "SecureHandlerAttributeTemplate")
-	frame.bg = ns.Fill(frame, "BACKGROUND", C.window[1], C.window[2], C.window[3], C.window[4] or 1)
-	frame.bg:SetAllPoints()
-	frame.edges = ns.Outline(frame, C.hairline[1], C.hairline[2], C.hairline[3], C.hairline[4] or 1)
-	ns.EdgeSize(frame.edges, ns.Pixel(frame))
 	UI.Adopt(frame, ns.db.adhocZoom)
-	frame:SetFrameStrata("MEDIUM")
-	frame:SetFrameLevel(LEVEL)
+	frame:SetFrameStrata(STRATA)
+	frame:SetPoint("CENTER", UIParent, "CENTER", 0, 0)
+	frame:SetFrameRef("screen", Screen())
 	frame:Hide()
+
+	-- The disc behind the ring, in the window colour and see-through, so the
+	-- squares read against the world without a slab of chrome round them.
+	frame.disc = UI.Disc(frame, "BACKGROUND")
+	frame.disc:SetAllPoints()
+	frame.disc:SetVertexColor(C.window[1], C.window[2], C.window[3], 0.6)
 
 	local entry = { index = index, frame = frame, buttons = {}, count = 0 }
 	entries[index] = entry
 
-	-- The grip, which is the one part of the bar that answers a drag.
-	local grip = ns.Fill(frame, "ARTWORK", C.rail[1], C.rail[2], C.rail[3], 1)
-	local px = ns.Pixel(frame)
-	grip:SetPoint("TOPLEFT", px, -px)
-	grip:SetPoint("BOTTOMLEFT", px, px)
-	grip:SetWidth(GRIP)
-	entry.grip = grip
-	local handle = CreateFrame("Frame", nil, frame)
-	handle:SetAllPoints(grip)
-	handle:SetFrameLevel(LEVEL + 2)
-	handle:EnableMouse(true)
-	-- Painted directly rather than through ns.Recolor, which takes the four
-	-- textures of an outline. This is one texture.
-	handle:SetScript("OnEnter", function()
-		grip:SetColorTexture(C.edge[1], C.edge[2], C.edge[3], 1)
-	end)
-	handle:SetScript("OnLeave", function()
-		grip:SetColorTexture(C.rail[1], C.rail[2], C.rail[3], 1)
-	end)
-	entry.handle = handle
-
-	entry.place = UI.Placeable(frame, {
-		secure = true,
-		lockable = false,
-		grip = handle,
-		moved = function(anchor)
-			local bar = ns.AdHoc.Get(index)
-			if bar then
-				bar.point = anchor
-			end
-		end,
-	})
+	-- The name of what the cursor points at, in the middle of the ring, and the
+	-- plain frame whose OnUpdate keeps it and the lit square current.
+	local aim = CreateFrame("Frame", nil, frame)
+	aim:SetAllPoints()
+	aim.entry = entry
+	aim:SetScript("OnUpdate", Aiming)
+	entry.name = UI.Label(aim, 12, nil, "CENTER", UI.SHADOW)
+	entry.name:SetPoint("CENTER")
 
 	for at = 1, PER_BAR do
 		-- The release, for the reason the action bars give in Buttons/Bars.lua:
@@ -253,21 +349,24 @@ local function Build(index)
 		local w = Ability.Dress(ns.UI.Press.Button(frame, ButtonName(index, at), "up"),
 			Ability.QUIET)
 		w.bar, w.at = index, at
+		w.aim = ns.Fill(w, "OVERLAY", C.accent[1], C.accent[2], C.accent[3], 0.45)
+		w.aim:SetAllPoints()
+		w.aim:SetBlendMode("ADD")
+		w.aim:Hide()
 		if type(frame.WrapScript) == "function" then
-			frame:WrapScript(w, "OnClick", "", CLOSE)
-			entry.closes = true
+			frame:WrapScript(w, "OnClick", CLICKED, CLOSE)
 		end
+		frame:SetFrameRef("square" .. at, w)
 		Handle(w)
 		entry.buttons[at] = w
 	end
 
-	-- The key. Registered on both edges, because both are the point: the down
-	-- edge puts the bar up and the up edge takes it away, and the snippet tells
-	-- them apart by the argument the handler is given rather than by counting
-	-- presses.
-	local key = ns.UI.Press.Key(KeyName(index), "both")
-	key:SetFrameRef("bar", frame)
-	key:SetAttribute("_onclick", HOLD)
+	-- The key, which is a button the ring's snippet arms on the release.
+	local key = ns.UI.Press.Held(KeyName(index))
+	if type(frame.WrapScript) == "function" then
+		frame:WrapScript(key, "OnClick", PICK, DISARM)
+		entry.picks = true
+	end
 	entry.key = key
 
 	ns.Theme.Wear("loadout", frame)
@@ -281,7 +380,9 @@ end
 -- What a press on each square does. A spell by name, an item through /use for
 -- the reason Hover/Hover.lua casts one that way, a macro by name. A square
 -- past the end of the list is left with no type, so a stray press does nothing
--- rather than whatever the square held last.
+-- rather than whatever the square held last. The key copies these four
+-- attributes off the square it picks, so they are the whole of what a square
+-- can say.
 local function Arm(entry, bar)
 	local buttons = bar.buttons
 	for at = 1, PER_BAR do
@@ -303,39 +404,39 @@ local function Arm(entry, bar)
 			w:SetAttribute("macro", record.name)
 		end
 	end
-	-- One empty square on a bar with nothing on it, so a bar you just made and
-	-- pressed the key for is a square saying drop something here rather than
-	-- a sliver of background.
+	-- One empty square on a bar with nothing on it, so a ring you just made and
+	-- held the key for is a square saying drop something here rather than an
+	-- empty disc.
 	entry.count = math.max(1, #buttons)
+	entry.frame:SetAttribute("wk-count", #buttons)
 end
 
--- The squares in rows, and the frame sized round them with the grip on the
--- left. The rows are written out rather than left to Flow's wrap, for the
--- reason Buttons/Bars.lua writes its own: wrapping needs a width to wrap
--- against and a width here would be the same arithmetic stated twice.
-local function Arrange(entry, bar)
+-- The squares on the circle, square one at twelve and the rest clockwise, which
+-- is the order Bars.Wedge and the snippet count in.
+local function Arrange(entry)
 	UI.Adopt(entry.frame, ns.db.adhocZoom)
-	local columns = ns.AdHoc.Columns(entry.index)
-	local rows = { direction = "column", gap = GAP, pad = { PAD + GRIP, PAD, PAD, PAD } }
-	local row
+	local count = entry.count
+	local radius = Radius(count)
+	local side = 2 * (radius + SIZE)
+	entry.frame:SetSize(side, side)
 
 	for at = 1, PER_BAR do
 		local w = entry.buttons[at]
-		if at <= entry.count then
-			if (at - 1) % columns == 0 then
-				row = { direction = "row", gap = GAP }
-				rows[#rows + 1] = row
-			end
+		w.aim:Hide()
+		if at <= count then
+			local angle = (at - 1) * 2 * math.pi / count
 			Ability.Size(w, SIZE)
-			row[#row + 1] = { frame = w, width = SIZE, height = SIZE }
+			w:ClearAllPoints()
+			w:SetPoint("CENTER", entry.frame, "CENTER",
+				UI.Round(entry.frame, radius * math.sin(angle)),
+				UI.Round(entry.frame, radius * math.cos(angle)))
 			w:Show()
 		else
 			w:Hide()
 		end
 	end
-
-	Flow.Arrange(entry.frame, rows)
-	entry.place:Place(bar.point or DEFAULT_POINT)
+	entry.aimed = nil
+	entry.name:SetText("")
 end
 
 -- Everything protected in one function, so one ns.Lockdown.Held covers the
@@ -359,10 +460,14 @@ function Bars.Apply()
 		end
 		if entry then
 			ns.UI.Bound.Drop(entry.key)
+			entry.key:SetAttribute("type", nil)
 			if bar then
+				-- A bar saved before it was a ring carries where it stood, how
+				-- many columns it had and whether it closed after a press. None
+				-- of the three means anything to a ring.
+				bar.point, bar.columns, bar.close = nil, nil, nil
 				Arm(entry, bar)
-				Arrange(entry, bar)
-				entry.frame:SetAttribute("wk-close", ns.AdHoc.Closes(index))
+				Arrange(entry)
 				ns.UI.Bound.Hold(entry.key, bar.key, KeyName(index))
 			else
 				entry.frame:Hide()
@@ -370,16 +475,6 @@ function Bars.Apply()
 		end
 	end
 	return true
-end
-
--- Put every bar back where it started. The anchor is dropped rather than
--- written, because a bar with no anchor of its own sits at the default and a
--- saved variable that restates it is one that can drift from it.
-function Bars.Reset()
-	for _, bar in ipairs(ns.AdHoc.All()) do
-		bar.point = nil
-	end
-	Bars.Apply()
 end
 
 --------------------------------------------------------------------------
@@ -427,7 +522,7 @@ function Bars.Describe(index)
 		not ns.db.adhoc and "the bars are off" or nil)
 end
 
--- Whether that bar is on the screen right now, or nil for one not built.
+-- Whether that ring is on the screen right now, or nil for one not built.
 function Bars.Visible(index)
 	local entry = entries[index]
 	if not entry then
@@ -436,10 +531,11 @@ function Bars.Visible(index)
 	return entry.frame:IsShown() and true or false
 end
 
--- Whether the client gave this bar the wrap that hides it after a press.
-function Bars.CanClose(index)
+-- Whether the client gave this ring the wrap that picks a square on the
+-- release. A client with no WrapScript opens nothing.
+function Bars.CanPick(index)
 	local entry = entries[index]
-	return entry ~= nil and entry.closes == true
+	return entry ~= nil and entry.picks == true
 end
 
 function Bars.Pending()

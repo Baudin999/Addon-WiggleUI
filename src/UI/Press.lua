@@ -93,6 +93,28 @@ function Press.Key(name, edge)
 	return key
 end
 
+-- A secure action button a held key presses, acting on the release.
+--
+-- The one shape that registers both edges against one attribute, and it earns
+-- the exception above by needing both runs of a snippet and only one action. A
+-- header wraps its OnClick: the pre body sees the press and the release, and
+-- the client's half acts on the release alone because `useOnKeyDown` is false.
+-- That is 2.5.6 SecureActionButton_OnClick read straight: with the attribute
+-- false the down edge is neither the click nor a held release, so it does
+-- nothing, and the up edge is the click. An OPie ring is this button: the key
+-- opens the ring, the release is the hardware event, and the pre body writes
+-- the slice the cursor points at onto the button before the client reads it.
+--
+-- Answers "both" to Press.Edge, like Press.Key, because UI/Bound.lua asks for
+-- an edge before it binds a key to anything.
+function Press.Held(name)
+	local button = CreateFrame("Button", name, UIParent, ACTION)
+	button.wkEdge = "both"
+	button:RegisterForClicks("AnyDown", "AnyUp")
+	button:SetAttribute("useOnKeyDown", false)
+	return button
+end
+
 -- A button that is not secure, answering `edge` for the mouse buttons named or
 -- for all of them. A plain button's OnClick runs on whatever it registered, so
 -- there is no attribute to keep in step here. The call is here so that every

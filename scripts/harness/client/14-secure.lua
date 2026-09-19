@@ -58,6 +58,13 @@ local function secure(self, button, down)
 		end
 	end
 
+	-- A spell by name, which SECURE_ACTIONS.spell hands to CastSpellByName. No
+	-- stub carries that call, so a section that wants to see a cast puts a spy
+	-- there for as long as it looks.
+	if attribute("type") == "spell" and _G.CastSpellByName then
+		_G.CastSpellByName(attribute("spell"))
+	end
+
 	-- A click handed on to another button, which is how an addon reaches a
 	-- protected call that only Blizzard's own button makes.
 	if attribute("type") == "click" then
@@ -141,22 +148,33 @@ function Region:Press(button, down)
 	if scripts and scripts.PreClick then
 		scripts.PreClick(self, button, down and true or false)
 	end
-	if self.secure then
-		secure(self, button, down)
-	end
-	-- The template's own OnClick, which is where a SecureHandlerClickTemplate
-	-- button runs its snippet, and the wrapper a header put around the script.
-	-- Both sit here rather than beside the addon's OnClick because both are the
-	-- client's half of the press: the pre body runs before whatever the button
-	-- was going to do and the post body after it, which is the order AdHoc's
-	-- close snippet is written against.
+	-- The wrapper a header put around OnClick, then the client's half, then the
+	-- template's own OnClick, which is where a SecureHandlerClickTemplate button
+	-- runs its snippet. The pre body wraps the whole of OnClick, the secure half
+	-- included, which is SecureHandlers.lua's Wrapped_Click on 2.5.6: a pre body
+	-- answering false stops the click there, a string it answers is the button
+	-- the rest of the click sees, and the post body runs only when the pre body
+	-- handed back a message. The stub used to run the secure half first and the
+	-- post body always, so it certified a close on AdHoc's squares that never
+	-- ran in game.
 	local edgeDown = down and true or false
-	H.snippet.Wrapped(self, "OnClick", "pre", button, edgeDown)
-	H.snippet.Click(self, button, edgeDown)
-	if scripts and scripts.OnClick then
-		scripts.OnClick(self, button, edgeDown)
+	local wrapped, turned, message = H.snippet.Wrapped(self, "OnClick", "pre", button, edgeDown)
+	local stopped = wrapped and turned == false
+	if wrapped and type(turned) == "string" then
+		button = turned
 	end
-	H.snippet.Wrapped(self, "OnClick", "post", button, edgeDown)
+	if not stopped then
+		if self.secure then
+			secure(self, button, down)
+		end
+		H.snippet.Click(self, button, edgeDown)
+		if scripts and scripts.OnClick then
+			scripts.OnClick(self, button, edgeDown)
+		end
+		if wrapped and message ~= nil then
+			H.snippet.Wrapped(self, "OnClick", "post", button, edgeDown, message)
+		end
+	end
 	if scripts and scripts.PostClick then
 		scripts.PostClick(self, button, edgeDown)
 	end

@@ -195,8 +195,7 @@ end
 -- One frame of the client, for one frame and its parents.
 --
 -- That chain is where a drag hangs its follow: UI/Placeable.lua puts an OnUpdate
--- on the window and the drag is delivered to a grip inside it, and AdHoc's bars
--- put one on the bar and take the drag on a strip along its edge. Everything
+-- on the window and the drag is delivered to a grip inside it. Everything
 -- else on screen is left alone on purpose. Running every ticker in the addon
 -- because the pointer moved would be a scene change, and a section dragging a
 -- window would quietly advance the tooltip, the meters and three animations.
@@ -332,6 +331,28 @@ end
 -- pointer that left the row from one that moved onto the row's own child.
 function H.Region:IsMouseOver()
 	return inside(self, where())
+end
+
+-- Where the pointer is inside this frame, as a fraction of its width from the
+-- left and of its height from the bottom, and nil off it. A frame handle
+-- answers this in the restricted environment and nothing else does:
+-- RestrictedFrames.lua's HANDLE:GetMousePosition on 2.5.6, which is the
+-- cursor against the frame's rectangle whether or not the frame is shown.
+-- AdHoc's rings read the cursor off a hidden frame the size of the screen with
+-- it, the way OPie's SCREEN does.
+function H.Region:GetMousePosition()
+	local x, y = where()
+	local own = self:GetEffectiveScale()
+	local left, top = self:GetLeft() * own, self:GetTop() * own
+	local width, height = self:GetWidth() * own, self:GetHeight() * own
+	if width == 0 or height == 0 then
+		return nil
+	end
+	x, y = x - left, y - (top - height)
+	if x < 0 or x > width or y < 0 or y > height then
+		return nil
+	end
+	return x / width, y / height
 end
 
 -- What the client says is under the pointer, answered by the same hit test that

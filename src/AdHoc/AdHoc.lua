@@ -6,10 +6,10 @@ ns.AdHoc = AdHoc
 --------------------------------------------------------------------------
 -- Bars you made yourself
 --
--- A bar is a name, a key, a place on the screen and a list of what you dragged
--- onto it. It is hidden until the key is pressed and hidden again after a press
--- on one of its squares, so a bar of your trade skills lives under T and a bar
--- of totems under Shift-T, and neither is on the screen while you fight.
+-- A bar is a name, a key and a list of what you dragged onto it. On the screen
+-- it is a ring that is up only while the key is held, so a bar of your trade
+-- skills lives under T and a bar of totems under Shift-T, and neither is on the
+-- screen while you fight.
 --
 -- This file is the list and nothing else. It knows what a bar holds and what
 -- the cursor is carrying; it does not know what a frame is. Bars.lua builds the
@@ -31,7 +31,7 @@ ns.AdHoc = AdHoc
 -- because a macro index moves every time you make or delete one.
 --------------------------------------------------------------------------
 
--- Six bars is the cap and sixteen squares is the width of one. Both are caps
+-- Six bars is the cap and sixteen squares is the most one ring holds. Both are caps
 -- rather than sizes: a bar carries only what you put on it, and a cap that is
 -- reached says so rather than dropping the seventh bar or the seventeenth
 -- square on the floor. Six because the keys a bar wants are the letters left
@@ -39,10 +39,6 @@ ns.AdHoc = AdHoc
 -- than a bar of twelve would hold.
 AdHoc.MAX = 6
 AdHoc.PER_BAR = 16
-
--- How many squares sit on one row before the next starts. Eight is half of
--- the width, so a full bar is two even rows, and a bar of six is one.
-AdHoc.COLUMNS = 8
 
 --------------------------------------------------------------------------
 -- The list
@@ -119,50 +115,6 @@ function AdHoc.Rename(index, name)
 		return false
 	end
 	bar.name = (name and name ~= "") and name or bar.name
-	return true
-end
-
--- The shape and the closing rule, each with a default that is not a setting.
--- A bar nobody has reshaped carries no columns field and a bar nobody has told
--- to stay up carries no close field, so a record restates nothing the code
--- already says. Buttons/Look.lua argues this at length.
-function AdHoc.Columns(index)
-	local bar = AdHoc.Get(index)
-	return bar and bar.columns or AdHoc.COLUMNS
-end
-
-function AdHoc.SetColumns(index, columns)
-	local bar = AdHoc.Get(index)
-	if not bar then
-		return false
-	end
-	columns = math.floor(tonumber(columns) or AdHoc.COLUMNS)
-	if columns < 1 then
-		columns = 1
-	elseif columns > AdHoc.PER_BAR then
-		columns = AdHoc.PER_BAR
-	end
-	bar.columns = columns ~= AdHoc.COLUMNS and columns or nil
-	Apply()
-	return true
-end
-
-function AdHoc.Closes(index)
-	local bar = AdHoc.Get(index)
-	return bar ~= nil and bar.close ~= false
-end
-
-function AdHoc.SetCloses(index, closes)
-	local bar = AdHoc.Get(index)
-	if not bar then
-		return false
-	end
-	if closes then
-		bar.close = nil
-	else
-		bar.close = false
-	end
-	Apply()
 	return true
 end
 

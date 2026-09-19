@@ -68,7 +68,7 @@ local CARRIED = {
 	GetFrameStrata = true, SetFrameStrata = true,
 	Raise = true, Lower = true,
 	GetLeft = true, GetRight = true, GetTop = true, GetBottom = true,
-	GetCenter = true,
+	GetCenter = true, GetMousePosition = true,
 	ClearBindings = true, SetBindingClick = true,
 }
 
@@ -209,9 +209,10 @@ local LIBRARY = {
 		return t
 	end,
 	floor = math.floor, ceil = math.ceil, abs = math.abs,
-	min = math.min, max = math.max,
+	min = math.min, max = math.max, atan2 = math.atan2, deg = math.deg,
 	math = { floor = math.floor, ceil = math.ceil, abs = math.abs,
-		min = math.min, max = math.max, huge = math.huge },
+		min = math.min, max = math.max, huge = math.huge,
+		atan2 = math.atan2, deg = math.deg },
 }
 
 -- One environment per handler frame, kept for as long as the frame is. The
@@ -275,12 +276,13 @@ local function run(frame, body, named, as)
 		env[named[index]] = named[index + 1]
 	end
 	setfenv(chunk, env)
-	local ok, err = pcall(chunk, named[2], named[4])
+	local answer = { pcall(chunk, named[2], named[4]) }
 	env.self = was
-	if not ok then
+	if not answer[1] then
 		error(("snippet on %s: %s")
-			:format(frame:GetName() or frame.template or "a frame", tostring(err)), 0)
+			:format(frame:GetName() or frame.template or "a frame", tostring(answer[2])), 0)
 	end
+	return answer[2], answer[3]
 end
 
 --------------------------------------------------------------------------
@@ -319,16 +321,25 @@ local function click(frame, button, down)
 end
 
 -- The two halves of a wrapped script, which is the other way a snippet reaches
--- a click. The header owns the environment and the wrapped frame is self, which
--- is what lets AdHoc/Bars.lua's close snippet read the bar off GetParent.
-local function wrapped(frame, script, half, button, down)
+-- a click. The header owns the environment and is `owner`, and the wrapped
+-- frame is self.
+--
+-- Answers whether there was a body, then what the body returned: the pre body
+-- hands back a new button or false, and a message. 14-secure.lua holds the
+-- click to what those mean, which is SecureHandlers.lua's Wrapped_Click on
+-- 2.5.6: false stops the click, and the post body runs only for a message.
+-- The post body is handed that message as `message`.
+local function wrapped(frame, script, half, button, down, message)
 	local wrap = frame.wraps and frame.wraps[script]
 	local body = wrap and wrap[half]
 	if type(body) ~= "string" or body == "" then
 		return false
 	end
-	run(wrap.header, body, { "button", button, "down", down }, frame)
-	return true
+	local named = { "button", button, "down", down }
+	if half == "post" then
+		named[5], named[6] = "message", message
+	end
+	return true, run(wrap.header, body, named, frame)
 end
 
 -- A state driver delivering a transition, which 05-quests.lua used to run as

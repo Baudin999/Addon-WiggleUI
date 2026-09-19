@@ -196,7 +196,7 @@ end
 
 function Panel.Build(ui)
 	ui.Section("Ad hoc bars", "Action bars")
-	ui.Lede("A bar of your own on a key: hidden until you press it, gone again after a press.")
+	ui.Lede("A ring of your own on a key: up while you hold it, and the square you push toward fires when you let go.")
 
 	ui.Tabs(
 		function()
@@ -247,7 +247,7 @@ function Panel.Build(ui)
 			end
 		end,
 		function() ns.AdHocBars.Bind(Shown(), "") end)
-	ui.Hint("Press it to show the bar, again to put it away.")
+	ui.Hint("Hold it to open the ring, push toward a square and let go to use it. Let go without moving and nothing happens.")
 
 	ui.Reading("this key", function()
 		local bar = Current()
@@ -270,17 +270,7 @@ function Panel.Build(ui)
 			return Lay(frame:GetWidth())
 		end
 	end, { height = M.control, label = "the squares on this bar" })
-	ui.Hint("Drop a spell, an item or a macro on the empty square. Drag the strip on the bar's left edge to move it.")
-
-	ui.Count("columns", 1, ns.AdHoc.PER_BAR,
-		function() return ns.AdHoc.Columns(Shown()) end,
-		function(value) ns.AdHoc.SetColumns(Shown(), value) end)
-
-	ui.Check("put the bar away after a press", function()
-		return ns.AdHoc.Closes(Shown())
-	end, function(value)
-		ns.AdHoc.SetCloses(Shown(), value)
-	end)
+	ui.Hint("Drop a spell, an item or a macro on the empty square. The first sits at twelve on the ring and the rest go round clockwise.")
 
 	ui.Reading("on screen", function()
 		local index = Shown()
