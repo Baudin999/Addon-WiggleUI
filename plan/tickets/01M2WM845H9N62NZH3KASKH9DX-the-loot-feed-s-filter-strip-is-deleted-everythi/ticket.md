@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WM845H9N62NZH3KASKH9DX
 type: task
-status: todo
+status: doing
 title: The loot feed's filter strip is deleted; everything that drops shows
 parent: 01M2WM7H2QD0KYVCRBZZ25T564
 ---
