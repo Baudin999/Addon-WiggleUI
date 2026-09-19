@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2XC6N3941Z96PW8YFA86V21
 type: task
-status: doing
+status: done
 title: A wiggle swaps the resting theme for a chosen target theme and back
 ---
 
