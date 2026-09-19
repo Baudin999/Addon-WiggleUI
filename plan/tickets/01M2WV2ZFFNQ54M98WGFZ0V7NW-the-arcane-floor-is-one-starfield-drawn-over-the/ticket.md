@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WV2ZFFNQ54M98WGFZ0V7NW
 type: task
-status: todo
+status: doing
 title: "The arcane floor is one starfield drawn over the window, not a tile"
 ---
 
