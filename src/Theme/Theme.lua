@@ -27,7 +27,7 @@ ns.Theme = Theme
 -- The palettes in the order the options page cycles them. Every palette file
 -- has to be on this list and the list may hold nothing else, which the load
 -- checks below hold it to.
-Theme.PALETTES = { "dark", "forest", "desert", "arcane", "horde", "alliance" }
+Theme.PALETTES = { "dark", "forest", "desert", "arcane", "horde", "alliance", "fire" }
 
 --------------------------------------------------------------------------
 -- The tables are checked where they are read

@@ -81,6 +81,19 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 # readily as a nebula. Alliance's is flat navy, and its bottom rail has a
 # smooth face that the blurred test reaches and eats, so it is flooded like the
 # white ones: the flood compares each pixel to its corner's colour.
+#
+# Fire is a new frame, dark stone with horde sigils, measured on its own. Its
+# corner blocks are not square and not alike: the top ones are 215 by 190, and
+# the bottom ones are an L, a 200 by 200 crystal block with spikes along the
+# rail 285 out and 105 up. The corner square holds the larger, and block names
+# each as rectangles from the outer corner, top then bottom, so the painting's
+# own stone floor inside a corner square and outside its block is cut to alpha
+# rather than laid as a patch over the ground. The wolf leaning on the bottom
+# block is painted on that floor and goes with it. Its rails
+# repeat from one plaque's start to the next, 465 across with the skull or
+# the swirl between, and 260 down, a dragon and a wolf's head; clear is given
+# across and down, because the side rail starts above the corner square's end
+# so its dragon is whole. Its floor is never drawn, so it is not darkened.
 PAINTINGS = [
 	{
 		"palette": "forest", "file": "art/forrest.jpeg", "stem": "Forest",
@@ -112,6 +125,14 @@ PAINTINGS = [
 		"darken": 0.65, "margin": "flat",
 		"floor": (381, 313), "rail": (300, 150), "clear": 105,
 		"ground": "art/alliance_bg.jpeg", "dim": 0.50,
+	},
+	{
+		"palette": "fire", "file": "art/fire.jpeg", "stem": "Fire",
+		"inset": (98, 100, 95, 83), "corner": 300, "period": (465, 260),
+		"darken": 1.0, "margin": "blurred",
+		"rail": (465, 260), "clear": (5, -105),
+		"block": ([(215, 190)], [(200, 200), (285, 105)]),
+		"ground": "art/horde_bg.jpeg", "dim": 0.50,
 	},
 ]
 
@@ -252,6 +273,25 @@ def fade_corner(tile, inward_x, inward_y, reach_x, reach_y):
 	return tile
 
 
+def unfloor(tile, inward_x, inward_y, inset_x, inset_y, block):
+	# Cuts to alpha what of a corner square is the painting's floor: inside the
+	# inner rectangle, past inset_x and inset_y from the outer corner, and
+	# outside every rectangle of the corner block, each wide and tall from the
+	# same corner. The edge is softened by a pixel so the cut does not alias.
+	w, h = tile.size
+	mask = Image.new("L", (w, h), 255)
+	px = mask.load()
+	for y in range(h):
+		for x in range(w):
+			ox = x if inward_x == "right" else w - 1 - x
+			oy = y if inward_y == "bottom" else h - 1 - y
+			if ox >= inset_x and oy >= inset_y and not any(ox < bw and oy < bh for bw, bh in block):
+				px[x, y] = 0
+	mask = mask.filter(ImageFilter.GaussianBlur(1))
+	tile.putalpha(ImageChops.multiply(tile.getchannel("A"), mask))
+	return tile
+
+
 def bleed(image):
 	# The colour under a transparent pixel is still the white of the margin,
 	# and both the resize here and the client's filtering read it: a visible
@@ -340,11 +380,12 @@ for p in PAINTINGS:
 	# like the middle, because the painting's corner block meets its rail at a
 	# notch, and a tile that starts on the notch repeats it at every join.
 	clear = p.get("clear", CLEAR)
+	clear_x, clear_y = clear if isinstance(clear, tuple) else (clear, clear)
 
 	def rail(x, y, width, height, across):
-		tile = seamless(src, x + (clear if across else 0), y + (0 if across else clear),
+		tile = seamless(src, x + (clear_x if across else 0), y + (0 if across else clear_y),
 			width, height, across, not across)
-		return ImageChops.offset(tile, clear % width if across else 0, 0 if across else clear % height)
+		return ImageChops.offset(tile, clear_x % width if across else 0, 0 if across else clear_y % height)
 
 	rw, rh = p.get("rail", (pw, ph))
 	emit("Top", fade(rail(c, 0, rw, top + FADE, True), "bottom", FADE),
@@ -356,13 +397,20 @@ for p in PAINTINGS:
 	emit("Right", fade(rail(W - right - FADE, c, right + FADE, rh, False), "left", FADE),
 		(drawn(right + FADE), drawn(rh)))
 
-	emit("TopLeft", fade_corner(src.crop((0, 0, c, c)), "right", "bottom", left, top),
+	def corner(box, inward_x, inward_y, inset_x, inset_y, block):
+		tile = fade_corner(src.crop(box), inward_x, inward_y, inset_x, inset_y)
+		if block:
+			tile = unfloor(tile, inward_x, inward_y, inset_x, inset_y, block)
+		return tile
+
+	top_block, bottom_block = p.get("block", (None, None))
+	emit("TopLeft", corner((0, 0, c, c), "right", "bottom", left, top, top_block),
 		(drawn(c), drawn(c)))
-	emit("TopRight", fade_corner(src.crop((W - c, 0, W, c)), "left", "bottom", right, top),
+	emit("TopRight", corner((W - c, 0, W, c), "left", "bottom", right, top, top_block),
 		(drawn(c), drawn(c)))
-	emit("BottomLeft", fade_corner(src.crop((0, H - c, c, H)), "right", "top", left, bottom),
+	emit("BottomLeft", corner((0, H - c, c, H), "right", "top", left, bottom, bottom_block),
 		(drawn(c), drawn(c)))
-	emit("BottomRight", fade_corner(src.crop((W - c, H - c, W, H)), "left", "top", right, bottom),
+	emit("BottomRight", corner((W - c, H - c, W, H), "left", "top", right, bottom, bottom_block),
 		(drawn(c), drawn(c)))
 
 	lua.append(f"\t{p['palette']} = {{")

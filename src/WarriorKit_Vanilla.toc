@@ -131,6 +131,7 @@ Theme\Desert.lua
 Theme\Arcane.lua
 Theme\Horde.lua
 Theme\Alliance.lua
+Theme\Fire.lua
 # The painted frames the bag window is drawn in, for the palettes that have
 # one. Written by scripts/bake-backdrops.sh.
 Theme\Backdrops.lua
