@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WQY4EVFWMZS17W47VGSXT6
 type: task
-status: todo
+status: doing
 title: The character sheet wears its palette's painted backdrop
 ---
 
