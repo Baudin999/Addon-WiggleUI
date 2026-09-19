@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WM83Z9AFFGRX657KRA7N3D
 type: task
-status: todo
+status: doing
 title: "A feed row's wash is the palette's painting, fading as it does now"
 parent: 01M2WM7H2QD0KYVCRBZZ25T564
 ---
