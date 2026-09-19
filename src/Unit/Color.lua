@@ -172,7 +172,8 @@ local function Brighten(color)
 end
 
 -- The palette's share of this file: the backdrop, the seam, the frame round a
--- bar and the fills of the bars that are about you. Copies of dark's, because
+-- bar, the swing timer's two hands, and the rested pool, which is the
+-- palette's accent rather than an entry of its own. Copies of dark's, because
 -- the saved variables that say which palette was chosen have not arrived, and
 -- Color.Paint below writes the chosen one into these same tables at
 -- ADDON_LOADED. Copies rather than dark's own tables, which painting would
@@ -181,6 +182,8 @@ local SURFACE = {}
 for key, color in pairs(ns.Palettes.dark.unit) do
 	SURFACE[key] = { color[1], color[2], color[3], color[4] }
 end
+local ACCENT = ns.Palettes.dark.accent
+SURFACE.rested = { ACCENT[1], ACCENT[2], ACCENT[3] }
 
 local HUE = {
 	green  = { 0.20, 0.72, 0.38 },
@@ -217,7 +220,7 @@ local HUE = {
 	-- beside it carries the XP scale, which is those same five again meaning
 	-- something else. A cast bar in any of them would read as a third opinion
 	-- about the mob's health.
-	violet = SURFACE.cast,
+	violet = { 0.62, 0.45, 0.95 },
 
 	-- Your pet holding the mob. Not on the green through red scale, because that
 	-- scale is about you and the pet is neither you nor the wrong person. Cyan
@@ -332,9 +335,12 @@ Color.xp = {
 -- its fill. The one pair of colours in this palette that is about you rather
 -- than about something you are fighting.
 --
--- Purple and blue because that is what this game has drawn those two bars in
--- since it shipped, which is the same argument Color.heal makes for green: a
--- colour the player has already been taught beats a prettier one. The
+-- Purple because that is what this game has drawn the experience bar in since
+-- it shipped, which is the same argument Color.heal makes for green: a colour
+-- the player has already been taught beats a prettier one, so no palette moves
+-- it. The rested pool is the palette's accent, the one colour every palette
+-- spends on something to look at, and on dark that is the blue the game
+-- drew rested in anyway. The
 -- reputation rail is not here, because a standing is what a faction thinks of
 -- you and Color.reaction above is already that scale.
 --
@@ -343,7 +349,7 @@ Color.xp = {
 -- press against, and a fill that is on the screen every minute of every session
 -- would spend a hue the addon keeps for the moment it matters.
 Color.progress = {
-	experience = SURFACE.experience,
+	experience = { 0.55, 0.32, 0.86 },
 	rested     = SURFACE.rested,
 }
 
@@ -490,14 +496,17 @@ end
 
 ShapeAll()
 
--- The chosen palette's unit table, written into the tables above in place so
--- every part holding one sees the new colour, and then shaped like the rest.
--- Called once, by Theme/Theme.lua at ADDON_LOADED, before any bar is built.
-function Color.Paint(unit)
-	for key, color in pairs(unit) do
+-- The chosen palette's unit table and its accent, written into the tables
+-- above in place so every part holding one sees the new colour, and then
+-- shaped like the rest. Called once, by Theme/Theme.lua at ADDON_LOADED,
+-- before any bar is built.
+function Color.Paint(palette)
+	for key, color in pairs(palette.unit) do
 		local into = SURFACE[key]
 		into[1], into[2], into[3], into[4] = color[1], color[2], color[3], color[4]
 	end
+	local rested, accent = SURFACE.rested, palette.accent
+	rested[1], rested[2], rested[3] = accent[1], accent[2], accent[3]
 	ShapeAll()
 end
 

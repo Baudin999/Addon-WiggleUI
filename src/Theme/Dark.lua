@@ -65,20 +65,16 @@ Palettes.dark = {
 	-- The colours a unit and a HUD bar are drawn on, which Unit/Color.lua owns
 	-- and takes from here. Its own table because none of them is a window or a
 	-- control: the backdrop is behind every health bar, the seam splits an
-	-- enemy bar's two chambers, iron is the frame round a bar, and the rest are
-	-- the fills of the bars that are about you. What a colour means, threat and
-	-- reaction and class, stays in Unit/Color.lua for the reason the item grades
-	-- stay in UI/Theme.lua.
-	--
-	-- The fills are shaped after they are painted, so a palette may write any
-	-- brightness here and the name on the bar still clears its contrast floor.
+	-- enemy bar's two chambers, iron is the frame round a bar, and the swing
+	-- hands are the timer's two fills. What a colour means, threat and reaction
+	-- and class, stays in Unit/Color.lua for the reason the item grades stay in
+	-- UI/Theme.lua, and so do the cast bar and the experience rail, which read
+	-- the same on every palette. The rested pool beyond that rail is the
+	-- palette's accent and has no entry here.
 	unit = {
 		backdrop   = { 0.04, 0.04, 0.05, 0.85 },
 		seam       = { 0.02, 0.02, 0.03, 1 },
 		iron       = { 0.24, 0.25, 0.29 },
-		cast       = { 0.62, 0.45, 0.95 },
-		experience = { 0.55, 0.32, 0.86 },
-		rested     = { 0.30, 0.52, 0.92 },
 		swingMain  = { 0.86, 0.72, 0.30 },
 		swingOff   = { 0.42, 0.60, 0.86 },
 	},

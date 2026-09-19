@@ -196,8 +196,9 @@ end
 --------------------------------------------------------------------------
 
 -- Copied into UI.Color's own tables rather than over them, because a part that
--- took UI.Color.window into a local is holding the table. The unit table goes
--- to Unit/Color.lua, which copies it the same way and then shapes its fills.
+-- took UI.Color.window into a local is holding the table. The unit table and
+-- the accent go to Unit/Color.lua, which copies them the same way and then
+-- shapes its fills.
 local function Paint(name)
 	for key, color in pairs(Palettes[name]) do
 		if key ~= "unit" then
@@ -205,7 +206,7 @@ local function Paint(name)
 			into[1], into[2], into[3], into[4] = color[1], color[2], color[3], color[4]
 		end
 	end
-	ns.Unit.Color.Paint(Palettes[name].unit)
+	ns.Unit.Color.Paint(Palettes[name])
 end
 
 --------------------------------------------------------------------------
