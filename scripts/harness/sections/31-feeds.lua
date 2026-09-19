@@ -334,6 +334,24 @@ check(feed.frame:GetScript("OnMouseWheel") ~= nil,
 	"the feed does not take the wheel with the mouse turned on")
 check(feed:Row(1):IsMouseEnabled(), "a row does not take the mouse with the setting on")
 
+-- The loot feed keeps thirty drops and draws no scroll bar. The wheel is the
+-- only way down it now, so it is turned once here and the offset read back,
+-- and the rows run to the frame's edge because there is no bar column to give
+-- up. The ring section above filled it well past thirty, so the count is the
+-- cap and not whatever this section happened to drop.
+check(feed.cap == 30 and feed:Count() == 30,
+	("the loot feed keeps %d of a cap of %d, not 30"):format(feed:Count(), feed.cap))
+check(feed.bar == nil, "the loot feed still builds a scroll bar")
+check(feed.geom.content == feed.width,
+	("the loot rows are %d wide in a %d feed, so they still give up a bar's column")
+		:format(feed.geom.content, feed.width))
+do
+	feed:ToTop()
+	H.mouse.Deliver(feed.frame, "OnMouseWheel", -1)
+	check(feed:Offset() > 0, "the wheel does not scroll a loot feed with no scroll bar")
+	feed:ToTop()
+end
+
 -- Growing the feed and shrinking it again. Which rows answer the mouse is
 -- decided by two things, the setting and the row count, and each one is
 -- perfectly capable of leaving the other stale: the rows this stepper adds
@@ -372,6 +390,8 @@ do
 
 	local combat = combatStream:Feed()
 	check(combat ~= nil, "turning the combat feed on built no column")
+	check(combat.bar ~= nil and combat.cap == 400,
+		"the combat feed lost its scroll bar or its four hundred entries with the loot feed's")
 	-- Collecting is a subscription to ns.CombatLog now rather than a branch
 	-- inside a handler the client is always calling, so turning it on has a
 	-- second half and this is the call the panel makes for it.

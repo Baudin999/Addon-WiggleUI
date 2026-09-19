@@ -184,9 +184,10 @@ local REOPEN = 0.2
 --
 -- The one piece of decoration in this file, and it is carrying information
 -- rather than atmosphere: it is the difference between a feed that has stopped
--- and a feed that continues past the bottom edge. The scrollbar says the same
--- thing and says it in eight pixels off to the side, which is not where you are
--- looking. Written once per row per paint, behind a guard, and it costs nothing
+-- and a feed that continues past the bottom edge. A feed with a scroll bar says
+-- the same thing in eight pixels off to the side, which is not where you are
+-- looking, and the loot feed has no bar, so there this is the only sign of
+-- more. Written once per row per paint, behind a guard, and it costs nothing
 -- because it is a function of the row's position rather than of the clock.
 local FADE = 0.45
 
@@ -455,9 +456,10 @@ end
 -- The frame is the second argument rather than a closure, because
 -- scripts/hot.lua walks out from the function ns.UI.Ticker was handed and a
 -- closure is a body it cannot name.
--- The scroll bar down the right of the rows. Its own function because UI.Feed
--- reached a hundred and five lines when the delete list arrived and the gate
--- is a hundred; this is the block of it that stands alone.
+-- The scroll bar down the right of the rows, for a feed that asked for one. Its
+-- own function because UI.Feed reached a hundred and five lines when the delete
+-- list arrived and the gate is a hundred; this is the block of it that stands
+-- alone.
 local function BuildBar(feed)
 	local bar = UI.ScrollBar(feed.frame, function(_, value)
 		-- The bar is written back to on every arrival, and that write fires
@@ -490,7 +492,9 @@ end
 --                when there is none
 -- opts.empty     what is written where the rows would be before anything has
 --                happened
--- opts.held      how many entries this feed keeps
+-- opts.held      how many entries this feed keeps, HELD when it does not say
+-- opts.bar       true for a scroll bar down the right of the rows. Without one
+--                the wheel still scrolls and the rows get the bar's column
 -- opts.note      how wide the dim middle column is, in units, and zero for a
 --                feed that does not want one
 -- opts.onTooltip function(entry), answering the table UI/Tooltip.lua renders for
@@ -580,7 +584,9 @@ function UI.Feed(parent, opts)
 		feed:BuildList()
 	end
 
-	feed.bar = BuildBar(feed)
+	if opts.bar then
+		feed.bar = BuildBar(feed)
+	end
 
 	-- The strip as it was asked for: a title if there is one. Last, because it anchors the scroll bar as well as the rows, and
 	-- Feeds/Stream.lua writes both from settings a moment later.
@@ -1007,10 +1013,12 @@ end
 -- Size, and whether it answers the mouse
 --------------------------------------------------------------------------
 
--- The bar column is reserved whether or not the bar is showing, which is the
--- rule UI/Scroll.lua and UI/Log.lua both state: handing the width back when the
--- content fits would rewrap the rows, which can make them not fit, which brings
--- the bar back. A layout that can argue with itself is a layout that flickers.
+-- On a feed with a bar the bar column is reserved whether or not the bar is
+-- showing, which is the rule UI/Scroll.lua and UI/Log.lua both state: handing
+-- the width back when the content fits would rewrap the rows, which can make
+-- them not fit, which brings the bar back. A layout that can argue with itself
+-- is a layout that flickers. A feed built without one has no column to reserve
+-- and the rows run to the frame's edge.
 
 -- Whether the middle column is drawn on this row, which is a question about the
 -- string as well as about the width.
@@ -1125,7 +1133,7 @@ function Feed:Resize(width, rows, icon)
 	local height = self.head + rows * (self.row + ROW_GAP) - ROW_GAP
 	self.frame:SetSize(width * unit, height * unit)
 
-	local content = math.max(width - M.bar - M.gutter, 1)
+	local content = math.max(width - (self.bar and (M.bar + M.gutter) or 0), 1)
 	if self.rule then
 		self.rule:SetWidth(width * unit)
 	end

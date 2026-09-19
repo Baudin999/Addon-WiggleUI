@@ -107,6 +107,12 @@ local UNKNOWN = "Interface\\Icons\\INV_Misc_QuestionMark"
 -- slider on it would be one more control over what this column shows.
 local FOLD_WINDOW = 60
 
+-- How many drops the feed keeps. Thirty is three screens of the shipped ten
+-- rows, which is the last few corpses and the vendor run before them; past
+-- that the oldest goes, so a long session is not an ever-growing list. Not a
+-- setting for the reason FOLD_WINDOW is not one.
+local HELD = 30
+
 -- Need/Need.lua's words for the two reasons this feed draws, one each. A quest
 -- is the client's border and a count; a reagent is the ring. Written as the
 -- word rather than tested some other way, because the word is what the call
@@ -312,6 +318,10 @@ local stream = ns.Stream.New({
 	-- them in the shipped face at a row's text size. The name has the room back.
 	note = 0,
 	onTooltip = Fill,
+	-- HELD drops and no scroll bar, which is `bar` left out. The wheel still
+	-- scrolls, the faded bottom row says there is more, and the rows get the
+	-- bar's column back.
+	held = HELD,
 	-- A cross on the row under the cursor, which destroys what the row counts
 	-- and takes the row out. LootFeed.Counts still counts it, because that
 	-- number is what reached the feed.

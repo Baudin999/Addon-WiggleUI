@@ -178,6 +178,10 @@ local stream = ns.Stream.New({
 	-- narrowest the panel allows gets less of it rather than losing the name.
 	note = 96,
 	onTooltip = Fill,
+	-- A bar down the side, which the loot feed goes without. This feed keeps
+	-- UI/Feed.lua's four hundred entries, a row per swing, and in a history
+	-- that deep where you are in it is worth showing.
+	bar = true,
 })
 
 function CombatFeed.Stream()

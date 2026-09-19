@@ -105,13 +105,15 @@ do
 	check(feed:Count() == counted - 1,
 		("a removal left the count at %d, from %d"):format(feed:Count(), counted))
 
-	feed:ScrollTo(20)
+	-- Ten down rather than twenty: the loot feed keeps thirty, so with ten rows
+	-- drawn a reader cannot get twenty down and a scroll there is clamped.
+	feed:ScrollTo(10)
 	local reading = feed:Row(1).shownEntry
 	feed:Remove(feed:Held(2))
-	check(feed:Offset() == 19 and feed:Row(1).shownEntry == reading,
+	check(feed:Offset() == 9 and feed:Row(1).shownEntry == reading,
 		"taking out a row above the view moved the one being read")
 	feed:Remove(feed:Held(feed:Offset() + 3))
-	check(feed:Offset() == 19 and feed:Row(1).shownEntry == reading,
+	check(feed:Offset() == 9 and feed:Row(1).shownEntry == reading,
 		"taking out a row inside the view moved the row above it")
 	feed:ToTop()
 end

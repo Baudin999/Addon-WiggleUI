@@ -108,6 +108,8 @@ local streams = {}
 -- spec.removable whether the row under the cursor carries a cross that takes
 --                it out of the feed
 -- spec.watch     the delete list, see UI/Feed.lua's opts.watch
+-- spec.held      how many entries the stream keeps, see UI/Feed.lua's opts.held
+-- spec.bar       whether the column has a scroll bar, see UI/Feed.lua's opts.bar
 -- spec.onStatus  function(), answering the three readings along the bottom and
 --                the colour of the last one, or nothing at all for a stream
 --                whose strip is switched off. Absent for a stream with no strip
@@ -124,6 +126,9 @@ function Stream.New(spec)
 		onTooltip = spec.onTooltip,
 		removable = spec.removable,
 		watch = spec.watch,
+		-- Not `held`, which is the purse strip's first label on this same table.
+		cap = spec.held,
+		barred = spec.bar,
 		onStatus = spec.onStatus,
 		onStatusTooltip = spec.onStatusTooltip,
 		keys = { on = spec.prefix },
@@ -417,6 +422,8 @@ function Instance:Build()
 		onTooltip = self.onTooltip,
 		removable = self.removable,
 		watch = self.watch,
+		held = self.cap,
+		bar = self.barred,
 		-- The strip coming up for a delete list changes the frame's height, and
 		-- Apply is the one place that works out what that height is.
 		onLayout = function() self:Apply() end,
