@@ -116,3 +116,7 @@ end
 for sort, place in pairs(places) do
 	ns.Settings.SetPlace(sort, place)
 end
+
+-- Finishing laid the mode's shipped screen on the profile, zooms and all, and
+-- every section below measures pixels at the design size.
+H.DesignSize()

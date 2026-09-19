@@ -106,15 +106,37 @@ if CHARACTER and CHARACTER ~= "" then
 	assert(type(liveChar) == "table", "no WarriorKitCharDB in " .. CHARACTER)
 end
 
--- The settings are in the profile the character wears, not flat on the
--- account, since Core.lua split them. A file from before the split is still
--- flat and is read as it stands. After it, the character file is what names
--- the profile, so a bake without one cannot say which screen to capture.
+-- The settings are in profiles since Core.lua split them. Three of them, named
+-- for the modes, are the screens the setup ships: Informational, Immersive and
+-- Exploration, in any case. With all three on the account, each is baked as a
+-- mode and what the three agree on is the common screen. With none, the
+-- profile the character wears is the one screen, as before profiles. Some and
+-- not others is a bake that would quietly drop a mode, so it stops.
+--
+-- A file from before the split is still flat and is read as it stands.
+local modeProfiles
 if type(live.profiles) == "table" then
-	local wearing = liveChar.profile
-	assert(type(wearing) == "string" and type(live.profiles[wearing]) == "table",
-		"the account file holds profiles and no character file names the one to bake")
-	live = live.profiles[wearing]
+	local found, missing = {}, {}
+	for _, mode in ipairs(ns.Themes.ORDER) do
+		for called, held in pairs(live.profiles) do
+			if type(called) == "string" and called:lower() == mode and type(held) == "table" then
+				found[mode] = held
+			end
+		end
+		if not found[mode] then
+			missing[#missing + 1] = mode
+		end
+	end
+	if #missing == 0 then
+		modeProfiles = found
+	elseif #missing < #ns.Themes.ORDER then
+		error("the account has a profile for some modes and none for: " .. table.concat(missing, ", "))
+	else
+		local wearing = liveChar.profile
+		assert(type(wearing) == "string" and type(live.profiles[wearing]) == "table",
+			"the account file holds profiles and no character file names the one to bake")
+		live = live.profiles[wearing]
+	end
 end
 
 local function Same(held, want)
@@ -171,18 +193,54 @@ local PLANNED = {
 -- capture holds that no feature registers is a setting this addon dropped, and
 -- every saved variables file that has been through an upgrade has some. A setting the
 -- capture agrees with is what a bake is trying to produce.
-local carried, skipped, dropped = {}, 0, 0
-for key, value in pairs(live) do
-	if shipped[key] == nil then
-		dropped = dropped + 1
-	elseif PLANNED[key] or not ns.Restorable(key) or ns.Setup.Asks(key) then
-		skipped = skipped + 1
-	elseif type(value) ~= type(shipped[key]) then
-		error(("%s holds %q as a %s and its feature registers a %s")
-			:format(SOURCE, key, type(value), type(shipped[key])))
-	elseif not Same(value, shipped[key]) then
-		carried[key] = value
+local skipped, dropped = 0, 0
+
+local function Carry(held, from)
+	local out = {}
+	for key, value in pairs(held) do
+		if shipped[key] == nil then
+			dropped = dropped + 1
+		elseif PLANNED[key] or not ns.Restorable(key) or ns.Setup.Asks(key) then
+			skipped = skipped + 1
+		elseif type(value) ~= type(shipped[key]) then
+			error(("%s holds %q as a %s and its feature registers a %s")
+				:format(from, key, type(value), type(shipped[key])))
+		elseif not Same(value, shipped[key]) then
+			out[key] = value
+		end
 	end
+	return out
+end
+
+-- The three modes, split into what they agree on and what each says alone. A
+-- setting all three captured the same way ships once, in the common screen,
+-- so a window that sits in one place in every mode is one line of the file.
+local carried, carriedModes = {}, {}
+if modeProfiles then
+	local each = {}
+	for mode, held in pairs(modeProfiles) do
+		each[mode] = Carry(held, SOURCE .. " profile " .. mode)
+		carriedModes[mode] = {}
+	end
+	local first = ns.Themes.ORDER[1]
+	for key, value in pairs(each[first]) do
+		local agreed = true
+		for _, mode in ipairs(ns.Themes.ORDER) do
+			agreed = agreed and each[mode][key] ~= nil and Same(each[mode][key], value)
+		end
+		if agreed then
+			carried[key] = value
+		end
+	end
+	for mode, held in pairs(each) do
+		for key, value in pairs(held) do
+			if carried[key] == nil then
+				carriedModes[mode][key] = value
+			end
+		end
+	end
+else
+	carried = Carry(live, SOURCE)
 end
 
 --------------------------------------------------------------------------
@@ -378,8 +436,24 @@ end
 
 block("ns.Shipped", keys, carried)
 block("ns.ShippedChar", charKeys, carriedChar)
+
+-- One table per mode, holding only what that mode says and the common screen
+-- does not. A setting no mode moved from the code is in none of them, which
+-- is what makes a mode's absent key the code's own value.
+local modeCount = 0
+file:write("\n-- One screen per mode, over the common one above. The setup lays the chosen\n")
+file:write("-- mode's screen on a profile when it finishes; see ns.ShippedAs in Core.lua.\n")
+file:write("ns.ShippedModes = " .. serialize(carriedModes, "") .. "\n")
+for _, held in pairs(carriedModes) do
+	for _ in pairs(held) do
+		modeCount = modeCount + 1
+	end
+end
 file:close()
 
-io.write(("baked %d account and %d character settings into %s"
+io.write(("baked %d account, %d per mode and %d character settings into %s"
 	.. " (%d records kept, %d retired keys ignored, %d character keys stepped over)\n")
-	:format(#keys, #charKeys, target, skipped, dropped, skippedChar))
+	:format(#keys, modeCount, #charKeys, target, skipped, dropped, skippedChar))
+if not modeProfiles then
+	io.write("no profiles named for the modes, so every mode ships the one screen\n")
+end

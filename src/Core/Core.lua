@@ -2975,27 +2975,65 @@ function ns.DefaultsShape()
 	return restorable, kept
 end
 
--- How many settings are not what the addon ships with. The panel reads it to
--- say so out loud and to grey the button when the answer is none, which is the
--- difference between a button that does nothing and a button that says there
--- is nothing to do.
-function ns.DefaultsMoved()
+-- What one setting ships as in one mode: the mode's own capture where it has
+-- one, and the registry with Core\Shipped.lua over it where not.
+--
+-- A mode is a value of the theme setting, and each carries a whole screen
+-- baked out of a profile of that name on the author's install. Core does not
+-- know the three names; it only looks the mode up in ns.ShippedModes, and a
+-- mode with no capture ships as the common screen.
+local modes = {}
+
+function ns.ShippedAs(mode, key)
+	-- The mode is itself a setting, and a screen shipped for a mode ships in it.
+	if key == "theme" and mode ~= nil then
+		return mode
+	end
+	local held = modes[mode]
+	if held and held[key] ~= nil then
+		return held[key]
+	end
+	return defaults[key]
+end
+
+-- The mode a reset lands on when nobody names one: the one this profile is in.
+local function ModeOf(mode)
+	return mode or ns.db.theme
+end
+
+-- How many settings are not what the addon ships with in this mode. The panel
+-- reads it to say so out loud and to grey the button when the answer is none,
+-- which is the difference between a button that does nothing and a button
+-- that says there is nothing to do.
+--
+-- except leaves out the keys it answers true for. The setup passes the four it
+-- asks, because those it writes itself straight after.
+function ns.DefaultsMoved(mode, except)
+	mode = ModeOf(mode)
 	local moved = 0
 	for key in pairs(defaults) do
-		if Restorable(key) and not Same(ns.db[key], defaults[key]) then
+		if Restorable(key) and not (except and except(key))
+			and not Same(ns.db[key], ns.ShippedAs(mode, key)) then
 			moved = moved + 1
 		end
 	end
 	return moved
 end
 
--- Write them all back. Returns how many actually moved, which is what the
--- caller prints; it does not apply anything, because the caller reloads.
-function ns.RestoreDefaults()
+-- Write them all back, as the named mode ships them, or as the mode this
+-- profile is in. Returns how many actually moved, which is what the caller
+-- prints; it does not apply anything, because the caller reloads.
+--
+-- The setup is the other caller. Finishing it lays the chosen mode's screen
+-- over the profile, which is the one way a player takes a screen the addon
+-- shipped after theirs was made: nothing reaches a profile on its own.
+function ns.RestoreDefaults(mode)
+	mode = ModeOf(mode)
 	local moved = 0
 	for key in pairs(defaults) do
-		if Restorable(key) and not Same(ns.db[key], defaults[key]) then
-			ns.db[key] = ns.DefaultCopy(key)
+		local want = ns.ShippedAs(mode, key)
+		if Restorable(key) and not Same(ns.db[key], want) then
+			ns.db[key] = Copy(want)
 			moved = moved + 1
 		end
 	end
@@ -3069,6 +3107,21 @@ local function Ship()
 				:format(key, type(value), type(charDefaults[key])))
 		charDefaults[key] = value
 	end
+
+	-- One screen per mode, held to the account half's contract: a setting a
+	-- feature registers, of the type it registers, and never a record.
+	for mode, held in pairs(ns.ShippedModes or {}) do
+		for key, value in pairs(held) do
+			assert(defaults[key] ~= nil and not KEPT[key],
+				("the shipped %s screen carries %q, which is not a setting"):format(mode, key))
+			assert(type(value) == type(defaults[key]),
+				("the shipped %s screen has %q as a %s and its feature registers a %s")
+					:format(mode, key, type(value), type(defaults[key])))
+		end
+	end
+	-- Read where it is rather than copied, so a harness section can ship a mode
+	-- of its own for the length of a check.
+	modes = ns.ShippedModes or modes
 end
 
 -- A character that carried the loadout backup from before the split has it in

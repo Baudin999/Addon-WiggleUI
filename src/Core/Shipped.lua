@@ -70,3 +70,7 @@ ns.ShippedChar = {
 	figureFacing = 0.39333312988285,
 	figureSheathed = false,
 }
+
+-- One screen per mode, over the common one above. The setup lays the chosen
+-- mode's screen on a profile when it finishes; see ns.ShippedAs in Core.lua.
+ns.ShippedModes = {}

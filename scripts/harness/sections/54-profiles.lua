@@ -106,3 +106,48 @@ profiles[arrived] = nil
 
 -- Shut, because a window left up covers what the pointer sections below aim at.
 _G.WarriorKitProfileString:Hide()
+
+----------------------------------------------------------------------
+-- A mode's shipped screen
+--
+-- The setup lays the chosen mode's screen over the profile, and the reset
+-- lands on the screen of the mode the profile is in and keeps the mode.
+-- Nothing else writes a shipped screen into a profile, which is the rule:
+-- a player's settings are their own until they run the setup again.
+----------------------------------------------------------------------
+
+local Setup = ns.Setup
+-- The whole profile, because the setup writes one answer to every type of
+-- tooltip and the sections below were left a mixture.
+local saved, wasDone = ns.ProfileCopy(mine), _G.WarriorKitDB.setupDone
+local width = ns.ShippedAs("exploration", "chatWidth")
+ns.ShippedModes.exploration = { chatWidth = width + 70 }
+
+ns.db.chatWidth = width - 70
+local answers = Setup.Current()
+answers.theme = "exploration"
+check(Setup.NeedsReload(answers), "a setup that moves the screen did not ask for a reload")
+Setup.Apply(answers)
+check(ns.db.chatWidth == width + 70, "finishing the setup did not put the mode's screen on the profile")
+check(ns.db.theme == "exploration", "finishing the setup did not keep the mode it was given")
+check(ns.DefaultsMoved(nil, Setup.Asks) == 0, "finishing the setup left a setting off the mode's screen")
+
+ns.db.chatWidth = 1
+ns.RestoreDefaults()
+check(ns.db.chatWidth == width + 70,
+	"the reset did not land on the screen of the mode the profile is in")
+check(ns.db.theme == "exploration", "the reset took the profile out of its mode")
+
+ns.ShippedModes.exploration = nil
+ns.RestoreDefaults()
+check(ns.db.chatWidth == width, "a mode no longer shipped still reached the profile")
+
+for key, value in pairs(saved) do
+	ns.db[key] = value
+end
+-- The box keeps its own copy of where each type opens, so those go back
+-- through the setter rather than the saved variable.
+for _, each in ipairs(ns.UI.Tooltip.TYPES) do
+	ns.Settings.SetPlace(each.key, saved[ns.Settings.PlaceKey(each.key)])
+end
+_G.WarriorKitDB.setupDone = wasDone

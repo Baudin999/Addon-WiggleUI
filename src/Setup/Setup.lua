@@ -27,6 +27,9 @@ local Previews = ns.SetupPreviews
 -- Three of the four are drawn at a /reload, for the reason Theme/Theme.lua
 -- gives, so finishing reloads when one of those three moved. The tooltips
 -- apply on the spot.
+--
+-- Finishing also lays the chosen mode's shipped screen over the profile this
+-- character wears, windows and sizes included. Setup.Apply says why.
 --------------------------------------------------------------------------
 
 local Setup = {}
@@ -71,7 +74,7 @@ Setup.STEPS = {
 		key = "theme",
 		rail = "mode",
 		question = "How much of the addon do you want on the screen?",
-		lede = "The mode you play in. Every element can still be moved and switched on its own later.",
+		lede = "The mode you play in. Finishing puts this mode's whole screen on your profile, windows and all; every element can still be moved later.",
 		columns = 3,
 		draw = Previews.Mode,
 		cards = {
@@ -165,18 +168,27 @@ function Setup.Current()
 end
 
 -- Whether writing these answers needs a reload to be seen. The tooltips never
--- do; the other three are drawn once, at load.
+-- do; the other three are drawn once, at load, and so is every setting the
+-- mode's screen moves.
 function Setup.NeedsReload(answers)
 	local theme, palette = ns.Theme.Drawn()
 	local modern = answers.plates == "modern"
 	return answers.theme ~= theme or answers.palette ~= palette
 		or modern ~= ns.Theme.Modern() or (not modern) ~= ns.Theme.Portraits()
+		or ns.DefaultsMoved(answers.theme, Setup.Asks) > 0
 end
 
--- Write the four answers. Modern takes the portraits off and flat puts them
--- back, which is the one place two settings are one answer: a portrait on a
--- modern frame is the square the look exists to give to the bars.
+-- Put the chosen mode's shipped screen on this profile, then write the four
+-- answers over it. The screen is the whole of the profile, so a player who
+-- moved a window and runs the setup again gets the shipped spot back: that is
+-- how a screen shipped in an update reaches a profile made before it, and the
+-- only way, because nothing else writes into a player's profile.
+--
+-- Modern takes the portraits off and flat puts them back, which is the one
+-- place two settings are one answer: a portrait on a modern frame is the
+-- square the look exists to give to the bars.
 function Setup.Apply(answers)
+	ns.RestoreDefaults(answers.theme)
 	ns.db.theme = answers.theme
 	ns.db.palette = answers.palette
 	ns.db.gaugeLook = answers.plates

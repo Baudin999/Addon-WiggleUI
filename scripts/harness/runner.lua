@@ -131,13 +131,20 @@ end
 -- Every screen, off the registry rather than by name. There was one number for
 -- all of them and one call here; each screen carries its own now, and a walk is
 -- what keeps this line covering a part that registers a screen tomorrow.
-for _, zoom in ipairs(ns.Zooms()) do
-	ns.db[zoom.key] = 1
-	if zoom.apply then
-		zoom.apply()
+--
+-- A function on H rather than a loop run once, because finishing the setup lays
+-- a mode's shipped screen over the profile, zooms included, and the setup
+-- section has to put the design size back after it.
+function H.DesignSize()
+	for _, zoom in ipairs(ns.Zooms()) do
+		ns.db[zoom.key] = 1
+		if zoom.apply then
+			zoom.apply()
+		end
 	end
+	ns.UI.Notify()
 end
-ns.UI.Notify()
+H.DesignSize()
 
 fire("PLAYER_LOGIN")
 fire("PLAYER_ENTERING_WORLD")
