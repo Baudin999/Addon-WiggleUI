@@ -1,49 +1,63 @@
 -- The client's own menu, and what the addon does to it
 --
--- Two files. Core/Menu.lua hangs one button off the bottom of Blizzard's game
--- menu and grows the frame by what that costs. Core/MenuSkin.lua paints the
--- whole frame, every button in it and the heading over them in the addon's
--- look. Everything hard about the first is arithmetic on a frame the addon does
--- not own, and none of it is visible from the source, because the source names
--- no Blizzard button. Everything hard about the second is that it walks a frame
--- it did not build, twice, in both directions.
+-- Two files. Core/Menu.lua puts one button in Blizzard's game menu, in the
+-- column under Options, by giving it a layoutIndex and letting the client's own
+-- layout pass place it. Core/MenuSkin.lua paints the whole frame, every button
+-- in it and the heading over them in the addon's palette, and sets the air the
+-- layout pass reads so the column sits one pad from every edge.
 --
--- The first version of this file gated a walk that found the foot of the menu's
--- anchor chain and re-anchored it. That walk is gone, and the reason it is gone
--- is the reason these assertions are shaped the way they are: in game it drew a
--- button you saw on every other press of Escape. Blizzard's own column is
--- relaid whenever the client feels like it, and a placement that depends on
--- where that column ended up is a placement that changes under you.
+-- The stub in client/08-blizzard.lua is the real template: a pool handed out
+-- afresh on every show, the addon's hook after that, and the layout on the next
+-- frame, which a section calls itself as menu:Layout().
 --
--- So five things, and each is a way this has already gone wrong.
---
--- The button lands against the frame's own bottom edge, with air under it.
---
--- The menu grows by exactly the button and the air around it.
---
--- Attaching again does nothing. The real hook is the menu's OnShow, so this
--- runs on every press of Escape, and a version that grew the frame each time
--- reaches the top of the screen inside a session.
---
--- Blizzard's buttons are not touched. Not one of them moves, however the menu
--- is laid out, because ours no longer has an opinion about where they go.
---
--- It works on a menu with nothing in it. That is the case that decides whether
--- placement depends on the walk at all, and the old version could not do it.
+-- The first two versions of this file gated placements that are gone. One
+-- walked an anchor chain and re-anchored its foot, and in game drew a button
+-- you saw on every other press of Escape. The other hung the button off the
+-- frame's bottom edge, under Return to Game. So what is asserted here is where
+-- the button lands in the column and that nothing of Blizzard's is anchored by
+-- the addon to get it there.
 
 local H = ...
 local ns, check = H.ns, H.check
 
-local menu, buttons = H.menu, H.menuButtons
+local menu = H.menu
 local Menu = ns.GameMenu
 local button = _G.WarriorKitGameMenuButton
+local M = ns.UI.Metric
 
-local MARGIN = 8
-local STEP = H.MENU_BUTTON_H + H.MENU_GAP
-local BARE = H.MENU_HEAD + #buttons * STEP
+local PAD, GAP = M.pad, M.rowGap
+local TOP = M.title + 2 * ns.Pixel(menu) + PAD
 
 check(button ~= nil, "no button was put in the game menu")
 check(Menu ~= nil, "Core/Menu.lua left nothing on ns")
+
+-- One press of Escape: the client's show, which runs InitButtons and then our
+-- hook, and the frame after it, which is the layout pass.
+local function press()
+	menu:Hide()
+	menu:Show()
+	return menu:Layout()
+end
+
+-- Blizzard's buttons by their label, ours by identity: the kit button keeps
+-- its font string in a field of its own and answers no text.
+local function labelled(column, text)
+	for index, entry in ipairs(column) do
+		if entry ~= button and entry:GetText() == text then
+			return index, entry
+		end
+	end
+	return nil
+end
+
+local function ours(column)
+	for index, entry in ipairs(column) do
+		if entry == button then
+			return index
+		end
+	end
+	return nil
+end
 
 local function anchored(frame)
 	local point, relative, relativePoint, x, y = frame:GetPoint(1)
@@ -51,89 +65,164 @@ local function anchored(frame)
 		tostring(relativePoint), tostring(x), tostring(y))
 end
 
-local function grown()
-	return BARE + button:GetHeight() + MARGIN * 2
+local function offset(frame)
+	local _, _, _, x, y = frame:GetPoint(1)
+	return x, -y
 end
+
+local column = press()
+
+--------------------------------------------------------------------------
+-- The place
+--------------------------------------------------------------------------
 
 if button then
 	check(button.parent == menu, "the button is not a child of the game menu")
 
-	local point, relative, relativePoint, _, y = button:GetPoint(1)
-	check(point == "BOTTOM" and relative == menu and relativePoint == "BOTTOM",
-		("the button is anchored %s to %s, not to the menu's own bottom edge")
-			:format(tostring(point), tostring(relative and relative.name)))
-	check(y == MARGIN,
-		("the button sits %g off the bottom and the margin is %g"):format(y, MARGIN))
+	local options = labelled(column, "Options")
+	local at = ours(column)
+	check(at ~= nil, "the button is not in the menu's column")
+	check(options and at == options + 1,
+		("the button is %s in the column and Options is %s"):format(tostring(at), tostring(options)))
+	check(column[#column]:GetText() == "Return to Game",
+		("the foot of the column is %q, not Return to Game"):format(tostring(column[#column]:GetText())))
 
-	check(button:GetWidth() == buttons[1]:GetWidth()
-		and button:GetHeight() == buttons[1]:GetHeight(),
+	local twin = column[options or 1]
+	check(button:GetWidth() == twin:GetWidth() and button:GetHeight() == twin:GetHeight(),
 		("the button is %g x %g and the menu's own are %g x %g")
-			:format(button:GetWidth(), button:GetHeight(),
-				buttons[1]:GetWidth(), buttons[1]:GetHeight()))
+			:format(button:GetWidth(), button:GetHeight(), twin:GetWidth(), twin:GetHeight()))
 
-	check(menu:GetHeight() == grown(),
-		("the menu is %g tall and %g plus the button and its air is %g")
-			:format(menu:GetHeight(), BARE, grown()))
-
-	check(Menu.Describe():find("bottom of the game menu") ~= nil,
+	check(Menu.Describe():find("under Options") ~= nil,
 		"the status line does not say where the button went: " .. Menu.Describe())
 end
 
--- Blizzard's own, before anything else happens to them.
-local placed = {}
-for _, entry in ipairs(buttons) do
-	placed[entry] = anchored(entry)
-end
+--------------------------------------------------------------------------
+-- The air
+--
+-- One pad from every edge, under the title band on top, and the same pad
+-- between sections. Two buttons in one section are one gap apart.
+--------------------------------------------------------------------------
 
-local function unmoved(where)
-	local moved = 0
-	for _, entry in ipairs(buttons) do
-		if anchored(entry) ~= placed[entry] then
-			moved = moved + 1
+do
+	local x, y = offset(column[1])
+	check(x == PAD, ("the column starts %g in from the left and the pad is %g"):format(x, PAD))
+	check(math.abs(y - TOP) < 0.001,
+		("the column starts %g down and the title band plus the pad is %g"):format(y, TOP))
+
+	local last = column[#column]
+	local _, lastY = offset(last)
+	local under = menu:GetHeight() - lastY - last:GetHeight()
+	check(math.abs(under - PAD) < 0.001, ("%g under the last button and the pad is %g"):format(under, PAD))
+	local right = menu:GetWidth() - x - last:GetWidth()
+	check(right == PAD, ("%g to the right of the column and the pad is %g"):format(right, PAD))
+
+	local gaps, sections = 0, 0
+	for index = 2, #column do
+		local _, above = offset(column[index - 1])
+		local _, here = offset(column[index])
+		local gap = here - above - column[index - 1]:GetHeight()
+		if column[index].topPadding then
+			sections = sections + 1
+			check(math.abs(gap - PAD) < 0.001,
+				("%s starts a section %g under the button above and the pad is %g")
+					:format(column[index]:GetText(), gap, PAD))
+		else
+			gaps = gaps + 1
+			check(math.abs(gap - GAP) < 0.001,
+				("button %d is %g under the button above and the gap is %g")
+					:format(index, gap, GAP))
 		end
 	end
-	check(moved == 0, ("%d of Blizzard's own buttons moved %s"):format(moved, where))
+	check(sections == 3 and gaps > 0,
+		("%d section breaks and %d gaps in the column"):format(sections, gaps))
 end
 
-unmoved("when the button was placed")
+--------------------------------------------------------------------------
+-- The column changing under it
+--
+-- InitButtons hands the column out on every show and the index of Options
+-- moves with the event button above it. A press with the event on and the shop
+-- off has to put ours under Options again, with a released button of Blizzard's
+-- still hidden in the pool.
+--------------------------------------------------------------------------
+
+if button then
+	menu.withEvent, menu.withShop = true, false
+	local moved = press()
+	local options = labelled(moved, "Options")
+	check(options and ours(moved) == options + 1,
+		"the button did not follow Options when the event button pushed it down")
+	check(moved[1]:GetText() == "Event", "the event button is not at the top of the column")
+
+	-- The same press twice more changes nothing. No layoutIndex drifts and no
+	-- size grows, which is the leak the old placement had to be gated against.
+	local index, height = button.layoutIndex, menu:GetHeight()
+	press()
+	press()
+	check(button.layoutIndex == index,
+		("pressing again moved the button's index from %g to %g"):format(index, button.layoutIndex))
+	check(menu:GetHeight() == height,
+		("pressing again took the menu from %g to %g tall"):format(height, menu:GetHeight()))
+
+	-- Attach on its own anchors nothing, ours or Blizzard's.
+	local placed = {}
+	for _, entry in ipairs(moved) do
+		placed[entry] = anchored(entry)
+	end
+	Menu.Attach()
+	Menu.Attach()
+	local shifted = 0
+	for _, entry in ipairs(moved) do
+		if anchored(entry) ~= placed[entry] then
+			shifted = shifted + 1
+		end
+	end
+	check(shifted == 0, ("%d buttons moved on an attach with no layout pass"):format(shifted))
+
+	menu.withEvent, menu.withShop = false, true
+	column = press()
+end
+
+-- A client whose string for Options matches no button follows the first
+-- button, which with the event on is the event and not Options. And a menu
+-- with no pool at all is refused out loud rather than half joined.
+if button then
+	local options = _G.GAMEMENU_OPTIONS
+	_G.GAMEMENU_OPTIONS = "Einstellungen"
+	menu.withEvent = true
+	local other = press()
+	check(ours(other) == 2 and other[1]:GetText() == "Event",
+		"the button did not follow the first button in a menu without Options")
+	_G.GAMEMENU_OPTIONS = options
+	menu.withEvent = false
+
+	local pool = menu.buttonPool
+	menu.buttonPool = nil
+	check(not Menu.Attach(), "the button claimed a place in a menu with no column")
+	check(not button:IsShown(), "the button stayed up in a menu with no column")
+	check(Menu.Describe():find("no column") ~= nil,
+		"the status line does not say why the button is missing: " .. Menu.Describe())
+	menu.buttonPool = pool
+	check(Menu.Attach(), "the button did not come back when the column did")
+	column = press()
+end
 
 --------------------------------------------------------------------------
 -- The paint
 --
 -- Core/MenuSkin.lua walks a frame the addon did not build and draws over it,
--- and then walks it again on every press of Escape. Three ways that goes
--- wrong and one thing it must never do.
---
--- It can miss art. Blizzard's menu keeps its textures in three places, on the
--- frame, in a border box inside the frame and on each button, and a walk that
--- only knows the first leaves two thirds of a parchment showing under a panel
--- that was supposed to replace it.
---
--- It can eat its own. Our fill on one of Blizzard's buttons is a texture of
--- that button, so the second pass finds it among theirs, and a version that
--- did not mark its own work stripped the paint it had just put on.
---
--- It can grow. Every pass is a pass over the same frame, and a pass that made
--- a texture rather than showing the one it made last time is a leak measured
--- in presses of Escape.
---
--- And it must go back. The switch is a switch, not a reload: off means every
--- one of Blizzard's regions showing again and every string back in the font it
--- was wearing when this addon found it.
+-- and then walks it again on every press of Escape. It can miss art, eat its
+-- own, grow, and fail to go back.
 --------------------------------------------------------------------------
 
 local Skin = ns.MenuSkin
 local UI = ns.UI
-local KIT = UI.Font(UI.Metric.font, UI.FLAT)
+local KIT = UI.Font(M.font, UI.FLAT)
 
 check(Skin ~= nil, "Core/MenuSkin.lua left nothing on ns")
 
-local border = _G.GameMenuFrameBorder
+local border, header = menu.Border, menu.Header
 
--- What this addon drew on the menu, and what the client had there already.
--- Everything of ours is marked, which is the whole mechanism that stops the
--- second pass stripping the first pass's work, so the two lists are the one
--- flag read both ways.
 local function mine(frame, kind)
 	local out = {}
 	for _, region in ipairs(frame.regions) do
@@ -168,17 +257,28 @@ local function shown(frame, where)
 	end
 end
 
--- The client's own art, in all three of the places it keeps it.
-hidden(menu, "the menu")
+-- Blizzard's own buttons in the column, which is every one but ours.
+local function blizzard()
+	local out = {}
+	for _, entry in ipairs(column) do
+		if entry ~= button then
+			out[#out + 1] = entry
+		end
+	end
+	return out
+end
+
+local buttons = blizzard()
+
 hidden(border, "the menu's border")
+hidden(header, "the menu's header")
 for _, entry in ipairs(buttons) do
 	hidden(entry, entry.name)
 end
 
--- The heading. Blizzard's is hidden and ours says what it said, because a menu
--- that lost its title to a skin is a menu you have to recognise by its shape.
-local heading = theirs(menu, "FontString")
-check(#heading == 1, ("the menu carries %d headings of Blizzard's"):format(#heading))
+-- The heading. Blizzard's is hidden and ours says what it said.
+local heading = theirs(header, "FontString")
+check(#heading == 1, ("the header carries %d headings of Blizzard's"):format(#heading))
 for _, text in ipairs(heading) do
 	check(not text:IsShown(), "the client's own heading is still drawn under ours")
 end
@@ -187,13 +287,11 @@ local title = mine(menu, "FontString")
 check(#title == 1, ("the addon drew %d headings on the menu"):format(#title))
 if #title == 1 then
 	check(title[1]:GetText() == "Game Menu",
-		("the title bar says %q and the client's menu said \"Game Menu\""):format(
+		("the title says %q and the client's menu said \"Game Menu\""):format(
 			tostring(title[1]:GetText())))
-	check(title[1]:IsShown(), "the title bar was not drawn and there is room for it")
+	check(title[1]:IsShown(), "the title was not drawn")
 end
 
--- Every one of Blizzard's buttons wears the kit: a fill, four edges and a
--- label in the addon's own face. Nothing about the button itself changed.
 local painted, labels = 0, 0
 for _, entry in ipairs(buttons) do
 	check(entry.wkOn == true, entry.name .. " was not painted")
@@ -211,13 +309,11 @@ for _, entry in ipairs(buttons) do
 end
 check(labels == #buttons, ("%d labels dressed across %d buttons"):format(labels, #buttons))
 
--- Our own button is not one of theirs. It arrived wearing the kit already, and
--- a pass that treated it as Blizzard's would strip the paint UI.Button put on.
 check(button == nil or button.wkPaint == nil,
 	"the skin painted the addon's own button a second time")
 
--- The same pass again, twice, which is two more presses of Escape. Nothing new
--- is drawn and nothing of ours is taken off.
+-- The same pass again, twice. Nothing new is drawn and nothing of ours is
+-- taken off.
 do
 	local before, first = #menu.regions, #buttons[1].regions
 	Skin.Apply()
@@ -228,38 +324,21 @@ do
 	check(#buttons[1].regions == first,
 		("%s went from %d regions to %d over two more passes")
 			:format(buttons[1].name, first, #buttons[1].regions))
-	hidden(menu, "the menu after two more passes")
 	for _, entry in ipairs(buttons) do
 		hidden(entry, entry.name .. " after two more passes")
 		check(entry.wkPaint:IsShown(), entry.name .. " lost its fill to the second pass")
 	end
 end
 
--- No room for a title bar. Every flavour of this menu has left some above the
--- first button, and that is a habit rather than a promise: a bar drawn on top
--- of Options is worse than no bar.
-if #title == 1 then
-	local point, relative, relativePoint, x = buttons[1]:GetPoint(1)
-	buttons[1]:ClearAllPoints()
-	buttons[1]:SetPoint("TOP", menu, "TOP", 0, -1)
-	Skin.Apply()
-	check(not title[1]:IsShown(),
-		"the title bar was drawn over a button one pixel under the top of the frame")
-
-	buttons[1]:ClearAllPoints()
-	buttons[1]:SetPoint(point, relative, relativePoint, x, -H.MENU_HEAD)
-	Skin.Apply()
-	check(title[1]:IsShown(), "the title bar did not come back when the room did")
-end
-
--- Off, which is the switch on the panel. Everything of Blizzard's comes back
--- and every string goes back into the font it was wearing.
+-- Off, which is the switch on the panel. Everything of Blizzard's comes back,
+-- every string goes back into its own font, and the next press lays the
+-- column out with Blizzard's own air.
 do
 	ns.db.menuSkin = false
 	Skin.Apply()
 
-	shown(menu, "the menu")
 	shown(border, "the menu's border")
+	shown(header, "the menu's header")
 	for _, entry in ipairs(buttons) do
 		shown(entry, entry.name)
 		check(not entry.wkPaint:IsShown(), entry.name .. " kept the addon's fill")
@@ -271,133 +350,45 @@ do
 	for _, text in ipairs(heading) do
 		check(text:IsShown(), "the client's own heading did not come back")
 	end
-	if #title == 1 then
-		check(not title[1]:IsShown(), "the addon's title bar stayed up with the paint off")
+	for _, region in ipairs(mine(menu, "Texture")) do
+		check(not region:IsShown(), "a region of the addon's stayed up on the menu with the paint off")
 	end
+	if #title == 1 then
+		check(not title[1]:IsShown(), "the addon's title stayed up with the paint off")
+	end
+	for key, value in pairs(H.MENU_PADDING) do
+		check(menu[key] == value, ("the menu's %s is %s and Blizzard's is %s")
+			:format(key, tostring(menu[key]), tostring(value)))
+	end
+	local bare = press()
+	local _, y = offset(bare[1])
+	check(y == H.MENU_PADDING.topPadding,
+		("with the paint off the column starts %g down, not Blizzard's %g")
+			:format(y, H.MENU_PADDING.topPadding))
+	check(bare[#bare].topPadding == H.MENU_SECTION,
+		"with the paint off Return to Game lost Blizzard's section gap")
 	check(Skin.Describe():find("client's own") ~= nil,
 		"the reading does not say the menu is the client's own: " .. Skin.Describe())
 
 	ns.db.menuSkin = true
-	Skin.Apply()
-	hidden(menu, "the menu on the way back")
+	column = press()
+	buttons = blizzard()
+	hidden(border, "the menu's border on the way back")
 	for _, entry in ipairs(buttons) do
 		hidden(entry, entry.name .. " on the way back")
 		check(entry.wkPaint:IsShown(), entry.name .. " did not get its fill back")
 	end
+	local _, back = offset(column[1])
+	check(math.abs(back - TOP) < 0.001, "the pad did not come back with the paint")
 end
 
 check(painted == #buttons,
 	("%d of the menu's %d buttons were painted"):format(painted, #buttons))
 
--- Twice more, which is two more presses of Escape. This is the assertion the
--- flip flop would have failed: it took two opens to see the button and two more
--- to lose it again, because the placement depended on where Blizzard's column
--- had ended up and our own button had joined the column it was reading.
-if button then
-	local before, ours = menu:GetHeight(), anchored(button)
-	Menu.Attach()
-	Menu.Attach()
-	check(menu:GetHeight() == before,
-		("attaching again took the menu from %g to %g"):format(before, menu:GetHeight()))
-	check(anchored(button) == ours,
-		("attaching again moved the button: %s -> %s"):format(ours, anchored(button)))
-	unmoved("on the second and third attach")
-end
-
--- The client putting its own height back, which is what a menu that lays itself
--- out on show does before our hook ever runs. The button has to come back to
--- the same place and the frame to the same height, from a height the addon did
--- not write.
-if button then
-	menu:SetHeight(BARE)
-	check(Menu.Attach(), "the button would not go back after the client resized the menu")
-	check(menu:GetHeight() == grown(),
-		("the menu came back at %g rather than %g"):format(menu:GetHeight(), grown()))
-	unmoved("after the client resized the menu")
-end
-
--- A menu laid out against its own frame rather than as a chain, which is the
--- shape the rewritten client uses. Nothing about the placement may depend on it.
-if button then
-	for index, entry in ipairs(buttons) do
-		entry:ClearAllPoints()
-		entry:SetPoint("TOP", menu, "TOP", 0, -(H.MENU_GAP + (index - 1) * STEP))
-		placed[entry] = anchored(entry)
-	end
-	button:ClearAllPoints()
-	menu:SetHeight(BARE)
-
-	check(Menu.Attach(), "the button would not go into a menu laid out against its frame")
-	check(anchored(button) == ("BOTTOM|%s|BOTTOM|0|%g"):format(menu.name, MARGIN),
-		"the button did not land on the menu's bottom edge: " .. anchored(button))
-	check(menu:GetHeight() == grown(),
-		("the menu is %g tall rather than %g"):format(menu:GetHeight(), grown()))
-	unmoved("in a menu laid out against its frame")
-end
-
--- A menu that keeps its column in a container of its own, which is what the
--- live client turned out to hold: the frame was there, our button was built and
--- a walk over the menu's own children found no button in it at all. Placement
--- must not care, and the size must still be copied off one of theirs.
-if button then
-	local box = H.child("frame", menu, "GameMenuFrameHolder")
-	box:SetSize(menu:GetWidth(), menu:GetHeight())
-	box:SetPoint("TOPLEFT", menu, "TOPLEFT", 0, 0)
-
-	local top = {}
-	for _, entry in ipairs(menu.children) do
-		if entry == button or entry == box then
-			top[#top + 1] = entry
-		else
-			entry.parent = box
-			box.children[#box.children + 1] = entry
-		end
-	end
-	menu.children = top
-
-	button:ClearAllPoints()
-	button:SetSize(0, 0)
-	menu:SetHeight(BARE)
-
-	check(Menu.Attach(), "the button would not go into a menu holding a container")
-	check(button:GetWidth() == buttons[1]:GetWidth(),
-		"the button did not take its size from a button inside the container")
-	check(anchored(button) == ("BOTTOM|%s|BOTTOM|0|%g"):format(menu.name, MARGIN),
-		"the button did not land on the menu's bottom edge: " .. anchored(button))
-	unmoved("in a menu holding a container")
-end
-
--- And a menu with nothing in it at all. There is no size to copy, so the kit's
--- own stands, and the button still goes where it goes. This is the
--- assertion that says placement does not depend on the walk: the old version
--- refused here, and refusing here is what it was doing in game.
-if button then
-	local held = menu.children
-	menu.children = { button }
-	button:ClearAllPoints()
-	menu:SetHeight(BARE)
-
-	check(Menu.Attach(), "the button would not go into an empty menu")
-	check(anchored(button) == ("BOTTOM|%s|BOTTOM|0|%g"):format(menu.name, MARGIN),
-		"the button did not land on the menu's bottom edge: " .. anchored(button))
-	check(menu:GetHeight() == grown(),
-		("the menu is %g tall rather than %g"):format(menu:GetHeight(), grown()))
-	check(Menu.Describe():find("the kit's own size") ~= nil,
-		"the status line does not say the size is the kit's own: " .. Menu.Describe())
-
-	menu.children = held
-end
-
--- The probe runs. It is the only thing in the addon that reports on somebody
--- else's frame, so it is what somebody types when the button has not turned up,
--- and a probe that raises at that moment is worse than no probe.
+-- The probe runs. It is what somebody types when the button has not turned
+-- up, and a probe that raises at that moment is worse than no probe.
 check(pcall(SlashCmdList.WARRIORKIT, "menu"), "/wk menu raised")
 
--- And the same word with an argument, which is the switch. One word does both
--- because a probe you type when nothing turned up and a look you type when you
--- want the client's own back are the same question asked of the same frame; the
--- argument is what tells them apart, and a `menu` that quietly turned the paint
--- on would be the worst of both.
 check(pcall(SlashCmdList.WARRIORKIT, "menu off"), "/wk menu off raised")
 check(ns.db.menuSkin == false, "/wk menu off left the paint on")
 check(pcall(SlashCmdList.WARRIORKIT, "menu on"), "/wk menu on raised")
@@ -406,7 +397,7 @@ for _, entry in ipairs(buttons) do
 	check(entry.wkPaint:IsShown(), entry.name .. " did not come back after /wk menu on")
 end
 
-print(("game menu one button at the bottom, column %g to %g tall, %s")
-	:format(BARE, menu:GetHeight(), Menu.Describe()))
+print(("game menu %d in the column, ours under Options, %g x %g, %s")
+	:format(#column, menu:GetWidth(), menu:GetHeight(), Menu.Describe()))
 print(("game menu %d buttons in the kit's paint, %d labels dressed, %s")
 	:format(painted, labels, Skin.Describe()))

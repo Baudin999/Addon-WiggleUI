@@ -67,6 +67,17 @@ function Backdrop:SetAlpha(alpha)
 	end
 end
 
+-- Every tile made so far, handed to fn one at a time. The game menu's skin
+-- marks each as its own, because it walks the frame the tiles are drawn on and
+-- would strip them as Blizzard's, and hides them all when its switch goes off.
+function Backdrop:Each(fn)
+	for _, pool in pairs(self.pool) do
+		for _, texture in ipairs(pool) do
+			fn(texture)
+		end
+	end
+end
+
 -- Puts a texture at x, y from the frame's top left, y counted down, cut to the
 -- fraction of the tile that fits.
 local function Put(texture, frame, x, y, width, height, across, down)

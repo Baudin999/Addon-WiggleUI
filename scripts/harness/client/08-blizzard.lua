@@ -321,79 +321,190 @@ do
 	pinFrame:SetPoint("CENTER", map, "CENTER", 40, -40)
 end
 
--- The client's own menu, shaped the way both clients shape it: a heading, a
--- column of buttons each hung off the bottom of the one above it, and a frame
--- tall enough to hold exactly that.
+-- The client's own menu, shaped the way both clients shape it: GameMenuFrame
+-- built on MainMenuFrameTemplate, which is a VerticalLayoutFrame. Read off
+-- Gethe/wow-ui-source, classic_anniversary and classic_era alike:
+-- Blizzard_GameMenu/Shared/GameMenuFrame.lua for InitButtons,
+-- Blizzard_SharedXML/Shared/Frame/MainMenuFrameTemplates.lua for the pool and
+-- AddButton, Blizzard_SharedXML/Classic/Frame/MainMenuFrameTemplates.xml for
+-- the paddings and the two boxes, Blizzard_SharedXML/LayoutFrame.lua for the
+-- pass.
 --
--- Stood up here rather than in 02-text.lua because it is Blizzard's frame and
--- because Core/Menu.lua reads it at PLAYER_LOGIN, which is the window this file
--- exists to fill.
+-- The stub this replaced was a chain of named buttons each hung off the one
+-- above, which is a menu neither live client has. Core/Menu.lua was written to
+-- it twice and hung its button off the frame's foot both times.
 --
--- One of the buttons is hidden, which is the case the chain walk in that file
--- has to survive: the button below a hidden one still hangs off it, so a walk
--- that only looks at shown buttons loses track of the button above and finds
--- two feet where there is one. Blizzard hides buttons in this menu for real.
+-- What matters here is the order things happen in, because that is what the
+-- addon's placement rides on. Show runs InitButtons, which hands the column
+-- out of a pool afresh and numbers it 1, 2, 3; the addon's OnShow hook runs
+-- after that; the layout pass runs on the next frame and reads whatever the
+-- hook left. The runner has no frames, so a section calls menu:Layout() where
+-- the client would have ticked once.
 --
--- The art is here for Core/MenuSkin.lua, which takes it off. Three shapes of
--- it, because the file has to cope with all three and a fixture holding only
--- the easy one certifies a walk that would miss two thirds of a real menu: a
--- texture belonging to the frame, a box of textures inside the frame, which is
--- the nine slice border every newer flavour of this menu carries, and the two
--- textures and the label on each button. The heading is a font string of the
--- frame's own, because the addon's title bar redraws whatever it says.
-local MENU_BUTTON_W, MENU_BUTTON_H, MENU_GAP = 144, 21, 1
+-- The art is here for Core/MenuSkin.lua, which takes it off. Two boxes, the
+-- border and the header, both out of the layout, and two textures and a label
+-- on every button. The heading is the header's own font string, because the
+-- addon's title redraws whatever it says.
+local MENU_BUTTON_W, MENU_BUTTON_H = 144, 21
 
--- The air above the first button, which is where Blizzard's own heading sits
--- and where the addon draws its title bar. Real, because the one thing that
--- bar must not do is land on a button, and a fixture with no room in it could
--- never tell a bar that was placed from a bar that was refused.
-local MENU_HEAD = 30
+-- The template's own numbers, from its KeyValues, and AddSection's default.
+local MENU_PADDING = { topPadding = 32, bottomPadding = 28, leftPadding = 28, rightPadding = 28, spacing = 0 }
+local MENU_SECTION = 20
+
+_G.GAMEMENU_OPTIONS = "Options"
 
 do
 	local menu = child("frame", _G.UIParent, "GameMenuFrame")
-	local buttons = {}
-	local names = { "GameMenuButtonOptions", "GameMenuButtonKeybindings",
-		"GameMenuButtonMacros", "GameMenuButtonAddons", "GameMenuButtonLogout",
-		"GameMenuButtonContinue" }
-
 	menu:SetPoint("CENTER", _G.UIParent, "CENTER", 0, 0)
-
-	local parchment = child("texture", menu, "GameMenuFrameBackground")
-	parchment:SetAllPoints()
-	local title = child("fontstring", menu, "GameMenuFrameHeaderText")
-	title:SetText("Game Menu")
+	menu:SetSize(260, 1)
+	menu.shown = false
+	for key, value in pairs(MENU_PADDING) do
+		menu[key] = value
+	end
 
 	local border = child("frame", menu, "GameMenuFrameBorder")
-	border:SetAllPoints()
+	border.ignoreInLayout = true
 	for _, corner in ipairs({ "TopLeft", "TopRight", "BottomLeft", "BottomRight" }) do
 		child("texture", border, "GameMenuFrameBorder" .. corner)
 	end
+	menu.Border = border
 
-	local above
-	for index, name in ipairs(names) do
-		local entry = child("button", menu, name)
-		entry:SetSize(MENU_BUTTON_W, MENU_BUTTON_H)
-		entry:SetPoint("TOP", above or menu, above and "BOTTOM" or "TOP", 0,
-			above and -MENU_GAP or -MENU_HEAD)
-		above = entry
-		entry:SetNormalTexture("Interface\\Buttons\\UI-Panel-Button-Up")
-		entry:SetHighlightTexture("Interface\\Buttons\\UI-Panel-Button-Highlight")
-		local label = child("fontstring", entry, name .. "Text")
-		label:SetFontObject(_G.GameFontNormal)
-		label:SetTextColor(1, 0.82, 0)
-		label:SetText(name:gsub("^GameMenuButton", ""))
-		if name == "GameMenuButtonMacros" then
-			entry:Hide()
+	local header = child("frame", menu, "GameMenuFrameHeader")
+	header.ignoreInLayout = true
+	for _, piece in ipairs({ "Left", "Center", "Right" }) do
+		child("texture", header, "GameMenuFrameHeader" .. piece)
+	end
+	child("fontstring", header, "GameMenuFrameHeaderText"):SetText("Game Menu")
+	menu.Header = header
+
+	-- CreateFramePool with HideAndClearAnchorsAndLayoutIndex as the reset.
+	local pool = { active = {}, free = {}, made = 0 }
+	local function label(self, text)
+		self.text = text
+		self.label:SetText(text)
+	end
+	function pool:Acquire()
+		local entry = table.remove(self.free)
+		if not entry then
+			self.made = self.made + 1
+			local name = "GameMenuFramePooledButton" .. self.made
+			entry = child("button", menu, name)
+			entry:SetSize(MENU_BUTTON_W, MENU_BUTTON_H)
+			entry:SetNormalTexture("Interface\\Buttons\\UI-Panel-Button-Up")
+			entry:SetHighlightTexture("Interface\\Buttons\\UI-Panel-Button-Highlight")
+			child("texture", entry, name .. "Left")
+			child("texture", entry, name .. "Right")
+			entry.label = child("fontstring", entry, name .. "Text")
+			entry.label:SetFontObject(_G.GameFontNormal)
+			entry.label:SetTextColor(1, 0.82, 0)
+			entry.SetText = label
 		end
-		buttons[index] = entry
+		self.active[entry] = true
+		return entry
+	end
+	function pool:ReleaseAll()
+		for entry in pairs(self.active) do
+			entry:Hide()
+			entry:ClearAllPoints()
+			entry.layoutIndex = nil
+			self.free[#self.free + 1] = entry
+		end
+		self.active = {}
+	end
+	function pool:EnumerateActive()
+		return pairs(self.active)
+	end
+	menu.buttonPool = pool
+
+	function menu:Reset()
+		self.buttonPool:ReleaseAll()
+		self.sectionSpacing = nil
+		self.nextLayoutIndex = 1
 	end
 
-	menu:SetSize(MENU_BUTTON_W + 32,
-		MENU_HEAD + #names * (MENU_BUTTON_H + MENU_GAP))
-	H.menu, H.menuButtons = menu, buttons
+	function menu:AddButton(text, callback, disabled)
+		local entry = self.buttonPool:Acquire()
+		entry.layoutIndex = self.nextLayoutIndex
+		self.nextLayoutIndex = self.nextLayoutIndex + 1
+		entry.topPadding = self.sectionSpacing
+		self.sectionSpacing = nil
+		entry:SetText(text)
+		entry:SetScript("OnClick", callback)
+		entry.enabled = not disabled
+		entry:Show()
+		self.dirty = true
+		return entry
+	end
+
+	function menu:AddSection(spacing)
+		self.sectionSpacing = spacing or MENU_SECTION
+	end
+
+	-- InitButtons, with the two lines that come and go on a real client as
+	-- switches a section can throw: the event button above Options follows the
+	-- calendar, and the shop follows the region.
+	menu.withEvent, menu.withShop = false, true
+	function menu:InitButtons()
+		self:Reset()
+		if self.withEvent then
+			self:AddButton("Event")
+			self:AddSection()
+		end
+		self:AddButton("Options")
+		if self.withShop then
+			self:AddButton("Shop")
+		end
+		self:AddSection()
+		self:AddButton("AddOns")
+		self:AddButton("Support")
+		self:AddButton("Macros")
+		self:AddSection()
+		self:AddButton("Log Out")
+		self:AddButton("Exit Game")
+		self:AddSection()
+		self:AddButton("Return to Game")
+	end
+
+	-- VerticalLayoutMixin.LayoutChildren and LayoutMixin.Layout, top to
+	-- bottom and left aligned, which is all this menu asks of them. A
+	-- duplicate index raises, as LayoutIndexComparator does.
+	function menu:Layout()
+		local column = {}
+		for _, entry in ipairs(self.children) do
+			if entry.shown and not entry.ignoreInLayout and entry.layoutIndex then
+				column[#column + 1] = entry
+			end
+		end
+		table.sort(column, function(a, b)
+			assert(a == b or a.layoutIndex ~= b.layoutIndex,
+				"duplicate layoutIndex " .. tostring(a.layoutIndex))
+			return a.layoutIndex < b.layoutIndex
+		end)
+		local left, right = self.leftPadding or 0, self.rightPadding or 0
+		local offset, width = self.topPadding or 0, 0
+		for index, entry in ipairs(column) do
+			if index > 1 then
+				offset = offset + (self.spacing or 0)
+			end
+			offset = offset + (entry.topPadding or 0)
+			entry:ClearAllPoints()
+			entry:SetPoint("TOPLEFT", self, "TOPLEFT", left + (entry.leftPadding or 0), -offset)
+			offset = offset + entry:GetHeight()
+			width = math.max(width, entry:GetWidth())
+		end
+		self:SetSize(width + left + right, offset + (self.bottomPadding or 0))
+		self.dirty = false
+		return column
+	end
+
+	menu:SetScript("OnShow", function(self)
+		self:InitButtons()
+	end)
+	menu:Reset()
+	H.menu = menu
 end
 
-H.MENU_BUTTON_H, H.MENU_GAP, H.MENU_HEAD = MENU_BUTTON_H, MENU_GAP, MENU_HEAD
+H.MENU_PADDING, H.MENU_SECTION = MENU_PADDING, MENU_SECTION
 
 -- Taking a frame off the client's panel stack. Real rather than the no-op the
 -- metatable would give it, because the game menu button closes the menu with

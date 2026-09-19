@@ -8,39 +8,35 @@ local ADDON, ns = ...
 -- /wk opens. No setting guards it, because a checkbox that hides the way into
 -- the settings is a checkbox nobody can find their way back to.
 --
--- The button hangs off the bottom of the frame with a margin, and the frame
--- grows by exactly what that costs. That is the whole placement, and it is the
--- second attempt.
+-- The button goes in the menu's own column, under Options, and Blizzard's
+-- layout puts it there. That is the third attempt and the first that is the
+-- client's mechanism rather than one of ours.
 --
--- The first one read the menu's anchor chain, worked out which button was at
--- the foot of it, took that button's anchor and re-anchored the foot to ours.
--- It is a nicer picture and it does not survive contact. Blizzard rewrote this
--- frame on the modern clients and the rewrite lays every button out against the
--- frame itself, so there is no chain to read; the walk that coped with that
--- included our own button among the candidates, so once the client relaid its
--- column our button could come back as the foot and be anchored to itself. In
--- game that read as a button you saw on every other press of Escape.
+-- The first read the menu's anchor chain and re-anchored its foot to our
+-- button. The client relays that column on every show, so the placement came
+-- undone in front of you and on every other press of Escape the button was
+-- gone. The second gave up on the column, hung the button off the frame's
+-- bottom edge and grew the frame by its height. That one held, and it put the
+-- way into the addon under Return to Game, where nothing that is not closing
+-- the menu belongs.
 --
--- None of that is worth a nicer picture. The frame's own bottom edge is a thing
--- every version of this menu has, it needs no walk, it cannot come back as our
--- own button, and Blizzard's buttons are never touched at all. Theirs are
--- placed by code we cannot see and re-placed whenever it likes, and a button of
--- ours that moved one of them would be undone on the next show and would take
--- one of Blizzard's with it.
+-- Both clients build this menu from MainMenuFrameTemplate, which is a
+-- VerticalLayoutFrame (Blizzard_SharedXML/Classic/Frame/MainMenuFrameTemplates.xml
+-- on the classic_anniversary and classic_era branches of Gethe/wow-ui-source).
+-- Its Layout takes every shown child carrying a layoutIndex, sorts them by it
+-- and stacks them; Blizzard's own buttons get 1, 2, 3 from AddButton on every
+-- show. So ours carries the index of Options plus a half. No anchor of ours,
+-- no height of ours, nothing of Blizzard's touched: the client's own pass puts
+-- the button in the column and sizes the frame round it, and it does that on
+-- the frame after InitButtons, which is after the OnShow hook below.
 --
 -- The one thing still read off the menu is a button to copy a size from, and
--- that is cosmetic: a size we cannot measure leaves the kit's own, which is a
--- readable button in the addon's own proportions and only fails to line up with
--- the column above it.
+-- that is cosmetic: a size we cannot measure leaves the kit's own.
 --
 -- The paint is Core/MenuSkin.lua and it is a second subject rather than a
--- second half of this one. That file answers the complaint this one made
--- worse: our button stopped wearing Blizzard's art, which is right, and put a
--- flat grey rectangle under nine red ones, which read as stapled on. It draws
--- the whole menu in the kit's look instead, on a switch, and it moves nothing
--- either. This file still owns the button, the placement and the height; that
--- one owns every pixel of paint on the frame around it, and neither goes
--- looking through the other.
+-- second half of this one. That file draws the whole menu in the kit's look,
+-- on a switch, and sets the column's padding; this file owns the button and
+-- where it goes in the column, and neither goes looking through the other.
 
 local Menu = {}
 ns.GameMenu = Menu
@@ -48,12 +44,10 @@ ns.GameMenu = Menu
 local LABEL = "WarriorKit"
 local BUTTON = "WarriorKitGameMenuButton"
 
--- The air under our button, and the same again above it. A number chosen rather
--- than measured, which is the point: the old file measured the gap between two
--- of Blizzard's buttons so ours would sit in their rhythm, and the rhythm is not
--- worth what reading it cost. Ours is the last thing in the menu and it is
--- allowed to look like it.
-local MARGIN = 8
+-- How far past the button it follows ours sorts. Blizzard numbers its column in
+-- whole steps, so a half never collides with one of theirs, and LayoutFrame
+-- raises on a duplicate index.
+local AFTER = 0.5
 
 -- Above whatever the menu draws inside itself. Ours is a child of the menu and
 -- the menu may hold a container with its own level, and a button behind the
@@ -68,12 +62,6 @@ local PROBE_LIST = 16
 
 -- The button, and why there is not one. Exactly one of the two is set.
 local button, refusal
-
--- What the menu was tall before we grew it, and what we last set it to. The
--- pair is how re-attaching stays idempotent across a client that recomputes the
--- menu's height on every show and one that does not: if the height still reads
--- back as what we wrote, nothing has recomputed and the base stands.
-local base, grown
 
 -- What the last attach found to copy a size from. Carried for `/wk status`,
 -- because a button at the kit's own size in a menu whose buttons are a
@@ -131,27 +119,31 @@ local function Fit(menu)
 	end
 end
 
--- Taller by one button and the air around it, and no taller on the second call.
-local function Grow(menu)
-	local height = ns.Measure(menu, "GetHeight")
-	local own = ns.Measure(button, "GetHeight")
-	if not height or not own or own <= 0 then
-		return false
+-- Where ours sorts in the column: after Options, after Blizzard's first button
+-- on a menu without one, and first on a menu with nothing in it yet.
+--
+-- Options is matched by the client's own string, so the match holds in every
+-- locale, and read at the call because GlobalStrings is the client's to fill.
+local function Slot(menu)
+	local label = _G.GAMEMENU_OPTIONS
+	local first, follows
+	for entry in menu.buttonPool:EnumerateActive() do
+		local index = entry.layoutIndex
+		if index then
+			first = math.min(first or index, index)
+			if label and ns.Measure(entry, "GetText") == label then
+				follows = index
+			end
+		end
 	end
-	if not grown or math.abs(height - grown) > 0.01 then
-		base = height
-	end
-	grown = base + own + MARGIN * 2
-	menu:SetHeight(grown)
-	return true
+	return (follows or first or 0) + AFTER
 end
 
--- Put the button where it belongs, from whatever state the menu is in.
+-- Put the button in the column, from whatever state the menu is in.
 --
--- Run at login and again on every show, because a client that lays its own menu
--- out on show has put its own height back by the time it is next opened.
--- Everything it reads it reads fresh, so a run that changes nothing writes
--- nothing but the height it already had.
+-- Run at login and again on every show, because InitButtons hands the column
+-- out afresh on every show and the index ours follows can move with it: the
+-- event button above Options comes and goes with the calendar.
 function Menu.Attach()
 	local menu = _G.GameMenuFrame
 	if not button or not menu then
@@ -164,15 +156,16 @@ function Menu.Attach()
 	-- button goes in, and the refusal it carries is reported on its own line.
 	ns.MenuSkin.Apply()
 
-	Fit(menu)
-	if not Grow(menu) then
-		refusal = "this client's game menu will not say how tall it is"
+	local pool = menu.buttonPool
+	if type(pool) ~= "table" or type(pool.EnumerateActive) ~= "function" then
+		refusal = "this client's game menu keeps no column to join"
+		button:Hide()
 		return false
 	end
 
+	Fit(menu)
+	button.layoutIndex = Slot(menu)
 	button:SetFrameLevel((ns.Measure(menu, "GetFrameLevel") or 0) + LIFT)
-	button:ClearAllPoints()
-	button:SetPoint("BOTTOM", menu, "BOTTOM", 0, MARGIN)
 	button:Show()
 
 	refusal = nil
@@ -222,7 +215,7 @@ function Menu.Describe()
 	if not button then
 		return "not built"
 	end
-	return ("at the bottom of the game menu, %s, %s"):format(
+	return ("in the game menu's column under Options, %s, %s"):format(
 		copied and ("the size of " .. copied) or "at the kit's own size",
 		ns.MenuSkin.Describe())
 end
@@ -323,7 +316,7 @@ ns.Register({
 	switch = {
 		key = "menuSkin",
 		label = "the game menu in the addon's look",
-		says = "Nothing moves and no button is replaced, so Logout and Exit Game are still Blizzard's own. Only the paint changes, and it comes off in one call.",
+		says = "No button is replaced, so Logout and Exit Game are still Blizzard's own. The paint and the column's spacing change, and both come off in one call.",
 		apply = function() ns.MenuSkin.Apply() end,
 	},
 
@@ -355,7 +348,7 @@ ns.Register({
 
 	panel = function(ui)
 		ui.Section("Game menu", "The screen")
-		ui.Lede("The menu Escape opens, drawn in this addon's greys rather than the client's parchment.")
+		ui.Lede("The menu Escape opens, drawn in this addon's palette rather than the client's parchment.")
 		ui.Reading("game menu", ns.MenuSkin.Describe)
 	end,
 })

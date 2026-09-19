@@ -8,10 +8,10 @@ ns.MenuSkin = Skin
 
 -- The client's own menu, drawn in the addon's look.
 --
--- Core/Menu.lua puts one button at the foot of the game menu, and that button
--- is the kit's: a flat grey rectangle, one physical pixel of edge, the addon's
--- own sans. Blizzard's nine above it are red glass on a parchment frame with
--- gold corners. Stack the two and ours reads as something that got stapled on,
+-- Core/Menu.lua puts one button in the game menu's column, and that button is
+-- the kit's: a flat rectangle, one physical pixel of edge, the addon's own
+-- sans. Blizzard's around it are red glass on a parchment frame with gold
+-- corners. Stack the two and ours reads as something that got stapled on,
 -- which is exactly what the first screenshot of it showed.
 --
 -- Two ways out of that and only one of them is honest. Paint our button like
@@ -26,14 +26,21 @@ ns.MenuSkin = Skin
 -- column with it. What goes is every texture and the heading, and what arrives
 -- is the kit's own panel underneath and the kit's own paint on each button.
 --
--- Nothing moves. Not one of Blizzard's buttons is anchored, resized or
--- relevelled, and the reason is the long one in Core/Menu.lua: this column is
--- laid out on every show, on the newer flavours by a layout pass that runs
--- after our hook, so a placement of ours is a placement that comes undone in
--- front of you. Paint survives that, and it survives it without a second
--- mechanism. A texture we hid stays hidden because ns.Strip leaves Hide where
--- Show used to be, and a font string we dressed stays dressed because the
--- client does not rewrite the font on a button it did not just create.
+-- Nothing is anchored. The column is a VerticalLayoutFrame that Blizzard lays
+-- out on the frame after every show, so a placement of ours is a placement
+-- that comes undone in front of you. What this file sets instead is what that
+-- layout reads: the frame's four paddings and its spacing, and the gap above
+-- the first button of each section. The client's own pass then stacks the
+-- buttons with one air all round, and sizes the frame to fit. Paint survives
+-- the pass without a second mechanism: a texture we hid stays hidden because
+-- ns.Strip leaves Hide where Show used to be, and a font string we dressed
+-- stays dressed because the client does not rewrite the font on a button it
+-- did not just create.
+--
+-- The paint is the palette's. A palette with a painting puts the menu on it,
+-- floor, rails and corners, the way UI.Window draws a window that asks for a
+-- backdrop, with the title over the painting and a rule under it. A palette
+-- without one gets the flat window fill and the chrome bar.
 --
 -- Nothing here calls anything of Blizzard's either. Every button in the menu
 -- keeps its own OnClick, so Logout is still Blizzard's Logout, run from
@@ -55,9 +62,18 @@ ns.MenuSkin = Skin
 -- the column off the frame or hangs it off one box inside it.
 local DEPTH = 1
 
--- The air a title bar needs above the first button before one is drawn at all.
--- One pixel of edge and one of daylight.
-local CLEAR = 2
+-- The one air of the menu: frame edge to button on all four sides, under the
+-- title, and between one section and the next. Blizzard's is 28 at the sides,
+-- 32 at the top and 20 between sections, and the kit's window pad is 12.
+local PAD = M.pad
+
+-- Between two buttons in one section. Blizzard stacks theirs edge to edge,
+-- which on the kit's outlined buttons draws a doubled line between each pair.
+local GAP = M.rowGap
+
+-- The layout's own fields this file writes on the frame, and so keeps and
+-- puts back.
+local FIELDS = { "leftPadding", "rightPadding", "topPadding", "bottomPadding", "spacing" }
 
 -- What the bar says on a client whose menu carries no heading of its own.
 local UNTITLED = "Game menu"
@@ -217,6 +233,14 @@ local function Paint(entry)
 		end
 	end
 
+	-- A section's first button carries the gap above it as its own
+	-- topPadding, which AddButton writes on every show. Ours replaces it, and
+	-- nothing puts Blizzard's back when the switch goes off: the next show
+	-- writes it again before anything reads it.
+	if entry.topPadding then
+		entry.topPadding = PAD - GAP
+	end
+
 	if not entry.wkPaint then
 		Dress(entry)
 	end
@@ -286,68 +310,104 @@ end
 -- on one client is a level put over them on the next; a parent's own texture
 -- is under every child frame it has by construction, on every client, with
 -- nothing to work out.
+--
+-- Every flat region goes on one list, shown and hidden together. The painting
+-- is apart from them because its tiles are made by its layout, as many as the
+-- frame's size calls for.
+local function Own(region)
+	paint.flat[#paint.flat + 1] = Mine(region)
+	return region
+end
+
 local function Panel()
 	if paint then
 		return
 	end
 	local px = ns.Pixel(frame)
-	paint = {}
-	paint.bg = Mine(ns.Fill(frame, "BACKGROUND",
-		C.window[1], C.window[2], C.window[3], C.window[4]))
-	paint.bg:SetAllPoints()
-	paint.edges = ns.Outline(frame, C.edge[1], C.edge[2], C.edge[3], 1)
-	for index = 1, 4 do
-		Mine(paint.edges[index])
-	end
-	ns.EdgeSize(paint.edges, px)
+	paint = { flat = {}, backdrop = UI.Backdrop(frame) }
 
-	paint.bar = Mine(ns.Fill(frame, "BORDER",
-		C.chrome[1], C.chrome[2], C.chrome[3], 1))
-	paint.bar:SetPoint("TOPLEFT", px, -px)
-	paint.bar:SetPoint("TOPRIGHT", -px, -px)
-	paint.bar:SetHeight(M.title)
-
-	paint.title = Mine(UI.Label(frame, M.heading, C.heading, "LEFT", UI.FLAT))
-	paint.title:SetPoint("TOPLEFT", M.pad, -math.floor((M.title - M.heading) / 2) - px)
-end
-
--- Whether the top of the menu is empty enough to put a title bar in.
---
--- The bar is our chrome drawn over a frame we did not build, so the one thing
--- it must not do is land on a button. Every flavour of this menu has left room
--- above the first button for a heading of its own, and that is a habit rather
--- than a promise: the honest answer where the room is not there is no bar.
-local function Room(buttons)
-	local top = ns.Measure(frame, "GetTop")
-	if not top then
-		return false
-	end
-	for _, entry in ipairs(buttons) do
-		local theirs = ns.Measure(entry, "GetTop")
-		if theirs and top - theirs < M.title + CLEAR then
-			return false
+	-- The same two headers UI.Window draws: on a painting, the painting under
+	-- the title and one rule below it at the pad; on the flat fill, the chrome
+	-- bar and the hairline round the frame.
+	if paint.backdrop then
+		local rule = Own(UI.Rule(frame, C.hairline))
+		rule:SetPoint("TOPLEFT", PAD, -M.title - px)
+		rule:SetPoint("TOPRIGHT", -PAD, -M.title - px)
+	else
+		Own(ns.Fill(frame, "BACKGROUND",
+			C.window[1], C.window[2], C.window[3], C.window[4])):SetAllPoints()
+		local edges = ns.Outline(frame, C.edge[1], C.edge[2], C.edge[3], 1)
+		for index = 1, 4 do
+			Own(edges[index])
 		end
+		ns.EdgeSize(edges, px)
+
+		local bar = Own(ns.Fill(frame, "BORDER",
+			C.chrome[1], C.chrome[2], C.chrome[3], 1))
+		bar:SetPoint("TOPLEFT", px, -px)
+		bar:SetPoint("TOPRIGHT", -px, -px)
+		bar:SetHeight(M.title)
 	end
-	return true
+
+	paint.title = Own(UI.Label(frame, M.heading, C.heading, "LEFT", UI.FLAT))
+	paint.title:SetPoint("TOPLEFT", PAD, -math.floor((M.title - M.heading) / 2) - px)
 end
 
-local function Headed(buttons)
-	local room = Room(buttons)
-	paint.title:SetText(heading or UNTITLED)
-	Reveal(paint.bar, room)
-	Reveal(paint.title, room)
-	return room
+-- The painting laid out to the frame's size. Run on every pass and on every
+-- resize, because the client sizes the frame in its layout pass, a frame after
+-- the show this file hooks. Each tile is marked the moment it exists, so the
+-- next pass does not take it for Blizzard's art and strip it.
+local function Lay()
+	local backdrop = paint and paint.backdrop
+	if not backdrop or ns.db.menuSkin == false then
+		return
+	end
+	local width, height = ns.Measure(frame, "GetWidth"), ns.Measure(frame, "GetHeight")
+	if not width or not height or width <= 0 or height <= 0 then
+		return
+	end
+	backdrop:Layout(width, height)
+	backdrop:Each(Mine)
 end
 
-local function Hidden()
+local function Shown(on)
 	if not paint then
 		return
 	end
-	Reveal(paint.bg, false)
-	Reveal(paint.bar, false)
-	Reveal(paint.title, false)
-	for index = 1, 4 do
-		Reveal(paint.edges[index], false)
+	for _, region in ipairs(paint.flat) do
+		Reveal(region, on)
+	end
+	if not paint.backdrop then
+		return
+	end
+	if on then
+		Lay()
+	else
+		paint.backdrop:Each(function(tile) tile:Hide() end)
+	end
+end
+
+-- The column's air, written where the client's layout reads it. The top is the
+-- title band, the rule under it and then the same pad as every other side.
+-- Blizzard's own values are kept on the first write and go back on the switch.
+local kept
+
+local function Space(on)
+	if on then
+		if not kept then
+			kept = {}
+			for _, key in ipairs(FIELDS) do
+				kept[key] = frame[key]
+			end
+		end
+		frame.leftPadding, frame.rightPadding, frame.bottomPadding = PAD, PAD, PAD
+		frame.topPadding = M.title + 2 * ns.Pixel(frame) + PAD
+		frame.spacing = GAP
+	elseif kept then
+		for _, key in ipairs(FIELDS) do
+			frame[key] = kept[key]
+		end
+		kept = nil
 	end
 end
 
@@ -404,19 +464,17 @@ function Skin.Apply()
 	Gather(frame, DEPTH, buttons, holders)
 
 	local complete
+	stripped, dressed = 0, 0
 	if ns.db.menuSkin == false then
-		stripped, dressed = 0, 0
+		Space(false)
 		complete = Walk(buttons, holders, Uncover, Bare)
-		Hidden()
+		Shown(false)
 	else
 		Panel()
-		stripped, dressed = 0, 0
+		Space(true)
 		complete = Walk(buttons, holders, Cover, Paint)
-		Reveal(paint.bg, true)
-		for index = 1, 4 do
-			Reveal(paint.edges[index], true)
-		end
-		Headed(buttons)
+		paint.title:SetText(heading or UNTITLED)
+		Shown(true)
 	end
 
 	return ns.Lockdown.Done(Skin.Apply, complete)
@@ -427,6 +485,9 @@ end
 -- and neither goes looking for the other's.
 function Skin.Watch(menu, ours)
 	frame, own = menu, ours
+	if type(menu.HookScript) == "function" then
+		menu:HookScript("OnSizeChanged", Lay)
+	end
 end
 
 function Skin.Deferred()
@@ -447,5 +508,6 @@ function Skin.Describe()
 		return ("%d buttons and %d regions, the rest follows when combat drops")
 			:format(dressed, stripped)
 	end
-	return ("%d buttons painted, %d of the client's regions off"):format(dressed, stripped)
+	return ("%d buttons painted %s, %d of the client's regions off"):format(dressed,
+		paint and paint.backdrop and "on the palette's painting" or "on the flat fill", stripped)
 end
