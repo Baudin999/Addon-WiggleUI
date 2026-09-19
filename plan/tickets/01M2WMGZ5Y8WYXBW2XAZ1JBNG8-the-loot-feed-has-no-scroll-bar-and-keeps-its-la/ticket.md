@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WMGZ5Y8WYXBW2XAZ1JBNG8
 type: task
-status: doing
+status: review
 title: The loot feed has no scroll bar and keeps its last 30 drops
 parent: 01M2WM7H2QD0KYVCRBZZ25T564
 ---
