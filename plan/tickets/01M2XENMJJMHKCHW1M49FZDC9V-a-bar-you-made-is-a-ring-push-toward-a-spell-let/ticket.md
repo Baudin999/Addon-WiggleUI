@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2XENMJJMHKCHW1M49FZDC9V
 type: task
-status: doing
+status: done
 title: "A bar you made is a ring: push toward a spell, let the key go"
 ---
 
