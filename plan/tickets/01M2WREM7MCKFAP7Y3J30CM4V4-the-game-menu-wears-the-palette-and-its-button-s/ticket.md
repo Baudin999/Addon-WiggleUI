@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WREM7MCKFAP7Y3J30CM4V4
 type: task
-status: todo
+status: doing
 title: "The game menu wears the palette, and its button sits under Options"
 ---
 
