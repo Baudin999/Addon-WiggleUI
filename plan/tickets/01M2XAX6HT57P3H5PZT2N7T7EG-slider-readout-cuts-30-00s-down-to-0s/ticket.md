@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2XAX6HT57P3H5PZT2N7T7EG
 type: bug
-status: doing
+status: done
 title: Slider readout cuts 30.00s down to 0s
 ---
 
