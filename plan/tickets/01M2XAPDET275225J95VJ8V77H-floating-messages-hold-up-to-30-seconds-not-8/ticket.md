@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2XAPDET275225J95VJ8V77H
 type: task
-status: todo
+status: doing
 title: "Floating messages hold up to 30 seconds, not 8"
 ---
 
