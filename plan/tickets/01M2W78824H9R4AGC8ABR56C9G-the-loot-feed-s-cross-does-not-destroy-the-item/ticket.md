@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2W78824H9R4AGC8ABR56C9G
 type: bug
-status: doing
+status: done
 title: The loot feed's cross does not destroy the item it is pressed on
 ---
 
