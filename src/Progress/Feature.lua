@@ -39,6 +39,11 @@ local XPWord = ns.Command.Word({
 
 	ns.Command.Zoom("progressZoom", "the rails draw at %dx."),
 
+	{ "style", choice = { "expressive", "minimal" }, key = "progressStyle",
+	  say = function(style)
+		return "the experience rails are " .. style .. ": " .. Rails.Describe() .. "."
+	  end },
+
 	{ "faction", toggle = true, key = "progressFaction",
 	  say = function(on)
 		return "the reputation rail " .. (on and "on" or "off")
@@ -90,6 +95,12 @@ ns.Register({
 		progressFaction = true,
 
 		progressBubbles = true,
+
+		-- Expressive is the placed, sized rail with its reading written on it;
+		-- minimal is a line a few pixels tall across the bottom of the screen.
+		-- Expressive, because it is what every character had before there was
+		-- a choice.
+		progressStyle = "expressive",
 
 		-- 460 is twenty three screen pixels a segment, which is a bubble wide
 		-- enough to read as a division rather than as hatching, times the
@@ -144,6 +155,7 @@ ns.Register({
 		"xp on|off, the experience and reputation rails along the bottom",
 		"xp faction on|off, the reputation rail under the experience one",
 		"xp bubbles on|off, the twenty segment marks",
+		"xp style expressive|minimal, the placed rail or a line across the screen",
 		"xp width <120-900>, xp height <6-32>, xp zoom <1-3>",
 		"xp reset, the rails back along the bottom of the screen",
 	},
@@ -158,11 +170,12 @@ ns.Register({
 
 	reset = function()
 		for _, key in ipairs({ "progress", "progressFaction", "progressBubbles",
-			"progressWidth", "progressHeight", "progressZoom", "hideBlizzXP" }) do
+			"progressStyle", "progressWidth", "progressHeight", "progressZoom",
+			"hideBlizzXP" }) do
 			ns.db[key] = ns.DefaultCopy(key)
 		end
 		-- Rails.Reset puts the point back and lays both rails out again, so the
-		-- seven above it land in the same pass.
+		-- eight above it land in the same pass.
 		Rails.Reset()
 		ns.BlizzHide.Apply()
 	end,
@@ -173,6 +186,14 @@ ns.Register({
 		ui.Section("Experience and reputation", "Feeds and meters")
 		ui.Lede("Two rails along the bottom of the screen: how far into the level you"
 			.. " are, and the faction you are watching under it.")
+
+		ui.Cycle("style", { "expressive", "minimal" },
+			function() return ns.db.progressStyle end,
+			function(value)
+				ns.db.progressStyle = value
+				Rails.Apply()
+			end)
+		ui.Hint("Expressive is the rail you place and size, with its reading written on it. Minimal is a thin line in ten blocks across the bottom of the screen; hover it to read it.")
 
 		ui.Check("the reputation rail",
 			function() return ns.db.progressFaction end,
@@ -188,7 +209,7 @@ ns.Register({
 				ns.db.progressBubbles = value
 				Rails.Apply()
 			end)
-		ui.Hint("The client's own bubbles. They come off on their own under 160 pixels of width, where twenty of anything reads as hatching.")
+		ui.Hint("Twenty on the expressive rail, ten on the minimal line. They come off on their own under 160 pixels of width, where twenty of anything reads as hatching.")
 
 		ui.Size("width", wideLow, wideHigh, 20,
 			function() return ns.db.progressWidth end,

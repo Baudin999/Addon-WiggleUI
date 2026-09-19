@@ -39,6 +39,15 @@ ns.ProgressRails = Rails
 -- client has drawn since 2004, and they are still the unit people count in.
 -- They come off below 160 pixels of width, where twenty of anything is a
 -- texture every eight pixels and the rail reads as hatching.
+--
+-- **Two styles.** Expressive is everything above: a placed, sized rail with
+-- the palette's floor under it and its reading written on it. Minimal is the
+-- bar DialogueUI draws under its dialogue, in this addon's own language: the
+-- whole width of the screen, flush with the bottom edge, a few pixels tall and
+-- nothing written on it. It keeps the hover, ten blocks rather than twenty,
+-- the unit frames' tight chrome edge rather than the floor, and a soft light
+-- on the fill's leading edge, which is where the eye goes on a line that thin.
+-- It is not placed, because the screen edge is the place.
 --------------------------------------------------------------------------
 
 local Progress = ns.Progress
@@ -64,8 +73,22 @@ local TEXT_SHARE = 0.62
 local WIDTH_LOW, WIDTH_HIGH = 120, 900
 local HEIGHT_LOW, HEIGHT_HIGH = 6, 32
 
--- The client's own bubbles: twenty segments, which is nineteen marks.
+-- The client's own bubbles: twenty segments, which is nineteen marks. The
+-- minimal line has half as many, because at the width of the screen twenty
+-- blocks a few pixels tall read as a ruler rather than as a bar.
 local SEGMENTS = 20
+local MINIMAL_SEGMENTS = 10
+
+-- How tall the minimal line is, in design pixels, edge included. At the ship
+-- zoom of 2 that is eight screen pixels, which is DialogueUI's height: one
+-- pixel of edge above and below and six of fill between them.
+local MINIMAL_HEIGHT = 4
+
+-- The light on the minimal fill's leading edge, fading back along the fill.
+-- DialogueUI's is 48 pixels at half strength on an eight pixel bar; this is
+-- that, halved for the grid's design pixels at the ship zoom.
+local GLOW = { 1, 1, 1, 0.35 }
+local GLOW_WIDTH = 24
 
 -- Under this much width the marks come off on their own, whatever the setting
 -- says. Eight design pixels a segment is where a rail stops reading as a bar
@@ -80,11 +103,27 @@ local IDLE_FILL = Color.reaction.idle
 local EDGE = Color.frame.idle
 local MARK = { 0, 0, 0, 0.35 }
 
+-- The minimal line's edge and its marks: the palette's chrome, the dark the
+-- unit frames are ringed in, so the line at the bottom of the screen and the
+-- blocks over it read as one set. UI.Color's own table, which the palette is
+-- painted into in place, so this follows the palette.
+local CHROME = ns.UI.Color.chrome
+
 local NAME_TEXT = Color.text.name
 local VALUE_TEXT = Color.text.value
 
 local frame, xp, faction, place
 local built = false
+
+-- The size the current layout drew the rails at, which the minimal style takes
+-- off the screen rather than out of the settings. The painter reads these,
+-- because a rested pool placed off the width setting on a line as wide as the
+-- screen would stop a third of the way along it.
+local laidWidth, laidHeight = 0, 0
+
+local function Minimal()
+	return ns.db.progressStyle == "minimal"
+end
 
 -- One design pixel in this frame's units, which is exactly 1 once ns.UI.Adopt
 -- has taken the frame onto the grid. Read again on every layout pass, because
@@ -142,6 +181,16 @@ local function BuildRail(bubbles)
 			mark:Hide()
 			rail.marks[index] = mark
 		end
+
+		-- The minimal line's light, pinned to the fill's leading edge and as
+		-- tall as it, over the fill and under the marks. Its width is the
+		-- painter's, because it may not reach back past where the fill starts.
+		local fill = bar:GetStatusBarTexture()
+		rail.glow = ns.UI.Wash(bar, GLOW, "RIGHT", "ARTWORK")
+		rail.glow:SetDrawLayer("ARTWORK", 1)
+		rail.glow:SetPoint("TOPRIGHT", fill, "TOPRIGHT", 0, 0)
+		rail.glow:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 0, 0)
+		rail.glow:Hide()
 	end
 
 	-- Made after the fill and after the marks, because within one draw layer the
@@ -162,7 +211,7 @@ local function BuildRail(bubbles)
 	-- on a bar has to be readable from scripts/harness.lua and from a macro,
 	-- and the alternative is this file handing out its own state table.
 	bar.left, bar.right = rail.left, rail.right
-	bar.rested, bar.marks = rail.rested, rail.marks
+	bar.rested, bar.marks, bar.glow = rail.rested, rail.marks, rail.glow
 	return rail
 end
 
@@ -262,15 +311,18 @@ end
 -- Laying out
 --------------------------------------------------------------------------
 
-local function Marks(width, height)
+local function Marks(width, height, minimal)
+	local segments = minimal and MINIMAL_SEGMENTS or SEGMENTS
+	local look = minimal and CHROME or MARK
 	local on = ns.db.progressBubbles and width >= BUBBLE_FLOOR
 	for index = 1, SEGMENTS - 1 do
 		local mark = xp.marks[index]
-		if on then
+		if on and index < segments then
 			mark:ClearAllPoints()
 			mark:SetPoint("TOPLEFT", xp.bar, "TOPLEFT",
-				Whole(width * index / SEGMENTS) * unit, 0)
+				Whole(width * index / segments) * unit, 0)
 			mark:SetSize(ns.Pixel(xp.bar), height * unit)
+			mark:SetColorTexture(look[1], look[2], look[3], look[4] or 1)
 			mark:Show()
 		else
 			mark:Hide()
@@ -278,7 +330,15 @@ local function Marks(width, height)
 	end
 end
 
-local function SizeRail(rail, width, height, offset)
+-- The whole width of the screen in this frame's units, rounded up so the line
+-- reaches the right edge rather than stopping a fraction short of it.
+local function ScreenWidth()
+	local across = UIParent:GetWidth() * UIParent:GetEffectiveScale()
+		/ frame:GetEffectiveScale()
+	return math.ceil(across / unit - 1e-6)
+end
+
+local function SizeRail(rail, width, height, offset, minimal)
 	local bar = rail.bar
 	bar:ClearAllPoints()
 	bar:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -offset * unit)
@@ -287,6 +347,15 @@ local function SizeRail(rail, width, height, offset)
 	-- One screen pixel, and one at every zoom, which is what ns.Pixel answers
 	-- and ns.UI.Unit does not.
 	ns.EdgeSize(bar.edges, ns.Pixel(bar))
+
+	-- The minimal line wears the chrome edge and no floor, and has no room for
+	-- a word: at four pixels a label is a smear. The hover still says it all.
+	ns.Recolor(bar.edges, minimal and CHROME or EDGE)
+	if Gauge.ShowFloor(bar, not minimal) then
+		rail.look = nil
+	end
+	rail.left:SetShown(not minimal)
+	rail.right:SetShown(not minimal)
 
 	-- Taken off the rail's height rather than fixed, because the height is a
 	-- setting and the same code draws a six pixel line and a thirty two pixel
@@ -315,29 +384,49 @@ function Rails.Apply()
 		return
 	end
 
-	local point = ns.db.progressPoint
+	local minimal = Minimal()
 	frame:ClearAllPoints()
-	frame:SetPoint(point[1], UIParent, point[3], point[4], point[5])
+	if minimal then
+		frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
+	else
+		local point = ns.db.progressPoint
+		frame:SetPoint(point[1], UIParent, point[3], point[4], point[5])
+	end
 	ns.UI.Rezoom(frame, ns.db.progressZoom)
 	unit = ns.UI.Unit(frame)
 
-	local width, height = ns.db.progressWidth, ns.db.progressHeight
+	-- Minimal stacks the two lines on one shared hairline rather than a gap,
+	-- so a watched faction reads as a second line of the same bar.
+	local width, height, gap = ns.db.progressWidth, ns.db.progressHeight, GAP
+	if minimal then
+		width, height, gap = ScreenWidth(), MINIMAL_HEIGHT, -1
+	end
+	laidWidth, laidHeight = width, height
 	shape.xp, shape.faction = Wanted()
 
 	local rows = 0
 	if shape.xp then
-		SizeRail(xp, width, height, 0)
-		Marks(width, height)
+		SizeRail(xp, width, height, 0, minimal)
+		Marks(width, height, minimal)
 		rows = 1
 	end
 	if shape.faction then
-		SizeRail(faction, width, height, rows * (height + GAP))
+		SizeRail(faction, width, height, rows * (height + gap), minimal)
 		rows = rows + 1
 	end
 	xp.bar:SetShown(shape.xp)
 	faction.bar:SetShown(shape.faction)
 
-	local total = rows * height + math.max(0, rows - 1) * GAP
+	-- A floor switched on or off changed how opaque the empty end is, and that
+	-- is written with the colour, so the experience rail is painted again here.
+	-- The reputation rail's look was dropped by SizeRail and its painter redoes
+	-- it.
+	if xp.look == nil then
+		Gauge.Paint(xp.bar, xp.bar.track, XP_FILL)
+		xp.look = XP_FILL
+	end
+
+	local total = rows * height + math.max(0, rows - 1) * gap
 	frame:SetSize(width * unit, math.max(1, total) * unit)
 	frame:SetShown(rows > 0)
 
@@ -357,6 +446,7 @@ local function PaintXP()
 		xp.left:SetText("experience")
 		xp.right:SetText("nothing left to earn")
 		xp.rested:Hide()
+		xp.glow:Hide()
 		return
 	end
 
@@ -380,12 +470,23 @@ local function PaintXP()
 	end
 	xp.left:SetText(label)
 
+	-- The minimal line's light, never reaching back past where the fill
+	-- starts, so a level just begun shows a short glow rather than one hanging
+	-- off the left end.
+	local width = laidWidth
+	local left = Whole(value / max * width)
+	local glow = math.min(GLOW_WIDTH, left)
+	if Minimal() and glow >= 1 then
+		xp.glow:SetWidth(glow * unit)
+		xp.glow:Show()
+	else
+		xp.glow:Hide()
+	end
+
 	-- The rested pool, from the fill's edge to wherever the bonus runs out,
 	-- clamped at the end of the level. A pool bigger than the level is a real
 	-- state after a week away, and drawn unclamped it would hang off the end of
 	-- the rail.
-	local width = ns.db.progressWidth
-	local left = Whole(value / max * width)
 	local span = Whole(math.min(rested or 0, max - value) / max * width)
 	if span < 1 then
 		xp.rested:Hide()
@@ -393,7 +494,7 @@ local function PaintXP()
 	end
 	xp.rested:ClearAllPoints()
 	xp.rested:SetPoint("TOPLEFT", xp.bar, "TOPLEFT", left * unit, 0)
-	xp.rested:SetSize(span * unit, ns.db.progressHeight * unit)
+	xp.rested:SetSize(span * unit, laidHeight * unit)
 	xp.rested:Show()
 end
 
@@ -474,13 +575,16 @@ function Rails.Lock()
 		return
 	end
 	local unlocked = not ns.db.locked
-	place:Lock(unlocked)
+	-- The minimal line is never dragged: its place is the screen edge, and a
+	-- drag it answered would write a point the next layout ignores.
+	local dragging = unlocked and not Minimal()
+	place:Lock(dragging)
 	-- The rails give the mouse up while the frame takes it, because a rail that
 	-- answered the pointer would swallow the drag that is the whole point of
 	-- unlocking. Placeable does the frame's half; which children stand aside
 	-- for it is this file's own business.
-	xp.bar:EnableMouse(not unlocked)
-	faction.bar:EnableMouse(not unlocked)
+	xp.bar:EnableMouse(not dragging)
+	faction.bar:EnableMouse(not dragging)
 
 	-- Unlocking changes what is drawn, not only what takes the mouse: a
 	-- character at the cap with no faction watched has no frame at all, and
@@ -527,7 +631,11 @@ function Rails.Describe()
 	if #rows == 0 then
 		return "on, and drawing nothing: no experience to count and no faction watched"
 	end
-	return ("on, %d by %d pixels, drawing %s"):format(ns.db.progressWidth,
+	if Minimal() then
+		return ("on, minimal, a %d pixel line across the screen, drawing %s")
+			:format(MINIMAL_HEIGHT, table.concat(rows, " and "))
+	end
+	return ("on, expressive, %d by %d pixels, drawing %s"):format(ns.db.progressWidth,
 		ns.db.progressHeight, table.concat(rows, " and "))
 end
 

@@ -391,6 +391,85 @@ do
 	end
 
 	------------------------------------------------------------------
+	-- The minimal line
+	--
+	-- The whole width of the screen, flush with its bottom edge, a few pixels
+	-- tall. Ten blocks rather than twenty, the chrome edge the unit frames
+	-- wear rather than the idle one, nothing written on it, and a light on the
+	-- fill's leading edge. Not draggable, because its place is the screen edge.
+	------------------------------------------------------------------
+
+	do
+		-- Sections 48 and 49 hand UIParent back with no size, which is the
+		-- stub's state by now. A line as wide as the screen needs a screen, so
+		-- this gives it one for the length of the claim and hands it back, the
+		-- way those two do.
+		local screen = _G.UIParent
+		local wasWide, wasTall = screen.width, screen.height
+		screen:SetSize(2560, 1440)
+
+		scene()
+		ns.db.progressStyle = "minimal"
+		Rails.Apply()
+
+		local point, relative, theirs, x, y = frame:GetPoint()
+		check(point == "BOTTOMLEFT" and relative == _G.UIParent and theirs == "BOTTOMLEFT"
+			and x == 0 and y == 0,
+			("the minimal line is pinned %s to %s at %s, %s and belongs on the"
+				.. " screen's bottom left corner"):format(tostring(point), tostring(theirs),
+				tostring(x), tostring(y)))
+		local across = _G.UIParent:GetWidth() * _G.UIParent:GetEffectiveScale()
+			/ frame:GetEffectiveScale()
+		check(xp:GetWidth() >= across and xp:GetWidth() < across + 1,
+			("the minimal line is %.1f wide and the screen is %.1f")
+				:format(xp:GetWidth(), across))
+		check(xp:GetHeight() == 4 and faction:GetHeight() == 4,
+			"a minimal line is not four pixels tall")
+		-- The reputation line shares the experience line's bottom hairline.
+		local _, _, _, _, under = faction:GetPoint()
+		check(under == -3 and frame:GetHeight() == 7,
+			("the reputation line hangs at %s in a frame %.1f tall; it shares a hairline")
+				:format(tostring(under), frame:GetHeight()))
+
+		local marks = 0
+		local chrome = ns.UI.Color.chrome
+		for _, mark in ipairs(xp.marks) do
+			if mark:IsShown() then
+				marks = marks + 1
+			end
+		end
+		check(marks == 9, ("%d marks on the minimal line, and ten blocks is nine"):format(marks))
+		check(xp.edges.r == chrome[1] and xp.edges.g == chrome[2] and xp.edges.b == chrome[3],
+			"the minimal line is not ringed in the chrome the unit frames wear")
+		check(not xp.left:IsShown() and not xp.right:IsShown(),
+			"the minimal line still writes its reading on four pixels")
+		-- 12000 of 40000 is three tenths of the line, far more than the light.
+		check(xp.glow:IsShown() and xp.glow:GetWidth() == 24,
+			"the minimal line has no light on its leading edge")
+		local _, _, _, poolAt = xp.rested:GetPoint()
+		check(poolAt == math.floor(xp:GetWidth() * 3 / 10 + 0.5),
+			("the rested pool starts at %s on the minimal line, not where its fill ends")
+				:format(tostring(poolAt)))
+
+		ns.db.locked = false
+		Rails.Lock()
+		check(not frame:IsMouseEnabled() or xp:IsMouseEnabled(),
+			"unlocked, the minimal line takes a drag it would only throw away")
+		ns.db.locked = true
+		Rails.Lock()
+
+		ns.db.progressStyle = "expressive"
+		Rails.Apply()
+		check(xp:GetWidth() == ns.db.progressWidth and xp.left:IsShown() and not xp.glow:IsShown(),
+			"going back to expressive did not put the placed rail back as it was")
+		local stroke = ns.Unit.Color.frame.idle
+		check(xp.edges.r == stroke[1] and xp.edges.g == stroke[2],
+			"going back to expressive left the chrome edge on the rail")
+		screen:SetSize(wasWide, wasTall)
+		scene()
+	end
+
+	------------------------------------------------------------------
 	-- What a hover says
 	------------------------------------------------------------------
 

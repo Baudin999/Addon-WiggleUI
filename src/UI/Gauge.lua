@@ -212,6 +212,20 @@ function Gauge.Floor(bar)
 	return floor
 end
 
+-- The floor shown or taken away, for an owner with a style that draws none.
+-- The track's alpha goes with it, because over no floor the thin track would
+-- let the world show through the empty end. Answers true when anything
+-- changed, which is the owner's cue to paint the track again: the alpha is
+-- written with the colour, in Gauge.Paint.
+function Gauge.ShowFloor(bar, on)
+	if not bar.floor or (bar.floor.alpha > 0) == on then
+		return false
+	end
+	bar.floor:SetAlpha(on and 1 or 0)
+	bar.wkTrackAlpha = on and FLOOR_TINT or nil
+	return true
+end
+
 -- Laid across the bar at the size just given it, in design pixels, with the
 -- unit the owner's zoom puts them in.
 function Gauge.LayFloor(bar, unit, width, height)
