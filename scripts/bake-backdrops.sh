@@ -10,8 +10,9 @@
 # with enough fuzz to take the JPEG fringe, and the alpha is eroded one pixel so
 # no pale halo is left round the frame.
 #
-# The floor is darkened by DARKEN, so the item icons and the counts drawn over
-# it still read. Only the floor: everything inside the inner rectangle the
+# The floor is darkened to its painting's darken, so the item icons and the
+# counts drawn over it still read. Each painting has its own, because a floor
+# of pale sand needs more than one of moss before the dim labels read on it. Only the floor: everything inside the inner rectangle the
 # geometry names. The corner blocks that reach into that rectangle are
 # darkened with it, which is the price of not hand-painting a mask.
 #
@@ -50,22 +51,24 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 # One row per painting. inset is where the floor starts, left, top, right and
 # bottom, in source pixels; corner is the square that holds each corner's
 # ornament; period is the floor's repeat across and down, measured by
-# autocorrelation of the middle. desert02 is the same frame as the first desert
+# autocorrelation of the middle; darken is what the floor keeps of its
+# brightness. desert02 is the same frame as the first desert
 # painting with a calmer floor, so it kept that painting's numbers; a painting
 # with a new frame needs them measured again.
 PAINTINGS = [
 	{
 		"palette": "forest", "file": "art/forrest.jpeg", "stem": "Forest",
 		"inset": (60, 55, 60, 55), "corner": 120, "period": (335, 347),
+		"darken": 0.60,
 	},
 	{
 		"palette": "desert", "file": "art/desert02.jpeg", "stem": "Desert",
 		"inset": (72, 100, 82, 80), "corner": 210, "period": (334, 346),
+		"darken": 0.45,
 	},
 ]
 
 SCALE = 0.30     # window units per source pixel
-DARKEN = 0.60    # what the floor keeps of its brightness
 FADE = 16        # source pixels a rail and a corner reach into the floor
 OVERLAP = 24     # source pixels cross-faded at the start of each tile
 CLEAR = 40       # source pixels a tile is cut clear of a painted shadow or notch
@@ -98,7 +101,7 @@ def unwhite(image):
 	return rgba
 
 
-def darken(rgba, inset):
+def darken(rgba, inset, keep):
 	w, h = rgba.size
 	left, top, right, bottom = inset
 	# A mask of the floor, soft at its edge, and the image mixed with a darker
@@ -107,7 +110,7 @@ def darken(rgba, inset):
 	ImageDraw.Draw(mask).rectangle((left, top, w - right, h - bottom), fill=255)
 	mask = mask.filter(ImageFilter.GaussianBlur(EDGE / 2))
 	rgb = rgba.convert("RGB")
-	dark = rgb.point(lambda v: int(v * DARKEN))
+	dark = rgb.point(lambda v: int(v * keep))
 	out = Image.composite(dark, rgb, mask)
 	out.putalpha(rgba.getchannel("A"))
 	return out
@@ -228,7 +231,7 @@ lua = [
 ]
 
 for p in PAINTINGS:
-	src = darken(unwhite(Image.open(p["file"])), p["inset"])
+	src = darken(unwhite(Image.open(p["file"])), p["inset"], p["darken"])
 	W, H = src.size
 	left, top, right, bottom = p["inset"]
 	c = p["corner"]
