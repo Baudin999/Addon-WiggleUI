@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2XCJAM7V7AHN4P6E3CHZP6J
 type: bug
-status: todo
+status: doing
 title: A wiggle in a fight leaves the action bars where they were
 ---
 
