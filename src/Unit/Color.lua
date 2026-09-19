@@ -172,7 +172,8 @@ local function Brighten(color)
 end
 
 -- The palette's share of this file: the backdrop, the seam, the frame round a
--- bar, the swing timer's two hands, and the rested pool, which is the
+-- bar, the swing timer's two hands, the one colour the cast bar and the
+-- experience rail share, and the rested pool, which is the
 -- palette's accent rather than an entry of its own. Copies of dark's, because
 -- the saved variables that say which palette was chosen have not arrived, and
 -- Color.Paint below writes the chosen one into these same tables at
@@ -215,12 +216,12 @@ local HUE = {
 	iron    = SURFACE.iron,
 	warning = { 0.95, 0.75, 0.15 },
 
-	-- The cast bar's own, and it is deliberately none of the above. The gauge
-	-- over it carries threat, which is the green through red scale, and the tag
-	-- beside it carries the XP scale, which is those same five again meaning
-	-- something else. A cast bar in any of them would read as a third opinion
-	-- about the mob's health.
-	violet = { 0.62, 0.45, 0.95 },
+	-- The cast bar's and the experience rail's, one colour per palette, and
+	-- deliberately none of the above. The gauge over a cast carries threat,
+	-- which is the green through red scale, and the tag beside it carries the
+	-- XP scale, which is those same five again meaning something else. A cast
+	-- bar in any of them would read as a third opinion about the mob's health.
+	bar    = SURFACE.bar,
 
 	-- Your pet holding the mob. Not on the green through red scale, because that
 	-- scale is about you and the pet is neither you nor the wrong person. Cyan
@@ -335,21 +336,14 @@ Color.xp = {
 -- its fill. The one pair of colours in this palette that is about you rather
 -- than about something you are fighting.
 --
--- Purple because that is what this game has drawn the experience bar in since
--- it shipped, which is the same argument Color.heal makes for green: a colour
--- the player has already been taught beats a prettier one, so no palette moves
--- it. The rested pool is the palette's accent, the one colour every palette
--- spends on something to look at, and on dark that is the blue the game
--- drew rested in anyway. The
--- reputation rail is not here, because a standing is what a faction thinks of
--- you and Color.reaction above is already that scale.
---
--- Its own entry rather than HUE.violet, which is close enough to reuse and is
--- spoken for. That one is documented as the colour of a cast you are timing a
--- press against, and a fill that is on the screen every minute of every session
--- would spend a hue the addon keeps for the moment it matters.
+-- The rail is HUE.bar, the colour the cast bar wears too, so the two bars that
+-- are about you and not about a mob read as one family on every palette. On
+-- dark that is the purple this game has always drawn experience in. The rested
+-- pool is the palette's accent, and on dark that is the blue the game drew
+-- rested in anyway. The reputation rail is not here, because a standing is what
+-- a faction thinks of you and Color.reaction above is already that scale.
 Color.progress = {
-	experience = { 0.55, 0.32, 0.86 },
+	experience = SURFACE.bar,
 	rested     = SURFACE.rested,
 }
 
@@ -382,7 +376,7 @@ Color.frame = {
 -- and drains from the other end, because which way the fill runs already says
 -- which it is and a third colour would be a third thing to learn.
 Color.cast = {
-	open   = HUE.violet,
+	open   = HUE.bar,
 	locked = HUE.slate,
 }
 

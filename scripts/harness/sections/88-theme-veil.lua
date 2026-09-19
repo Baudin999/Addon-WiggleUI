@@ -94,12 +94,13 @@ for key, color in pairs(ns.Palettes.dark) do
 	end
 end
 
--- The unit table reaches the bars. The swing timer and every unit backdrop
--- held colours no palette could reach, so each is read here through the table
--- its part took at file scope, a palette is painted, and the same table has to
--- have moved. The rested pool is the accent and is shaped after the paint, so
--- it is held to the ceiling and to having moved. The cast bar and the
--- experience rail are the same on every palette and must not move at all.
+-- The unit table reaches the bars. The cast bar, the experience rail, the
+-- swing timer and every unit backdrop held colours no palette could reach, so
+-- each is read here through the table its part took at file scope, a palette
+-- is painted, and the same table has to have moved. The cast bar and the
+-- experience rail share one table, and it and the rested pool, which is the
+-- accent, are shaped after the paint, so both are held to the ceiling and to
+-- having moved rather than to the palette's numbers.
 local Color = ns.Unit.Color
 local held = {
 	backdrop  = Color.backdrop,
@@ -107,7 +108,11 @@ local held = {
 	iron      = Color.frame.idle,
 	swingMain = Color.swing.main,
 	swingOff  = Color.swing.off,
+	bar       = Color.cast.open,
 }
+local shapedKeys = { bar = true }
+check(Color.cast.open == Color.progress.experience,
+	"the cast bar and the experience rail are not one colour")
 for key in pairs(ns.Palettes.dark.unit) do
 	check(held[key], ("the palette's unit colour %s is not read by any bar this section knows"):format(key))
 end
@@ -122,34 +127,34 @@ local function Same(a, b)
 end
 
 local rested = Color.progress.rested
-local fixed = { cast = Color.cast.open, experience = Color.progress.experience }
-local before = { rested = Copy(rested) }
-for key, color in pairs(fixed) do
-	before[key] = Copy(color)
-end
+local before = { rested = Copy(rested), bar = Copy(held.bar) }
 
 local function Painted(name)
 	Color.Paint(ns.Palettes[name])
 	for key, color in pairs(ns.Palettes[name].unit) do
 		local drawn = held[key]
 		check(drawn ~= color, ("Unit.Color's %s is %s's own table"):format(key, name))
-		for index = 1, 4 do
-			check(drawn[index] == color[index],
-				("%s's %s[%d] reads %s and the palette says %s")
-					:format(name, key, index, tostring(drawn[index]), tostring(color[index])))
+		if shapedKeys[key] then
+			check(Color.Luma(drawn) <= Color.fillCeiling + 1e-9,
+				("%s's %s is over the fill ceiling after the paint"):format(name, key))
+		else
+			for index = 1, 4 do
+				check(drawn[index] == color[index],
+					("%s's %s[%d] reads %s and the palette says %s")
+						:format(name, key, index, tostring(drawn[index]), tostring(color[index])))
+			end
 		end
 	end
 	check(Color.Luma(rested) <= Color.fillCeiling + 1e-9,
 		("%s's rested pool is over the fill ceiling after the paint"):format(name))
-	for key, color in pairs(fixed) do
-		check(Same(color, before[key]), ("painting %s moved the %s colour"):format(name, key))
-	end
 end
 
 Painted("forest")
 check(not Same(rested, before.rested), "painting forest left the rested pool on dark's accent")
+check(not Same(held.bar, before.bar), "painting forest left the cast bar and experience rail on dark's")
 Painted("dark")
 check(Same(rested, before.rested), "painting dark back did not put the rested pool back")
+check(Same(held.bar, before.bar), "painting dark back did not put the cast bar and experience rail back")
 
 for _, element in ipairs(ns.Themes.ELEMENTS) do
 	check(ns.Theme.Mode(element.key) == "show",
