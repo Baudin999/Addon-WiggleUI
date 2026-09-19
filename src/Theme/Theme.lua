@@ -316,7 +316,11 @@ ns.Register({
 	end,
 
 	panel = function(ui)
-		ui.Section("Theme", "The screen")
+		-- First in the window, ahead of On and off's own switches. How much of the
+		-- addon is on the screen is the choice every other switch sits under, so
+		-- it is the page the window opens on. The panel builds every part before
+		-- it builds On and off, which is what puts these two sections above it.
+		ui.Section("Theme", "On and off")
 		ui.Lede("How much of the addon is on the screen, and what colour it is. Both are drawn at the next reload.")
 
 		local themes, palettes = Choices(Themes.ORDER), Choices(Theme.PALETTES)
@@ -336,7 +340,7 @@ ns.Register({
 			return Pending() and "reload to draw it" or "drawn now"
 		end, ReloadUI, Pending)
 
-		ui.Section("What the theme does", "The screen")
+		ui.Section("What the theme does", "On and off")
 		ui.Lede("Each element, and what the chosen theme does with it. Unlocking the frames brings every one of them back up so you can drag it.")
 		for _, element in ipairs(Themes.ELEMENTS) do
 			ui.Reading(element.label, function()
