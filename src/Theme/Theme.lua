@@ -121,6 +121,22 @@ function Theme.Drawn()
 	return drawnTheme, drawnPalette
 end
 
+-- How a gauge is drawn: flat, the fill as one colour and a hairline round
+-- everything, or modern, a sheen down the fill, the bars of one unit stacked
+-- with no line between them and the unit's edge in the palette's accent.
+--
+-- Drawn at the reload like the palette and for its reason, and read through
+-- here rather than off ns.db by the parts that draw it. A relayout runs
+-- whenever a size slider moves, and one reading the saved choice would draw
+-- the new look's spacing round the old look's fills until the reload.
+Theme.BAR_LOOKS = { "flat", "modern" }
+
+local drawnLook
+
+function Theme.Modern()
+	return drawnLook == "modern"
+end
+
 -- What the theme loaded with this session does to one element. Informational
 -- until the saved variables arrive, which is what a part building a frame at
 -- file scope would want: the frame as drawn, dressed a moment later.
@@ -246,7 +262,10 @@ loader:SetScript("OnEvent", function(self, _, name)
 	if not listed[ns.db.palette] then
 		ns.db.palette = "dark"
 	end
-	drawnTheme, drawnPalette = ns.db.theme, ns.db.palette
+	if ns.db.barLook ~= "modern" then
+		ns.db.barLook = "flat"
+	end
+	drawnTheme, drawnPalette, drawnLook = ns.db.theme, ns.db.palette, ns.db.barLook
 	Paint(drawnPalette)
 	chosen = themed[drawnTheme]
 	Pass()
@@ -278,6 +297,7 @@ end
 
 local function Pending()
 	return ns.db.theme ~= drawnTheme or ns.db.palette ~= drawnPalette
+		or ns.db.barLook ~= drawnLook
 end
 
 -- One word, the saved setting it writes, and the list it has to be on.
@@ -309,6 +329,7 @@ ns.Register({
 		-- drawn, so nobody's screen changes by upgrading.
 		theme = "informational",
 		palette = "dark",
+		barLook = "flat",
 	},
 
 	words = {
@@ -318,15 +339,20 @@ ns.Register({
 		palette = function(arg)
 			Word("palette", Theme.PALETTES, arg, "palette")
 		end,
+		bars = function(arg)
+			Word("barLook", Theme.BAR_LOOKS, arg, "bar look")
+		end,
 	},
 
 	help = {
 		"theme informational|immersive|exploration, how much of the addon is on the screen, from the next /reload",
 		"palette dark|forest|desert|arcane, the addon's colours, from the next /reload",
+		"bars flat|modern, how every gauge is drawn, from the next /reload",
 	},
 
 	status = function()
-		return ("theme %s, palette %s"):format(drawnTheme or "?", drawnPalette or "?")
+		return ("theme %s, palette %s, bars %s")
+			:format(drawnTheme or "?", drawnPalette or "?", drawnLook or "?")
 	end,
 
 	lock = function()
@@ -342,6 +368,7 @@ ns.Register({
 		ui.Lede("How much of the addon is on the screen, and what colour it is. Both are drawn at the next reload.")
 
 		local themes, palettes = Choices(Themes.ORDER), Choices(Theme.PALETTES)
+		local looks = Choices(Theme.BAR_LOOKS)
 
 		ui.Picker("theme",
 			function() return ns.db.theme end,
@@ -353,6 +380,12 @@ ns.Register({
 			function() return ns.db.palette end,
 			function(value) ns.db.palette = value end,
 			function() return palettes end)
+
+		ui.Picker("bar look",
+			function() return ns.db.barLook end,
+			function(value) ns.db.barLook = value end,
+			function() return looks end)
+		ui.Hint("Flat is one colour per bar with a hairline round each. Modern shades every bar from light at the top to dark at the bottom, stacks health on power with no line between, and edges each unit in the palette's accent.")
 
 		ui.Action(function()
 			return Pending() and "reload to draw it" or "drawn now"

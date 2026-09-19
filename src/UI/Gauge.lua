@@ -8,7 +8,8 @@ UI.Gauge = Gauge
 -- The gauge
 --
 -- A status bar with a flat fill and the spent part of it drawn behind, which
--- is what every health and power gauge in this addon is.
+-- is what every health and power gauge in this addon is. The modern bar look
+-- lays a sheen over the fill; see Sheen below.
 --
 -- It was written twice and neither copy was wrong. UnitFrames/EnemyBars.lua
 -- builds a bar of its own with a white texture the bar tints; Skin.lua takes
@@ -116,8 +117,34 @@ function Gauge.Underlay(bar, sublevel, color)
 	return texture
 end
 
--- A gauge of our own: flat fill, spent track behind it, and a scale of zero to
--- one until the caller knows what the unit's maximum is.
+-- The modern look's sheen: white thinning to nothing down the top half of the
+-- fill and black thickening out of nothing down the bottom half, so the colour
+-- reads lit from above. Two washes rather than one gradient from white to
+-- black, because one gradient passes through a grey at the middle and a grey
+-- laid over a class colour is a dirtier class colour.
+--
+-- Over the fill and pinned to it, so it is exactly as long as the fill whichever
+-- way the bar runs, and drawn once here: the tick paints the fill through the
+-- status bar's own colour and never touches these. One sublevel up in the
+-- fill's layer, which keeps it under every label, all of which are OVERLAY.
+local SHINE = { 1, 1, 1, 0.16 }
+local SHADE = { 0, 0, 0, 0.24 }
+local SHEEN_LAYER = 1
+
+local function Sheen(bar, fill)
+	local lit = UI.Wash(bar, SHINE, "TOP", "ARTWORK")
+	lit:SetDrawLayer("ARTWORK", SHEEN_LAYER)
+	lit:SetPoint("TOPLEFT", fill, "TOPLEFT", 0, 0)
+	lit:SetPoint("BOTTOMRIGHT", fill, "RIGHT", 0, 0)
+	local dark = UI.Wash(bar, SHADE, "BOTTOM", "ARTWORK")
+	dark:SetDrawLayer("ARTWORK", SHEEN_LAYER)
+	dark:SetPoint("TOPLEFT", fill, "LEFT", 0, 0)
+	dark:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 0, 0)
+end
+
+-- A gauge of our own: the fill, spent track behind it, and a scale of zero to
+-- one until the caller knows what the unit's maximum is. The fill is flat, and
+-- under the modern bar look it wears the sheen above.
 --
 -- The track hangs off the bar as `track` because this one owns both. A caller
 -- painting a bar it did not build hands its own track to Gauge.Paint instead.
@@ -128,6 +155,9 @@ function Gauge.New(parent)
 	Gauge.Flatten(bar)
 	bar:SetMinMaxValues(0, 1)
 	bar.track = Gauge.Underlay(bar)
+	if ns.Theme.Modern() then
+		Sheen(bar, fill)
+	end
 	return bar
 end
 
