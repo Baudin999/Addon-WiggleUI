@@ -200,20 +200,20 @@ Ability.SHOUT = {
 	swap  = { color = { 0.96, 0.62, 0.16 }, alpha = 0.6, grey = true },
 	range = { color = { 0.85, 0.25, 0.22 }, alpha = 0.6 },
 	cost  = { color = { 0.29, 0.45, 0.85 }, alpha = 0.6, grey = true },
-	empty = { color = { 0.20, 0.20, 0.24 }, alpha = 1, blank = true },
-	no    = { color = { 0.38, 0.38, 0.43 }, alpha = 0.6, grey = true },
+	empty = { color = UI.Color.hover, alpha = 1, blank = true },
+	no    = { color = UI.Color.quiet, alpha = 0.6, grey = true },
 }
 
 -- A square in a row of them. Ready is the common case and gets the quietest
 -- edge in the palette, so what you see is the two or three buttons that are
 -- not ready rather than the twenty that are.
 Ability.QUIET = {
-	go    = { color = { 0.16, 0.16, 0.19 }, alpha = 1 },
+	go    = { color = UI.Color.hairline, alpha = 1 },
 	swap  = { color = { 0.96, 0.62, 0.16 }, alpha = 1, grey = true },
 	range = { color = { 0.85, 0.25, 0.22 }, alpha = 1 },
 	cost  = { color = { 0.29, 0.45, 0.85 }, alpha = 1, grey = true },
-	empty = { color = { 0.13, 0.13, 0.16 }, alpha = 1, blank = true },
-	no    = { color = { 0.16, 0.16, 0.19 }, alpha = 0.55, grey = true },
+	empty = { color = UI.Color.control, alpha = 1, blank = true },
+	no    = { color = UI.Color.hairline, alpha = 0.55, grey = true },
 }
 
 -- The look one status is worth in one palette. Called from every ticker that

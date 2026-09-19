@@ -171,6 +171,17 @@ local function Brighten(color)
 	return true
 end
 
+-- The palette's share of this file: the backdrop, the seam, the frame round a
+-- bar and the fills of the bars that are about you. Copies of dark's, because
+-- the saved variables that say which palette was chosen have not arrived, and
+-- Color.Paint below writes the chosen one into these same tables at
+-- ADDON_LOADED. Copies rather than dark's own tables, which painting would
+-- overwrite.
+local SURFACE = {}
+for key, color in pairs(ns.Palettes.dark.unit) do
+	SURFACE[key] = { color[1], color[2], color[3], color[4] }
+end
+
 local HUE = {
 	green  = { 0.20, 0.72, 0.38 },
 	amber  = { 0.95, 0.77, 0.25 },
@@ -198,7 +209,7 @@ local HUE = {
 	-- edge of the widget. That is the loudest position on the bar paying for the
 	-- one bit that is nearly always the same. A channel that is loud in the
 	-- common case is noise.
-	iron    = { 0.24, 0.25, 0.29 },
+	iron    = SURFACE.iron,
 	warning = { 0.95, 0.75, 0.15 },
 
 	-- The cast bar's own, and it is deliberately none of the above. The gauge
@@ -206,7 +217,7 @@ local HUE = {
 	-- beside it carries the XP scale, which is those same five again meaning
 	-- something else. A cast bar in any of them would read as a third opinion
 	-- about the mob's health.
-	violet = { 0.62, 0.45, 0.95 },
+	violet = SURFACE.cast,
 
 	-- Your pet holding the mob. Not on the green through red scale, because that
 	-- scale is about you and the pet is neither you nor the wrong person. Cyan
@@ -219,14 +230,14 @@ Color.hue = HUE
 -- The surfaces. Flat fills, one pixel edges, no gloss and no gradient, and no
 -- file path anywhere, so there is no art asset that has to still exist on this
 -- client.
-Color.backdrop = { 0.04, 0.04, 0.05, 0.85 }
+Color.backdrop = SURFACE.backdrop
 Color.iconEdge = { 0, 0, 0, 0.90 }
 
 -- The hairline between the two chambers of an enemy bar, health above and cast
 -- below. Darker than the backdrop and fully opaque, because its whole job is to
 -- be the one line that says these are two readings and not one fill. Against
 -- the backdrop's own 0.85 it would show the world through the seam.
-Color.seam = { 0.02, 0.02, 0.03, 1 }
+Color.seam = SURFACE.seam
 
 -- What the spent part of a bar keeps of its own colour. A mob at ten percent
 -- still reads as yours rather than as an empty box.
@@ -332,8 +343,17 @@ Color.xp = {
 -- press against, and a fill that is on the screen every minute of every session
 -- would spend a hue the addon keeps for the moment it matters.
 Color.progress = {
-	experience = { 0.55, 0.32, 0.86 },
-	rested     = { 0.30, 0.52, 0.92 },
+	experience = SURFACE.experience,
+	rested     = SURFACE.rested,
+}
+
+-- The swing timer's two hands, gold for the one that carries the abilities and
+-- steel for the one that does not. Here with the progress rails because both
+-- are bars about you and both are the palette's to recolour. Not shaped: the
+-- swing bars carry no text.
+Color.swing = {
+	main = SURFACE.swingMain,
+	off  = SURFACE.swingOff,
 }
 
 -- The frame round a bar, which is where reaction lives now. A departure
@@ -433,9 +453,7 @@ Color.class = CLASS
 -- departing.
 --------------------------------------------------------------------------
 
-local shaped = {}
-
-local function Shape(list, apply)
+local function Shape(list, apply, shaped)
 	for _, color in ipairs(list) do
 		if not shaped[color] then
 			shaped[color] = true
@@ -461,8 +479,27 @@ for _, color in ipairs({ Color.text.value, Color.text.target, Color.text.count }
 	tokens[#tokens + 1] = color
 end
 
-Shape(fills, Darken)
-Shape(tokens, Brighten)
+-- Both steps land exactly on their limit and leave a colour already inside it
+-- alone, so running the pass again after a palette is painted only moves the
+-- colours the palette just wrote.
+local function ShapeAll()
+	local shaped = {}
+	Shape(fills, Darken, shaped)
+	Shape(tokens, Brighten, shaped)
+end
+
+ShapeAll()
+
+-- The chosen palette's unit table, written into the tables above in place so
+-- every part holding one sees the new colour, and then shaped like the rest.
+-- Called once, by Theme/Theme.lua at ADDON_LOADED, before any bar is built.
+function Color.Paint(unit)
+	for key, color in pairs(unit) do
+		local into = SURFACE[key]
+		into[1], into[2], into[3], into[4] = color[1], color[2], color[3], color[4]
+	end
+	ShapeAll()
+end
 
 -- Every fill the palette owns, so the harness can hold all of them to the
 -- ceiling rather than to the five it happens to know the names of, and so

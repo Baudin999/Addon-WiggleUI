@@ -82,7 +82,7 @@ local SHAPES = {
 -- The four colours a row can be, and they are the whole readout at a glance.
 -- Held as tables this file owns for the reason Feeds/Loot.lua holds its quality
 -- palette: every guard in UI/Feed.lua compares a colour by identity.
-local OUT = { 0.87, 0.87, 0.91 }
+local OUT = C.text
 local IN = { 0.94, 0.42, 0.35 }
 local HEAL = { 0.34, 0.80, 0.44 }
 local MISS = { 0.50, 0.50, 0.55 }

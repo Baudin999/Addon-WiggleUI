@@ -73,7 +73,7 @@ local CAPTION_GAP = 4
 -- colour, because the ability is there and ready and the only thing missing is
 -- your thumb.
 local RED = { 0.85, 0.25, 0.22 }
-local QUIET = { 0.16, 0.16, 0.19 }
+local QUIET = ns.UI.Color.hairline
 
 local MISSING = {
 	go    = { color = RED, alpha = 1, grey = true },

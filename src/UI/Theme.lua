@@ -86,10 +86,13 @@ UI.Color = {
 -- which palette was chosen have not arrived yet. Copies rather than the
 -- palette's own tables: Theme/Theme.lua writes the chosen palette into these
 -- in place at ADDON_LOADED, and writing into dark's own tables would lose dark.
+-- Its unit table is Unit/Color.lua's and is skipped here.
 for key, color in pairs(ns.Palettes.dark) do
-	assert(UI.Color[key] == nil,
-		("the palette and UI.Color both define the colour %q"):format(key))
-	UI.Color[key] = { color[1], color[2], color[3], color[4] }
+	if key ~= "unit" then
+		assert(UI.Color[key] == nil,
+			("the palette and UI.Color both define the colour %q"):format(key))
+		UI.Color[key] = { color[1], color[2], color[3], color[4] }
+	end
 end
 
 -- What an item's grade is drawn in, keyed by the number the client grades on.

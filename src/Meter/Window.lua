@@ -121,8 +121,8 @@ local function BarAlpha()
 	return ns.db.meterBarAlpha / 100
 end
 
-local DIM = { 0.56, 0.56, 0.62 }
-local WHITE = { 0.87, 0.87, 0.91 }
+local DIM = ns.UI.Color.dim
+local WHITE = ns.UI.Color.text
 local WARN = { 0.94, 0.42, 0.35 }
 local GREY = { 0.50, 0.50, 0.50 }
 

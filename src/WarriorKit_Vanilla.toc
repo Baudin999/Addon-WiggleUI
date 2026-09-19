@@ -121,6 +121,13 @@ Core\Here.lua
 # client will let you inspect, which is the only source of a real role on a
 # client that has none, and a part may not name a file outside its own tree.
 Unit\Unit.lua
+# The three palettes. Data and nothing else, ahead of the two files that
+# build their colour tables out of dark at load: Unit\Color.lua for the bars
+# and backdrops a unit is drawn on, UI\Theme.lua for the windows and controls.
+# Theme\Theme.lua further down chooses one and paints it into both.
+Theme\Dark.lua
+Theme\Forest.lua
+Theme\Desert.lua
 Unit\Color.lua
 Unit\Level.lua
 Unit\Roster.lua
@@ -131,6 +138,10 @@ Unit\Threat.lua
 # The drawing layer, between Core and everything that draws. It owns the pixel
 # grid, so it loads before the panel and before any part that puts a frame up.
 UI\Pixel.lua
+
+# The palette and the pixel metrics, straight after the grid they are measured
+# on and before UI\Ability.lua, whose squares are drawn in its colours.
+UI\Theme.lua
 
 # One OnUpdate, registered rather than written out. Every throttled tick in the
 # addon comes through here, which is what lets scripts/hot.lua derive the set of
@@ -201,12 +212,6 @@ UI\Bound.lua
 # dragging, and Window is the chrome with its rail and its tab strip. All six
 # load before Core\Panel.lua, which is the first thing that builds a page out
 # of them.
-# The three palettes, before UI\Theme.lua, which builds UI.Color's surfaces
-# out of dark at load. Data and nothing else; Theme\Theme.lua below chooses.
-Theme\Dark.lua
-Theme\Forest.lua
-Theme\Desert.lua
-UI\Theme.lua
 
 # The item square, and the pile headings that go over a column of them. After
 # UI\Theme.lua, whose palette says what an item's grade is drawn in, and after

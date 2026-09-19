@@ -65,16 +65,25 @@ for _, name in ipairs(Themes.ORDER) do
 	themed[name] = theme
 end
 
+-- One level of a palette against the same level of dark: the top, which is
+-- UI.Color's, and the unit table under it, which is Unit.Color's.
+local function Match(name, colours, reference, level)
+	assert(type(colours) == "table", ("the palette %q has no %s table"):format(name, level))
+	for key in pairs(reference) do
+		assert(colours[key], ("the palette %q has no %s colour for %q"):format(name, level, key))
+	end
+	for key in pairs(colours) do
+		assert(reference[key],
+			("the palette %q colours %s %q, which dark does not"):format(name, level, key))
+	end
+end
+
 local listed = {}
 for _, name in ipairs(Theme.PALETTES) do
 	local palette = Palettes[name]
 	assert(type(palette) == "table", ("the palette %q has no file"):format(name))
-	for key in pairs(Palettes.dark) do
-		assert(palette[key], ("the palette %q has no colour for %q"):format(name, key))
-	end
-	for key in pairs(palette) do
-		assert(Palettes.dark[key], ("the palette %q colours %q, which dark does not"):format(name, key))
-	end
+	Match(name, palette, Palettes.dark, "window")
+	Match(name, palette.unit, Palettes.dark.unit, "unit")
 	listed[name] = true
 end
 for name in pairs(Palettes) do
@@ -187,12 +196,16 @@ end
 --------------------------------------------------------------------------
 
 -- Copied into UI.Color's own tables rather than over them, because a part that
--- took UI.Color.window into a local is holding the table.
+-- took UI.Color.window into a local is holding the table. The unit table goes
+-- to Unit/Color.lua, which copies it the same way and then shapes its fills.
 local function Paint(name)
 	for key, color in pairs(Palettes[name]) do
-		local into = UI.Color[key]
-		into[1], into[2], into[3], into[4] = color[1], color[2], color[3], color[4]
+		if key ~= "unit" then
+			local into = UI.Color[key]
+			into[1], into[2], into[3], into[4] = color[1], color[2], color[3], color[4]
+		end
 	end
+	ns.Unit.Color.Paint(Palettes[name].unit)
 end
 
 --------------------------------------------------------------------------
@@ -233,6 +246,15 @@ local function Describe(mode)
 		return "under the pointer"
 	end
 	return ("at %d%%"):format(math.floor(mode * 100 + 0.5))
+end
+
+-- A list of names as the rows a picker drops down, each row showing its name.
+local function Choices(names)
+	local options = {}
+	for index, name in ipairs(names) do
+		options[index] = { value = name, text = name }
+	end
+	return options
 end
 
 local function Pending()
@@ -296,14 +318,18 @@ ns.Register({
 		ui.Section("Theme", "The screen")
 		ui.Lede("How much of the addon is on the screen, and what colour it is. Both are drawn at the next reload.")
 
-		ui.Cycle("theme", Themes.ORDER,
+		local themes, palettes = Choices(Themes.ORDER), Choices(Theme.PALETTES)
+
+		ui.Picker("theme",
 			function() return ns.db.theme end,
-			function(value) ns.db.theme = value end)
+			function(value) ns.db.theme = value end,
+			function() return themes end)
 		ui.Hint(function() return Themes.LABEL[ns.db.theme] end)
 
-		ui.Cycle("palette", Theme.PALETTES,
+		ui.Picker("palette",
 			function() return ns.db.palette end,
-			function(value) ns.db.palette = value end)
+			function(value) ns.db.palette = value end,
+			function() return palettes end)
 
 		ui.Action(function()
 			return Pending() and "reload to draw it" or "drawn now"

@@ -26,4 +26,17 @@ Palettes.forest = {
 	heading  = { 0.92, 0.82, 0.42 },
 	quiet    = { 0.40, 0.46, 0.39 },
 	hint     = { 0.62, 0.86, 0.58 },
+
+	-- Heather for a cast, which is on neither of the scales around it, and jade
+	-- and moss for the experience rail and the rest beyond it.
+	unit = {
+		backdrop   = { 0.03, 0.05, 0.035, 0.85 },
+		seam       = { 0.015, 0.03, 0.02, 1 },
+		iron       = { 0.22, 0.29, 0.23 },
+		cast       = { 0.78, 0.46, 0.78 },
+		experience = { 0.30, 0.62, 0.52 },
+		rested     = { 0.55, 0.72, 0.28 },
+		swingMain  = { 0.78, 0.70, 0.34 },
+		swingOff   = { 0.40, 0.64, 0.52 },
+	},
 }

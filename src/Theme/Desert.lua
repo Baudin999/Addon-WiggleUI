@@ -25,4 +25,17 @@ Palettes.desert = {
 	heading  = { 1.00, 0.86, 0.52 },
 	quiet    = { 0.50, 0.43, 0.34 },
 	hint     = { 0.98, 0.78, 0.52 },
+
+	-- Sky blue for a cast, the one cool colour on a warm screen, and clay and
+	-- sand for the experience rail and the rest beyond it.
+	unit = {
+		backdrop   = { 0.06, 0.045, 0.03, 0.85 },
+		seam       = { 0.03, 0.02, 0.015, 1 },
+		iron       = { 0.31, 0.26, 0.20 },
+		cast       = { 0.40, 0.62, 0.92 },
+		experience = { 0.72, 0.40, 0.52 },
+		rested     = { 0.86, 0.62, 0.30 },
+		swingMain  = { 0.92, 0.70, 0.32 },
+		swingOff   = { 0.52, 0.62, 0.72 },
+	},
 }

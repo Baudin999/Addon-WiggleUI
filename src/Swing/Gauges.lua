@@ -66,9 +66,10 @@ local GAP = 2
 -- Gold for the hand that carries the abilities, steel for the one that does
 -- not, so the two are told apart by colour rather than by position. Both sit
 -- where a health bar does not, because a bar under the middle of the screen in
--- red or green would read as somebody's health.
-local MAIN_FILL = { 0.86, 0.72, 0.30 }
-local OFF_FILL = { 0.42, 0.60, 0.86 }
+-- red or green would read as somebody's health. The palette's, so a forest or
+-- desert screen gets its own gold and steel.
+local MAIN_FILL = ns.Unit.Color.swing.main
+local OFF_FILL = ns.Unit.Color.swing.off
 
 -- What the main hand gauge becomes while the press is on. A colour flip on the
 -- whole bar rather than only a band, because the band is four percent of the
@@ -79,7 +80,7 @@ local NOW_FILL = { 0.34, 0.86, 0.44 }
 local BAND = { 0.34, 0.86, 0.44, 0.40 }
 local MARK = { 1, 1, 1, 0.85 }
 
-local EDGE_QUIET = { 0.10, 0.10, 0.12, 1 }
+local EDGE_QUIET = ns.UI.Color.chrome
 local EDGE_NOW = { 0.40, 0.94, 0.52, 1 }
 
 local frame, main, off, place
