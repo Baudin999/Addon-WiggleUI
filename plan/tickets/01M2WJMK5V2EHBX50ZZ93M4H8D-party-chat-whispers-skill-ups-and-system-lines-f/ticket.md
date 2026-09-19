@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WJMK5V2EHBX50ZZ93M4H8D
 type: task
-status: doing
+status: done
 title: "Party chat, whispers, skill-ups and system lines float in like the drops"
 ---
 
