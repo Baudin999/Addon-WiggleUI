@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2XAF6T1ECATY921X88CVV7S
 type: task
-status: todo
+status: doing
 title: "Target of target in the pet's colour, parked beside the target"
 ---
 
