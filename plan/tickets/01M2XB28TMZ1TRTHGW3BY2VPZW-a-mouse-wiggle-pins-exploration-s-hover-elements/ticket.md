@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2XB28TMZ1TRTHGW3BY2VPZW
 type: task
-status: todo
+status: doing
 title: "A mouse wiggle pins exploration's hover elements up, another drops them"
 ---
 
