@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WVHK3B6WN3JEVN3CRHAQVZ
 type: task
-status: todo
+status: doing
 title: "The forest floor is one painting drawn over the window, not a tile"
 ---
 
