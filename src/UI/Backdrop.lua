@@ -127,6 +127,13 @@ function Backdrop:Thickness(side)
 	return self.art.thickness[side] * self.scale
 end
 
+-- How far a corner's ornament reaches into the window past the rail on one
+-- side, at the scale it is drawn at. Anything laid along an edge the corners
+-- end, the footer's two numbers, starts this far in or it is written on them.
+function Backdrop:Reach(side)
+	return self.art.corner * self.scale - self:Thickness(side)
+end
+
 function Backdrop:Layout(width, height)
 	local art, frame, scale = self.art, self.frame, self.scale
 	local side = {

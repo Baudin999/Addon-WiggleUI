@@ -300,9 +300,14 @@ end
 -- lines nobody reading how a window is assembled needs to step through. Every
 -- window has one, bare or not, because the chat window's way out lives in it.
 local function Footer(window, frame, opts)
+	-- On a painted window the bottom corners reach in over the footer, so it
+	-- starts where they end rather than at the pad.
+	local backdrop = window.backdrop
+	local left = backdrop and math.max(M.pad, backdrop:Reach("left")) or M.pad
+	local right = backdrop and math.max(M.pad, backdrop:Reach("right")) or M.pad
 	window.footer = CreateFrame("Frame", nil, frame)
-	window.footer:SetPoint("BOTTOMLEFT", M.pad, 0)
-	window.footer:SetPoint("BOTTOMRIGHT", -M.pad, 0)
+	window.footer:SetPoint("BOTTOMLEFT", left, 0)
+	window.footer:SetPoint("BOTTOMRIGHT", -right, 0)
 	window.footer:SetHeight(window.foot)
 	-- The line over it is there to part the footer from the page above it, and
 	-- a screen window has no page: it is a line the width of the monitor drawn
@@ -311,8 +316,8 @@ local function Footer(window, frame, opts)
 		return
 	end
 	window.footerRule = UI.Rule(frame, C.hairline)
-	window.footerRule:SetPoint("BOTTOMLEFT", M.pad, window.foot)
-	window.footerRule:SetPoint("BOTTOMRIGHT", -M.pad, window.foot)
+	window.footerRule:SetPoint("BOTTOMLEFT", left, window.foot)
+	window.footerRule:SetPoint("BOTTOMRIGHT", -right, window.foot)
 end
 
 -- The two ways out of a dropdown that is open over this window and a key field
