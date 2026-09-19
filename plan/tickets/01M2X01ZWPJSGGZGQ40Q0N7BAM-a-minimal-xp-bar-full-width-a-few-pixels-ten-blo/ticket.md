@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2X01ZWPJSGGZGQ40Q0N7BAM
 type: feature
-status: doing
+status: done
 title: "A minimal XP bar: full width, a few pixels, ten blocks, black edge"
 ---
 
