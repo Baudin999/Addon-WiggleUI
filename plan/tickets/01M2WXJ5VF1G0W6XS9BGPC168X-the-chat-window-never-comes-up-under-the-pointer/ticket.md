@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WXJ5VF1G0W6XS9BGPC168X
 type: bug
-status: doing
+status: done
 title: The chat window never comes up under the pointer in exploration
 ---
 
