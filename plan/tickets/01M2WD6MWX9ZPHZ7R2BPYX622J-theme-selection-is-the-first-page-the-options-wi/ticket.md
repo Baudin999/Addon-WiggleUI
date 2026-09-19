@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WD6MWX9ZPHZ7R2BPYX622J
 type: task
-status: todo
+status: doing
 title: Theme selection is the first page the options window opens on
 ---
 
