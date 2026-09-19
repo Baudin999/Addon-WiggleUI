@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2W8X3S19QQJGCBV5VXH9ED2
 type: task
-status: todo
+status: doing
 title: Drop the two visibility rows from the bars page
 ---
 
