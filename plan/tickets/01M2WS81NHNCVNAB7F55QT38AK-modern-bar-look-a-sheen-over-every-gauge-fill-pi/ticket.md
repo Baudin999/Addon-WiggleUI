@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WS81NHNCVNAB7F55QT38AK
 type: task
-status: todo
+status: doing
 title: "Modern bar look: a sheen over every gauge fill, picked on the Theme page"
 parent: 01M2WS81HMRRABBTW1DEJ175G8
 ---
