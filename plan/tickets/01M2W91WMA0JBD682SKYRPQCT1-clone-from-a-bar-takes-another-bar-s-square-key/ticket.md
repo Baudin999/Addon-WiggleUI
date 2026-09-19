@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2W91WMA0JBD682SKYRPQCT1
 type: task
-status: doing
+status: done
 title: "Clone from: a bar takes another bar's square, key and ground"
 ---
 
