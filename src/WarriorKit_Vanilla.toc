@@ -121,7 +121,7 @@ Core\Here.lua
 # client will let you inspect, which is the only source of a real role on a
 # client that has none, and a part may not name a file outside its own tree.
 Unit\Unit.lua
-# The four palettes. Data and nothing else, ahead of the two files that
+# The palettes. Data and nothing else, ahead of the two files that
 # build their colour tables out of dark at load: Unit\Color.lua for the bars
 # and backdrops a unit is drawn on, UI\Theme.lua for the windows and controls.
 # Theme\Theme.lua further down chooses one and paints it into both.
@@ -129,6 +129,8 @@ Theme\Dark.lua
 Theme\Forest.lua
 Theme\Desert.lua
 Theme\Arcane.lua
+Theme\Horde.lua
+Theme\Alliance.lua
 # The painted frames the bag window is drawn in, for the palettes that have
 # one. Written by scripts/bake-backdrops.sh.
 Theme\Backdrops.lua

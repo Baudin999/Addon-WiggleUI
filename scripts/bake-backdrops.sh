@@ -6,11 +6,11 @@
 # Each source is one painting: a frame round a floor that repeats, on a margin.
 # Three things are done to it.
 #
-# The margin goes. A white one is flooded from the four corners of the image
-# to alpha, with enough fuzz to take the JPEG fringe, and the alpha is eroded
-# one pixel so no pale halo is left round the frame. A painted one, the arcane
-# nebula, is out of focus where the frame is sharp, so it is the region of
-# little detail that reaches the image's edge.
+# The margin goes. A flat one, white or the alliance's navy, is flooded from
+# the four corners of the image to alpha, with enough fuzz to take the JPEG
+# fringe, and the alpha is eroded one pixel so no halo is left round the frame.
+# A painted one, the arcane nebula, is out of focus where the frame is sharp,
+# so it is the region of little detail that reaches the image's edge.
 #
 # The floor is darkened to its painting's darken, so the item icons and the
 # counts drawn over it still read. Each painting has its own, because a floor
@@ -54,7 +54,7 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 # bottom, in source pixels; corner is the square that holds each corner's
 # ornament; period is the floor's repeat across and down, measured by
 # autocorrelation of the middle; darken is what the floor keeps of its
-# brightness; margin is white or blurred. desert02 is the same frame as the
+# brightness; margin is flat or blurred. desert02 is the same frame as the
 # first desert painting with a calmer floor, so it kept that painting's
 # numbers; a painting with a new frame needs them measured again.
 #
@@ -65,6 +65,14 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 # the floor's 150 pixels down is a third of a snake, and are cut clear of the
 # corner by a distance of their own, clear, because its corner block ends in a
 # gold pillar that would otherwise stand at every join.
+#
+# Horde and alliance are arcane's frame and floor repainted, so they keep its
+# numbers, except that their side pillar is a plain slab between two blocks at
+# 200 and 490: the side rail is 150 long so the tile and its overlap end short
+# of the lower block. Horde's margin is a dark brown the blurred test takes as
+# readily as a nebula. Alliance's is flat navy, and its bottom rail has a
+# smooth face that the blurred test reaches and eats, so it is flooded like the
+# white ones: the flood compares each pixel to its corner's colour.
 PAINTINGS = [
 	{
 		"palette": "forest", "file": "art/forrest.jpeg", "stem": "Forest",
@@ -82,13 +90,25 @@ PAINTINGS = [
 		"darken": 0.75, "margin": "blurred",
 		"floor": (381, 313), "rail": (300, 220), "clear": 105,
 	},
+	{
+		"palette": "horde", "file": "art/horde.jpeg", "stem": "Horde",
+		"inset": (78, 100, 78, 82), "corner": 210, "period": (333, 150),
+		"darken": 0.45, "margin": "blurred",
+		"floor": (381, 313), "rail": (300, 150), "clear": 105,
+	},
+	{
+		"palette": "alliance", "file": "art/alliance.jpeg", "stem": "Alliance",
+		"inset": (78, 100, 78, 82), "corner": 210, "period": (333, 150),
+		"darken": 0.65, "margin": "flat",
+		"floor": (381, 313), "rail": (300, 150), "clear": 105,
+	},
 ]
 
 SCALE = 0.30     # window units per source pixel
 FADE = 16        # source pixels a rail and a corner reach into the floor
 OVERLAP = 24     # source pixels cross-faded at the start of each tile
 CLEAR = 40       # source pixels a tile is cut clear of a painted shadow or notch
-FUZZ = 30        # how far from white still counts as the margin, of 255
+FUZZ = 30        # how far from the corner's colour still counts as margin, of 255
 EDGE = 8         # source pixels over which the darkening ramps in
 SHARP = 5        # the local detail, of 255, under which a pixel is out of focus
 
@@ -101,11 +121,12 @@ def pot(drawn):
 	return side
 
 
-def unwhite(image):
+def unflat(image):
 	rgba = image.convert("RGBA")
 	w, h = rgba.size
-	# A flood through the near-white from each corner of the image, marked on a
-	# copy, so the white inside the painting (a highlight on a gem) stays.
+	# A flood through the corner's colour from each corner of the image, marked
+	# on a copy, so the same colour inside the painting (a highlight on a gem)
+	# stays.
 	marked = rgba.convert("RGB")
 	for x, y in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
 		ImageDraw.floodfill(marked, (x, y), (255, 0, 255), thresh=FUZZ)
@@ -140,7 +161,7 @@ def unblur(image):
 	return rgba
 
 
-MARGINS = {"white": unwhite, "blurred": unblur}
+MARGINS = {"flat": unflat, "blurred": unblur}
 
 
 def darken(rgba, inset, keep):
@@ -273,7 +294,7 @@ lua = [
 ]
 
 for p in PAINTINGS:
-	src = darken(MARGINS[p.get("margin", "white")](Image.open(p["file"])), p["inset"], p["darken"])
+	src = darken(MARGINS[p.get("margin", "flat")](Image.open(p["file"])), p["inset"], p["darken"])
 	W, H = src.size
 	left, top, right, bottom = p["inset"]
 	c = p["corner"]
