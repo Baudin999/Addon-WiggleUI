@@ -179,9 +179,7 @@ local function Dress(frame, mode)
 	end
 	if not ns.db.locked then
 		-- Being placed. Up and whole, so it can be found and dragged.
-		if frame.wkReveal then
-			frame.wkReveal:Hide()
-		end
+		UI.Unreveal(frame)
 		veil:SetAlpha(1)
 		veil:Show()
 		return true

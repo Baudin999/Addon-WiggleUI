@@ -6,13 +6,15 @@
 -- different level is a unit frame drawn under the one it was raised over. So
 -- the level and the strata are read either side of the reparent.
 --
--- The reveal has one case the catcher cannot answer on its own: the pointer
--- leaving the catcher for one of the frame's own buttons, which fires OnLeave
--- with the pointer still inside the frame. A reveal that faded there would be a
--- bar that vanished the moment you reached for a square on it. So the pointer
--- is put on a child, the recheck is run, and the frame has to still be up; then
--- the pointer goes off the frame and the recheck has to put it down and stop.
---
+-- The reveal has to be the frame the pointer finds. A catcher under the
+-- frame's own children was, on a window they fill edge to edge, a frame the
+-- pointer never reached: the chat window stayed down in the exploration theme
+-- however long you held the mouse on it. So at rest the catcher has to be what
+-- the client says is under the pointer, even on a child built after the
+-- reveal. Once the frame is up it has to let go, or every button and link on
+-- the frame is behind it; the recheck then keeps the frame up with the pointer
+-- on a child and puts it down, and stops, once the pointer is off.
+
 -- The palette is copied into UI.Color's tables at load. Dark is the default,
 -- so every palette colour has to read dark's numbers here, and each has to be
 -- the table UI.Color held before the load, which is the table a part took.
@@ -57,15 +59,27 @@ local function over(target)
 	mouse.Place(x, y)
 end
 
+-- Built after the reveal and raised over everything, the way the chat window
+-- builds its rail and entry after Theme.Wear.
+local late = CreateFrame("Button", nil, frame)
+late:SetSize(20, 20)
+late:SetPoint("RIGHT", frame, "RIGHT", -10, 0)
+late:SetFrameLevel(40)
+late:EnableMouse(true)
+
 over(frame)
+check(mouse.At(mouse.Point(child)) == catcher,
+	"at rest the pointer on a child finds the child, so the frame never comes up")
+
 mouse.Deliver(catcher, "OnEnter")
 check(veil:GetAlpha() == 1, "the pointer on the frame did not bring it up")
+check(mouse.At(mouse.Point(child)) == child,
+	"the frame came up and the catcher still covers its buttons")
 
-over(child)
-mouse.Deliver(catcher, "OnLeave")
 local tick = UI.Ticking("reveal", catcher)
-check(tick ~= nil, "the pointer onto a child did not arm the recheck")
+check(tick ~= nil, "the frame came up without arming the recheck")
 if tick then
+	over(child)
 	tick:Beat(1)
 	check(veil:GetAlpha() == 1, "the frame went down with the pointer on one of its own buttons")
 
@@ -74,6 +88,11 @@ if tick then
 	check(veil:GetAlpha() == 0, "the pointer off the frame did not put it back down")
 	check(not tick:Running(), "the recheck kept running with nothing revealed")
 end
+check(mouse.At(mouse.Point(late)) == catcher,
+	"back at rest the catcher is under a child built after the reveal")
+local lateX, lateY = mouse.Point(late)
+check(mouse.At(lateX, lateY, "LeftButton") == late,
+	"the catcher at rest takes the click instead of passing it through")
 
 frame:Hide()
 

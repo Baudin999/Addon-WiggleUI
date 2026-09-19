@@ -30,9 +30,8 @@ local UI = ns.UI
 --------------------------------------------------------------------------
 
 -- How often a revealed frame asks whether the pointer is still on it. Only
--- while it is revealed and the pointer has left the catcher for one of the
--- frame's own children, which is the one case the catcher's own OnLeave cannot
--- answer. A frame nobody is pointing at runs nothing.
+-- while it is revealed: the catcher has let go of the mouse by then, so the
+-- rectangle is the one thing left to ask. A frame at rest runs nothing.
 local RECHECK = 0.2
 
 function UI.Veiled(frame)
@@ -68,15 +67,37 @@ end
 --
 -- The veil rests at `rest` and goes to full while the pointer is over the frame.
 -- The pointer is found by a catcher, a child of the frame the size of it that
--- takes the hover and passes every click through (UI.HoverOnly), sitting at the
--- frame's own level so the frame's buttons are above it and keep their tooltips.
+-- takes the hover and passes every click through (UI.HoverOnly).
 --
--- Moving from the catcher onto one of those buttons fires the catcher's OnLeave
--- with the pointer still inside the frame. That is the case the recheck is for:
--- it asks the rectangle rather than the catcher, and stops itself the moment
--- the answer is no. SetAlpha is not a protected write, so this answers in a
--- fight on a secure bar the same as out of one.
+-- While the frame rests the catcher sits over every one of the frame's own
+-- children. Under them it was the one frame the pointer could not reach on a
+-- window its children fill: the chat window is its rail, its lines and its
+-- entry edge to edge, and in the exploration theme it never came up. Nothing
+-- under it is visible at rest, so nothing is lost by covering it.
+--
+-- Once the frame is up the catcher lets go of the mouse, so the buttons, links
+-- and scrolling under it answer as drawn, and the recheck asks the rectangle
+-- whether the pointer is still inside. It stops itself the moment the answer
+-- is no and the catcher takes the hover back. SetAlpha and the mouse flags on an
+-- insecure child are not protected writes, so this answers in a fight on a
+-- secure bar the same as out of one.
 --------------------------------------------------------------------------
+
+-- The highest level among a frame's descendants, which is where the catcher
+-- has to sit to be the frame the pointer finds. Walked on every rest rather
+-- than once, because a part builds children after it hands the frame over:
+-- the chat window builds its rail and its entry after Theme.Wear.
+local function Top(top, ...)
+	for index = 1, select("#", ...) do
+		local child = select(index, ...)
+		-- The catcher is a child too, and counting it would lift it a level
+		-- on every rest.
+		if not child.wkRevealFrame then
+			top = Top(math.max(top, child:GetFrameLevel()), child:GetChildren())
+		end
+	end
+	return top
+end
 
 local function Rest(catcher)
 	local veil, rest = catcher.wkRevealVeil, catcher.wkRevealRest
@@ -85,6 +106,17 @@ local function Rest(catcher)
 	end
 	if catcher.wkRevealTick then
 		catcher.wkRevealTick:Stop()
+	end
+	local frame = catcher.wkRevealFrame
+	local level = Top(frame:GetFrameLevel(), frame:GetChildren()) + 1
+	if catcher:GetFrameLevel() ~= level then
+		catcher:SetFrameLevel(level)
+	end
+	-- The motion alone. The clicks went off once in UI.Reveal and stay off;
+	-- EnableMouse(true) would turn them back on and eat the first click on a
+	-- resting bar.
+	if not catcher:IsMouseMotionEnabled() then
+		catcher:SetMouseMotionEnabled(true)
 	end
 end
 
@@ -97,13 +129,7 @@ end
 
 local function Enter(catcher)
 	catcher.wkRevealVeil:SetAlpha(1)
-end
-
-local function Leave(catcher)
-	if not catcher.wkRevealFrame:IsMouseOver() then
-		Rest(catcher)
-		return
-	end
+	catcher:SetMouseMotionEnabled(false)
 	if catcher.wkRevealTick then
 		catcher.wkRevealTick:Start()
 	else
@@ -112,17 +138,16 @@ local function Leave(catcher)
 end
 
 -- The frame must already be veiled. Answers the catcher, so a caller that
--- lifts the reveal for a while (a frame being placed) can hide it.
+-- lifts the reveal for a while (a frame being placed) can take it away with
+-- UI.Unreveal.
 function UI.Reveal(frame, rest)
 	local veil = assert(frame.wkVeil, "UI.Reveal wants a frame UI.Veil has taken")
 	local catcher = frame.wkReveal
 	if not catcher then
 		catcher = CreateFrame("Frame", nil, frame)
 		catcher:SetAllPoints(frame)
-		catcher:SetFrameLevel(frame:GetFrameLevel())
 		UI.HoverOnly(catcher)
 		catcher:SetScript("OnEnter", Enter)
-		catcher:SetScript("OnLeave", Leave)
 		catcher.wkRevealFrame = frame
 		catcher.wkRevealVeil = veil
 		frame.wkReveal = catcher
@@ -131,4 +156,17 @@ function UI.Reveal(frame, rest)
 	catcher:Show()
 	Rest(catcher)
 	return catcher
+end
+
+-- The reveal lifted: the recheck stopped and the catcher gone, so a frame
+-- being placed is not put back down by a pointer that wandered off it.
+function UI.Unreveal(frame)
+	local catcher = frame.wkReveal
+	if not catcher then
+		return
+	end
+	if catcher.wkRevealTick then
+		catcher.wkRevealTick:Stop()
+	end
+	catcher:Hide()
 end

@@ -342,6 +342,13 @@ function Region:GetPassThroughButtons() return self.passed end
 function Region:SetMouseClickEnabled(v) self.mouseClicks = v and true or false end
 function Region:IsMouseClickEnabled() return self.mouseClicks ~= false end
 
+-- And whether it takes the hover, the other half of the same pair. Off with
+-- the mouse on is a frame the pointer passes through to whatever is under it,
+-- which is how a reveal's catcher gets out of the way of the frame it brought
+-- up. OPie and Narcissus make the call on 2.5.6.
+function Region:SetMouseMotionEnabled(v) self.mouseMotion = v and true or false end
+function Region:IsMouseMotionEnabled() return self.mouseMotion ~= false end
+
 -- Whether a frame takes the mouse. Recorded for the same reason: a frame laid
 -- over an icon that answers the mouse is a button you cannot press, and it
 -- looks identical to one you can.
