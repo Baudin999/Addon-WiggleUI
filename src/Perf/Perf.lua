@@ -107,6 +107,10 @@ local ORDER = { "marker", "swing", "icon", "action", "pet", "bars", "cast", "pla
 	-- otherwise, which on a character wearing nothing with a use on it is
 	-- always. It walks the squares the repaint found rather than all nineteen.
 	"trinket",
+	-- A frame the theme reveals on hover, asking whether the pointer is still
+	-- on it. Five times a second, and only while the pointer is over one of
+	-- that frame's own buttons; it stops itself when the pointer leaves.
+	"reveal",
 	-- The one slot that is not a ticker. Bags/Window.lua brackets its refresh,
 	-- which the bag events book up to ten times a second at a vendor, and
 	-- scripts/check.sh reads a literal ns.Perf.Start as a slot for that reason.

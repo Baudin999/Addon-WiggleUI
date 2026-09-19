@@ -270,6 +270,7 @@ local function Build(index)
 	key:SetAttribute("_onclick", HOLD)
 	entry.key = key
 
+	ns.Theme.Wear("loadout", frame)
 	return entry
 end
 

@@ -426,6 +426,8 @@ local function Build()
 	tray:SetPoint("TOPRIGHT", face, "BOTTOMRIGHT", 0, -GAP)
 	tray:SetFrameStrata("HIGH")
 	tray:Hide()
+	ns.Theme.Wear("minimap", face)
+	ns.Theme.Wear("minimap", tray)
 
 	return true
 end

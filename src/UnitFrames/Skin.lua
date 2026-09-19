@@ -305,6 +305,15 @@ local function Build(spec)
 	-- a snippet is what takes it away instead. The anchor and not the button:
 	-- the button is the client's to show and hide, through the unit watch.
 	ns.UI.HushableSecure(anchor)
+	-- The anchor rather than the button, for the reason above: the button is
+	-- the client's, and the anchor is the block's whole rectangle. Target of
+	-- target is worn with your target's frame and the pet with yours, so a
+	-- theme that fades a block fades what hangs off it with it.
+	if spec.key == "target" or spec.key == "tot" then
+		ns.Theme.Wear("target", anchor)
+	else
+		ns.Theme.Wear("player", anchor)
+	end
 
 	local entry = {
 		spec = spec,

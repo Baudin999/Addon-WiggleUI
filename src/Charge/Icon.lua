@@ -215,6 +215,8 @@ local function Build()
 			lines = { at },
 		}
 	end)
+
+	ns.Theme.Wear("charge", frame)
 end
 
 --------------------------------------------------------------------------

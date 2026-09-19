@@ -183,6 +183,7 @@ local function Build()
 	-- hand's bottom edge and the gap between them is a design number rather than
 	-- a share of anything.
 	off:SetPoint("TOPLEFT", main, "BOTTOMLEFT", 0, -GAP * unit)
+	ns.Theme.Wear("swing", frame)
 	built = true
 end
 

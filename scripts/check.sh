@@ -1205,6 +1205,7 @@ UI/Fresh.lua:1:the frame is hidden and shown to gate the refresh, which runs onl
 UI/Hush.lua:1:the frame is hidden and shown to gate the sweep, which runs only while a window the HUD has to get out from under is open
 UI/Tip.lua:1:the frame is hidden and shown to gate the wait, which is armed by a hover and runs for a few frames
 UI/Tooltip.lua:1:the frame is hidden and shown to gate the sweep, which is the whole of what hanging a tick off a frame buys
+UI/Veil.lua:1:the recheck hangs off the catcher, which goes with the frame it reveals, and it stops itself when the pointer is off that frame
 World/World.lua:1:the frame is hidden and shown to gate the sweep
 "
 
@@ -1805,6 +1806,33 @@ if [ "$listed" != "$ondisk" ]; then
 fi
 
 [ "$harness_status" -eq 0 ] || status=1
+
+# Every element a theme names is worn by a part, and every key a part wears is
+# an element.
+#
+# Theme/Themes.lua is the table the options page reads and the player chooses
+# from. An element on it that no part hands to ns.Theme.Wear is a row saying
+# "hidden" over a frame the theme never touches, and the harness cannot see
+# that, because most parts build their frame on first use and several build it
+# for one class only. So it is read off the source, where every call is, and a
+# key has to be written as a literal at the call for this to read it.
+theme_elements=$(sed -n 's/^[[:space:]]*{ key = "\([a-z]*\)",.*/\1/p' Theme/Themes.lua | sort -u)
+theme_worn=$(grep -rhoE 'Theme\.Wear\("[a-z]+"' --include='*.lua' . \
+	| sed 's/.*("\([a-z]*\)"/\1/' | sort -u)
+theme_calls=$(grep -rhE 'Theme\.Wear\(' --include='*.lua' . | grep -v '^[[:space:]]*--' \
+	| grep -vcE 'Theme\.Wear\("[a-z]+"|function Theme\.Wear\(' || true)
+if [ -z "$theme_elements" ]; then
+	echo "Theme/Themes.lua lists no elements this gate can read"
+	status=1
+elif [ "$theme_elements" != "$theme_worn" ]; then
+	echo "the elements in Theme/Themes.lua and the keys the parts wear disagree (< listed, > worn):"
+	diff <(printf '%s\n' "$theme_elements") <(printf '%s\n' "$theme_worn") | grep '^[<>]' | sed 's/^/  /'
+	status=1
+fi
+if [ "${theme_calls:-0}" -gt 0 ]; then
+	echo "$theme_calls ns.Theme.Wear call(s) pass a key that is not a literal, which the element gate cannot read"
+	status=1
+fi
 
 luacheck=$(command -v luacheck || echo "$HOME/.luarocks/bin/luacheck")
 if [ -x "$luacheck" ]; then

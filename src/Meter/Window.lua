@@ -325,6 +325,7 @@ local function Build()
 			ns.db.meterPoint = anchor
 		end,
 	})
+	ns.Theme.Wear("meters", frame)
 
 	damage = BuildPane(true)
 	damage:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)

@@ -834,6 +834,9 @@ local function Build()
 		-- opened for a minute, so it locks down with the rest of the furniture.
 		lockable = true,
 	})
+	-- The line you type in is the client's frame on UIParent and stays out of
+	-- the veil, so enter still opens a line in a theme that hides the window.
+	ns.Theme.Wear("chat", window.frame)
 
 	rail = BuildRail()
 	entry = BuildEntry()

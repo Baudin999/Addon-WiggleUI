@@ -203,6 +203,7 @@ local function Build()
 	-- what the client raises on.
 	ns.BarPlace.Join(entry)
 	Arrange()
+	ns.Theme.Wear("bars", bar)
 end
 
 local function Release()

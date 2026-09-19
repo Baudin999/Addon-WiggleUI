@@ -323,6 +323,7 @@ local function BuildBar(entry)
 
 	ns.BarPlace.Handle(entry)
 	ns.BarLook.Paint(entry)
+	ns.Theme.Wear("bars", bar)
 end
 
 -- Lay one bar out and put it where the plan says. Called at build and again on

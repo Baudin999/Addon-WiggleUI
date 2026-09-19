@@ -1122,6 +1122,24 @@ local function InstallKnobs(kit)
 	end
 end
 
+local function Prose(parent, size, color)
+	local text = UI.Label(parent, size, color, "LEFT", UI.FLAT)
+	UI.Wrap(text, true)
+	text:SetSpacing(2)
+	text:SetPoint("TOPLEFT")
+	return text
+end
+
+-- The width a wrapping label gets: its own stack, less the row's indent, less
+-- whatever sits to the right of the label on the same row. The stack is
+-- captured by each widget when it is built rather than read from the host at
+-- measure time, because by then the host is pointing at whichever section was
+-- opened last and a row would be measuring itself against a column it is not
+-- in.
+local function TextWidth(stack, cell, reserved)
+	return math.max(1, stack.width - cell.indent - (reserved or 0))
+end
+
 function UI.Kit(host)
 	local kit = { host = host, widgets = {} }
 
@@ -1166,24 +1184,6 @@ function UI.Kit(host)
 		else
 			kit.Refresh()
 		end
-	end
-
-	local function Prose(parent, size, color)
-		local text = UI.Label(parent, size, color, "LEFT", UI.FLAT)
-		UI.Wrap(text, true)
-		text:SetSpacing(2)
-		text:SetPoint("TOPLEFT")
-		return text
-	end
-
-	-- The width a wrapping label gets: its own stack, less the row's indent, less
-	-- whatever sits to the right of the label on the same row. The stack is
-	-- captured by each widget when it is built rather than read from the host at
-	-- measure time, because by then the host is pointing at whichever section was
-	-- opened last and a row would be measuring itself against a column it is not
-	-- in.
-	local function TextWidth(stack, cell, reserved)
-		return math.max(1, stack.width - cell.indent - (reserved or 0))
 	end
 
 	local function Index(widget, label)

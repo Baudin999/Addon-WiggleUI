@@ -201,6 +201,7 @@ events:SetScript("OnEvent", function()
 	for index = 1, ns.Hover.MAX do
 		BuildRow(index)
 	end
+	ns.Theme.Wear("keys", frame)
 
 	built = true
 	Sheet.Apply()

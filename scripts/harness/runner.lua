@@ -597,6 +597,10 @@ local SECTIONS = {
 	-- the spell book and the action slots together, which is the pair this one
 	-- is about.
 	"87-spell-ranks",
+	-- The theme's veil and reveal on a frame of its own, and the palette the
+	-- load painted. Builds one frame, hides it at the foot, reads nothing any
+	-- other section left.
+	"88-theme-veil",
 	-- Last, and it is the only section that changes what the client says is
 	-- installed. Everything else here runs on a client with no other addon
 	-- loaded, which is the state the notice has to stay quiet in, so this one

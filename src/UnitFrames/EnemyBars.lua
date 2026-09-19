@@ -2141,8 +2141,14 @@ local function Attach(unit)
 	AimPlate(widget, plate)
 	ShowHitbox(widget)
 
+	-- A theme that hides the enemy bars keeps this one down. It is still
+	-- attached, painted and pooled like any other, so the plate under it is
+	-- stripped and spaced the same, and nothing is drawn. Asked here rather than
+	-- worn, because a widget changes parent on every plate it goes to.
 	StartFade(widget, 0, 1)
-	widget:Show()
+	if ns.Theme.Mode("enemies") ~= "hide" then
+		widget:Show()
+	end
 	attached[unit] = widget
 
 	-- The token this widget answers for, and the four events that say something
@@ -2706,6 +2712,9 @@ events:SetScript("OnEvent", function(_, event, arg1)
 	header:SetPoint("BOTTOMLEFT", anchor, "TOPLEFT", 0, 2)
 	header:SetText("WarriorKit enemies")
 	header:Hide()
+	-- The list's rows are children of the anchor. The bars on plates are not,
+	-- and Attach asks the theme for those.
+	ns.Theme.Wear("enemies", anchor)
 
 	EnemyBars.ApplyLayout()
 	EnemyBars.Rebuild()

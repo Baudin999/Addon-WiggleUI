@@ -874,6 +874,7 @@ function Column.Build()
 			ns.db.questsColumnPoint = anchor
 		end,
 	})
+	ns.Theme.Wear("quests", frame)
 
 	frame:Hide()
 	built = true

@@ -17,25 +17,20 @@ local UI = ns.UI
 -- still the right numbers, they just land on fractions of a pixel, which is the
 -- look the addon had before the grid existed and is the honest degradation.
 --
--- Nothing here is a saved setting yet. A theme the player edits is a table
--- merged over this one and a rebuild of every window, and the shape is ready
--- for it, but a setting nothing reads twice is a setting that rots.
+-- The palette is a saved setting and it is read once. Theme/Theme.lua copies
+-- the chosen one over these tables at ADDON_LOADED, before any part has built
+-- a frame, and a change of palette takes a /reload. Nothing repaints live, so
+-- a palette costs nothing after the load.
 --------------------------------------------------------------------------
 
 -- Four components, the fourth optional and taken as opaque. Kept as arrays
 -- rather than named fields because ns.Fill, ns.Outline and ns.Recolor all count
 -- in that order already.
+--
+-- Only the colours that mean something are written here. The surfaces, the
+-- lines, the accent and the text are the palette's, one file per palette in
+-- src/Theme/, and they are copied in under this table below.
 UI.Color = {
-	window   = { 0.05, 0.05, 0.06, 0.97 },
-	chrome   = { 0.10, 0.10, 0.12, 1 },
-	rail     = { 0.07, 0.07, 0.09, 1 },
-	edge     = { 0.22, 0.22, 0.27, 1 },
-	hairline = { 0.16, 0.16, 0.19, 1 },
-	sunken   = { 0.03, 0.03, 0.04, 1 },
-	control  = { 0.14, 0.14, 0.17, 1 },
-	hover    = { 0.21, 0.21, 0.26, 1 },
-	selected = { 0.17, 0.17, 0.21, 1 },
-	accent   = { 0.25, 0.62, 0.95, 1 },
 	-- The first destructive control in the addon, and the only one. A button
 	-- that deletes an item you cannot get back has to be a different colour
 	-- from the button next to it that does nothing, and hover has its own
@@ -49,24 +44,6 @@ UI.Color = {
 	-- above, because that one is a button you can press by accident and this
 	-- is a fact about your afternoon.
 	loss     = { 0.86, 0.38, 0.38, 1 },
-	shadow   = { 0, 0, 0, 0.55 },
-
-	-- The two tones a dense list of numbers alternates between, row by row.
-	--
-	-- They are the accent and they are not a second name for it. The accent is a
-	-- control you can press; these are the ground under a number, and the only
-	-- thing either has to do is tell one row from the row under it without being
-	-- read as anything. Two entries rather than one and an alpha at the call
-	-- site, because the pair is the thing: change one and the stripe stops
-	-- alternating, which is a decision about the palette and not about a row.
-	--
-	-- Low enough to be a tint over the world. The character sheet is a backdrop
-	-- with no ground of its own, so these bands are the only surface its numbers
-	-- have, and a band opaque enough to paint out the grass would be a panel
-	-- through the middle of the page.
-	band     = { 0.25, 0.62, 0.95, 0.20 },
-	bandAlt  = { 0.25, 0.62, 0.95, 0.09 },
-
 	-- Who a name belongs to. Three entries, and the mail window is what asks:
 	-- a character on your own account, somebody you know, and everybody else.
 	--
@@ -83,11 +60,6 @@ UI.Color = {
 	alt      = { 0.36, 0.84, 0.46, 1 },
 	friend   = { 0.36, 0.66, 0.98, 1 },
 	stranger = { 0.90, 0.36, 0.36, 1 },
-
-	text     = { 0.87, 0.87, 0.91 },
-	dim      = { 0.56, 0.56, 0.62 },
-	heading  = { 1.00, 0.82, 0.20 },
-	quiet    = { 0.42, 0.42, 0.47 },
 
 	-- Why an item matters to you, one colour per reason Core/Need.lua answers
 	-- and keyed by the word it answers, so a fourth reason is a fourth entry
@@ -108,14 +80,17 @@ UI.Color = {
 	quest    = { 0.98, 0.55, 0.15, 1 },
 	skill    = { 0.45, 0.78, 0.52, 1 },
 	trash    = { 0.38, 0.38, 0.43, 1 },
-
-	-- The line in a tooltip that tells you what to type. It was a literal in
-	-- Buffs/Nag.lua, 0.55 0.72 1, one of exactly two colours that file wrote by
-	-- hand, and it came here when the tooltip it was written for became
-	-- UI/Tooltip.lua. Blue rather than the accent because the accent is a
-	-- control that can be clicked and this is a sentence that cannot.
-	hint     = { 0.55, 0.72, 1.00 },
 }
+
+-- The palette's entries, built from dark because the saved variables that say
+-- which palette was chosen have not arrived yet. Copies rather than the
+-- palette's own tables: Theme/Theme.lua writes the chosen palette into these
+-- in place at ADDON_LOADED, and writing into dark's own tables would lose dark.
+for key, color in pairs(ns.Palettes.dark) do
+	assert(UI.Color[key] == nil,
+		("the palette and UI.Color both define the colour %q"):format(key))
+	UI.Color[key] = { color[1], color[2], color[3], color[4] }
+end
 
 -- What an item's grade is drawn in, keyed by the number the client grades on.
 --

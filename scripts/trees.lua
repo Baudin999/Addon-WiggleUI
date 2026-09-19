@@ -49,11 +49,18 @@
 -- Marking is the other side of the same test. It is a service by shape and
 -- exactly one tree has ever asked it anything, so it stays a feature and that
 -- one edge is written down below where it can be read.
+--
+-- Theme joined on 2026-09-19 by decision rather than by measurement, because
+-- it is base by construction: every part that puts a frame on the screen hands
+-- that frame to ns.Theme at build, so it is named by all of them from its first
+-- commit, and it names only Core and UI. UI names it back for one table, the
+-- dark palette UI.Color is built from at load, which is data and no code.
 local BASE = {
 	Core = true, UI = true, Ck = true, Class = true, Unit = true, Perf = true,
+	Theme = true,
 }
 
-local BASE_WORDS = "Core, UI, Ck, Class, Unit and Perf"
+local BASE_WORDS = "Core, UI, Ck, Class, Unit, Perf and Theme"
 
 --------------------------------------------------------------------------
 -- The exemptions

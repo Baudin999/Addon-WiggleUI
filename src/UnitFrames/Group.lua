@@ -897,6 +897,13 @@ local function Build(list)
 	-- which list has anybody in it is showParty and showRaid's answer, and a
 	-- header with nobody to show has no children to draw.
 	list.header:Show()
+	-- The anchor, which holds the header, its buttons, the headings and the
+	-- preview, and which Lay sizes to the whole list.
+	if list.raid then
+		ns.Theme.Wear("raid", list.anchor)
+	else
+		ns.Theme.Wear("party", list.anchor)
+	end
 	list.built = true
 	return true
 end

@@ -427,6 +427,7 @@ local function Build()
 			Row.Apply()
 		end,
 	})
+	ns.Theme.Wear("standing", frame)
 
 	built = true
 	Row.Apply()

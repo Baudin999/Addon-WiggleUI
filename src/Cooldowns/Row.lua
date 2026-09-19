@@ -519,6 +519,7 @@ events:SetScript("OnEvent", function(_, event, token)
 				Row.Apply()
 			end,
 		})
+		ns.Theme.Wear("cooldowns", frame)
 
 		built = true
 		ns.Cooldowns.Rebuild()

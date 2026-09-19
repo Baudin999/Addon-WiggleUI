@@ -190,7 +190,11 @@ function ChargeMarker.Update()
 		-- today.
 		ns.UI.Ability.Draw(frame, ns.Charge.Texture(key) or FALLBACK_TEXTURE,
 			status, start, duration)
-		frame:Show()
+		-- Asked rather than worn, because the marker changes parent to every
+		-- plate it lands on and a veil would be left behind on the first one.
+		if ns.Theme.Mode("charge") ~= "hide" then
+			frame:Show()
+		end
 	end
 
 	-- Written last, and after the Detach above rather than before it, because

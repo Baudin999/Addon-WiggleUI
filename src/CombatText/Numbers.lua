@@ -176,6 +176,9 @@ local function Build()
 	-- Adopt would have written is in the style's `ground` instead, which the
 	-- stream multiplies its envelope onto rather than replacing.
 	UI.Adrift(frame, ns.db.hitsZoom)
+	-- Each number rather than the four anchors in Anchors.lua. A number is
+	-- pinned to an anchor but parented to UIParent, so an anchor holds nothing.
+	ns.Theme.Wear("numbers", frame)
 	return frame
 end
 

@@ -343,6 +343,7 @@ local function Build()
 	bar.spell, bar.timer = spellName, timer
 
 	frame:Hide()
+	ns.Theme.Wear("castbar", frame)
 	built = true
 end
 

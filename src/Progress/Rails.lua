@@ -242,6 +242,7 @@ local function Build()
 			Rails.Apply()
 		end,
 	})
+	ns.Theme.Wear("experience", frame)
 
 	xp = BuildRail(true)
 	faction = BuildRail(false)

@@ -658,6 +658,7 @@ events:SetScript("OnEvent", function(_, event, token)
 			Hover(icons[slot])
 			Press(icons[slot])
 		end
+		ns.Theme.Wear("buffs", frame)
 
 		built = true
 		ns.Upkeep.Rebuild()

@@ -193,6 +193,9 @@ local function Build()
 	-- the right edge and the count is drawn over the name, so a stack of eight
 	-- linen put its own number through the last letters of the word.
 	frame.name:SetPoint("RIGHT", frame.count, "LEFT", -UI.Metric.gutter, 0)
+	-- Each pooled row, because the rows are parented to UIParent and move on
+	-- their own. They are the loot feed crossing the screen, so they go with it.
+	ns.Theme.Wear("feeds", frame)
 	return frame
 end
 

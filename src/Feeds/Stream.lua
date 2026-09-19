@@ -409,6 +409,7 @@ function Instance:Build()
 			ns.db[self.keys.point] = anchor
 		end,
 	})
+	ns.Theme.Wear("feeds", frame)
 
 	-- No surface under the column. It had one, painted in the window colour at
 	-- whatever the background slider said, and the loot feed shipped it at 15

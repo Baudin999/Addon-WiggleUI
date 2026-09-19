@@ -199,6 +199,11 @@ UI\Bound.lua
 # dragging, and Window is the chrome with its rail and its tab strip. All six
 # load before Core\Panel.lua, which is the first thing that builds a page out
 # of them.
+# The three palettes, before UI\Theme.lua, which builds UI.Color's surfaces
+# out of dark at load. Data and nothing else; Theme\Theme.lua below chooses.
+Theme\Dark.lua
+Theme\Forest.lua
+Theme\Desert.lua
 UI\Theme.lua
 
 # The item square, and the pile headings that go over a column of them. After
@@ -287,6 +292,16 @@ UI\Hush.lua
 # after UI\Text.lua for the name above it, and before every part that puts a
 # movable rectangle on the world.
 UI\Placeable.lua
+# A frame a theme can take off the screen, dim, or bring back under the
+# pointer, without touching the part that built it. After UI\Press.lua for the
+# hover-only mouse and UI\Ticker.lua for the recheck.
+UI\Veil.lua
+# Which elements each theme shows, hides, dims or leaves under the pointer, and
+# the file that applies it. After UI\Veil.lua, which is how it does that, and
+# before every part, because each part hands its frames to ns.Theme.Wear as it
+# builds them. Its ADDON_LOADED is after Core\Core.lua's, which made ns.db.
+Theme\Themes.lua
+Theme\Theme.lua
 UI\Window.lua
 
 # The question a part puts up before it does something that cannot be undone.

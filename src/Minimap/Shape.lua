@@ -216,6 +216,13 @@ local function Build(map)
 
 	bezel = CreateFrame("Frame", nil, map)
 
+	-- The cluster rather than the map, because it holds the map, this bezel,
+	-- the clock tab, the zone text and the client's buttons on the corners.
+	local cluster = _G.MinimapCluster
+	if type(cluster) == "table" and type(cluster.SetParent) == "function" then
+		ns.Theme.Wear("minimap", cluster)
+	end
+
 	local px = ns.Pixel(bezel)
 	local pad = PAD * px
 	bezel:SetPoint("TOPLEFT", map, "TOPLEFT", -pad, pad)
