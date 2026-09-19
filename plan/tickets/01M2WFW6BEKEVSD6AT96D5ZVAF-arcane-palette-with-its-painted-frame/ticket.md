@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WFW6BEKEVSD6AT96D5ZVAF
 type: task
-status: doing
+status: done
 title: "Arcane palette, with its painted frame"
 ---
 
