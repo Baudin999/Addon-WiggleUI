@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WCSCPY2WJ7QAP3MAAQBDE7
 type: task
-status: todo
+status: doing
 title: Cast and XP bars fixed; rested XP takes the palette accent
 parent: 01M2W8X3ZSH458FRQ1VXBS2KC1
 ---
