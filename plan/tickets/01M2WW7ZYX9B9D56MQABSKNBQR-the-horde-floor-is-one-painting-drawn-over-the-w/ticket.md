@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WW7ZYX9B9D56MQABSKNBQR
 type: task
-status: todo
+status: doing
 title: "The horde floor is one painting drawn over the window, not a tile"
 ---
 
