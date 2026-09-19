@@ -188,6 +188,39 @@ function UI.Backdrop(frame, opts)
 	return backdrop
 end
 
+-- The floor alone under a small surface that otherwise draws a flat fill: the
+-- tooltip, and the purse panel that slides out beside it.
+--
+-- Floor only, because a rail is 16 to 18 units thick and a corner 36 and more,
+-- sized for the bag window, and round a four line tip they would be most of
+-- it. The surface keeps its own hairline as the edge. Under the floor the
+-- flat fill goes to nothing rather than doubling the ground, which is what the
+-- action bars do.
+--
+-- At GROUND_SCALE of the bag window's size: half, so a tip seventy units tall
+-- shows a slab and a half of the pattern down it rather than a crop of one.
+local GROUND_SCALE = 0.5
+
+-- Called by the owner every time it sizes the surface, width by height in the
+-- surface's own units. The first call decides, because the palette is chosen
+-- once at load: frame.ground is the floor, or false where the palette has no
+-- painting and bg is left exactly as it was. Answers the floor or nil.
+function UI.Ground(frame, bg, width, height)
+	if frame.ground == nil then
+		frame.ground = UI.Backdrop(frame, { frame = false, scale = GROUND_SCALE }) or false
+		if frame.ground then
+			bg:SetAlpha(0)
+		end
+	end
+	if not frame.ground then
+		return nil
+	end
+	frame.ground:Layout(width, height)
+	return frame.ground
+end
+
+UI.GROUND_SCALE = GROUND_SCALE
+
 -- The chosen palette's floor tile, { file, width, height } in window units,
 -- or nil when the palette has no painting. A feed row washes with it.
 function UI.Floor()

@@ -136,8 +136,55 @@ UI.FloorBand(wash, floor, floor[3] - 4, floor[2] * 2, 18)
 check(math.abs(wash.texcoord[4] - 1) < 1e-9 and wash.texcoord[2] == 1,
 	"a band past the foot ends on it, and a wide row stretches one tile")
 
+-- The tooltip: the floor alone at the ground's scale, laid at the size the
+-- box came out, over a fill gone to nothing and inside the hairline it keeps.
+-- The box was built under the dark palette by an earlier section and decided
+-- flat then, so the decision is put back to undecided for the painted open and
+-- again at the foot, where the dark open decides flat once more.
+local Tooltip = UI.Tooltip
+local owner = CreateFrame("Frame", nil, UIParent)
+Tooltip.Show(owner, { "Title", "a line under it" })
+local tip = Tooltip.Frame()
+tip.ground = nil
+tip.bg:SetAlpha(1)
+Tooltip.Show(owner, { "Title", "a line under it", "and another", "and a fourth" })
+local ground = tip.ground
+check(ground ~= nil and ground ~= false, "a painted palette puts the tooltip on its floor")
+if ground then
+	local scale = UI.GROUND_SCALE
+	local tileW, tileH = art.Middle[2] * scale, art.Middle[3] * scale
+	local want = math.ceil(tip:GetWidth() / tileW) * math.ceil(tip:GetHeight() / tileH)
+	local laid = 0
+	for _, texture in ipairs(ground.pool.Middle) do
+		laid = laid + (texture:IsShown() and 1 or 0)
+	end
+	check(laid == want, ("the floor covers the box it was sized to, %d tiles against %d"):format(laid, want))
+	-- The stand-in font measures narrow, so the box is under one tile wide and
+	-- the scale shows in how much of the tile the first texture cuts.
+	local first = ground.pool.Middle[1]
+	local across = math.min(tileW, tip:GetWidth())
+	check(first.width == across and math.abs(first.texcoord[2] - across / tileW) < 1e-9,
+		("the tooltip's floor tile is at the ground's scale, %s of %s shown")
+			:format(tostring(first.texcoord[2]), tostring(across / tileW)))
+	check(#ground.pool.Top == 0 and #ground.pool.TopLeft == 0, "the tooltip draws no rail and no corner")
+	check(tip.bg:GetAlpha() == 0, "the flat fill under the tooltip's floor is at nothing")
+	check(tip.edges[1]:IsShown() ~= false and tip.edges[1].layer == "BORDER",
+		"the tooltip keeps its hairline over the floor")
+	for _, texture in ipairs(ground.pool.Middle) do
+		texture:Hide()
+	end
+end
+Tooltip.Close(true)
+tip.ground = nil
+tip.bg:SetAlpha(1)
+
 frame:Hide()
 UI.ChooseBackdrop(nil)
+Tooltip.Show(owner, { "Title", "a line under it" })
+check(tip.ground == false and tip.bg:GetAlpha() == 1,
+	"under a palette with no painting the tooltip keeps its flat fill")
+Tooltip.Close(true)
+owner:Hide()
 check(UI.Floor() == nil, "a palette with no painting has no floor to wash with")
 check(Gauge.Floor(Gauge.New(CreateFrame("Frame", nil, UIParent))) == nil,
 	"a palette with no painting gives a gauge no floor")

@@ -176,7 +176,7 @@ Tooltip.CURSOR = {}
 -- drawn by the same code, in the same chrome, off the same data shape, and
 -- there is no second implementation to keep in step with the first.
 --
---   frame, shadow, rule   the widgets
+--   frame, shadow, rule   the widgets; shadow is the pair of strips
 --   rows                  the pooled lines, never freed
 --   count, widest, titled what the last open put in it
 --   zoom                  the size that open drew at, per box because a box
@@ -547,6 +547,30 @@ local function Wanted()
 	return ((UI.ScreenZoom and UI.ScreenZoom()) or 1) * chosen
 end
 
+-- The two units of shadow that stick out past the bottom and the right. A
+-- tooltip floats over whatever it was opened on top of and needs to look like
+-- it does; every other surface in the addon sits in a window and does not.
+--
+-- Two strips outside the box rather than one rectangle under it. The rectangle
+-- was hidden by the opaque fill except where it stuck out, but a painted floor
+-- is laid on the same bottom sublevel, and two textures on one sublevel have no
+-- order between them: the shadow could land over the painting. The strips are
+-- the part that ever showed, and nothing is under the box to overlap.
+local SHADOW = 2
+
+local function Shadow(frame)
+	local right = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
+	right:SetPoint("TOPLEFT", frame, "TOPRIGHT", 0, -SHADOW)
+	right:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", SHADOW, -SHADOW)
+	local below = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
+	below:SetPoint("TOPLEFT", frame, "BOTTOMLEFT", SHADOW, 0)
+	below:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, -SHADOW)
+	for _, strip in ipairs({ right, below }) do
+		strip:SetColorTexture(C.shadow[1], C.shadow[2], C.shadow[3], C.shadow[4])
+	end
+	return { right, below }
+end
+
 -- One box built. `name` is nil for every box but the first: a frame's own name
 -- is only load bearing on the hidden scanner in UI/Scan.lua, whose lines are
 -- reachable as globals built from it, and none of these is that. The main box
@@ -567,16 +591,10 @@ local function Build(name)
 
 	UI.Adopt(frame, box.zoom)
 
-	-- Drawn before the background and one sublevel under it, so what shows is
-	-- the two units of it that stick out past the bottom and the right. A
-	-- tooltip floats over whatever it was opened on top of and needs to look
-	-- like it does; every other surface in the addon sits in a window and does
-	-- not.
-	box.shadow = frame:CreateTexture(nil, "BACKGROUND", nil, -8)
-	box.shadow:SetColorTexture(C.shadow[1], C.shadow[2], C.shadow[3], C.shadow[4])
-	box.shadow:SetPoint("TOPLEFT", frame, "TOPLEFT", 2, -2)
-	box.shadow:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 2, -2)
+	box.shadow = Shadow(frame)
 
+	-- The flat fill, which gives way to the palette's painted floor on the
+	-- first Layout where the palette has one. See UI.Ground in UI/Backdrop.lua.
 	frame.bg = ns.Fill(frame, "BACKGROUND", C.window[1], C.window[2], C.window[3], 1)
 	frame.bg:SetAllPoints()
 	frame.edges = ns.Outline(frame, C.edge[1], C.edge[2], C.edge[3], C.edge[4])
@@ -964,6 +982,7 @@ local function Layout(box)
 	end
 
 	frame:SetSize(content + PAD * 2, y + PAD)
+	UI.Ground(frame, frame.bg, content + PAD * 2, y + PAD)
 end
 
 -- Everything from the last hover, put away. The rows keep their font strings,
