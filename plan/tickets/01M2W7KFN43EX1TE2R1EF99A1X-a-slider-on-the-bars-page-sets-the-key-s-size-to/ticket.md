@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2W7KFN43EX1TE2R1EF99A1X
 type: task
-status: todo
+status: doing
 title: A slider on the bars page sets the key's size to the pixel
 ---
 
