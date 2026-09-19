@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2W8RAJK707TPAM88EQBDMFG
 type: task
-status: todo
+status: doing
 title: "Trim the bars page: no intro, no colour, no readings"
 ---
 
