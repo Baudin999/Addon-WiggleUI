@@ -38,4 +38,18 @@ ns.Backdrops = {
 		BottomLeft = { "Interface\\AddOns\\WarriorKit\\Media\\Desert-BottomLeft.tga", 63, 63 },
 		BottomRight = { "Interface\\AddOns\\WarriorKit\\Media\\Desert-BottomRight.tga", 63, 63 },
 	},
+	arcane = {
+		thickness = { left = 23, top = 30, right = 23, bottom = 25 },
+		fade = 5,
+		corner = 63,
+		Middle = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-Middle.tga", 100, 45 },
+		Top = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-Top.tga", 90, 35 },
+		Bottom = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-Bottom.tga", 90, 29 },
+		Left = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-Left.tga", 28, 66 },
+		Right = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-Right.tga", 28, 66 },
+		TopLeft = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-TopLeft.tga", 63, 63 },
+		TopRight = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-TopRight.tga", 63, 63 },
+		BottomLeft = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-BottomLeft.tga", 63, 63 },
+		BottomRight = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-BottomRight.tga", 63, 63 },
+	},
 }

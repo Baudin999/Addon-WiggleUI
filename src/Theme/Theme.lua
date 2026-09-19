@@ -27,7 +27,7 @@ ns.Theme = Theme
 -- The palettes in the order the options page cycles them. Every palette file
 -- has to be on this list and the list may hold nothing else, which the load
 -- checks below hold it to.
-Theme.PALETTES = { "dark", "forest", "desert" }
+Theme.PALETTES = { "dark", "forest", "desert", "arcane" }
 
 --------------------------------------------------------------------------
 -- The tables are checked where they are read
@@ -322,7 +322,7 @@ ns.Register({
 
 	help = {
 		"theme informational|immersive|exploration, how much of the addon is on the screen, from the next /reload",
-		"palette dark|forest|desert, the addon's colours, from the next /reload",
+		"palette dark|forest|desert|arcane, the addon's colours, from the next /reload",
 	},
 
 	status = function()

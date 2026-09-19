@@ -3,17 +3,19 @@
 # drawn in, and writes src/Theme/Backdrops.lua, which says how big each piece is
 # drawn.
 #
-# Each source is one painting: a frame round a floor that repeats, on white.
+# Each source is one painting: a frame round a floor that repeats, on a margin.
 # Three things are done to it.
 #
-# The white goes. It is flooded from the four corners of the image to alpha,
-# with enough fuzz to take the JPEG fringe, and the alpha is eroded one pixel so
-# no pale halo is left round the frame.
+# The margin goes. A white one is flooded from the four corners of the image
+# to alpha, with enough fuzz to take the JPEG fringe, and the alpha is eroded
+# one pixel so no pale halo is left round the frame. A painted one, the arcane
+# nebula, is out of focus where the frame is sharp, so it is the region of
+# little detail that reaches the image's edge.
 #
 # The floor is darkened to its painting's darken, so the item icons and the
 # counts drawn over it still read. Each painting has its own, because a floor
-# of pale sand needs more than one of moss before the dim labels read on it. Only the floor: everything inside the inner rectangle the
-# geometry names. The corner blocks that reach into that rectangle are
+# of pale sand needs more than one of moss before the dim labels read on it.
+# Only the floor: everything inside the inner rectangle the geometry names. The corner blocks that reach into that rectangle are
 # darkened with it, which is the price of not hand-painting a mask.
 #
 # And it is cut into nine. The middle is one repeat of the floor and is laid out
@@ -52,9 +54,17 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 # bottom, in source pixels; corner is the square that holds each corner's
 # ornament; period is the floor's repeat across and down, measured by
 # autocorrelation of the middle; darken is what the floor keeps of its
-# brightness. desert02 is the same frame as the first desert
-# painting with a calmer floor, so it kept that painting's numbers; a painting
-# with a new frame needs them measured again.
+# brightness; margin is white or blurred. desert02 is the same frame as the
+# first desert painting with a calmer floor, so it kept that painting's
+# numbers; a painting with a new frame needs them measured again.
+#
+# A floor that does not repeat from its inner corner names where its tile is
+# cut instead, as floor, and gives up the phase with the corners. Arcane's is
+# three different rows of slabs, so its tile is the middle row, mortar line to
+# mortar line. Its rails then repeat at a length of their own, rail, because
+# the floor's 150 pixels down is a third of a snake, and are cut clear of the
+# corner by a distance of their own, clear, because its corner block ends in a
+# gold pillar that would otherwise stand at every join.
 PAINTINGS = [
 	{
 		"palette": "forest", "file": "art/forrest.jpeg", "stem": "Forest",
@@ -66,6 +76,12 @@ PAINTINGS = [
 		"inset": (72, 100, 82, 80), "corner": 210, "period": (334, 346),
 		"darken": 0.45,
 	},
+	{
+		"palette": "arcane", "file": "art/arcane.jpeg", "stem": "Arcane",
+		"inset": (78, 100, 78, 82), "corner": 210, "period": (333, 150),
+		"darken": 0.75, "margin": "blurred",
+		"floor": (381, 313), "rail": (300, 220), "clear": 105,
+	},
 ]
 
 SCALE = 0.30     # window units per source pixel
@@ -74,6 +90,7 @@ OVERLAP = 24     # source pixels cross-faded at the start of each tile
 CLEAR = 40       # source pixels a tile is cut clear of a painted shadow or notch
 FUZZ = 30        # how far from white still counts as the margin, of 255
 EDGE = 8         # source pixels over which the darkening ramps in
+SHARP = 5        # the local detail, of 255, under which a pixel is out of focus
 
 
 def pot(drawn):
@@ -99,6 +116,31 @@ def unwhite(image):
 	alpha = margin.filter(ImageFilter.MinFilter(3)).filter(ImageFilter.GaussianBlur(0.7))
 	rgba.putalpha(alpha)
 	return rgba
+
+
+def unblur(image):
+	rgba = image.convert("RGBA")
+	w, h = rgba.size
+	# How far each pixel is from its own blur, averaged over its neighbours:
+	# near nothing on the nebula, and well above SHARP on the frame's carving.
+	grey = rgba.convert("L")
+	detail = ImageChops.difference(grey, grey.filter(ImageFilter.GaussianBlur(2)))
+	detail = detail.filter(ImageFilter.BoxBlur(3))
+	soft = detail.point(lambda v: 255 if v < SHARP else 0)
+	# The soft region that reaches the edge, from a seed at each corner and at
+	# the middle of each side, so a soft patch inside the frame, a gem's face,
+	# is not taken for margin.
+	for x, y in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1),
+			(w // 2, 0), (w // 2, h - 1), (0, h // 2), (w - 1, h // 2)):
+		if soft.getpixel((x, y)) == 255:
+			ImageDraw.floodfill(soft, (x, y), 128)
+	alpha = soft.point(lambda v: 0 if v == 128 else 255)
+	alpha = alpha.filter(ImageFilter.MaxFilter(3)).filter(ImageFilter.GaussianBlur(0.7))
+	rgba.putalpha(alpha)
+	return rgba
+
+
+MARGINS = {"white": unwhite, "blurred": unblur}
 
 
 def darken(rgba, inset, keep):
@@ -231,7 +273,7 @@ lua = [
 ]
 
 for p in PAINTINGS:
-	src = darken(unwhite(Image.open(p["file"])), p["inset"], p["darken"])
+	src = darken(MARGINS[p.get("margin", "white")](Image.open(p["file"])), p["inset"], p["darken"])
 	W, H = src.size
 	left, top, right, bottom = p["inset"]
 	c = p["corner"]
@@ -249,27 +291,33 @@ for p in PAINTINGS:
 	# the first rows and columns of floor, so the tile is cut CLEAR further in
 	# and rolled back by as much: a seamless tile rolled is the same tile with
 	# its origin moved, which puts the phase back where it was.
-	mid = seamless(src, left + pw + CLEAR, top + CLEAR, pw, ph, True, True)
-	mid = ImageChops.offset(mid, CLEAR, CLEAR)
+	if "floor" in p:
+		mid = seamless(src, p["floor"][0], p["floor"][1], pw, ph, True, True)
+	else:
+		mid = seamless(src, left + pw + CLEAR, top + CLEAR, pw, ph, True, True)
+		mid = ImageChops.offset(mid, CLEAR, CLEAR)
 	emit("Middle", mid, (drawn(pw), drawn(ph)))
 
 	# The rails, each in phase with where its corner ends, which is where the
 	# row of them is laid on the screen. Cut CLEAR further along and rolled back
 	# like the middle, because the painting's corner block meets its rail at a
 	# notch, and a tile that starts on the notch repeats it at every join.
-	def rail(x, y, width, height, across):
-		tile = seamless(src, x + (CLEAR if across else 0), y + (0 if across else CLEAR),
-			width, height, across, not across)
-		return ImageChops.offset(tile, CLEAR if across else 0, 0 if across else CLEAR)
+	clear = p.get("clear", CLEAR)
 
-	emit("Top", fade(rail(c, 0, pw, top + FADE, True), "bottom", FADE),
-		(drawn(pw), drawn(top + FADE)))
-	emit("Bottom", fade(rail(c, H - bottom - FADE, pw, bottom + FADE, True), "top", FADE),
-		(drawn(pw), drawn(bottom + FADE)))
-	emit("Left", fade(rail(0, c, left + FADE, ph, False), "right", FADE),
-		(drawn(left + FADE), drawn(ph)))
-	emit("Right", fade(rail(W - right - FADE, c, right + FADE, ph, False), "left", FADE),
-		(drawn(right + FADE), drawn(ph)))
+	def rail(x, y, width, height, across):
+		tile = seamless(src, x + (clear if across else 0), y + (0 if across else clear),
+			width, height, across, not across)
+		return ImageChops.offset(tile, clear % width if across else 0, 0 if across else clear % height)
+
+	rw, rh = p.get("rail", (pw, ph))
+	emit("Top", fade(rail(c, 0, rw, top + FADE, True), "bottom", FADE),
+		(drawn(rw), drawn(top + FADE)))
+	emit("Bottom", fade(rail(c, H - bottom - FADE, rw, bottom + FADE, True), "top", FADE),
+		(drawn(rw), drawn(bottom + FADE)))
+	emit("Left", fade(rail(0, c, left + FADE, rh, False), "right", FADE),
+		(drawn(left + FADE), drawn(rh)))
+	emit("Right", fade(rail(W - right - FADE, c, right + FADE, rh, False), "left", FADE),
+		(drawn(right + FADE), drawn(rh)))
 
 	emit("TopLeft", fade_corner(src.crop((0, 0, c, c)), "right", "bottom", left, top),
 		(drawn(c), drawn(c)))
