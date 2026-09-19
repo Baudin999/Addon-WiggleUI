@@ -759,6 +759,60 @@ do
 end
 
 ----------------------------------------------------------------------
+-- Enter answers the last line
+--
+-- A party line and then three whispers. Enter opens the line on the third
+-- whisper, Tab steps back to the second, Shift-Enter opens it where you last
+-- spoke, and a system line moves nothing.
+----------------------------------------------------------------------
+
+do
+	local function Enter(shift)
+		Window.Blur()
+		_G.WarriorKitShift(shift)
+		Window.Focus()
+		_G.WarriorKitShift(false)
+	end
+
+	Window.Blur()
+	Window.Go("say")
+	fire("CHAT_MSG_PARTY", "ready", "Bram", nil, nil, nil, nil, nil, nil, nil, nil, nil, "P1")
+	fire("CHAT_MSG_PARTY", "go", _G.UnitName("player"))
+	for _, name in ipairs({ "Cara", "Dain", "Eli" }) do
+		fire("CHAT_MSG_WHISPER", "psst", name)
+	end
+	fire("CHAT_MSG_SYSTEM", "Somebody has come online.")
+
+	check(Window.Ghost() == "Eli, enter types /w Eli",
+		("the empty line reads %q, expected it to name Eli"):format(tostring(Window.Ghost())))
+	Enter(false)
+	check(Pointed() == "WHISPER Eli",
+		("Enter after three whispers pointed the line at %s"):format(Pointed()))
+	Window.Step(1)
+	check(Pointed() == "WHISPER Dain",
+		("Tab after Enter pointed the line at %s, expected the whisper before"):format(Pointed()))
+
+	Enter(true)
+	check(Pointed() == "PARTY",
+		("Shift-Enter pointed the line at %s, expected where you last spoke"):format(Pointed()))
+
+	-- A room picked by hand is the newest thing that happened, so Enter stays.
+	Window.Go("say")
+	Enter(false)
+	check(Pointed() == "SAY",
+		("Enter after picking the say room pointed the line at %s"):format(Pointed()))
+
+	local keys = ns.ChatField.Shifted()
+	check(keys[1] == "SHIFT-ENTER",
+		("Shift-Enter does not open the line; the keys taken are %q"):format(table.concat(keys, " ")))
+
+	Window.Blur()
+	for _, name in ipairs({ "Cara", "Dain", "Eli" }) do
+		Window.Close(Rooms.WhisperId(name))
+	end
+end
+
+----------------------------------------------------------------------
 -- Rooms that stop existing
 --
 -- Leaving the party has to move you somewhere rather than leave you typing into

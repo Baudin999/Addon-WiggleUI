@@ -244,7 +244,7 @@ read_globals = {
 	"CreateFrame", "UIParent", "WorldFrame", "GameFontNormal", "DEFAULT_CHAT_FRAME",
 	"GameTooltip", "GameFontHighlightSmall", "GetBindingAction",
 	"RegisterStateDriver", "UnregisterStateDriver",
-	"SetOverrideBindingClick", "ClearOverrideBindings",
+	"SetOverrideBindingClick", "SetOverrideBinding", "ClearOverrideBindings",
 	"UISpecialFrames", "tinsert", "pcall",
 	-- The interface rebuilt from scratch, which is how `/wk defaults` and the
 	-- button beside it apply two dozen parts' worth of settings at once: a

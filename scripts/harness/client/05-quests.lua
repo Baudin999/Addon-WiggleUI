@@ -782,6 +782,12 @@ _G.SetOverrideBindingClick = function(owner, _, key, name, suffix)
 	overrides[key] = { owner = owner, action = ("CLICK %s:%s"):format(name, suffix) }
 	return true
 end
+-- The same layer taking a command rather than a button, which is how the chat
+-- line puts OPENCHAT on Shift-Enter.
+_G.SetOverrideBinding = function(owner, _, key, command)
+	overrides[key] = { owner = owner, action = command }
+	return true
+end
 -- Asked with checkOverride the layer answers first; asked without it, the set
 -- underneath answers whatever override is on the key. That second reading is
 -- how a part that has taken a key finds out what the key was pressing, and

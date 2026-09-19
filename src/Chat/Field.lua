@@ -711,3 +711,43 @@ function Field.Describe()
 	return ("the client's own line, in the footer, %d dressed, %d pieces of its art off")
 		:format(count, stripped)
 end
+
+--------------------------------------------------------------------------
+-- Shift-Enter
+--
+-- The client's own OPENCHAT on a second key, so the line it opens comes up down
+-- the same stack Enter's does, with nothing of ours in it. The only difference
+-- between the two presses is the shift key, and Chat/Window.lua reads that when
+-- the line fills: see ChatWindow.Answer.
+--
+-- An override rather than a write into the player's set, so nothing is saved,
+-- and only on a key the player's set leaves free. A Shift-Enter somebody bound
+-- to a macro of their own is theirs, and this key is a convenience.
+--------------------------------------------------------------------------
+
+local SHIFTED = { "SHIFT-ENTER", "SHIFT-NUMPADENTER" }
+local owner = CreateFrame("Frame")
+
+function Field.Bind()
+	if ns.Lockdown.Held(Field.Bind) then
+		return false
+	end
+	UI.Bound.Drop(owner)
+	for _, key in ipairs(SHIFTED) do
+		UI.Bound.Command(owner, key, "OPENCHAT")
+	end
+	return true
+end
+
+-- Which of the two keys open the line, for the harness.
+function Field.Shifted()
+	local taken = {}
+	for _, key in ipairs(SHIFTED) do
+		if UI.Bound.Action(key) == "OPENCHAT" then
+			taken[#taken + 1] = key
+		end
+	end
+	return taken
+end
+
+ns.Rebind(Field.Bind)

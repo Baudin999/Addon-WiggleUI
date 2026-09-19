@@ -447,6 +447,93 @@ function Rooms.Route(room, who, whisper)
 end
 
 --------------------------------------------------------------------------
+-- Who spoke last, and where you last spoke
+--
+-- Enter opens the line on the room somebody last said something to you in, and
+-- Shift-Enter on the room you last said something in. Those are two facts about
+-- the conversation rather than about the window, so they are kept here with the
+-- rest of it, and the window asks.
+--
+-- Only the rooms somebody talks to you in. Say, the numbered channels and the
+-- system lines are strangers and the server, and a trade call moving your next
+-- line into trade is the opposite of what the key is for. Chat/Feed.lua decides
+-- which lines those are; this only keeps the order.
+--------------------------------------------------------------------------
+
+-- Room ids, newest line first, each once.
+local heard = {}
+
+-- How many lines have been heard this session. The window keeps the number it
+-- last acted on, and a larger one here is a line it has not answered yet.
+local heardCount = 0
+
+-- The room your own last line went to.
+local sent
+
+function Rooms.Heard(id)
+	if not id then
+		return false
+	end
+	for at, held in ipairs(heard) do
+		if held == id then
+			table.remove(heard, at)
+			break
+		end
+	end
+	table.insert(heard, 1, id)
+	heardCount = heardCount + 1
+	return true
+end
+
+function Rooms.HeardCount()
+	return heardCount
+end
+
+-- The room of the newest line that is still on the rail, or nil. A party you
+-- have left is a room Enter cannot type into, so it is passed over rather than
+-- answered.
+function Rooms.Newest()
+	for _, id in ipairs(heard) do
+		if Rooms.Exists(id) then
+			return id
+		end
+	end
+	return nil
+end
+
+function Rooms.Sent(id)
+	if id then
+		sent = id
+	end
+end
+
+function Rooms.LastSent()
+	if sent and Rooms.Exists(sent) then
+		return sent
+	end
+	return nil
+end
+
+-- Every room on the rail in the order Tab walks it: the ones somebody spoke in,
+-- newest first, and then the rest in the order the rail draws them, so a room
+-- nobody has said anything in is still one more press away.
+function Rooms.ByTime()
+	local order, taken = {}, {}
+	for _, id in ipairs(heard) do
+		if Rooms.Exists(id) then
+			order[#order + 1] = id
+			taken[id] = true
+		end
+	end
+	for _, row in ipairs(Rooms.List()) do
+		if row.id and not taken[row.id] then
+			order[#order + 1] = row.id
+		end
+	end
+	return order
+end
+
+--------------------------------------------------------------------------
 -- What is drawn, and in what order
 --
 -- Everything first, because it is the room that is never empty and never wrong.
@@ -792,5 +879,6 @@ function Rooms.Wipe()
 		end
 	end
 	whispers, unread, speaker, brought = {}, {}, {}, {}
+	heard, sent = {}, nil
 	restored = false
 end

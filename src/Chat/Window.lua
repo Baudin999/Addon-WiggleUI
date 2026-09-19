@@ -90,6 +90,11 @@ local logs, spare, every = {}, {}, {}
 local active
 local built = false
 
+-- How many lines had been heard when the player last chose a room, and when the
+-- empty line's sentence was last written. Rooms.HeardCount above the first is
+-- a line nobody has answered, and Enter goes to it; see ChatWindow.Answer.
+local answered, painted = 0, 0
+
 --------------------------------------------------------------------------
 -- What the last attempt did
 --
@@ -217,9 +222,17 @@ end
 -- There is nothing here about pressing enter twice any more. The sentence that
 -- used to take this line over said which command was waiting on a second press,
 -- and no command waits on a second press now.
+--
+-- It names the room Enter opens, which is the newest line's while nobody has
+-- answered it and the room you are in after that.
 local function Paint()
-	local kind, target = ns.Rooms.Target(active)
-	entry.ghost:SetText(("%s, %s"):format(ns.Rooms.Title(active),
+	local id = active
+	painted = ns.Rooms.HeardCount()
+	if painted ~= answered then
+		id = ns.Rooms.Newest() or active
+	end
+	local kind, target = ns.Rooms.Target(id)
+	entry.ghost:SetText(("%s, %s"):format(ns.Rooms.Title(id),
 		ns.Compose.Note(kind, target)))
 end
 
@@ -384,6 +397,12 @@ local function Draw(rooms, text, r, g, b, important)
 
 	if appeared then
 		Refresh()
+	end
+	-- A line somebody said to you changes where Enter goes, so the sentence in
+	-- the empty line is written again. Only then: every other line leaves the
+	-- count where it was and costs one compare.
+	if ns.Rooms.HeardCount() ~= painted then
+		Paint()
 	end
 	Sound(important)
 end
@@ -694,7 +713,7 @@ local function BuildEntry()
 	-- moment it has to happen is inside the client's own activation and only
 	-- Chat/Field.lua can see that moment.
 	ns.ChatField.OnFill = function(field)
-		return ChatWindow.Fill(field)
+		return ChatWindow.Fill(field, true)
 	end
 	-- The rectangle is drawn only while the cursor is in the line, and the
 	-- sentence behind it only while the cursor is out of it.
@@ -781,7 +800,10 @@ local function BuildRail()
 		name = "WarriorKitChatRooms",
 		icons = true,
 		describe = Describe,
-		onSelect = function(id) Show(id) end,
+		onSelect = function(id)
+			answered = ns.Rooms.HeardCount()
+			Show(id)
+		end,
 		-- A right click on a conversation closes it. On any other room it does
 		-- nothing, and Close is what says so.
 		onRight = function(id) ChatWindow.Close(id) end,
@@ -1046,28 +1068,79 @@ end
 -- Go to a room by id. Anything that is not there right now is refused rather
 -- than made, because the rooms that exist are a fact about your party and your
 -- guild rather than something a caller gets to assert.
+--
+-- Going somewhere is a choice, and a choice answers every line heard before it:
+-- Enter after picking the guild room types into the guild, until somebody says
+-- something new.
+local function Move(id)
+	rail:Select(id)
+	if active ~= id then
+		Show(id)
+	else
+		Paint()
+	end
+end
+
 function ChatWindow.Go(id)
 	if not built or not ns.Rooms.Exists(id) then
 		return false
 	end
-	rail:Select(id)
-	if active ~= id then
-		Show(id)
-	end
+	answered = ns.Rooms.HeardCount()
+	Move(id)
 	return true
 end
 
+-- Tab. The rooms somebody spoke in, newest first, and then the rest, so the
+-- first press after Enter is the line before the one Enter answered.
 function ChatWindow.Step(delta)
 	if not built then
 		return false
 	end
-	local id = rail:Step(delta)
-	if not id then
+	local order = ns.Rooms.ByTime()
+	if #order == 0 then
 		return false
 	end
-	ChatWindow.Go(id)
+	local at = delta > 0 and #order or 1
+	for index, id in ipairs(order) do
+		if id == active then
+			at = index
+		end
+	end
+	ChatWindow.Go(order[((at - 1 + delta) % #order) + 1])
 	ChatWindow.Fill()
 	return true
+end
+
+-- Where a line being opened goes. Enter: the newest line nobody has answered,
+-- or the room you are in when there is none. Shift-Enter: the room you last
+-- sent a line to, and the lines waiting stay waiting, because the key exists to
+-- finish what you were saying before you answer them.
+--
+-- Read off the shift key rather than handed down from the binding, because the
+-- press that opens the line is the client's OPENCHAT on both keys and nothing
+-- of ours is in that stack to hand anything down.
+function ChatWindow.Answer()
+	if not built then
+		return false
+	end
+	if IsShiftKeyDown and IsShiftKeyDown() then
+		local id = ns.Rooms.LastSent()
+		if id then
+			Move(id)
+		end
+		return id ~= nil
+	end
+	if ns.Rooms.HeardCount() == answered then
+		return false
+	end
+	local id = ns.Rooms.Newest()
+	answered = ns.Rooms.HeardCount()
+	if id then
+		Move(id)
+	else
+		Paint()
+	end
+	return id ~= nil
 end
 
 function ChatWindow.Room()
@@ -1151,7 +1224,10 @@ end
 --
 -- Only into an empty field, because a half typed sentence you clicked away from
 -- is not something to write over.
-function ChatWindow.Fill(field)
+--
+-- `opening` is the line being opened rather than refilled after Tab, and only
+-- that moves the window to the line being answered.
+function ChatWindow.Fill(field, opening)
 	field = field or ns.ChatField.Box()
 	if not built or not field or not ns.db.chatPrefix then
 		return false
@@ -1159,6 +1235,9 @@ function ChatWindow.Fill(field)
 	local text = field:GetText() or ""
 	if text ~= "" and text:sub(1, 1) ~= "/" then
 		return false
+	end
+	if opening then
+		ChatWindow.Answer()
 	end
 	local prefix = ns.Compose.Prefix(ns.Rooms.Target(active))
 	if prefix == "" then

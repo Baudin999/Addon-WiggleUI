@@ -64,6 +64,9 @@ local PENDING = 100
 --          is drawn without a name and without a colon
 -- target   the person the line is about is the recipient rather than the
 --          sender, which is what an outgoing whisper is
+-- answer   somebody talking to you, so Enter opens the line on this room when
+--          it is the newest. See "Who spoke last" in Chat/Rooms.lua.
+-- mine     a line you sent, whoever it names, so Shift-Enter comes back here
 --------------------------------------------------------------------------
 
 local KINDS = {
@@ -71,19 +74,19 @@ local KINDS = {
 	CHAT_MSG_YELL                 = { tag = "y",  color = "YELL", room = "say" },
 	CHAT_MSG_EMOTE                = { tag = "e",  color = "EMOTE", room = "say" },
 	CHAT_MSG_TEXT_EMOTE           = { tag = "e",  color = "EMOTE", room = "say", emote = true },
-	CHAT_MSG_PARTY                = { tag = "p",  color = "PARTY", room = "party" },
-	CHAT_MSG_PARTY_LEADER         = { tag = "p",  color = "PARTY_LEADER", room = "party" },
-	CHAT_MSG_RAID                 = { tag = "r",  color = "RAID", room = "raid" },
-	CHAT_MSG_RAID_LEADER          = { tag = "r",  color = "RAID_LEADER", room = "raid" },
-	CHAT_MSG_RAID_WARNING         = { tag = "rw", color = "RAID_WARNING", room = "raid" },
-	CHAT_MSG_INSTANCE_CHAT        = { tag = "i",  color = "INSTANCE_CHAT", room = "instance" },
-	CHAT_MSG_INSTANCE_CHAT_LEADER = { tag = "i",  color = "INSTANCE_CHAT_LEADER", room = "instance" },
-	CHAT_MSG_GUILD                = { tag = "g",  color = "GUILD", room = "guild" },
-	CHAT_MSG_OFFICER              = { tag = "o",  color = "OFFICER", room = "guild" },
-	CHAT_MSG_WHISPER              = { tag = "w",  color = "WHISPER", whisper = true },
-	CHAT_MSG_WHISPER_INFORM       = { tag = "to", color = "WHISPER_INFORM", whisper = true, target = true },
-	CHAT_MSG_BN_WHISPER           = { tag = "w",  color = "BN_WHISPER", whisper = true },
-	CHAT_MSG_BN_WHISPER_INFORM    = { tag = "to", color = "BN_WHISPER_INFORM", whisper = true, target = true },
+	CHAT_MSG_PARTY                = { tag = "p",  color = "PARTY", room = "party", answer = true },
+	CHAT_MSG_PARTY_LEADER         = { tag = "p",  color = "PARTY_LEADER", room = "party", answer = true },
+	CHAT_MSG_RAID                 = { tag = "r",  color = "RAID", room = "raid", answer = true },
+	CHAT_MSG_RAID_LEADER          = { tag = "r",  color = "RAID_LEADER", room = "raid", answer = true },
+	CHAT_MSG_RAID_WARNING         = { tag = "rw", color = "RAID_WARNING", room = "raid", answer = true },
+	CHAT_MSG_INSTANCE_CHAT        = { tag = "i",  color = "INSTANCE_CHAT", room = "instance", answer = true },
+	CHAT_MSG_INSTANCE_CHAT_LEADER = { tag = "i",  color = "INSTANCE_CHAT_LEADER", room = "instance", answer = true },
+	CHAT_MSG_GUILD                = { tag = "g",  color = "GUILD", room = "guild", answer = true },
+	CHAT_MSG_OFFICER              = { tag = "o",  color = "OFFICER", room = "guild", answer = true },
+	CHAT_MSG_WHISPER              = { tag = "w",  color = "WHISPER", whisper = true, answer = true },
+	CHAT_MSG_WHISPER_INFORM       = { tag = "to", color = "WHISPER_INFORM", whisper = true, target = true, mine = true },
+	CHAT_MSG_BN_WHISPER           = { tag = "w",  color = "BN_WHISPER", whisper = true, answer = true },
+	CHAT_MSG_BN_WHISPER_INFORM    = { tag = "to", color = "BN_WHISPER_INFORM", whisper = true, target = true, mine = true },
 	-- What comes back when you whisper somebody who is away. It is addressed to
 	-- you about a conversation you started, so it belongs where that
 	-- conversation is.
@@ -274,6 +277,42 @@ local function Emit(rooms, line, key, important)
 	return true
 end
 
+-- Whether the line came from you. A party line you typed comes back as an
+-- event like anyone's, and one the client sent without a GUID is still yours.
+--
+-- Compared a byte at a time rather than with the realm cut off, because this
+-- runs on every line somebody says to you and a cut is a string per line.
+local DASH = 45
+
+local function Mine(sender, guid)
+	if guid and guid == UnitGUID("player") then
+		return true
+	end
+	local me = UnitName("player")
+	if type(sender) ~= "string" or type(me) ~= "string" or sender:find(me, 1, true) ~= 1 then
+		return false
+	end
+	local after = sender:byte(#me + 1)
+	return after == nil or after == DASH
+end
+
+-- Which room this line leaves Enter or Shift-Enter pointing at. After Route,
+-- because a first whisper has no room until Route makes it.
+local function Heard(kind, who, sender, guid)
+	if not kind.answer and not kind.mine then
+		return
+	end
+	local id = kind.room
+	if kind.whisper then
+		id = type(who) == "string" and ns.Rooms.WhisperId(who) or nil
+	end
+	if kind.mine or Mine(sender, guid) then
+		ns.Rooms.Sent(id)
+	else
+		ns.Rooms.Heard(id)
+	end
+end
+
 -- hot: the OnEvent closure at the foot of this file calls it for every chat line
 -- the client delivers, and a closure handed to SetScript is not a root the walk
 -- can name.
@@ -294,6 +333,7 @@ function Feed.Handle(event, text, sender, _, _, target, _, _, channelIndex,
 	end
 
 	local rooms = ns.Rooms.Route(kind.room, who, kind.whisper)
+	Heard(kind, who, sender, guid)
 	-- Worth a sound and a mark: somebody you named, in a group of your own.
 	local important = ns.People.Match(who) ~= nil
 

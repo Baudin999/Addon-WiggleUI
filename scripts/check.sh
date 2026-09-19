@@ -759,11 +759,14 @@ done < <(grep -rnE 'GetBindingAction|BUTTON1 = true|cannot be rebound in combat|
 # None of them asked whether the button fires on an edge the key reaches,
 # which is the bug every dead key in this addon has been. Bound.Hold and
 # Bound.Drop are the two calls and Bound.Keys is the loop; Hold refuses a
-# button UI/Press.lua did not build. Comment lines are skipped.
+# button UI/Press.lua did not build. Bound.Command is the same for a client
+# command rather than a click, which is Shift-Enter on OPENCHAT, and the
+# pattern names SetOverrideBinding bare so a command write is held to it too.
+# Comment lines are skipped.
 while IFS= read -r bad; do
-	echo "only UI/Bound.lua may write the override layer, use ns.UI.Bound.Hold, Drop or Keys: $bad"
+	echo "only UI/Bound.lua may write the override layer, use ns.UI.Bound.Hold, Command, Drop or Keys: $bad"
 	status=1
-done < <(grep -rnE 'SetOverrideBindingClick|ClearOverrideBindings|heldAny' \
+done < <(grep -rnE 'SetOverrideBinding|ClearOverrideBindings|heldAny' \
 	--include='*.lua' . | grep -v '^\./UI/Bound\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
 
 # A key the client throws away at a binding rebuild is taken back through

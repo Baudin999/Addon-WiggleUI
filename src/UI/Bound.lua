@@ -117,6 +117,39 @@ function Bound.Hold(owner, key, name, click)
 	return true, Bound.Reads(key, name, click)
 end
 
+-- Put `key` on the override layer as the client's own `command`, owned by
+-- `owner`, where the binding set leaves the key free. A key the player put
+-- something of their own on is theirs and is left alone. Returns whether the
+-- layer reads the command back.
+--
+-- No edge to check, unlike Hold: the client runs its own command off the key
+-- and there is no button of ours between the two.
+function Bound.Command(owner, key, command)
+	if type(SetOverrideBinding) ~= "function" or type(key) ~= "string" or key == "" then
+		return false
+	end
+	if Bound.Under(key) then
+		return false
+	end
+	if not pcall(SetOverrideBinding, owner, false, key, command) then
+		return false
+	end
+	return Bound.Action(key) == command
+end
+
+-- What the override layer holds on `key`, "" for nothing, and nil where the
+-- question could not be asked.
+function Bound.Action(key)
+	if type(GetBindingAction) ~= "function" then
+		return nil
+	end
+	local ok, action = pcall(GetBindingAction, key, true)
+	if not ok or type(action) ~= "string" then
+		return nil
+	end
+	return action
+end
+
 -- Every override `owner` holds, gone.
 function Bound.Drop(owner)
 	if Bound.Layer() then
