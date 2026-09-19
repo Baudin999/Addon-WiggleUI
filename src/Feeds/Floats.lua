@@ -194,8 +194,9 @@ local function Build()
 	-- linen put its own number through the last letters of the word.
 	frame.name:SetPoint("RIGHT", frame.count, "LEFT", -UI.Metric.gutter, 0)
 	-- Each pooled row, because the rows are parented to UIParent and move on
-	-- their own. They are the loot feed crossing the screen, so they go with it.
-	ns.Theme.Wear("feeds", frame)
+	-- their own. An element of their own rather than the loot feed's: the
+	-- exploration theme drops the column and keeps these.
+	ns.Theme.Wear("drops", frame)
 	return frame
 end
 

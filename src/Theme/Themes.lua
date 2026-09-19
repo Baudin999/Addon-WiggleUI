@@ -52,6 +52,7 @@ Themes.ELEMENTS = {
 	{ key = "minimap",    label = "the minimap" },
 	{ key = "meters",     label = "the meters" },
 	{ key = "feeds",      label = "the loot and combat feeds" },
+	{ key = "drops",      label = "the drops sliding in" },
 	{ key = "standing",   label = "the standing row" },
 	{ key = "experience", label = "the experience rails" },
 	{ key = "keys",       label = "the mouseover key sheet" },
@@ -63,7 +64,7 @@ Themes.ORDER = { "informational", "immersive", "exploration" }
 Themes.LABEL = {
 	informational = "everything the addon draws, as it draws it",
 	immersive = "you and the game: your frame and your target's at a fifth, nothing else",
-	exploration = "chat, quests and bars wait under the pointer; no meters, no feeds",
+	exploration = "chat, quests and bars wait under the pointer; drops but no meters or feeds",
 }
 
 -- Where your frame and your target's rest in the immersive theme. Enough to
@@ -89,6 +90,7 @@ Themes.informational = {
 	minimap    = "show",
 	meters     = "show",
 	feeds      = "show",
+	drops      = "show",
 	standing   = "show",
 	experience = "show",
 	keys       = "show",
@@ -116,6 +118,7 @@ Themes.immersive = {
 	minimap    = "hide",
 	meters     = "hide",
 	feeds      = "hide",
+	drops      = "hide",
 	standing   = "hide",
 	experience = "hide",
 	keys       = "hide",
@@ -127,7 +130,8 @@ Themes.immersive = {
 -- they come up only while their key is held, and a bar that then waited for
 -- the pointer as well would be a key that shows nothing. The meters and the
 -- loot and combat feeds go: they report on a fight after it, and exploring is
--- not reading a report.
+-- not reading a report. The drops sliding in stay, because they say what you
+-- just picked up and then leave.
 Themes.exploration = {
 	player     = "show",
 	target     = "show",
@@ -147,6 +151,7 @@ Themes.exploration = {
 	minimap    = "show",
 	meters     = "hide",
 	feeds      = "hide",
+	drops      = "show",
 	standing   = "show",
 	experience = "show",
 	keys       = "show",
