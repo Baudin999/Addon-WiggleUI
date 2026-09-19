@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WM842G7J3Q3HQ2KRAKEB57
 type: task
-status: review
+status: done
 title: The tooltip is drawn on the palette's painted floor
 parent: 01M2WM7H2QD0KYVCRBZZ25T564
 ---
