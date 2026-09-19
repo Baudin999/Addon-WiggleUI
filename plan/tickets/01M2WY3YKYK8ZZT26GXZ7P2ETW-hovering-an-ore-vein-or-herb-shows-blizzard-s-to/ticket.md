@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WY3YKYK8ZZT26GXZ7P2ETW
 type: bug
-status: doing
+status: done
 title: "Hovering an ore vein or herb shows Blizzard's tooltip, not ours"
 ---
 
