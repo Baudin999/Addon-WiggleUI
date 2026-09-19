@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2W8X3ZSH458FRQ1VXBS2KC1
 type: feature
-status: doing
+status: done
 title: "Three themes: immersive, informational, exploration"
 labels: [needs-design]
 ---
