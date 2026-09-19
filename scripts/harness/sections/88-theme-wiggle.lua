@@ -131,6 +131,29 @@ check(UI.Veiled(meters):IsShown() and UI.Veiled(chat):GetAlpha() == 1,
 check(not chat.wkReveal:IsShown(), "the swap back left a catcher over the chat window")
 check(ns.ProgressRails.Describe() == style, "the swap back did not put the rail's style back")
 
+-- In a fight. The action bars are protected, and a veil over them is too, so
+-- the veil cannot be shown or hidden; its alpha and the catcher can. Under
+-- the pointer in exploration and shown in informational are both a veil on
+-- the screen, so the swap is alpha alone and has to happen now, not after
+-- the pull. A frame the swap would hide has to wait.
+local bars = Worn("bars")
+bars.IsProtected = function() return true end
+local feeds = Worn("feeds")
+feeds.IsProtected = function() return true end
+Theme.Aim()
+local realLockdown = _G.InCombatLockdown
+_G.InCombatLockdown = function() return true end
+Theme.Pin(true)
+check(UI.Veiled(bars):GetAlpha() == 0 and bars.wkReveal:IsShown(),
+	"a wiggle in a fight left the action bars up")
+check(UI.Veiled(feeds):IsShown(), "a wiggle in a fight hid a protected frame's veil")
+Theme.Pin(false)
+check(UI.Veiled(bars):GetAlpha() == 1 and not bars.wkReveal:IsShown(),
+	"the wiggle back in a fight did not bring the action bars up")
+_G.InCombatLockdown = realLockdown
+bars:Hide()
+feeds:Hide()
+
 ns.db.wiggleInformational = "none"
 Theme.Aim()
 check(not UI.Ticking("wiggle"), "a theme aimed at nothing still reads the mouse")

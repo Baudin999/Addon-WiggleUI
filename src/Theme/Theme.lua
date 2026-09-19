@@ -191,38 +191,51 @@ local function Untouched(key)
 	return rest[key] == "show" and (not target or target[key] == "show")
 end
 
+-- Two writes a fight refuses on a protected frame: taking the veil, and
+-- showing or hiding it, because a veil over a protected frame is protected
+-- itself. Its alpha and the catcher, an insecure child, are not, so a frame
+-- already veiled and already on the screen is redressed in a fight like out
+-- of one. That is the wiggle between exploration and informational in the
+-- middle of a pull: the bars go from under the pointer to shown and back on
+-- alpha alone. Anything more waits for the end of the fight.
 local function Dress(frame, key)
 	local mode = chosen[key]
-	if mode == "show" and not UI.Veiled(frame) and Untouched(key) then
+	local veil = UI.Veiled(frame)
+	if mode == "show" and not veil and Untouched(key) then
 		return true
 	end
-	if ns.Blocked(frame) then
-		return false
-	end
-	local veil = UI.Veil(frame)
+	local blocked = ns.Blocked(frame)
 	if not veil then
-		return false
+		if blocked then
+			return false
+		end
+		veil = UI.Veil(frame)
+		if not veil then
+			return false
+		end
 	end
-	if not ns.db.locked then
+	local placing = not ns.db.locked
+	local shown = placing or mode ~= "hide"
+	if veil:IsShown() ~= shown then
+		if blocked then
+			return false
+		end
+		veil:SetShown(shown)
+	end
+	if placing then
 		-- Being placed. Up and whole, so it can be found and dragged.
 		UI.Unreveal(frame)
 		veil:SetAlpha(1)
-		veil:Show()
-		return true
-	end
-	if mode == "hover" then
-		veil:Show()
+	elseif mode == "hover" then
 		UI.Reveal(frame, 0)
-		return true
-	end
-	-- Off the reveal first: a wiggle can take a frame from under the pointer
-	-- to shown, and a catcher left standing over it would take every press.
-	UI.Unreveal(frame)
-	if mode == "hide" then
-		veil:Hide()
 	else
-		veil:Show()
-		veil:SetAlpha(mode == "show" and 1 or mode)
+		-- Off the reveal first: a wiggle can take a frame from under the
+		-- pointer to shown, and a catcher left standing over it would take
+		-- every press.
+		UI.Unreveal(frame)
+		if shown then
+			veil:SetAlpha(mode == "show" and 1 or mode)
+		end
 	end
 	return true
 end
