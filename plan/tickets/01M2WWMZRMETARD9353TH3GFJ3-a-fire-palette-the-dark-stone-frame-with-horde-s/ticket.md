@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WWMZRMETARD9353TH3GFJ3
 type: feature
-status: todo
+status: doing
 title: "A fire palette: the dark stone frame with horde sigils, on horde's floor"
 ---
 
