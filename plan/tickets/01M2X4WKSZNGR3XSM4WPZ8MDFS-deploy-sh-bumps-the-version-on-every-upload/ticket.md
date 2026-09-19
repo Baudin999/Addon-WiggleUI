@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2X4WKSZNGR3XSM4WPZ8MDFS
 type: task
-status: todo
+status: doing
 title: deploy.sh bumps the version on every upload
 ---
 
