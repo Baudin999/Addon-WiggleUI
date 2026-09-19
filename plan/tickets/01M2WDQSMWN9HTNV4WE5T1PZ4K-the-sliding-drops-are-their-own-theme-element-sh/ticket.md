@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WDQSMWN9HTNV4WE5T1PZ4K
 type: task
-status: doing
+status: done
 title: "The sliding drops are their own theme element, shown in exploration"
 parent: 01M2W8X3ZSH458FRQ1VXBS2KC1
 ---
