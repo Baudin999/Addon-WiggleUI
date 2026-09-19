@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WJ1RQXZW1ECRRPGMGNKV61
 type: task
-status: todo
+status: doing
 title: "A painted window's header is the painting, ruled like its footer"
 ---
 
