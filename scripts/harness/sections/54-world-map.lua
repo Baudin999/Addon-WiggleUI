@@ -201,8 +201,8 @@ do
 		return ns.Measure(region, method) * region:GetEffectiveScale()
 	end
 
-	check(Box.Place() == Box.DOCK,
-		"the setting is not on the corner, so this claim proves nothing")
+	check(Box.Place("control") == Box.RIGHT,
+		"controls are not on the corner, so a pin landing beside its mark proves nothing")
 
 	local probe = ns.UI.Chart.New(_G.UIParent, "WarriorKitMapHoverProbe")
 	probe:Fit(400, 300)
@@ -212,7 +212,7 @@ do
 	local mark, box = Box.Owner(), Box.Frame()
 	check(mark ~= nil and box ~= nil and box:IsShown(),
 		"hovering a mark on the map opened no box")
-	check(Box.Placed() == Box.BESIDE,
+	check(Box.Sort() == "pin" and Box.Placed() == Box.ATTACHED,
 		("a mark's box went %s rather than onto the mark"):format(tostring(Box.Placed())))
 	check(pixels(box, "GetBottom") >= pixels(mark, "GetTop") - 1,
 		"a mark's box opened over the dot rather than above it, under the pointer")

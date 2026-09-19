@@ -305,7 +305,7 @@ local function Enter(button)
 	-- flickering across the window. The wait is the bag setting, in
 	-- milliseconds because that is the size of number it is; UI/Tip.lua takes
 	-- seconds like every other duration in the addon.
-	ns.Tip.Settle(button, Subject(button), nil, UI.Tooltip.BESIDE,
+	ns.Tip.Settle(button, Subject(button), "bag", nil,
 		(ns.db.bagHover or 0) / 1000)
 end
 

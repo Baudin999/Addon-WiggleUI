@@ -117,7 +117,7 @@ local function Hover(w)
 			title = w.name or Titled(slot.label),
 			lines = { ("Standing in your %s slot."):format(slot.label) },
 		}
-	end)
+	end, "spell")
 end
 
 -- The click. Left button only, on the way up, and only while the square is

@@ -158,7 +158,7 @@ local function CastSubject()
 end
 
 cast:SetScript("OnEnter", function(this)
-	ns.Tip.Open(this, CastSubject(), nil, UI.Tooltip.BESIDE)
+	ns.Tip.Open(this, CastSubject(), "spell")
 end)
 cast:SetScript("OnLeave", function()
 	ns.Tip.Close()
@@ -203,7 +203,7 @@ end
 
 local function Look(row)
 	UI.Tint(row.square.bg, C.hover)
-	ns.Tip.Open(row, Subject(row), nil, UI.Tooltip.BESIDE)
+	ns.Tip.Open(row, Subject(row), "spell")
 end
 
 local function Unlook(row)

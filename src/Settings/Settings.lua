@@ -68,7 +68,8 @@ Settings.Label = UI.ZoomLabel
 -- Called at ADDON_LOADED so the panel is built at the right size rather than
 -- built at the design size and resized a moment later.
 function Settings.Apply()
-	UI.Tooltip.SetPlace(ns.db.tipPlace)
+	Settings.ApplyPlaces()
+	UI.Tooltip.SetShade(ns.db.tipShade)
 	UI.Tooltip.SetLinger(ns.db.tipLinger)
 	UI.Tooltip.SetFont(ns.db.tipFont)
 	ns.Compare.SetEnabled(ns.db.tipCompare)
@@ -137,6 +138,10 @@ local function Marker()
 		return marker
 	end
 	marker = CreateFrame("Frame", "WarriorKitTooltipAnchor", UIParent)
+	-- Over the options window, which is DIALOG: the Tooltips page shows the
+	-- marker so you can drag it, and one drawn under the page is one you
+	-- cannot reach wherever the page covers it.
+	marker:SetFrameStrata("FULLSCREEN_DIALOG")
 	UI.Adopt(marker, 1)
 	marker:SetSize(MARKER, MARKER / 2)
 	markerPlace = UI.Placeable(marker, {
@@ -161,11 +166,20 @@ function Settings.ApplyAnchor()
 	return frame
 end
 
--- The frames were locked or unlocked. A marker you cannot see is a marker you
--- cannot drag, which is the whole of what unlocking buys here.
+-- The frames were locked or unlocked, or the Tooltips page came up or went.
+-- A marker you cannot see is a marker you cannot drag, and the page that asks
+-- where the box goes is where you are looking when you want to move it, so the
+-- page shows it as well as the unlock does.
+local paging = false
+
 function Settings.LockAnchor()
 	Marker()
-	markerPlace:Lock(not ns.db.locked)
+	markerPlace:Lock(not ns.db.locked or paging)
+end
+
+function Settings.ShowAnchor(on)
+	paging = on and true or false
+	Settings.LockAnchor()
 end
 
 function Settings.ResetAnchor()
@@ -183,44 +197,64 @@ end
 
 --------------------------------------------------------------------------
 
-Settings.PLACES = { UI.Tooltip.DOCK, UI.Tooltip.BESIDE, UI.Tooltip.ANCHOR }
+-- The four answers in the order the dropdown lists them, each with the words
+-- it is shown as.
+Settings.PLACES = {
+	{ value = UI.Tooltip.RIGHT, text = "bottom right" },
+	{ value = UI.Tooltip.LEFT, text = "bottom left" },
+	{ value = UI.Tooltip.ATTACHED, text = "attached" },
+	{ value = UI.Tooltip.ANCHOR, text = "drag it yourself" },
+}
 
-function Settings.Place()
-	return UI.Tooltip.Place()
+function Settings.PlaceOptions()
+	return Settings.PLACES
 end
 
-function Settings.SetPlace(word)
-	ns.db.tipPlace = word
-	UI.Tooltip.SetPlace(word)
-	-- Read back rather than returned, because the box takes a word it does not
-	-- know as the corner and the account file is allowed to hold one.
-	ns.db.tipPlace = UI.Tooltip.Place()
-	return ns.db.tipPlace
+-- The saved key one type's answer lives under: tipPlaceBag, tipPlaceWorld.
+-- A key per type rather than one table, so a type added next month gets its
+-- default filled in by ns.Register like every other setting, and the reset
+-- counts a moved type as one setting moved.
+function Settings.PlaceKey(sort)
+	return "tipPlace" .. sort:sub(1, 1):upper() .. sort:sub(2)
 end
 
--- What this setting does not decide, said on the two answers that are not
--- already it. A hover over an icon standing for an object opens on that object
--- whatever the setting says, because the box there is the object's own label.
--- A control that claims to move every tooltip in the addon is a control you
--- will be arguing with the first time you hover a buff.
-local ICONS = "; an item, an aura or an action square opens on itself regardless"
+function Settings.Place(sort)
+	return UI.Tooltip.Place(sort)
+end
 
--- One sentence saying where the next box will open and what that costs, in the
--- terms Settings.Describe uses for the grid: a control that hides its own cost
--- is a control you cannot make a decision with.
-function Settings.DescribePlace()
-	local where = Settings.Place()
-	if where == UI.Tooltip.BESIDE then
-		return "beside whatever you hovered, and on the cursor out in the world,"
-			.. " so it is next to the thing it describes and over what is behind it"
+function Settings.SetPlace(sort, word)
+	UI.Tooltip.SetPlace(sort, word)
+	-- Read back rather than taken, because the box takes a word it does not
+	-- know as that type's default and the account file is allowed to hold one.
+	local key = Settings.PlaceKey(sort)
+	ns.db[key] = UI.Tooltip.Place(sort)
+	return ns.db[key]
+end
+
+-- Every type's saved answer pushed in, which is the load and the reset.
+function Settings.ApplyPlaces()
+	for _, each in ipairs(UI.Tooltip.TYPES) do
+		UI.Tooltip.SetPlace(each.key, ns.db[Settings.PlaceKey(each.key)])
 	end
-	if where == UI.Tooltip.ANCHOR then
-		return "on the marker, wherever you dragged it with the frames unlocked,"
-			.. " so it is where you chose and covers whatever is there" .. ICONS
+end
+
+-- The words a place is shown as, for the reading and the slash word.
+function Settings.PlaceText(word)
+	for _, each in ipairs(Settings.PLACES) do
+		if each.value == word then
+			return each.text
+		end
 	end
-	return "in the bottom right corner, where the client keeps its own,"
-		.. " so nothing you hover is covered and nothing is beside it either"
-		.. ICONS
+	return tostring(word)
+end
+
+-- One sentence per type, for the slash word: "bag item: attached".
+function Settings.DescribePlaces()
+	local lines = {}
+	for _, each in ipairs(UI.Tooltip.TYPES) do
+		lines[#lines + 1] = each.label .. ": " .. Settings.PlaceText(Settings.Place(each.key))
+	end
+	return lines
 end
 
 --------------------------------------------------------------------------
@@ -270,6 +304,17 @@ function Settings.SetTipFont(size)
 	UI.Tooltip.SetFont(size)
 	ns.db.tipFont = UI.Tooltip.Font()
 	return ns.db.tipFont
+end
+
+-- How much darker than the palette the box's floor is, in percent.
+function Settings.TipShade()
+	return UI.Tooltip.Shade()
+end
+
+function Settings.SetTipShade(percent)
+	UI.Tooltip.SetShade(percent)
+	ns.db.tipShade = UI.Tooltip.Shade()
+	return ns.db.tipShade
 end
 
 function Settings.DescribeTipFont()

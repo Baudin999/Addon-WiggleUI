@@ -232,7 +232,7 @@ check(figure:GetText() == "+30g 0s" and _G.WarriorKitLootFeed:GetHeight() == tal
 -- What the panel draws, read through the tooltip it shares a renderer with.
 -- The slide itself is 81-purse-drawer.lua's.
 local Tip = ns.UI.Tooltip
-ns.Tip.Open(hit, Purse.Ledger())
+ns.Tip.Open(hit, Purse.Ledger(), "control")
 check(Tip.IsShown(), "the ledger drew nothing")
 check(Tip.Text(1) == "The purse", "the tooltip is titled " .. tostring(Tip.Text(1)))
 

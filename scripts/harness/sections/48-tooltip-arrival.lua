@@ -50,7 +50,7 @@ do
 
 	local late = _G.WarriorKitItemLink("Late Arrival")
 
-	Tip.Open(owner, { kind = "item", link = late })
+	Tip.Open(owner, { kind = "item", link = late }, "control")
 	check(Box.IsShown() == false,
 		"an item the client says nothing about drew a box with nothing in it")
 
@@ -73,7 +73,7 @@ do
 	check(Tip.Arrived() == false,
 		"a box with the client's own text in it rebuilt for an item arriving anyway")
 
-	Tip.Open(owner, { kind = "note", title = "A note" })
+	Tip.Open(owner, { kind = "note", title = "A note" }, "control")
 	check(Tip.Arrived() == false, "a note rebuilt itself for an item arriving")
 
 	-- The pointer having left is the end of it. The hover record is what says
@@ -93,7 +93,7 @@ do
 
 	H.tooltips.inventory[H.tooltipKey("player", 5)] = nil
 	Tip.Open(owner, { kind = "inventory", unit = "player", slot = 5,
-		title = "Breastplate of the Second" })
+		title = "Breastplate of the Second" }, "control")
 	check(Box.Text(1) == "Breastplate of the Second",
 		"a worn slot with no text yet drew " .. tostring(Box.Text(1)))
 	check(Box.Lines() == 1,
@@ -145,7 +145,7 @@ do
 		{ "Master First Aid - Doctor in the House" },
 		{ "Requires First Aid (300)" },
 	}
-	Tip.Open(owner, { kind = "item", link = book })
+	Tip.Open(owner, { kind = "item", link = book }, "control")
 	check(Says("Requires First Aid (300)"), "the book drew none of the client's own text")
 	check(Says(USE) == false, "the book's Use line was drawn before its spell arrived")
 

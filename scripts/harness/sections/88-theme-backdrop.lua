@@ -143,11 +143,11 @@ check(math.abs(wash.texcoord[4] - 1) < 1e-9 and wash.texcoord[2] == 1,
 -- again at the foot, where the dark open decides flat once more.
 local Tooltip = UI.Tooltip
 local owner = CreateFrame("Frame", nil, UIParent)
-Tooltip.Show(owner, { "Title", "a line under it" })
+Tooltip.Show(owner, { "Title", "a line under it" }, nil, "control")
 local tip = Tooltip.Frame()
 tip.ground = nil
 tip.bg:SetAlpha(1)
-Tooltip.Show(owner, { "Title", "a line under it", "and another", "and a fourth" })
+Tooltip.Show(owner, { "Title", "a line under it", "and another", "and a fourth" }, nil, "control")
 local ground = tip.ground
 check(ground ~= nil and ground ~= false, "a painted palette puts the tooltip on its floor")
 if ground then
@@ -180,7 +180,7 @@ tip.bg:SetAlpha(1)
 
 frame:Hide()
 UI.ChooseBackdrop(nil)
-Tooltip.Show(owner, { "Title", "a line under it" })
+Tooltip.Show(owner, { "Title", "a line under it" }, nil, "control")
 check(tip.ground == false and tip.bg:GetAlpha() == 1,
 	"under a palette with no painting the tooltip keeps its flat fill")
 Tooltip.Close(true)

@@ -163,7 +163,7 @@ function World.Open()
 	if open and guid and guid == looking and Ours() then
 		return true
 	end
-	if not ns.Tip.Open(ns.UI.Tooltip.CURSOR, Subject()) then
+	if not ns.Tip.Open(ns.UI.Tooltip.CURSOR, Subject(), "world") then
 		World.Close()
 		return false
 	end

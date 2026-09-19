@@ -876,7 +876,7 @@ local function Square(pane, entry)
 	local function Enter()
 		box.lit = true
 		Ring(box, box.tone)
-		ns.Tip.Open(box, Subject(entry), nil, ns.UI.Tooltip.BESIDE)
+		ns.Tip.Open(box, Subject(entry), "worn")
 	end
 
 	local function Leave()
@@ -1300,7 +1300,7 @@ local function Badge(head, index)
 
 	badge:SetScript("OnEnter", function(self)
 		ns.Tip.Open(self, { kind = "note", title = LABELS[index],
-			lines = { { self.note or "", color = C.dim } } }, true)
+			lines = { { self.note or "", color = C.dim } } }, "control", true)
 	end)
 	badge:SetScript("OnLeave", function()
 		ns.Tip.Close()

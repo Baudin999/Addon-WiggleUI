@@ -245,16 +245,16 @@ do
 	-- one, so a mob on the right of the screen throws its box left rather than
 	-- into the clamp.
 	--
-	-- All of which is what the box does undocked, and undocked is not the
-	-- default, so the switch is thrown for the length of this claim and handed
-	-- back at the end of it. The docked corner is asserted in 48-tooltips.lua
-	-- where the setting lives; what is proven here is the answer a creature
-	-- gets when the player has asked for a box beside the cursor, which is the
-	-- one anchor in the file that no frame can reach.
+	-- All of which is what a world unit's box does attached, and attached is
+	-- not its default, so its dropdown is moved for the length of this claim
+	-- and handed back at the end of it. The corners are asserted in
+	-- 48-tooltips.lua; what is proven here is the answer a creature gets when
+	-- the player has attached world unit tooltips, which is the one anchor in
+	-- the file that no frame can reach.
 	------------------------------------------------------------------
 
-	local wasPlace = Box.Place()
-	Box.SetPlace(Box.BESIDE)
+	local wasPlace = Box.Place("world")
+	Box.SetPlace("world", Box.ATTACHED)
 
 	-- The stub stands UIParent up with no size at all, so the middle of the
 	-- screen is zero and every tooltip in every section above this one has been
@@ -285,7 +285,7 @@ do
 		"a mob on the right of the screen threw its box further right, into the clamp")
 
 	screen:SetSize(0, 0)
-	Box.SetPlace(wasPlace)
+	Box.SetPlace("world", wasPlace)
 	cursor.x = 300
 	fire("UPDATE_MOUSEOVER_UNIT")
 
@@ -419,7 +419,7 @@ do
 
 	check(ns.UI.Scan.Suppressing(), "the run reached the takeover with nothing of ours up")
 
-	ns.Tip.Open(elsewhere, { kind = "note", title = "A row somewhere else" })
+	ns.Tip.Open(elsewhere, { kind = "note", title = "A row somewhere else" }, "control")
 	check(Box.Owner() == elsewhere, "the hover that took the box over did not get it")
 
 	-- The creature stops existing while the pointer is on that row, which is
@@ -438,7 +438,7 @@ do
 	fire("UPDATE_MOUSEOVER_UNIT")
 	check(Box.Owner() == Box.CURSOR, "the creature's box did not come back after the row")
 
-	ns.Tip.Open(elsewhere, { kind = "note", title = "A row somewhere else" })
+	ns.Tip.Open(elsewhere, { kind = "note", title = "A row somewhere else" }, "control")
 	ns.World.Sweep()
 	check(not ns.UI.Scan.Suppressing(),
 		"a sweep that found somebody else's box left Blizzard's held down")
@@ -791,7 +791,7 @@ do
 
 	print(("world  %s, %s; the client's own held down for a unit and nothing else; %.2f KB per 50 ticks, gate is %.2f")
 		:format(World.Describe(),
-			Box.Place(),
+			"world units " .. Box.Place("world"),
 			churned, CHURN.world))
 	print(("world  a creature's quest drops: %s"):format(ns.QuestDrops.Describe()))
 end

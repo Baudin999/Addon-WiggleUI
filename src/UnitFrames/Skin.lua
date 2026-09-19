@@ -269,7 +269,7 @@ local function Hover(entry)
 	entry.subject = { kind = "unit", unit = entry.spec.unit }
 	ns.Tip.Hang(entry.frame, function()
 		return entry.subject
-	end)
+	end, "unit")
 end
 
 -- One frame, built once at login. Nil where this client refuses the template,

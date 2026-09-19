@@ -237,7 +237,7 @@ local function BuildPane(clickable, percent)
 				title = "WarriorKit meters",
 				lines = { "One row per player, as long as their share of the top row." },
 			}
-		end)
+		end, "control")
 		pane.button = button
 	end
 

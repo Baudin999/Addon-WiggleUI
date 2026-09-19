@@ -208,7 +208,7 @@ local function Cell(column, index)
 			return nil
 		end
 		return { kind = "item", link = self.link, title = self.name }
-	end)
+	end, "row")
 
 	column.pool[index] = row
 	return row

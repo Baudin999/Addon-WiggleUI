@@ -228,7 +228,7 @@ function Place.Handle(entry)
 				{ ns.BarLook.Hours(def) },
 			},
 		}
-	end)
+	end, "control")
 end
 
 -- Show or hide every handle. Registered as the buttons feature's `lock`, so

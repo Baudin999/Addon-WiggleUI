@@ -859,7 +859,7 @@ local function Build()
 	-- the same door, back on the window that hid it.
 	voice = UI.Button(window.frame, { label = "m", glyph = true,
 		onClick = function() ChatWindow.Voice() end })
-	ns.Tip.Hang(voice, Voicing)
+	ns.Tip.Hang(voice, Voicing, "control")
 
 	-- The colour follows the service rather than a ticker: Chat/Voice.lua already
 	-- listens to every event that can move the answer, so it says when it moves.

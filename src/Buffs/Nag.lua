@@ -391,7 +391,7 @@ local function Hover(w)
 			return nil
 		end
 		return Subject(entry)
-	end)
+	end, "aura")
 end
 
 -- The click. Left button only, on the way up, and only while the square is

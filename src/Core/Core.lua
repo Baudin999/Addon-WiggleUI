@@ -152,6 +152,12 @@ local RETIRED = {
 	-- still be what a player who had turned the dock off found in their file.
 	tipDock = true,
 
+	-- The word that replaced it: one placement for every hover in the addon,
+	-- with the icons pinned beside their object at the call site whatever it
+	-- said. Each type of tooltip carries its own now, under tipPlace<Type>, and
+	-- the old word would be read by nothing.
+	tipPlace = true,
+
 	-- 1.9: the party and the raid were one list out of one secure header, so
 	-- one place on the screen, one block size and one set of columns served
 	-- both. They are two frames now, each with its own header and its own

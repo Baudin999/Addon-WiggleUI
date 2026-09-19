@@ -160,7 +160,7 @@ end
 local function OnEnter(square)
 	UI.Tint(square.bg, C.hover)
 	if square.row.spell then
-		ns.Tip.Open(square, Subject(square.row), nil, UI.Tooltip.BESIDE)
+		ns.Tip.Open(square, Subject(square.row), "spell")
 	end
 end
 

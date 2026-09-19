@@ -2010,7 +2010,7 @@ local function RowMark(button, spec, outermost, right)
 	mark:SetScript("OnEnter", function(self)
 		self.text:SetTextColor(C.text[1], C.text[2], C.text[3])
 		if spec.tip then
-			ns.Tip.Settle(self, { kind = "note", title = spec.tip }, true, nil, ns.Tip.HOLD)
+			ns.Tip.Settle(self, { kind = "note", title = spec.tip }, "control", true, ns.Tip.HOLD)
 		end
 	end)
 	mark:SetScript("OnLeave", function(self)
@@ -2144,7 +2144,7 @@ local function ListRow(list, index)
 		this.hovered = true
 		PaintListRow(this)
 		if list.describe and this.id then
-			ns.Tip.Open(this, list.describe(this))
+			ns.Tip.Open(this, list.describe(this), "row")
 		end
 	end)
 	button:SetScript("OnLeave", function(this)

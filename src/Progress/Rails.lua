@@ -226,7 +226,7 @@ end
 local function Hover(rail, title_, lines)
 	ns.Tip.Hang(rail.bar, function()
 		return { kind = "note", title = title_, lines = lines() }
-	end)
+	end, "control")
 end
 
 local function Build()

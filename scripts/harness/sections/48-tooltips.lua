@@ -59,7 +59,7 @@ do
 		title = "A title",
 		lines = { { "A fact" }, { "Label", "value" } },
 		hint = "Press it.",
-	})
+	}, "control")
 
 	local said = drawn()
 	check(Box.IsShown(), "a subject with a title and two facts opened nothing")
@@ -78,7 +78,7 @@ do
 	-- And the band that is gone. The subject above carried a hint and the box
 	-- drew three lines, so nothing was written for it and no air was left where
 	-- it used to sit.
-	Tip.Open(owner, { kind = "note", title = "Alone", hint = "Type it." })
+	Tip.Open(owner, { kind = "note", title = "Alone", hint = "Type it." }, "control")
 	said = drawn()
 	check(#said == 1, ("a title and a hint drew %d lines rather than one"):format(#said))
 	check(said[1] == "Alone",
@@ -128,7 +128,7 @@ do
 		title = "A title",
 		lines = { { "A fact" } },
 		probe = "here",
-	})
+	}, "control")
 	said = drawn()
 	check(#said == 4, ("the source's line did not land: %d lines"):format(#said))
 	check(said[2] == "A fact" and said[4] == "Probe",
@@ -139,7 +139,7 @@ do
 	-- A source that answers nothing costs nothing. The same subject without
 	-- the field the probe reads draws exactly what it drew before the source
 	-- existed.
-	Tip.Open(owner, { kind = "note", title = "A title", lines = { { "A fact" } } })
+	Tip.Open(owner, { kind = "note", title = "A title", lines = { { "A fact" } } }, "control")
 	check(#drawn() == 2, "a source with nothing to say still took a line")
 
 	-- A source registered against every kind. One line hooked onto everything
@@ -156,13 +156,13 @@ do
 		end,
 	})
 
-	Tip.Open(owner, { kind = "note", title = "A title", probe = "here" })
+	Tip.Open(owner, { kind = "note", title = "A title", probe = "here" }, "control")
 	said = drawn()
 	check(said[2] == "Everywhere",
 		"a source registered for every kind said nothing about a note: "
 			.. table.concat(said, " / "))
 
-	Tip.Open(owner, { kind = "item", link = "Aegis", title = "Aegis", probe = "here" })
+	Tip.Open(owner, { kind = "item", link = "Aegis", title = "Aegis", probe = "here" }, "control")
 	said = drawn()
 	check(said[2] == "Everywhere",
 		"a source registered for every kind said nothing about an item: "
@@ -184,8 +184,8 @@ do
 	------------------------------------------------------------------
 	-- Where the box opens
 	--
-	-- Docked out of the box, in the corner the client keeps its own tooltip in,
-	-- and beside the owner once the setting says beside. The corner is read off
+	-- Per type of tooltip: bottom right, bottom left, attached to the owner or
+	-- on the marker, whichever the player set that type to. The corner is read off
 	-- the client's own two clearances, so what is asserted is the arithmetic
 	-- rather than a pair of numbers: the gap on the right is the thirteen units
 	-- the client's default anchor adds, the gap underneath is the clearance it
@@ -205,14 +205,25 @@ do
 		return ns.Measure(region, method) * region:GetEffectiveScale()
 	end
 
-	check(Box.Place() == Box.DOCK,
-		"the box does not dock out of the box, and that is where the game puts one")
+	-- Every type ships at what its hover did before the choice existed: the
+	-- icons standing for an object attached to it, everything else in the
+	-- corner. A type that shipped anywhere else moved somebody's tooltip on
+	-- upgrade without them touching a thing.
+	for _, each in ipairs(Box.TYPES) do
+		check(Box.Place(each.key) == each.default,
+			("%s tooltips open %s rather than %s out of the box")
+				:format(each.label, tostring(Box.Place(each.key)), each.default))
+		check(ns.db[ns.Settings.PlaceKey(each.key)] == each.default,
+			("%s tooltips have no saved answer of their own"):format(each.label))
+	end
+	check(Box.Place("control") == Box.RIGHT and Box.Place("bag") == Box.ATTACHED,
+		"a control does not open in the corner or a bag item not on its square")
 
 	local screen = _G.UIParent
 	screen:SetSize(2560, 1440)
 	local scale = screen:GetEffectiveScale()
 
-	Tip.Open(owner, { kind = "note", title = "In the corner", lines = { { "A fact" } } })
+	Tip.Open(owner, { kind = "note", title = "In the corner", lines = { { "A fact" } } }, "control")
 	local box = Box.Frame()
 	check(math.abs((pixels(screen, "GetRight") - pixels(box, "GetRight")) - 13 * scale) < 1,
 		("the docked box sits %s pixels off the right edge rather than thirteen units")
@@ -220,64 +231,54 @@ do
 	check(math.abs((pixels(box, "GetBottom") - pixels(screen, "GetBottom")) - 70 * scale) < 1,
 		("the docked box sits %s pixels off the bottom rather than clear of the bags")
 			:format(tostring(pixels(box, "GetBottom") - pixels(screen, "GetBottom"))))
+	check(Box.Placed() == Box.RIGHT and Box.Sort() == "control",
+		"the box does not report the type it was opened as and where that type goes")
 
-	-- The owner is at the centre of the screen, so a box beside it is nowhere
-	-- near the corner. Both claims are made about the same hover, because what
-	-- the switch changes is where one box goes and nothing else.
-	check(Box.SetPlace(Box.BESIDE), "turning the dock off reported that nothing moved")
-	Tip.Open(owner, { kind = "note", title = "Beside it", lines = { { "A fact" } } })
+	-- The mirror corner: the same height off the bottom, the same thirteen
+	-- units off the left edge. Changed while the box is up, so the re-anchor
+	-- is asserted in the same breath: the dropdown has a hover of its own and
+	-- the box it moves is usually the one on screen.
+	check(ns.Settings.SetPlace("control", Box.LEFT) == Box.LEFT,
+		"a control set to the bottom left did not save as the bottom left")
+	check(math.abs((pixels(box, "GetLeft") - pixels(screen, "GetLeft")) - 13 * scale) < 1,
+		("the left docked box sits %s pixels off the left edge rather than thirteen units")
+			:format(tostring(pixels(box, "GetLeft") - pixels(screen, "GetLeft"))))
+	check(math.abs((pixels(box, "GetBottom") - pixels(screen, "GetBottom")) - 70 * scale) < 1,
+		"the left docked box does not sit at the right corner's height")
+
+	-- Attached, for the same hover. The owner is at the centre of the screen,
+	-- so a box beside it is nowhere near either corner.
+	check(Box.SetPlace("control", Box.ATTACHED), "attaching a control reported that nothing moved")
+	check(Box.SetPlace("control", Box.ATTACHED) == false,
+		"attaching a type that is already attached moved it anyway")
 	check(pixels(box, "GetLeft") >= pixels(owner, "GetRight"),
-		"undocked, the box did not open beside the thing it describes")
-	check(pixels(screen, "GetRight") - pixels(box, "GetRight") > 13 * scale + 1,
-		"undocked, the box still landed in the corner")
+		"attached, the box did not open beside the thing it describes")
 
-	check(Box.SetPlace(Box.DOCK), "turning the dock back on reported that nothing moved")
-	check(Box.SetPlace(Box.DOCK) == false, "docking a box that is already docked moved it anyway")
-	check(Box.SetPlace("gibberish") == false and Box.Place() == Box.DOCK,
-		"a word the box does not know moved it somewhere rather than leaving it in the corner")
+	-- **One type's answer is that type's alone.** A bag square is a different
+	-- type from the control it was just set beside, so moving bags to the
+	-- corner leaves controls attached, and the next control hover after a bag
+	-- hover is not dragged along to wherever the bag box went.
+	ns.Settings.SetPlace("bag", Box.RIGHT)
+	Tip.Open(owner, { kind = "note", title = "A bag square", lines = { { "A fact" } } }, "bag")
 	check(math.abs((pixels(screen, "GetRight") - pixels(box, "GetRight")) - 13 * scale) < 1,
-		"a box that was up when the switch flipped stayed where it was")
-
-	------------------------------------------------------------------
-	-- The placement a hover names for itself
-	--
-	-- The setting answers one question: where does a box go when there is
-	-- nothing on screen to put it beside. A creature in the world, a row of
-	-- text in a feed. It is the wrong question for a box about an object you
-	-- are pointing at, and every one of those hovers says so at the call site:
-	-- an aura icon, an action square, a worn piece on the character panel, an
-	-- attachment slot in the mail. The box there is that object's label.
-	--
-	-- The setting is on the corner for all three claims below, because what is
-	-- being asserted is that it does not get a vote.
-	------------------------------------------------------------------
-
-	Tip.Open(owner, { kind = "note", title = "On the square", lines = { { "A fact" } } },
-		nil, Box.BESIDE)
+		"a bag item set to the corner did not open in it")
+	Tip.Open(owner, { kind = "note", title = "A control", lines = { { "A fact" } } }, "control")
 	check(pixels(box, "GetLeft") >= pixels(owner, "GetRight"),
-		"a hover that asked for its box beside it was docked into the corner anyway")
-	check(Box.Placed() == Box.BESIDE,
-		("the box reports it went %s rather than beside the thing it describes")
-			:format(tostring(Box.Placed())))
+		"a control took the corner the bag hover before it had gone to")
 
-	-- And the hover after it, which asked for nothing, is back in the corner.
-	-- Without this the override is a fourth way to change the setting: the box
-	-- would keep the last word it was handed and every ordinary hover for the
-	-- rest of the session would follow the last bag square you looked at.
-	Tip.Open(owner, { kind = "note", title = "In the corner", lines = { { "A fact" } } })
-	check(math.abs((pixels(screen, "GetRight") - pixels(box, "GetRight")) - 13 * scale) < 1,
-		"an ordinary hover took the placement the hover before it had asked for")
-	check(Box.Placed() == Box.DOCK,
-		"a hover that named no placement did not fall back to the setting")
+	-- A word the box does not know is that type's default, not nowhere: it
+	-- comes out of an account file a player may have edited. A type it does
+	-- not know is a call site's typo and is refused out loud.
+	check(Box.SetPlace("control", "gibberish") and Box.Place("control") == Box.RIGHT,
+		"a word the box does not know did not put the type back on its default")
+	check(not pcall(Box.SetPlace, "sideways", Box.RIGHT),
+		"a type nobody defined took a placement")
+	check(not pcall(Tip.Open, owner, { kind = "note", title = "Typo" }, "sideways"),
+		"a hover that named a type nobody defined still opened")
 
-	-- A word the box does not know is the setting, not nowhere. Same answer
-	-- SetPlace gives one, and for a nearer reason: this one comes off a call
-	-- site rather than out of an account file, and a typo there should cost a
-	-- tooltip in the wrong corner rather than a tooltip that never opens.
-	Tip.Open(owner, { kind = "note", title = "Gibberish", lines = { { "A fact" } } },
-		nil, "sideways")
-	check(math.abs((pixels(screen, "GetRight") - pixels(box, "GetRight")) - 13 * scale) < 1,
-		"a placement the box does not know put it somewhere rather than where the setting says")
+	for _, each in ipairs(Box.TYPES) do
+		ns.Settings.SetPlace(each.key, each.default)
+	end
 
 	screen:SetSize(0, 0)
 
@@ -294,7 +295,7 @@ do
 
 	-- The title is deliberately wrong. What the client says wins, and a caller
 	-- that had it right either way would not prove that.
-	Tip.Open(owner, { kind = "item", link = link, title = "not this" })
+	Tip.Open(owner, { kind = "item", link = link, title = "not this" }, "control")
 	said = drawn()
 	check(said[1] == "Aegis",
 		"the client's own first line is not the title: " .. tostring(said[1]))
@@ -308,7 +309,7 @@ do
 	-- The vendor and auction lines, on an item that never went near the loot
 	-- feed. That is the whole of what moving them into a source bought: the
 	-- feed knew what a drop was worth and nothing else in the addon did.
-	Tip.Open(owner, { kind = "item", link = link, price = 4500, count = 3 })
+	Tip.Open(owner, { kind = "item", link = link, price = 4500, count = 3 }, "control")
 	said = drawn()
 	local worth = false
 	for index = 1, #said do
@@ -330,7 +331,7 @@ do
 		{ "Soulbound" },
 		{ "Requires level 60", "Shield" },
 	}
-	Tip.Open(owner, { kind = "item", link = link, bag = 0, slot = 3 })
+	Tip.Open(owner, { kind = "item", link = link, bag = 0, slot = 3 }, "control")
 	said = drawn()
 	check(said[2] == "Soulbound",
 		"an item read from its bag slot still warns about picking it up: " .. tostring(said[2]))
@@ -338,7 +339,7 @@ do
 	-- The vendor line is still on it. The kind stayed `item`, so every source
 	-- registered for items says about a stack in your bags what it says about
 	-- the same stack on a loot row.
-	Tip.Open(owner, { kind = "item", link = link, bag = 0, slot = 3, price = 4500, count = 3 })
+	Tip.Open(owner, { kind = "item", link = link, bag = 0, slot = 3, price = 4500, count = 3 }, "control")
 	said = drawn()
 	worth = false
 	for index = 1, #said do
@@ -351,7 +352,7 @@ do
 	-- A slot the client has nothing for falls back to the link rather than to
 	-- the caller's title, which is what a square whose contents moved between
 	-- the hover and the read lands on.
-	Tip.Open(owner, { kind = "item", link = link, bag = 0, slot = 4, title = "not this" })
+	Tip.Open(owner, { kind = "item", link = link, bag = 0, slot = 4, title = "not this" }, "control")
 	check(Box.Text(1) == "Aegis",
 		"a stale bag slot did not fall back to the link: " .. tostring(Box.Text(1)))
 
@@ -364,7 +365,7 @@ do
 	local scanner = _G.WarriorKitTooltipScan
 	check(scanner ~= nil, "the scanner frame is not where its name says")
 	scanner:Hide()
-	Tip.Open(owner, { kind = "item", link = link, bag = 0, slot = 3, title = "not this" })
+	Tip.Open(owner, { kind = "item", link = link, bag = 0, slot = 3, title = "not this" }, "control")
 	said = drawn()
 	check(said[1] == "Aegis" and said[2] == "Soulbound",
 		"a hover after the client hid the scanner lost the client's text: " .. tostring(said[1]))
@@ -375,7 +376,7 @@ do
 	-- coming back empty, which is why every setter in UI/Scan.lua is pcalled,
 	-- and the caller's own title has to stand where that happens.
 	check(ns.UI.Scan.Read("item", "Aegis") == nil, "a malformed link came back with text on it")
-	Tip.Open(owner, { kind = "item", link = "Aegis", title = "Aegis" })
+	Tip.Open(owner, { kind = "item", link = "Aegis", title = "Aegis" }, "control")
 	check(Box.Text(1) == "Aegis",
 		"a malformed link did not fall back to the name: " .. tostring(Box.Text(1)))
 
@@ -387,7 +388,7 @@ do
 		{ "Increases attack power. Lasts 15 sec." },
 	}
 	check(ns.UI.Scan.Ready("spell"), "the scanner will not ask this client about a spell id")
-	Tip.Open(owner, { kind = "spell", spell = 20572, title = "not this" })
+	Tip.Open(owner, { kind = "spell", spell = 20572, title = "not this" }, "control")
 	check(Box.Text(1) == "Blood Fury",
 		"a spell id did not read the client's own name: " .. tostring(Box.Text(1)))
 
@@ -406,7 +407,7 @@ do
 	check(ns.UI.Scan.Ready("spell") == false,
 		"a client with no setter for a spell id was reported ready anyway")
 	check(ns.UI.Scan.Read("spell", 20572) == nil, "a missing setter answered text")
-	Tip.Open(owner, { kind = "spell", spell = 20572, title = "Blood Fury" })
+	Tip.Open(owner, { kind = "spell", spell = 20572, title = "Blood Fury" }, "control")
 	check(Box.Text(1) == "Blood Fury",
 		"an older client lost the name the caller knew: " .. tostring(Box.Text(1)))
 	scanner.SetSpellByID = setter
@@ -469,7 +470,7 @@ do
 	H.tooltips.item[cloth] = { { "Linen Cloth" } }
 
 	_G.WarriorKitShift(false)
-	Tip.Open(owner, { kind = "item", link = helm })
+	Tip.Open(owner, { kind = "item", link = helm }, "control")
 	check(Box.Alongside() == 0,
 		("a hover with no key held opened %d boxes beside it")
 			:format(Box.Alongside()))
@@ -480,7 +481,7 @@ do
 	-- echoed the item under the cursor would pass an assertion that only read
 	-- the count.
 	_G.WarriorKitShift(true)
-	Tip.Open(owner, { kind = "item", link = helm })
+	Tip.Open(owner, { kind = "item", link = helm }, "control")
 	check(Box.Alongside() == 1,
 		("shift over a helmet opened %d boxes beside it rather than one")
 			:format(Box.Alongside()))
@@ -500,7 +501,7 @@ do
 
 	-- The second ring is empty, so a ring still opens one box rather than two.
 	-- This is the claim that says the empty slot is skipped rather than drawn.
-	Tip.Open(owner, { kind = "item", link = ring })
+	Tip.Open(owner, { kind = "item", link = ring }, "control")
 	check(Box.Alongside() == 1,
 		("a ring with one finger filled opened %d boxes"):format(Box.Alongside()))
 
@@ -510,7 +511,7 @@ do
 	H.tooltips.inventory[H.tooltipKey("player", 12)] = {
 		{ "Band of the Third" }, { "Finger" },
 	}
-	Tip.Open(owner, { kind = "item", link = ring })
+	Tip.Open(owner, { kind = "item", link = ring }, "control")
 	check(Box.Alongside() == 2,
 		("a ring with both fingers filled opened %d boxes rather than two")
 			:format(Box.Alongside()))
@@ -520,7 +521,7 @@ do
 	check(Box.Text(1, 4) == nil, "a third box was handed out for a second ring")
 
 	-- Nothing you can put on gets nothing, whatever is held down.
-	Tip.Open(owner, { kind = "item", link = cloth })
+	Tip.Open(owner, { kind = "item", link = cloth }, "control")
 	check(Box.Alongside() == 0,
 		("shift over a stack of cloth opened %d boxes"):format(Box.Alongside()))
 
@@ -560,7 +561,7 @@ do
 	-- And the gesture itself: the box is already up, the pointer has not moved,
 	-- and the key is the only thing that changed.
 	_G.WarriorKitShift(false)
-	Tip.Open(owner, { kind = "item", link = helm })
+	Tip.Open(owner, { kind = "item", link = helm }, "control")
 	check(Box.Alongside() == 0, "the scene is not set: something is already beside the box")
 	_G.WarriorKitShift(true)
 	H.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 1)
@@ -578,10 +579,10 @@ do
 	-- player who wants it without holding anything.
 	_G.WarriorKitShift(true)
 	check(ns.Settings.SetCompare(false) == false, "turning the comparison off did not take")
-	Tip.Open(owner, { kind = "item", link = helm })
+	Tip.Open(owner, { kind = "item", link = helm }, "control")
 	check(Box.Alongside() == 0, "the comparison is switched off and still opened a box")
 	ns.Settings.SetCompare(true)
-	Tip.Open(owner, { kind = "item", link = helm })
+	Tip.Open(owner, { kind = "item", link = helm }, "control")
 	check(Box.Alongside() == 1, "turning the comparison back on did not bring it back")
 	_G.WarriorKitShift(false)
 
@@ -613,12 +614,12 @@ do
 	-- The countdown is tested at one second because that is what the addon
 	-- shipped for long enough that every claim here was written for it.
 	Box.SetLinger(0)
-	Tip.Open(owner, { kind = "note", title = "Going", lines = { { "A fact" } } })
+	Tip.Open(owner, { kind = "note", title = "Going", lines = { { "A fact" } } }, "control")
 	Tip.Close()
 	check(not Box.IsShown(), "with the linger off the box outlived the pointer")
 	check(Box.SetLinger(1), "raising the linger to a second reported that nothing moved")
 
-	Tip.Open(owner, { kind = "note", title = "Staying", lines = { { "A fact" } } })
+	Tip.Open(owner, { kind = "note", title = "Staying", lines = { { "A fact" } } }, "control")
 	Tip.Close()
 	check(Box.IsShown(), "the box went the instant the pointer left")
 	check(Box.Text(1) == "Staying", "the lingering box is not the one that was up")
@@ -632,10 +633,10 @@ do
 	check(not Box.IsShown(), "the countdown ran out and the box stayed up")
 
 	-- Replaced at once, with most of a second still on the clock.
-	Tip.Open(owner, { kind = "note", title = "First", lines = { { "A fact" } } })
+	Tip.Open(owner, { kind = "note", title = "First", lines = { { "A fact" } } }, "control")
 	Tip.Close()
 	Box.Sweep(0.1)
-	Tip.Open(owner, { kind = "note", title = "Second", lines = { { "A fact" } } })
+	Tip.Open(owner, { kind = "note", title = "Second", lines = { { "A fact" } } }, "control")
 	check(Box.Text(1) == "Second",
 		"a second hover did not replace the box that was counting down: "
 			.. tostring(Box.Text(1)))
@@ -653,7 +654,7 @@ do
 
 	-- Zero is a real answer, and it is the client's own behaviour.
 	check(Box.SetLinger(0), "turning the linger off reported that nothing moved")
-	Tip.Open(owner, { kind = "note", title = "Gone", lines = { { "A fact" } } })
+	Tip.Open(owner, { kind = "note", title = "Gone", lines = { { "A fact" } } }, "control")
 	Tip.Close()
 	check(not Box.IsShown(), "with the linger at zero the box still held")
 
@@ -683,14 +684,14 @@ do
 		("the shipped tooltip body is %s and the addon's body is %d")
 			:format(tostring(Box.Font()), M.font))
 
-	Tip.Open(owner, { kind = "note", title = "Sized", lines = { { "A fact" } } })
+	Tip.Open(owner, { kind = "note", title = "Sized", lines = { { "A fact" } } }, "control")
 	check(Box.Size(1) == M.heading and Box.Size(2) == M.font,
 		("the shipped box drew %s over %s")
 			:format(tostring(Box.Size(1)), tostring(Box.Size(2))))
 
 	check(Box.SetFont(16), "moving the text size reported that nothing moved")
 	check(Box.SetFont(16) == false, "setting the size it already had moved it anyway")
-	Tip.Open(owner, { kind = "note", title = "Sized", lines = { { "A fact" } } })
+	Tip.Open(owner, { kind = "note", title = "Sized", lines = { { "A fact" } } }, "control")
 	check(Box.Size(2) == 16,
 		("the body was asked for 16 and drew %s"):format(tostring(Box.Size(2))))
 	check(Box.Size(1) == 16 + (M.heading - M.font),
@@ -708,7 +709,7 @@ do
 	------------------------------------------------------------------
 	-- The marker
 	--
-	-- The third placement, and the only one that can put the box where you
+	-- The fourth placement, and the only one that can put the box where you
 	-- actually look. Which corner of the box lands on the marker is read off
 	-- which quarter of the screen the marker is in, so the box always grows away
 	-- from the nearest edge: a single fixed corner would be a marker you cannot
@@ -722,11 +723,11 @@ do
 	check(anchor ~= nil, "the addon builds no marker for the box to hang off")
 
 	screen:SetSize(2560, 1440)
-	Box.SetPlace(Box.ANCHOR)
+	Box.SetPlace("control", Box.ANCHOR)
 
 	anchor:ClearAllPoints()
 	anchor:SetPoint("BOTTOMLEFT", screen, "BOTTOMLEFT", 100, 100)
-	Tip.Open(owner, { kind = "note", title = "On the marker", lines = { { "A fact" } } })
+	Tip.Open(owner, { kind = "note", title = "On the marker", lines = { { "A fact" } } }, "control")
 	check(math.abs(pixels(box, "GetLeft") - pixels(anchor, "GetLeft")) < 1,
 		"the box did not take the marker's left edge in the bottom left of the screen")
 	check(math.abs(pixels(box, "GetBottom") - pixels(anchor, "GetBottom")) < 1,
@@ -734,7 +735,7 @@ do
 
 	anchor:ClearAllPoints()
 	anchor:SetPoint("BOTTOMLEFT", screen, "BOTTOMLEFT", 2400, 1300)
-	Tip.Open(owner, { kind = "note", title = "On the marker", lines = { { "A fact" } } })
+	Tip.Open(owner, { kind = "note", title = "On the marker", lines = { { "A fact" } } }, "control")
 	check(math.abs(pixels(box, "GetRight") - pixels(anchor, "GetRight")) < 1,
 		"the box did not take the marker's right edge in the top right of the screen")
 	check(math.abs(pixels(box, "GetTop") - pixels(anchor, "GetTop")) < 1,
@@ -744,13 +745,51 @@ do
 	-- than to nowhere, which is the state a client that refused the frame would
 	-- leave the addon in.
 	Box.SetAnchor(nil)
-	Tip.Open(owner, { kind = "note", title = "No marker", lines = { { "A fact" } } })
+	Tip.Open(owner, { kind = "note", title = "No marker", lines = { { "A fact" } } }, "control")
 	check(math.abs((pixels(screen, "GetRight") - pixels(box, "GetRight")) - 13 * scale) < 1,
 		"the anchor placement with no marker did not fall back to the corner")
 
 	Box.SetAnchor(anchor)
-	Box.SetPlace(Box.DOCK)
+	Box.SetPlace("control", Box.RIGHT)
 	ns.Settings.ApplyAnchor()
+
+	-- The page shows the marker, so the dropdown that says "drag it yourself"
+	-- has the thing to drag beside it, and closing the page takes it away
+	-- again with the frames locked.
+	local wasLocked = ns.db.locked
+	ns.db.locked = true
+	ns.Settings.ShowAnchor(false)
+	check(not anchor:IsMouseEnabled(), "the marker takes the mouse with the frames locked and the page shut")
+	ns.Settings.ShowAnchor(true)
+	check(anchor:IsMouseEnabled(), "the Tooltips page is open and the marker cannot be dragged")
+	ns.Settings.ShowAnchor(false)
+	check(not anchor:IsMouseEnabled(), "the page shut and the marker stayed draggable")
+	ns.db.locked = wasLocked
+	ns.Settings.LockAnchor()
+
+	------------------------------------------------------------------
+	-- The shade
+	--
+	-- Black over the floor at the player's percent, clamped at both ends, and
+	-- pushed onto a box that is already built rather than waiting for a new
+	-- one: the slider sits on a page with hovers of its own.
+	------------------------------------------------------------------
+
+	local shadeLow, shadeHigh = Box.ShadeRange()
+	check(Box.Shade() == 0, "the floor ships darker than the palette draws it")
+	check(ns.Settings.SetTipShade(40) == 40, "a shade of forty did not save as forty")
+	local found
+	for _, region in ipairs({ box:GetRegions() }) do
+		if region.GetAlpha and region:GetAlpha() == 0.4 then
+			found = region
+		end
+	end
+	check(found ~= nil, "a shade of forty put no forty percent layer on the box already built")
+	Box.SetShade(999)
+	check(Box.Shade() == shadeHigh, ("a shade past the ceiling landed on %s"):format(Box.Shade()))
+	Box.SetShade(-5)
+	check(Box.Shade() == shadeLow, ("a shade under the floor landed on %s"):format(Box.Shade()))
+	ns.Settings.SetTipShade(0)
 	screen:SetSize(0, 0)
 	Box.Close(true)
 
@@ -758,6 +797,6 @@ do
 		:format(3, #Tip.Sources(), ns.UI.Scan.Describe()))
 	print(("tips   %s after you look away, body %d px and title %d px, %s")
 		:format(ns.Settings.LingerLabel(Box.Linger()), Box.Font(),
-			Box.Font() + (M.heading - M.font), ns.Settings.DescribePlace()))
+			Box.Font() + (M.heading - M.font), table.concat(ns.Settings.DescribePlaces(), ", ")))
 	print("tips   " .. ns.Compare.Describe())
 end

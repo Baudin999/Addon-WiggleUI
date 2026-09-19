@@ -100,7 +100,7 @@ local function Enter(self)
 		ns.Tip.Close(true)
 		return
 	end
-	ns.Tip.Open(self, { kind = "pet", slot = self.slot }, nil, UI.Tooltip.BESIDE)
+	ns.Tip.Open(self, { kind = "pet", slot = self.slot }, "action")
 end
 
 local function Leave()

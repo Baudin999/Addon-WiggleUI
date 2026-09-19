@@ -719,7 +719,7 @@ function Feed:BuildList()
 	-- hotter red rather than the grey every other button goes.
 	list:SetScript("OnEnter", function(this)
 		UI.Tint(this.bg, C.dangerHover)
-		ns.Tip.Settle(this, self.watch.subject(), true, nil, ns.Tip.HOLD)
+		ns.Tip.Settle(this, self.watch.subject(), "control", true, ns.Tip.HOLD)
 	end)
 	list:SetScript("OnLeave", function(this)
 		UI.Tint(this.bg, this.tone)
@@ -1394,7 +1394,7 @@ function Feed:Enter(index)
 		ns.Tip.Close(true)
 		return false
 	end
-	return ns.Tip.Open(row, self.onTooltip(entry))
+	return ns.Tip.Open(row, self.onTooltip(entry), "row")
 end
 
 function Feed:Leave()

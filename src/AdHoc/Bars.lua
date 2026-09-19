@@ -191,7 +191,7 @@ local function Drop(w)
 end
 
 local function Handle(w)
-	ns.Tip.Hang(w, Says)
+	ns.Tip.Hang(w, Says, "control")
 	w:SetScript("OnReceiveDrag", Drop)
 	w:SetScript("PostClick", Drop)
 end

@@ -393,7 +393,7 @@ local function Cell(index)
 			return nil
 		end
 		return { kind = "item", link = self.link, title = self.name }
-	end)
+	end, "row")
 
 	drops.pool[index] = row
 	return row

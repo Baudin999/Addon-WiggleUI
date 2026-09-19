@@ -151,7 +151,7 @@ local hovered
 local function OnEnter(square)
 	hovered = square
 	UI.Tint(square.bg, C.hover)
-	ns.Tip.Open(square, Subject(square), nil, UI.Tooltip.BESIDE)
+	ns.Tip.Open(square, Subject(square), "spell")
 end
 
 local function OnLeave(square)

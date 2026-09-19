@@ -66,7 +66,7 @@ end
 
 local function Enter(button)
 	UI.Tint(button.bg, C.control)
-	ns.Tip.Settle(button, Subject(button), nil, UI.Tooltip.BESIDE,
+	ns.Tip.Settle(button, Subject(button), "bag", nil,
 		(ns.db.bagHover or 0) / 1000)
 end
 

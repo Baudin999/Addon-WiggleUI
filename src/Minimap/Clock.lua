@@ -132,7 +132,7 @@ local function Hover(w)
 			title = date("%A, %d %B %Y"),
 			lines = lines,
 		}
-	end)
+	end, "control")
 end
 
 local function Build()

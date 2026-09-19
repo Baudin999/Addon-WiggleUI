@@ -805,6 +805,21 @@ while IFS= read -r bad; do
 done < <(grep -rnE 'kind = "(inventory|buff|debuff)"|(^[[:space:]]*|[{,][[:space:]]*)place = [^=]*(Tooltip\.|BESIDE|ANCHOR|DOCK)|above = true' \
 	--include='*.lua' . | grep -v '^\./UI/Tip\.lua:' || true)
 
+# A hover names its type of tooltip and never a place.
+#
+# Where a box opens was a word the call site passed, and sixteen of them passed
+# the same one so the player's setting could not reach them. Each type has the
+# player's own answer now, pushed in by Settings/Settings.lua, so a placement
+# word anywhere else is a call site overruling the player again. The two words
+# the old setting had, DOCK and BESIDE, are refused everywhere: nothing defines
+# them, and a reference to one is a nil handed in as a type.
+while IFS= read -r bad; do
+	echo "a hover passes its type of tooltip, one of UI.Tooltip.TYPES, and the player picks the place: $bad"
+	status=1
+done < <(grep -rnE 'Tooltip\.(DOCK|BESIDE)\b|Tooltip\.(RIGHT|LEFT|ATTACHED|ANCHOR)\b' \
+	--include='*.lua' . | grep -vE '^\./(UI/Tooltip|Settings/Settings|Settings/Feature)\.lua:' \
+	| grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
+
 # One file runs the work a fight refused, and it is Core/Lockdown.lua.
 #
 # The client refuses every protected write in combat and forgets it. Twenty

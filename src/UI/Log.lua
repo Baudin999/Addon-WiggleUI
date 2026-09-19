@@ -167,7 +167,7 @@ function UI.Log(parent, opts)
 		-- interface. A malformed link is a link somebody typed, and it comes
 		-- back with nothing rather than raising, which opens no box at all.
 		frame:SetScript("OnHyperlinkEnter", function(this, link)
-			ns.Tip.Open(this, { kind = "item", link = link })
+			ns.Tip.Open(this, { kind = "item", link = link }, "row")
 		end)
 		frame:SetScript("OnHyperlinkLeave", function()
 			ns.Tip.Close()

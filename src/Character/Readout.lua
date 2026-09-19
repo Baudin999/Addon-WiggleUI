@@ -148,7 +148,7 @@ local function Line(pane)
 	-- turn in.
 	if pane.compact then
 		UI.HoverOnly(frame)
-		ns.Tip.Hang(frame, Hint)
+		ns.Tip.Hang(frame, Hint, "control")
 	end
 
 	frame:Hide()

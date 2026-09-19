@@ -482,17 +482,17 @@ end
 
 -- Open on an owner, describing a subject.
 --
+-- `sort` is the type of tooltip this is, one of the keys in UI.Tooltip.TYPES,
+-- and the player's answer for that type is where the box goes. Required: a
+-- hover that named no type would have its corner chosen for it by nobody.
+--
 -- `above` opens the box over the owner rather than beside it, which is what
 -- anything smaller than the cursor has to ask for.
---
--- `place` is where the box goes, for a hover that is not willing to take the
--- setting's answer. An icon standing for an object is the whole of that list:
--- the box is that object's label and it belongs on it.
 --
 -- Both are arguments and never fields on the subject. Every caller's answer is
 -- fixed at the call, and a subject that carried them was a second way to say
 -- the same thing.
-function Tip.Open(owner, subject, above, place)
+function Tip.Open(owner, subject, sort, above)
 	if type(subject) ~= "table" then
 		open = nil
 		UI.Fresh.Stop()
@@ -505,14 +505,14 @@ function Tip.Open(owner, subject, above, place)
 	-- Held so a modifier pressed while the box is already up can redraw it, and
 	-- so a client that answers about this thing a second later can. See
 	-- Tip.Again and Tip.Arrived below, which are the two readers.
-	open = { owner = owner, subject = subject, above = above, place = place,
+	open = { owner = owner, subject = subject, sort = sort, above = above,
 		thin = Thin(subject, data) }
 	-- After the box is built and before it is handed over, and armed on the
 	-- subject rather than on the box: a rebuild comes back through here with the
 	-- same subject table and must not read as a new hover. UI/Fresh.lua's Arm
 	-- says what happens if it does.
 	UI.Fresh.Arm(subject)
-	return UI.Tooltip.Show(owner, data, above, place, Beside(subject))
+	return UI.Tooltip.Show(owner, data, above, sort, Beside(subject))
 end
 
 -- The same hover again, from nothing but a key going down.
@@ -538,7 +538,7 @@ function Tip.Again()
 		return false
 	end
 	local held = open
-	Tip.Open(held.owner, held.subject, held.above, held.place)
+	Tip.Open(held.owner, held.subject, held.sort, held.above)
 	return true
 end
 
@@ -633,7 +633,7 @@ end
 Tip.HOLD = 0.15
 
 -- What the wait will open, filled in at the arm.
-local pending = { owner = nil, subject = nil, above = nil, place = nil }
+local pending = { owner = nil, subject = nil, sort = nil, above = nil }
 
 -- How long the caller asked for and how long the pointer has been on the owner
 -- so far. A wait of nought means nothing is armed, which is the ordinary state.
@@ -676,7 +676,7 @@ end
 local function Land()
 	wait, still = 0, 0
 	settle:Hide()
-	Tip.Open(pending.owner, pending.subject, pending.above, pending.place)
+	Tip.Open(pending.owner, pending.subject, pending.sort, pending.above)
 end
 
 -- Open on an owner once the pointer has been on it for `seconds`.
@@ -693,17 +693,17 @@ end
 --
 -- Answers what Tip.Open answers when it opened on the spot, and false while
 -- the wait is running.
-function Tip.Settle(owner, subject, above, place, seconds)
+function Tip.Settle(owner, subject, sort, above, seconds)
 	seconds = tonumber(seconds) or 0
 	if type(subject) ~= "table" or seconds <= 0 then
 		Cancel()
-		return Tip.Open(owner, subject, above, place)
+		return Tip.Open(owner, subject, sort, above)
 	end
 	if UI.Tooltip.IsShown() and UI.Tooltip.Owner() == owner then
 		Cancel()
-		return Tip.Open(owner, subject, above, place)
+		return Tip.Open(owner, subject, sort, above)
 	end
-	pending.subject, pending.above, pending.place = subject, above, place
+	pending.subject, pending.sort, pending.above = subject, sort, above
 	if wait > 0 and pending.owner == owner then
 		return false
 	end
@@ -750,15 +750,15 @@ end
 
 -- The convenience for the ordinary case: a frame whose whole answer to the
 -- mouse is a tooltip. `describe` is handed the frame and answers a subject, or
--- nothing at all for a frame with nothing to say. `above` and `place` are
+-- nothing at all for a frame with nothing to say. `sort` and `above` are
 -- Tip.Open's.
 --
 -- A caller that also wants to paint on the way in and out, which every row in a
 -- feed does, hangs its own scripts and calls Tip.Open and Tip.Close from inside
 -- them, and calls UI.PassCamera itself.
-function Tip.Hang(owner, describe, above, place)
+function Tip.Hang(owner, describe, sort, above)
 	owner:SetScript("OnEnter", function(self)
-		Tip.Open(self, describe(self), above, place)
+		Tip.Open(self, describe(self), sort, above)
 	end)
 	owner:SetScript("OnLeave", function()
 		Tip.Close()

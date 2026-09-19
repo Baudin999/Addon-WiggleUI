@@ -214,7 +214,7 @@ local function Build()
 			title = ns.Charge.Name(key) or key,
 			lines = { at },
 		}
-	end)
+	end, "control")
 
 	ns.Theme.Wear("charge", frame)
 end

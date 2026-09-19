@@ -599,7 +599,7 @@ local function Hover(square, unit, filter)
 			return nil
 		end
 		return ns.Tip.Aura(unit, self.auraIndex, filter)
-	end, nil, ns.UI.Tooltip.BESIDE)
+	end, "aura")
 
 end
 
@@ -641,17 +641,16 @@ end
 -- What a button over a square says when the pointer rests on it: the buff at
 -- the index the header gave it, or the hand an enchant button stands for. It
 -- asks the button rather than the square, because the button is what the
--- header numbered, and it answers beside it for the reason Hover gives.
+-- header numbered, and it opens wherever the player put aura tooltips.
 local function Tell(self)
-	local place = ns.UI.Tooltip.BESIDE
 	local slot = self:GetAttribute("target-slot")
 	if slot then
-		ns.Tip.Open(self, ns.Tip.Worn("player", slot), nil, place)
+		ns.Tip.Open(self, ns.Tip.Worn("player", slot), "aura")
 		return
 	end
 	local index = self:GetAttribute("index")
 	if index then
-		ns.Tip.Open(self, ns.Tip.Aura("player", index, "HELPFUL"), nil, place)
+		ns.Tip.Open(self, ns.Tip.Aura("player", index, "HELPFUL"), "aura")
 	end
 end
 

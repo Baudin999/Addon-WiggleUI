@@ -188,7 +188,7 @@ function UI.Button(parent, opts)
 		end
 		if tip then
 			ns.Tip.Settle(self, { kind = "note",
-				lines = type(tip) == "table" and tip or { tip } }, true, nil, ns.Tip.HOLD)
+				lines = type(tip) == "table" and tip or { tip } }, "control", true, ns.Tip.HOLD)
 		end
 	end)
 	button:SetScript("OnLeave", function(self)
@@ -732,7 +732,7 @@ function UI.DropSquare(parent, size, get, set, opts)
 	button:SetScript("OnEnter", function()
 		UI.Tint(square.bg, Carried() ~= nil and C.selected or C.control)
 		if opts.describe then
-			ns.Tip.Open(button, opts.describe())
+			ns.Tip.Open(button, opts.describe(), "control")
 		end
 	end)
 	button:SetScript("OnLeave", function()
@@ -978,7 +978,7 @@ local function InstallProse(kit, ctx)
 			if type(said) == "function" then
 				said = Capped("hint", said(), HINT_MAX)
 			end
-			ns.Tip.Settle(self, { kind = "note", lines = { said } }, nil, nil, ns.Tip.HOLD)
+			ns.Tip.Settle(self, { kind = "note", lines = { said } }, "control", nil, ns.Tip.HOLD)
 		end)
 		owner:SetScript("OnLeave", function(self, ...)
 			if leave then

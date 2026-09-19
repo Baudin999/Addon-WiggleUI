@@ -211,7 +211,7 @@ end
 
 local function Enter(card)
 	UI.Tint(card.bg, C.hover)
-	ns.Tip.Open(card, Subject(card), nil, UI.Tooltip.BESIDE)
+	ns.Tip.Open(card, Subject(card), "bag")
 end
 
 local function Leave(card)

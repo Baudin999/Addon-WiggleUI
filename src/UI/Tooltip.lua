@@ -146,6 +146,9 @@ local TITLE_LEAD = M.heading - M.font
 -- anybody should want; they are there so a saved variable edited by hand cannot
 -- draw a tooltip nobody can read or one nobody can see past.
 local FONT_LOW, FONT_HIGH = 8, 18
+-- How dark the floor goes, in percent of black over it. See Tooltip.SetShade.
+local SHADE_LOW, SHADE_HIGH = 0, 90
+local shade = 0
 local BODY = M.font
 local TITLE = M.heading
 
@@ -197,60 +200,60 @@ local besides = {}
 local beside = 0
 local opened
 local raised = false
--- The placement the open box asked for, or nil for one that took the setting.
--- Held for the same reason `raised` is: the setting can change while a box is
--- up, and re-anchoring it has to put it back where the hover wanted it rather
--- than where the slider now points.
+-- The type of tooltip the open box is, so a re-anchor after the player moves
+-- that type's dropdown puts it where the dropdown now says.
 local wanted
 -- Which way the last open grew, so a re-anchor from the settings window puts
 -- the compare boxes back on the side the main box left them room on.
 local away = true
 
--- Where the box opens, which is one of three answers. Held here rather than
--- read out of ns.db for the reason UI.Size is: this layer is not allowed to
--- know the name of a setting, so Settings/Settings.lua reads the saved value
--- and pushes it in.
+-- Where a box opens, which is one of four answers.
 --
---   dock     the corner the client keeps its own tooltip in
---   beside   next to whatever you hovered, and on the cursor out in the world
---   anchor   a corner of the screen you put there yourself
---
--- Docked to start with, because that is where fifteen years of playing this
--- game has put the box and because a tooltip that opens under the cursor is a
--- tooltip covering the row you were about to click.
---
--- **The third is the one the other two cannot do.** The corner is read off the
--- client and moves when the bags do, which is right and is also the whole of
--- what is wrong with it: on an ultrawide monitor it is a foot away from the
--- fight, and there is no argument that gets it nearer. Beside puts the box
--- where you are looking and covers what is under it. The anchor is the answer
--- to both, and it costs a marker you drag once with the frames unlocked.
-Tooltip.DOCK = "dock"
-Tooltip.BESIDE = "beside"
+--   right      the corner the client keeps its own tooltip in
+--   left       the same clearance off the other bottom corner
+--   attached   next to whatever you hovered, and on the cursor out in the world
+--   anchor     the marker you drag, which is one frame for every type set to it
+Tooltip.RIGHT = "right"
+Tooltip.LEFT = "left"
+Tooltip.ATTACHED = "attached"
 Tooltip.ANCHOR = "anchor"
 
-local PLACES = { dock = true, beside = true, anchor = true }
-local place = Tooltip.DOCK
+local PLACES = { right = true, left = true, attached = true, anchor = true }
 
--- **And a hover may name its own, which the setting does not overrule.**
+-- **And which of those is the player's to say, per type of tooltip.**
 --
--- The three words above answer one question: where does a box go when there is
--- nothing on the screen to put it next to. A creature out in the world is not a
--- frame, a row of text in a feed is one but is the width of the window, and for
--- both of those the corner is right and is what the setting is for.
+-- One answer for the whole addon was wrong both ways. The box over a bag square
+-- is that square's label and belongs on it; the box over a creature is read
+-- mid-fight and belongs out of the way. So every hover names the type it is and
+-- the player picks a place per type, in the order below, which is the order the
+-- settings page lists them in.
 --
--- It is the wrong answer for a box about an object you are pointing at. An item
--- in a bag, a pin on the map, a button on the minimap, a worn piece on the
--- character panel: the box there is that object's own label, and a label that
--- opens a foot away in the corner of the screen is a label for nothing. You
--- read it, look back, and have to find the square again to be sure it was the
--- one you were on.
+-- `default` is what the hover did before there was a choice: the icons that
+-- stand for an object were pinned beside it at the call site, and everything
+-- else took the corner. A type is a key the call sites spell, never a label.
+-- An argument carrying one is called `sort`, because `kind` is already the
+-- subject's word for what it describes.
 --
--- So an owner that *is* the thing being described says so at the call site and
--- stops caring what the slider says. That is a placement per hover rather than a
--- second setting, because it is not a preference: nobody wants their bag
--- tooltips in the corner, and a player who moves the box for the world hover has
--- not asked for the squares to move with it.
+-- Held here rather than read out of ns.db for the reason UI.Size is: this layer
+-- is not allowed to know the name of a setting, so Settings/Settings.lua reads
+-- the saved answers and pushes each one in.
+Tooltip.TYPES = {
+	{ key = "bag", label = "bag item", default = Tooltip.ATTACHED },
+	{ key = "action", label = "action button", default = Tooltip.ATTACHED },
+	{ key = "spell", label = "spell", default = Tooltip.ATTACHED },
+	{ key = "worn", label = "worn gear", default = Tooltip.ATTACHED },
+	{ key = "aura", label = "aura", default = Tooltip.ATTACHED },
+	{ key = "pin", label = "map pin", default = Tooltip.ATTACHED },
+	{ key = "world", label = "world unit", default = Tooltip.RIGHT },
+	{ key = "unit", label = "unit frame", default = Tooltip.RIGHT },
+	{ key = "row", label = "feed or list row", default = Tooltip.RIGHT },
+	{ key = "control", label = "addon control", default = Tooltip.RIGHT },
+}
+
+local places = {}
+for _, each in ipairs(Tooltip.TYPES) do
+	places[each.key] = each.default
+end
 
 -- The frame the anchor mode hangs off, handed over by whoever owns the setting
 -- that says where it is. Nil until then, and the anchor mode falls back to the
@@ -603,6 +606,13 @@ local function Build(name, parent)
 	-- first Layout where the palette has one. See UI.Ground in UI/Backdrop.lua.
 	frame.bg = ns.Fill(frame, "BACKGROUND", C.window[1], C.window[2], C.window[3], 1)
 	frame.bg:SetAllPoints()
+	-- Black over the floor, painted or flat, at whatever the player set. Above
+	-- the painting's corners at -6 and under the gauges on BORDER, so it takes
+	-- the floor down and leaves every line drawn on it alone.
+	box.shade = frame:CreateTexture(nil, "BACKGROUND", nil, -5)
+	box.shade:SetColorTexture(0, 0, 0, 1)
+	box.shade:SetAllPoints()
+	box.shade:SetAlpha(shade)
 	frame.edges = ns.Outline(frame, C.edge[1], C.edge[2], C.edge[3], C.edge[4])
 	ns.EdgeSize(frame.edges, ns.Pixel(frame))
 
@@ -750,10 +760,20 @@ end
 -- the box is a place on the screen you look at rather than a label on the thing
 -- under the cursor. That is the whole of what docking buys, and it is why the
 -- owner is not an argument here.
-local function Dock(box)
-	local x = (tonumber(CONTAINER_OFFSET_X) or DOCK_X) + DOCK
+--
+-- `left` mirrors it onto the other bottom corner. The client keeps no clearance
+-- for that side, so the box takes the same height off the bottom and the same
+-- thirteen units off the edge: the bars that push the right corner up run the
+-- whole width of the screen, and a left box held lower would sit on them.
+local function Dock(box, left)
 	local y = tonumber(CONTAINER_OFFSET_Y) or DOCK_Y
 	box.frame:ClearAllPoints()
+	if left then
+		box.frame:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT",
+			Units(box, DOCK), Units(box, y))
+		return
+	end
+	local x = (tonumber(CONTAINER_OFFSET_X) or DOCK_X) + DOCK
 	box.frame:SetPoint("BOTTOMRIGHT", UIParent, "BOTTOMRIGHT",
 		-Units(box, x), Units(box, y))
 end
@@ -834,15 +854,13 @@ end
 -- Tooltip.CURSOR, and it is the world hover: a creature is not a frame, so
 -- there is nothing to sit beside and the box follows the arrow instead.
 --
--- **None of which happens in the other two placements.** Every side, every
+-- **None of which happens in the other three placements.** Every side, every
 -- corner and every clearance below is the answer to one question, which is how
--- to put a box next to a thing without covering it, and both the corner and the
+-- to put a box next to a thing without covering it, and the two corners and the
 -- marker answer that question by not being next to the thing at all.
 --
--- **And where the call site named a placement, that one rather than the
--- setting.** See the override above. A word this file does not know falls
--- through to the setting, for the reason SetPlace takes one: the caller is
--- allowed to be wrong without costing the player a tooltip.
+-- `sort` is the type of tooltip, and the placement is whatever the player set
+-- for that type. See TYPES above.
 -- **And it answers which way the box grew**, which is a side rather than a
 -- placement: true where the box ended up on the right of the screen and threw
 -- itself left, false where it went the other way. That is the one thing a box
@@ -850,8 +868,8 @@ end
 -- out for its own reasons. Answering it is cheaper and steadier than measuring
 -- the frame afterwards, which on the open that built it has not been laid out
 -- yet and reads nil.
-local function Anchor(box, owner, above, where)
-	where = PLACES[where] and where or place
+local function Anchor(box, owner, above, sort)
+	local where = places[sort] or Tooltip.RIGHT
 
 	if where == Tooltip.ANCHOR and marker then
 		local far = Marked(box)
@@ -860,10 +878,15 @@ local function Anchor(box, owner, above, where)
 		end
 	end
 
-	if where ~= Tooltip.BESIDE then
+	-- The left corner grows the compare boxes right, and every other corner
+	-- is the right one, where there is no room on that side and never a
+	-- reading to take.
+	if where == Tooltip.LEFT then
+		Dock(box, true)
+		return false
+	end
+	if where ~= Tooltip.ATTACHED then
 		Dock(box)
-		-- The corner the client keeps its tooltip in is the bottom right one,
-		-- so there is no room on that side and never a reading to take.
 		return true
 	end
 
@@ -1063,9 +1086,10 @@ end
 -- `above` opens the box over the owner rather than beside it, which is what
 -- anything smaller than the cursor has to ask for. See Anchor.
 --
--- `where` is one of the three placement words, for a hover that knows where its
--- box belongs better than the setting does. That is every hover over an icon
--- standing for an object. See the override beside PLACES.
+-- `sort` is the type of tooltip this is, one of the keys in TYPES, and the
+-- player's answer for that type says where the box goes. A key this file does
+-- not know is a caller's typo and is refused before anything is drawn, because
+-- a hover that quietly took some other type's corner is a bug nobody reports.
 --
 -- `alongside` is an array of further descriptions, each drawn as its own box off
 -- the side of this one. That is the gear comparison and it is the only caller:
@@ -1080,7 +1104,7 @@ end
 -- A description in that list that comes out empty is skipped rather than drawn
 -- as a blank, which is what an empty worn slot is: nothing to compare against,
 -- and a box the size of its own padding would say so worse than no box does.
-function Tooltip.Show(owner, data, above, where, alongside)
+function Tooltip.Show(owner, data, above, sort, alongside)
 	if not main then
 		main = Build(FRAME_NAME)
 	end
@@ -1099,12 +1123,14 @@ function Tooltip.Show(owner, data, above, where, alongside)
 		main.frame:Hide()
 		return false
 	end
+	assert(places[sort], ("%s is not a type of tooltip; see UI.Tooltip.TYPES")
+		:format(tostring(sort)))
 
 	-- After Layout, and it has to be. Above hangs the box's bottom edge off the
 	-- owner's top, so where its top lands is its own height, and its height is
 	-- not known until the lines have been measured and wrapped.
-	away = Anchor(main, owner, above, where)
-	opened, raised, wanted = owner, above, where
+	away = Anchor(main, owner, above, sort)
+	opened, raised, wanted = owner, above, sort
 	main.frame:Show()
 
 	if type(alongside) == "table" then
@@ -1134,9 +1160,16 @@ end
 -- the floor, the hairline and the column rule to drift from this one. So it
 -- takes a box built here and fills it with Tooltip.Paint; where the box goes,
 -- whether it is shown and what it does with the mouse stay the caller's.
+--
+-- Kept, so the shade reaches a surface already built. The purse is one frame for
+-- the session, so the list is one entry long and never grows.
+local surfaces = {}
+
 function Tooltip.Surface(parent)
 	assert(type(parent) == "table", "a surface is drawn into a frame")
-	return Build(nil, parent)
+	local box = Build(nil, parent)
+	surfaces[#surfaces + 1] = box
+	return box
 end
 
 -- One surface filled from one description, measured, and its width and height
@@ -1148,7 +1181,7 @@ function Tooltip.Paint(box, data)
 	return box.frame:GetWidth(), box.frame:GetHeight()
 end
 
--- Where the box opens, as one of the three words above.
+-- Where one type of tooltip opens, as one of the four words above.
 --
 -- Pushed in by Settings/Settings.lua rather than read, and answered as whether
 -- anything moved, which is the shape UI.SetSize has. A box that is up when the
@@ -1156,31 +1189,44 @@ end
 -- window and has a hover of its own, so the box that demonstrates the setting
 -- is usually the one on screen while you change it.
 --
--- A word this file does not know is the corner, rather than an error. The value
--- comes out of an account file a player may have edited, and a tooltip in the
--- wrong place is a better answer to that than no tooltip at all.
-function Tooltip.SetPlace(word)
-	if not PLACES[word] then
-		word = Tooltip.DOCK
+-- A word this file does not know is that type's default, rather than an error.
+-- The value comes out of an account file a player may have edited, and a
+-- tooltip in the wrong place is a better answer to that than no tooltip at all.
+-- A type it does not know is an error, because that comes from code.
+function Tooltip.SetPlace(sort, word)
+	local fallback
+	for _, each in ipairs(Tooltip.TYPES) do
+		if each.key == sort then
+			fallback = each.default
+		end
 	end
-	if word == place then
+	assert(fallback, ("%s is not a type of tooltip"):format(tostring(sort)))
+	if not PLACES[word] then
+		word = fallback
+	end
+	if word == places[sort] then
 		return false
 	end
-	place = word
+	places[sort] = word
 	Reanchor()
 	return true
 end
 
-function Tooltip.Place()
-	return place
+function Tooltip.Place(sort)
+	return places[sort]
 end
 
--- Where the box that is up actually went, which is the hover's own answer where
--- it had one and the setting's otherwise. Handed out for the reason Frame and
--- Owner are: "the bag square's box ignored the corner" is a claim about a box
--- that is on screen, and there is no answering it from the outside.
+-- Where the box that is up went, which is its type's answer. Handed out for the
+-- reason Frame and Owner are: "the bag square's box ignored the corner" is a
+-- claim about a box that is on screen, and there is no answering it from the
+-- outside.
 function Tooltip.Placed()
-	return PLACES[wanted] and wanted or place
+	return wanted and places[wanted]
+end
+
+-- The type of the box that is up, or nil with none.
+function Tooltip.Sort()
+	return wanted
 end
 
 -- The frame the anchor mode hangs the box off.
@@ -1255,6 +1301,44 @@ end
 
 function Tooltip.Font()
 	return BODY
+end
+
+local function Shaded(box)
+	box.shade:SetAlpha(shade)
+end
+
+-- How much darker than the palette's floor the box is drawn, as a percentage
+-- of black over it.
+--
+-- The floor is the window's, and a window is read at rest while a tooltip is
+-- read over whatever the world is doing behind it. On a light palette the text
+-- on a tooltip over a snowfield was the snowfield's contrast, not the box's.
+-- Clamped for the reason the linger is, and capped short of black so the
+-- painting is still there to see at the top of the range.
+function Tooltip.SetShade(percent)
+	percent = math.floor((tonumber(percent) or 0) + 0.5)
+	if percent < SHADE_LOW then
+		percent = SHADE_LOW
+	elseif percent > SHADE_HIGH then
+		percent = SHADE_HIGH
+	end
+	if percent / 100 == shade then
+		return false
+	end
+	shade = percent / 100
+	Each(Shaded)
+	for index = 1, #surfaces do
+		Shaded(surfaces[index])
+	end
+	return true
+end
+
+function Tooltip.Shade()
+	return math.floor(shade * 100 + 0.5)
+end
+
+function Tooltip.ShadeRange()
+	return SHADE_LOW, SHADE_HIGH
 end
 
 -- The two ends of that range, so the panel and the slash word draw the same

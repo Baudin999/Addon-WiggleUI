@@ -82,9 +82,30 @@ end
 -- has: a player who has forgotten what they set does not have to guess at the
 -- name of the thing they set it to.
 local function TipsReading()
-	ns.Print("a hover opens " .. Settings.DescribePlace() .. ".")
+	for _, line in ipairs(Settings.DescribePlaces()) do
+		ns.Print("  " .. line)
+	end
 	ns.Print("it " .. Settings.DescribeLinger() .. ".")
 	ns.Print("it is drawn at " .. Settings.DescribeTipFont() .. ".")
+	ns.Print(("its floor is %d%% darker than the palette's."):format(Settings.TipShade()))
+end
+
+-- The four placement words as typed. `anchor` rather than the dropdown's
+-- "drag it yourself", because a slash word is one word.
+local TYPED = {
+	right = ns.UI.Tooltip.RIGHT,
+	left = ns.UI.Tooltip.LEFT,
+	attached = ns.UI.Tooltip.ATTACHED,
+	anchor = ns.UI.Tooltip.ANCHOR,
+}
+
+local function TypeNamed(word)
+	for _, each in ipairs(ns.UI.Tooltip.TYPES) do
+		if each.key == word then
+			return each
+		end
+	end
+	return nil
 end
 
 local function TipsWord(arg)
@@ -111,15 +132,30 @@ local function TipsWord(arg)
 			return
 		end
 		Settings.SetTipFont(size)
-	elseif value == "docked" or value == "dock" then
-		Settings.SetPlace(ns.UI.Tooltip.DOCK)
-	elseif value == "beside" then
-		Settings.SetPlace(ns.UI.Tooltip.BESIDE)
-	elseif value == "anchor" then
-		Settings.SetPlace(ns.UI.Tooltip.ANCHOR)
-		ns.Print("unlock the frames to drag the marker where you want the box.")
+	elseif value == "shade" then
+		local low, high = ns.UI.Tooltip.ShadeRange()
+		local percent = ns.Command.Step(rest, low, high, 5, "tips shade")
+		if not percent then
+			return
+		end
+		Settings.SetTipShade(percent)
+	elseif TypeNamed(value) then
+		local word = TYPED[rest:lower()]
+		if not word then
+			ns.Print(("tips %s takes right, left, attached or anchor."):format(value))
+			return
+		end
+		Settings.SetPlace(value, word)
+		if word == ns.UI.Tooltip.ANCHOR then
+			ns.Print("open the Tooltips page or unlock the frames to drag the marker.")
+		end
 	else
-		ns.Print("tips takes docked, beside, anchor, linger <seconds> or font <pixels>.")
+		local keys = {}
+		for _, each in ipairs(ns.UI.Tooltip.TYPES) do
+			keys[#keys + 1] = each.key
+		end
+		ns.Print("tips takes <type> right|left|attached|anchor, linger <seconds>, font <pixels> or shade <percent>.")
+		ns.Print("the types are " .. table.concat(keys, ", ") .. ".")
 		return
 	end
 
@@ -175,6 +211,17 @@ local function DefaultsPress()
 	ReloadUI()
 end
 
+-- One saved answer per type of tooltip, each defaulting to what that hover did
+-- before there was a choice. Written from UI.Tooltip.TYPES rather than out
+-- longhand, because the list of types is that file's and a copy here would be
+-- the one that forgets the next type.
+local function WithPlaces(defaults)
+	for _, each in ipairs(ns.UI.Tooltip.TYPES) do
+		defaults[Settings.PlaceKey(each.key)] = each.default
+	end
+	return defaults
+end
+
 ns.Register({
 	name = "settings",
 	order = 20,
@@ -206,7 +253,7 @@ ns.Register({
 		  apply = function() Settings.Set(ns.db.dialogZoom) end },
 	},
 
-	defaults = {
+	defaults = WithPlaces({
 		-- 1.25 for both, which is what every window in the addon was drawn at
 		-- when they shared one number called uiSize. A window at 1 is a window
 		-- you lean in to read on the panel most people are playing on, and the
@@ -219,11 +266,6 @@ ns.Register({
 		-- goes again, and how big its text is is already a setting of its own
 		-- two lines down. This is the box, air and all.
 		tipZoom = 1,
-
-		-- Docked. It is where this game has put a tooltip since the day it
-		-- shipped, and a box beside the row under the cursor covers the row you
-		-- were about to click.
-		tipPlace = "dock",
 
 		-- Where the marker sits until somebody drags it. Right of centre and a
 		-- little below, which is clear of the middle of the screen where every
@@ -250,7 +292,11 @@ ns.Register({
 		-- shipped, and the addon drawing its own tooltip is the only reason it
 		-- ever stopped. A default of off would be shipping the bug.
 		tipCompare = true,
-	},
+
+		-- Nought. The floor is the palette's until somebody finds it too light
+		-- to read over the world, and the slider is how they say so.
+		tipShade = 0,
+	}),
 
 	words = {
 		scale = ZoomWord,
@@ -260,8 +306,8 @@ ns.Register({
 	help = {
 		"scale, list every screen and what it is drawn at",
 		"scale <screen> <0.5 to 3>, how big one screen is drawn, in tenths",
-		"tips docked|beside|anchor, where a hover's box opens",
-		"tips linger <seconds>, font <pixels>, how long it stays and how big it reads",
+		"tips <type> right|left|attached|anchor, where one type of tooltip opens",
+		"tips linger <seconds>, font <pixels>, shade <percent>, how long it stays, how big it reads and how dark",
 	},
 
 	status = function()
@@ -275,7 +321,10 @@ ns.Register({
 	reset = function()
 		Settings.Set(ns.DefaultFor("dialogZoom"))
 		Settings.SetTipZoom(ns.DefaultFor("tipZoom"))
-		Settings.SetPlace(ns.DefaultFor("tipPlace"))
+		for _, each in ipairs(ns.UI.Tooltip.TYPES) do
+			Settings.SetPlace(each.key, ns.DefaultFor(Settings.PlaceKey(each.key)))
+		end
+		Settings.SetTipShade(ns.DefaultFor("tipShade"))
 		Settings.SetLinger(ns.DefaultFor("tipLinger"))
 		Settings.SetTipFont(ns.DefaultFor("tipFont"))
 		Settings.SetCompare(ns.DefaultFor("tipCompare"))
@@ -401,14 +450,36 @@ ns.Register({
 		-- to live. It was a per-feed reading of an addon-wide fact, printed
 		-- twice, and it stopped being about feeds the moment every hover in the
 		-- addon started going through the same box.
-		ui.Section("Hovers", "The screen")
-		ui.Lede("Every hover in the addon opens the same box, in this window's palette.")
+		-- The marker is up for as long as this page is, so the dropdown that
+		-- says "drag it yourself" has the thing to drag beside it. A page is
+		-- hidden when another is chosen and when the window closes, and both
+		-- reach OnHide.
+		local page = ui.Section("Tooltips", "The screen")
+		page.frame:HookScript("OnShow", function()
+			Settings.ShowAnchor(true)
+		end)
+		page.frame:HookScript("OnHide", function()
+			Settings.ShowAnchor(false)
+		end)
+		ui.Lede("Each type of tooltip opens where you put it. Drag it yourself is the marker on screen while this page is open.")
 
-		ui.Cycle("where it opens", Settings.PLACES,
-			Settings.Place, Settings.SetPlace)
-		ui.Hint("Dock is the corner the client keeps its own in, read off the client rather than guessed, so it moves when the bags do. Anchor is a marker you drag with the frames unlocked.")
+		-- One row per type, in the order UI.Tooltip.TYPES lists them. The
+		-- page is the only place the whole table is on screen at once, and
+		-- /wk tips prints the same list.
+		for _, each in ipairs(ns.UI.Tooltip.TYPES) do
+			local sort = each.key
+			ui.Picker(each.label,
+				function() return Settings.Place(sort) end,
+				function(word) Settings.SetPlace(sort, word) end,
+				Settings.PlaceOptions)
+		end
+		ui.Hint("Bottom right is the client's own corner and moves with the bags; bottom left mirrors it. Attached opens beside what you hovered, and on the cursor for a world unit.")
 
-		ui.Reading("a hover opens", Settings.DescribePlace)
+		local shadeLow, shadeHigh = ns.UI.Tooltip.ShadeRange()
+		ui.Slider("darker", shadeLow, shadeHigh, 5,
+			Settings.TipShade, Settings.SetTipShade,
+			function(value) return value .. "%" end)
+		ui.Hint("Black over the palette's floor, so the text holds up over a bright zone. Nought is the palette as drawn.")
 
 		ui.Slider("stays for", low, high, Settings.LINGER_STEP,
 			Settings.Linger, Settings.SetLinger, Settings.LingerLabel)

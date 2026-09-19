@@ -57,10 +57,10 @@ do
 	-- A subject nothing holds a stamp for arms no tick at all. Most hovers in
 	-- the addon are that: a settings hint, a filter chip, a tab. A tick running
 	-- behind every one of them is the cost the arm exists to refuse.
-	Tip.Open(owner, { kind = "item", link = "|cffffffff|Hitem:1:0:0:0|h[Rock]|h|r" })
+	Tip.Open(owner, { kind = "item", link = "|cffffffff|Hitem:1:0:0:0|h[Rock]|h|r" }, "control")
 	check(not Fresh.Watching(), "a hover with no stamp anywhere in it armed the refresh")
 
-	Tip.Open(owner, { kind = "note", title = "Watched", stamped = true })
+	Tip.Open(owner, { kind = "note", title = "Watched", stamped = true }, "control")
 	check(Fresh.Watching(), "a hover carrying a stamped source did not arm the refresh")
 	check(Box.Text(2) == "Moved", "the stamped source's line did not land")
 	Fresh.Rebuilds()

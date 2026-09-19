@@ -76,7 +76,7 @@ local function Tooltip(w)
 		-- On the square, whatever the tooltip setting says. What is in this
 		-- slot is a question about the icon under the pointer, and the game has
 		-- answered it beside the button since there were action bars.
-		ns.Tip.Open(self, { kind = "action", slot = slot }, nil, ns.UI.Tooltip.BESIDE)
+		ns.Tip.Open(self, { kind = "action", slot = slot }, "action")
 	end)
 	w:SetScript("OnLeave", function()
 		ns.Tip.Close()

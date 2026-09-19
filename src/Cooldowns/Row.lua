@@ -160,7 +160,7 @@ local function Hover(w)
 			title = entry.name,
 			lines = { Detail(w) },
 		}
-	end)
+	end, "spell")
 end
 
 --------------------------------------------------------------------------

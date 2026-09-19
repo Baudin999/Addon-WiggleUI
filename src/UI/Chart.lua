@@ -749,7 +749,7 @@ local function Pin(board, index)
 		end
 		return { kind = "note", title = self.name, color = self.color,
 			lines = (type(note) == "table") and note or { note } }
-	end, true, ns.UI.Tooltip.BESIDE)
+	end, "pin", true)
 	board.pins[index] = pin
 	return pin
 end

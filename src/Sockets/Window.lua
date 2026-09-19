@@ -204,7 +204,7 @@ local function HoleClick(self, button)
 end
 
 local function HoleEnter(self)
-	ns.Tip.Open(self, HoleSubject(self.index), nil, UI.Tooltip.BESIDE)
+	ns.Tip.Open(self, HoleSubject(self.index), "bag")
 end
 
 local function TipClose()
@@ -275,7 +275,7 @@ local function GemEnter(self)
 		return
 	end
 	ns.Tip.Open(self, { kind = "item", link = gem.link, bag = gem.bag, slot = gem.slot },
-		nil, UI.Tooltip.BESIDE)
+		"bag")
 end
 
 local function BuildGem(parent, index)
