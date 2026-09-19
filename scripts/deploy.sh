@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Puts the tree that is here on CurseForge. One command, no arguments needed.
 #
-#   ./scripts/deploy.sh              gate, build, upload as an alpha
+#   ./scripts/deploy.sh              bump, gate, build, upload as an alpha
 #   ./scripts/deploy.sh --type beta  the same, tagged beta
-#   ./scripts/deploy.sh --build      gate and build, upload nothing
+#   ./scripts/deploy.sh --build      gate and build, upload nothing, no bump
 #
 # This is release.sh with the two things release.sh cannot guess filled in: the
 # project id, which is on the project page and never changes, and the token,
@@ -52,7 +52,43 @@ if [ "$upload" -eq 1 ] && [ -z "${CF_API_TOKEN:-}" ]; then
 	exit 1
 fi
 
-if [ "$upload" -eq 1 ]; then
-	exec ./scripts/release.sh --upload --type "$release_type"
+[ "$upload" -eq 1 ] || exec ./scripts/release.sh
+
+# Every upload is a new version. CurseForge shows the number, the client shows
+# the number, and before this ran every upload there was 1.9. The last part is
+# raised, so 1.9 becomes 1.10, in the three places check.sh holds together.
+version_files=(src/Core/Core.lua src/WarriorKit.toc src/WarriorKit_Vanilla.toc)
+
+# The bump is committed on its own, so these three must hold nothing else yet.
+# A peer's edit in Core.lua would otherwise ship inside a commit called Release.
+if ! git diff --quiet HEAD -- "${version_files[@]}"; then
+	echo "uncommitted changes in the version files; commit them first:" >&2
+	git diff --stat HEAD -- "${version_files[@]}" >&2
+	exit 1
 fi
-exec ./scripts/release.sh
+
+old=$(sed -n 's/^ns\.version = "\(.*\)"$/\1/p' src/Core/Core.lua)
+[ -n "$old" ] || { echo "no ns.version in src/Core/Core.lua" >&2; exit 1; }
+new="${old%.*}.$(( ${old##*.} + 1 ))"
+[ "$old" != "${old%.*}" ] || new=$(( old + 1 ))
+
+set_version() {
+	sed -i "s/^ns\.version = \".*\"$/ns.version = \"$1\"/" src/Core/Core.lua
+	sed -i "s/^## Version: .*/## Version: $1/" src/WarriorKit.toc src/WarriorKit_Vanilla.toc
+}
+
+echo "version $old -> $new"
+set_version "$new"
+
+# A failed release puts the old number back rather than leaving a bump for a
+# version that never shipped. sed, not git checkout: the files were clean at
+# HEAD a moment ago, but checkout is how a peer's work gets eaten.
+if ! ./scripts/release.sh --upload --type "$release_type"; then
+	set_version "$old"
+	echo "version put back to $old" >&2
+	exit 1
+fi
+
+git commit -q -m "Release $new" -- "${version_files[@]}"
+git tag -a "v$new" -m "WarriorKit $new, $release_type"
+echo "committed and tagged v$new"
