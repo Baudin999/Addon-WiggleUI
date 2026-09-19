@@ -87,6 +87,30 @@ check(gauge.floor.pool.Middle[1].width == art.Middle[2] * 0.35 * 2,
 Gauge.Paint(gauge, gauge.track, { 1, 0, 0 })
 check(gauge.track.a == 0.35, ("the track over a floor is a thin tint, got %s"):format(tostring(gauge.track.a)))
 
+-- An action bar: a stand-in box painted through Look.Paint with bar 1's
+-- definition, so the alpha is the one the player gave that bar. The floor goes
+-- down at the bar's size and at that alpha, and the flat fill under it goes to
+-- nothing rather than doubling the ground.
+local bar1
+for _, entry in ipairs(ns.Bars.All()) do
+	if entry.def.key == "bar1" then
+		bar1 = entry
+	end
+end
+check(bar1 ~= nil, "bar 1 is standing to borrow a definition from")
+if bar1 then
+	local box = UI.Box(UIParent, UI.Color.window, UI.Color.hairline)
+	box:SetSize(250, 40)
+	ns.BarLook.Paint({ frame = box, def = bar1.def })
+	local alpha = ns.BarLook.Alpha(bar1.def) / 100
+	check(box.floor and #box.floor.pool.Middle == 3, "a 250 wide bar lays three floor tiles")
+	check(box.floor.pool.Middle[1].alpha == alpha,
+		("the floor is at the bar's own alpha, %s against %s")
+			:format(tostring(box.floor.pool.Middle[1].alpha), tostring(alpha)))
+	check(box.bg.a == 0, "the flat fill under a painted floor is at nothing")
+	box:Hide()
+end
+
 frame:Hide()
 UI.ChooseBackdrop(nil)
 check(Gauge.Floor(Gauge.New(CreateFrame("Frame", nil, UIParent))) == nil,

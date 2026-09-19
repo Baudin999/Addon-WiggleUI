@@ -380,6 +380,12 @@ end
 -- right for the same reason: at nothing the player has asked for squares over
 -- the world, and a rectangle of hairline round nothing is a window frame with
 -- no window in it.
+--
+-- A palette with a painting draws its floor under the squares instead of the
+-- flat colour, at the bag window's scale so the two read as one floor, and at
+-- the same alpha the flat colour would have had. Built on the first paint and
+-- laid out on every one, because Paint runs after every Arrange and the
+-- arrange is what decides the bar's size.
 function Look.Paint(entry)
 	local frame = entry.frame
 	if not (frame and frame.bg) then
@@ -387,7 +393,16 @@ function Look.Paint(entry)
 	end
 	local color = UI.Color.window
 	local alpha = Look.Alpha(entry.def) / 100
-	frame.bg:SetColorTexture(color[1], color[2], color[3], alpha)
+	if frame.floor == nil then
+		frame.floor = UI.Backdrop(frame, { frame = false }) or false
+	end
+	if frame.floor then
+		frame.floor:Layout(ns.Measure(frame, "GetWidth") or 0, ns.Measure(frame, "GetHeight") or 0)
+		frame.floor:SetAlpha(alpha)
+		frame.bg:SetColorTexture(color[1], color[2], color[3], 0)
+	else
+		frame.bg:SetColorTexture(color[1], color[2], color[3], alpha)
+	end
 	if frame.edges then
 		for index = 1, 4 do
 			frame.edges[index]:SetAlpha(alpha > 0 and 1 or 0)

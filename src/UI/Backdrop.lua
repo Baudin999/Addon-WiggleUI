@@ -50,8 +50,21 @@ function Backdrop:Tile(key, index)
 		texture:SetTexture(self.art[key][1])
 		pool[index] = texture
 	end
+	texture:SetAlpha(self.alpha)
 	texture:Show()
 	return texture
+end
+
+-- How much of the painting shows, for an owner whose ground is a setting: the
+-- action bars draw theirs at the alpha the player gave the bar. Every tile
+-- takes it now and every tile made by a later layout takes it as it is shown.
+function Backdrop:SetAlpha(alpha)
+	self.alpha = alpha
+	for _, pool in pairs(self.pool) do
+		for _, texture in ipairs(pool) do
+			texture:SetAlpha(alpha)
+		end
+	end
 end
 
 -- Puts a texture at x, y from the frame's top left, y counted down, cut to the
@@ -167,6 +180,7 @@ function UI.Backdrop(frame, opts)
 	local backdrop = setmetatable({
 		frame = frame, art = chosen, pool = {},
 		scale = opts.scale or 1, floor = opts.floor ~= false, framed = opts.frame ~= false,
+		alpha = 1,
 	}, Backdrop)
 	for key in pairs(SUBLEVEL) do
 		backdrop.pool[key] = {}
