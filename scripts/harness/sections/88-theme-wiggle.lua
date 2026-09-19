@@ -36,11 +36,14 @@ local function Shake(legs, span, steps)
 	return path
 end
 
--- Five legs make four turns, and the fourth completes the shake.
-check(Drive(UI.Wiggle(), Shake(5, 80, 5)) ~= nil,
-	"five brisk legs of 80 units did not read as a shake")
-check(Drive(UI.Wiggle(), Shake(4, 80, 5)) == nil,
-	"four legs, three turns, already read as a shake")
+-- Seven legs make six turns, and the sixth completes the shake.
+check(Drive(UI.Wiggle(), Shake(7, 80, 5)) ~= nil,
+	"seven brisk legs of 80 units did not read as a shake")
+check(Drive(UI.Wiggle(), Shake(6, 80, 5)) == nil,
+	"six legs, five turns, already read as a shake")
+
+-- A small shake of 40 units is under the span however many times it turns.
+check(Drive(UI.Wiggle(), Shake(9, 40, 4)) == nil, "a shake of 40 units read as a shake")
 
 -- A sweep across the screen and back is one turn, however fast.
 local sweep = {}
@@ -52,7 +55,7 @@ check(Drive(UI.Wiggle(), sweep) == nil, "a sweep across the screen and back read
 check(Drive(UI.Wiggle(), Shake(12, 20, 2)) == nil, "a tremor of 20 units read as a shake")
 
 -- Slow legs, half a second each, are a hand wandering and not a shake.
-check(Drive(UI.Wiggle(), Shake(5, 80, 25)) == nil, "five slow legs read as a shake")
+check(Drive(UI.Wiggle(), Shake(7, 80, 25)) == nil, "seven slow legs read as a shake")
 
 -- One long shake toggles once, not twice: the detector is deaf for a moment
 -- after it answers.
@@ -66,7 +69,7 @@ end
 check(fired == 1, ("one long shake toggled %d times"):format(fired))
 
 -- And after the quiet a second shake answers again.
-check(Drive(state, Shake(5, 80, 5), now + 2) ~= nil, "a second shake after a pause did not answer")
+check(Drive(state, Shake(7, 80, 5), now + 2) ~= nil, "a second shake after a pause did not answer")
 
 -- Losing the leg, which a camera turn does, means the jump back is not travel.
 state = UI.Wiggle()

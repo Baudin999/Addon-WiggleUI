@@ -20,9 +20,9 @@ local UI = ns.UI
 -- nothing else, because it runs on a tick.
 --------------------------------------------------------------------------
 
-local SPAN = 40
-local TURNS = 4
-local WINDOW = 0.8
+local SPAN = 60
+local TURNS = 6
+local WINDOW = 1.2
 local QUIET = 1
 
 -- The detector at rest. Called once by whoever owns one.
