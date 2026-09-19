@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WS81X1VEKT9JWQ62R2QJNE
 type: task
-status: doing
+status: done
 title: A portrait switch; with it off the gauge stretches into the square
 parent: 01M2WS81HMRRABBTW1DEJ175G8
 ---
