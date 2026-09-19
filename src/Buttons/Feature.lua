@@ -296,28 +296,10 @@ local function BarsPage(ui)
 		end)
 	ui.Hint("How much of the ground under the squares you see. At nothing the hairline goes with it and the squares stand on the world.")
 
-	ui.Check("down in combat",
-		function() return ns.BarLook.Combat(Chosen()) end,
-		function(value)
-			ns.BarLook.SetCombat(Chosen(), value)
-			Restyle()
-		end)
-	ui.Hint("The client hides it for us, because a bar full of secure buttons cannot be hidden from Lua once a fight has started. Its keys go on working while it is down.")
-
-	ui.Picker("up while holding",
-		function() return ns.BarLook.Key(Chosen()) end,
-		function(value)
-			ns.BarLook.SetKey(Chosen(), value)
-			Restyle()
-		end,
-		function()
-			local options = {}
-			for index, entry in ipairs(ns.BarLook.KEYS) do
-				options[index] = { value = entry.key, text = entry.label }
-			end
-			return options
-		end)
-	ui.Hint("A key hides the bar until you hold it, in a fight or out of one, so a bar waiting on one leaves the switch above nothing to decide.")
+	-- When a bar is up, in combat or on a held key, is still in Buttons/Look.lua
+	-- and behind `actionbars combat` and `actionbars key`. It has no row here:
+	-- the themes (immersive, informational, exploration) will set it for every
+	-- bar at once.
 
 	ui.ActionPair(
 		function() return "match my current bars" end,
