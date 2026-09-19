@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WEVMM6V7B5G4HG3PQHQQPR
 type: task
-status: todo
+status: doing
 title: Desert backdrop is desert02; rails cut clear of the corner notch
 ---
 
