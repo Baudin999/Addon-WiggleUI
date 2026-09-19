@@ -1,6 +1,6 @@
 local ADDON, ns = ...
 
-ns.version = "1.10"
+ns.version = "1.11"
 
 -- Core knows nothing about any feature. It holds the saved variables, the API
 -- shims, the two drawing helpers every part uses, and the one registry every
