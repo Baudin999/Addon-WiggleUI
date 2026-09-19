@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WV8N1ZDPZE1358GEEH7RR1
 type: feature
-status: doing
+status: done
 title: "WarriorKit Setup: four questions at the first login"
 ---
 
