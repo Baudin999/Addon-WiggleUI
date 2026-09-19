@@ -1064,6 +1064,30 @@ end
 -- the row by the width of a hint's `?` whether or not the row has a hint. A
 -- row without one used to reserve nothing, and its buttons then sat one column
 -- to the right of the rows above and below it that did.
+-- The readout beside a slider or a stepper, sized to the widest thing it can
+-- say rather than to a number somebody guessed. Both ends are measured, because
+-- a format decides which is longer: "30.00s" outgrows "1.00s", and "-10" can
+-- outgrow "10".
+--
+-- A fixed width was the bug. The slider's was forty pixels and the hold on the
+-- floating messages went to thirty seconds, so the readout read "0s": the
+-- client cut "30.00s" from the left to fit, and nothing said so.
+--
+-- Built on the page rather than on the row, because the width has to be known
+-- before Paired lays the row out. The caller reparents it into the row.
+local function Readout(ctx, justify, low, high, format, least)
+	local value = UI.Label(ctx.Parent(), M.font, C.heading, justify, UI.FLAT)
+	local function Say(current)
+		return format and format(current) or tostring(current)
+	end
+	local width = least
+	for _, current in ipairs({ low, high }) do
+		value:SetText(Say(current))
+		width = math.max(width, math.ceil(value:GetStringWidth() or 0))
+	end
+	return value, width, Say
+end
+
 local function Paired(ctx, reserved, controlHeight)
 	local stack = ctx.Stack()
 	local row = CreateFrame("Frame", nil, ctx.Parent())
@@ -1296,11 +1320,11 @@ function UI.Kit(host)
 	-- slider's, so a caller can put a unit after the number without this file
 	-- learning what the unit means. Left out, the number speaks for itself.
 	function kit.Stepper(label, low, high, step, get, set, format)
-		-- Wide enough for "700px": three digits and a unit, the longest any page reads.
-		local valueWidth = 44
+		local value, valueWidth, Say = Readout(ctx, "CENTER", low, high, format, 44)
 		local reserved = M.control * 2 + valueWidth + M.rowGap * 2
 		local row, text, right = Paired(ctx, reserved, M.control)
 		text:SetText(label)
+		value:SetParent(row)
 
 		local function Nudge(delta)
 			local current = get() + delta * step
@@ -1320,14 +1344,13 @@ function UI.Kit(host)
 			onClick = function() Nudge(1) end })
 		plus:SetPoint("TOPRIGHT", right, "TOPRIGHT")
 
-		local value = UI.Label(row, M.font, C.heading, "CENTER", UI.FLAT)
 		value:SetPoint("TOP", 0, -math.floor((M.control - M.font) / 2))
 		value:SetPoint("LEFT", minus, "RIGHT", M.rowGap, 0)
 		value:SetPoint("RIGHT", plus, "LEFT", -M.rowGap, 0)
 
 		Index(row, label)
 		return Remember(row, function()
-			value:SetText(format and format(get()) or tostring(get()))
+			value:SetText(Say(get()))
 		end)
 	end
 
@@ -1355,17 +1378,18 @@ function UI.Kit(host)
 	-- "1.25x" or "18 px" without this file learning what either means. Left out,
 	-- the number speaks for itself.
 	function kit.Slider(label, low, high, step, get, set, format)
-		local trackWidth, valueWidth = 116, 40
+		local trackWidth = 116
+		local value, valueWidth, Say = Readout(ctx, "RIGHT", low, high, format, 40)
 		local reserved = trackWidth + valueWidth + M.gutter
 		local row, text, right = Paired(ctx, reserved, M.control)
 		text:SetText(label)
 
-		local value = UI.Label(row, M.font, C.heading, "RIGHT", UI.FLAT)
+		value:SetParent(row)
 		value:SetPoint("TOPRIGHT", right, "TOPRIGHT", 0, -math.floor((M.control - M.font) / 2))
 		value:SetWidth(valueWidth)
 
 		local function Show(current)
-			value:SetText(format and format(current) or tostring(current))
+			value:SetText(Say(current))
 		end
 
 		local function Commit(current)

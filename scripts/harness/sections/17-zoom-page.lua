@@ -426,6 +426,37 @@ if window then
 			end
 		end
 
+		-- The readout is as wide as the widest thing it can say. It was a fixed
+		-- forty pixels, and the floating messages' hold at thirty seconds read
+		-- "30.00s" into it and the client cut it down to "0s". Both widgets,
+		-- because the stepper carried the same fixed number.
+		--
+		-- Said in words here rather than as "30.00s", because this fixture's
+		-- glyphs are narrower than the game's and six of them fit in forty
+		-- pixels. What is asserted is that the readout holds whatever the
+		-- format says, and a long format is the one that proves it.
+		for _, kind in ipairs({ "Slider", "Stepper" }) do
+			local host = { stack = ns.UI.Stack(window.frame, 300) }
+			local kit = ns.UI.Kit(host)
+			local made = kit[kind]("time on screen at least", 1, 30, 0.25,
+				function() return 30 end, function() end,
+				function(value) return ("%.2f seconds"):format(value) end)
+			host.stack:Reflow()
+			made.Refresh()
+			local shown
+			for _, piece in ipairs({ made:GetRegions() }) do
+				if piece.GetText and piece:GetText() == "30.00 seconds" then
+					shown = piece
+				end
+			end
+			check(shown ~= nil, ("the %s never said 30.00 seconds"):format(kind))
+			if shown then
+				check(shown:GetWidth() >= shown:GetStringWidth(),
+					("the %s readout is %s wide for a %s wide 30.00 seconds")
+						:format(kind, tostring(shown:GetWidth()), tostring(shown:GetStringWidth())))
+			end
+		end
+
 		print(("zoom   %d screens, %d stops from %s to %s, biggest panel %.0f x %.0f px on a %d pixel screen")
 			:format(#zooms, stops, Settings.Label(Settings.LOW), Settings.Label(Settings.HIGH),
 				widest, tallest, state.SCREEN_H))

@@ -152,9 +152,23 @@ function Region:SetParent(p)
 			end
 		end
 	end
+	-- A texture or a font string is one of the parent's regions rather than
+	-- one of its children, and it moves list the same way a frame does. Left
+	-- behind, a readout built on the page and handed to its row was still the
+	-- page's as far as GetRegions could tell.
+	if was and was.regions then
+		for index = #was.regions, 1, -1 do
+			if was.regions[index] == self then
+				table.remove(was.regions, index)
+			end
+		end
+	end
 	self.parent = p
-	if p and p.children and self.kind ~= "texture" and self.kind ~= "fontstring" then
+	local region = self.kind == "texture" or self.kind == "fontstring"
+	if p and p.children and not region then
 		p.children[#p.children + 1] = self
+	elseif p and p.regions and region then
+		p.regions[#p.regions + 1] = self
 	end
 end
 function Region:GetParent() return self.parent end
