@@ -12,6 +12,14 @@
 # A painted one, the arcane nebula, is out of focus where the frame is sharp,
 # so it is the region of little detail that reaches the image's edge.
 #
+# A painting may name a ground: a second picture, the floor alone, which is
+# drawn once over the whole window, scaled to cover it and cropped at the
+# overflow, rather than cut into a tile. A starfield has no repeat to cut at,
+# and a tile of one is a grid of hard lines. The ground is darkened whole, and
+# baked at 1024 by 512 because it is drawn at the size of the window rather
+# than of a tile; Backdrops.lua gives its source size, which is the shape the
+# crop keeps.
+#
 # The floor is darkened to its painting's darken, so the item icons and the
 # counts drawn over it still read. Each painting has its own, because a floor
 # of pale sand needs more than one of moss before the dim labels read on it.
@@ -89,6 +97,7 @@ PAINTINGS = [
 		"inset": (78, 100, 78, 82), "corner": 210, "period": (333, 150),
 		"darken": 0.75, "margin": "blurred",
 		"floor": (381, 313), "rail": (300, 220), "clear": 105,
+		"ground": "art/arcane_bg.jpeg", "dim": 0.65,
 	},
 	{
 		"palette": "horde", "file": "art/horde.jpeg", "stem": "Horde",
@@ -287,8 +296,9 @@ lua = [
 	"-- One entry per palette that has a painted frame. Each piece is a texture",
 	"-- and the size it is drawn at in window units; corner, top and left are the",
 	"-- frame's thickness outside the window, and fade is how far each rail and",
-	"-- corner reaches in over the floor. A palette with no entry keeps the flat",
-	"-- window fill.",
+	"-- corner reaches in over the floor. cover says the floor is one picture",
+	"-- drawn over the whole window, and its size is the picture's shape. A",
+	"-- palette with no entry keeps the flat window fill.",
 	"",
 	"ns.Backdrops = {",
 ]
@@ -302,9 +312,9 @@ for p in PAINTINGS:
 	stem = p["stem"]
 	pieces = {}
 
-	def emit(key, image, drawn_size):
+	def emit(key, image, drawn_size, size=None):
 		name = f"{stem}-{key}.tga"
-		write_tga(image, f"src/Media/{name}", (pot(drawn_size[0]), pot(drawn_size[1])))
+		write_tga(image, f"src/Media/{name}", size or (pot(drawn_size[0]), pot(drawn_size[1])))
 		pieces[key] = (name, drawn_size)
 
 	# The middle, a whole period right of the inner corner so its phase is the
@@ -312,12 +322,16 @@ for p in PAINTINGS:
 	# the first rows and columns of floor, so the tile is cut CLEAR further in
 	# and rolled back by as much: a seamless tile rolled is the same tile with
 	# its origin moved, which puts the phase back where it was.
-	if "floor" in p:
+	if "ground" in p:
+		ground = Image.open(p["ground"]).convert("RGB")
+		ground = ground.point(lambda v: int(v * p["dim"])).convert("RGBA")
+		emit("Middle", ground, ground.size, (1024, 512))
+	elif "floor" in p:
 		mid = seamless(src, p["floor"][0], p["floor"][1], pw, ph, True, True)
+		emit("Middle", mid, (drawn(pw), drawn(ph)))
 	else:
 		mid = seamless(src, left + pw + CLEAR, top + CLEAR, pw, ph, True, True)
-		mid = ImageChops.offset(mid, CLEAR, CLEAR)
-	emit("Middle", mid, (drawn(pw), drawn(ph)))
+		emit("Middle", ImageChops.offset(mid, CLEAR, CLEAR), (drawn(pw), drawn(ph)))
 
 	# The rails, each in phase with where its corner ends, which is where the
 	# row of them is laid on the screen. Cut CLEAR further along and rolled back
@@ -354,6 +368,8 @@ for p in PAINTINGS:
 		f"right = {drawn(right)}, bottom = {drawn(bottom)} }},")
 	lua.append(f"\t\tfade = {drawn(FADE)},")
 	lua.append(f"\t\tcorner = {drawn(c)},")
+	if "ground" in p:
+		lua.append("\t\tcover = true,")
 	for key in ("Middle", "Top", "Bottom", "Left", "Right", "TopLeft", "TopRight", "BottomLeft", "BottomRight"):
 		name, (dw, dh) = pieces[key]
 		lua.append(f"\t\t{key} = {{ \"Interface\\\\AddOns\\\\WarriorKit\\\\Media\\\\{name}\", {dw}, {dh} }},")

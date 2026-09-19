@@ -6,8 +6,9 @@ local ADDON, ns = ...
 -- One entry per palette that has a painted frame. Each piece is a texture
 -- and the size it is drawn at in window units; corner, top and left are the
 -- frame's thickness outside the window, and fade is how far each rail and
--- corner reaches in over the floor. A palette with no entry keeps the flat
--- window fill.
+-- corner reaches in over the floor. cover says the floor is one picture
+-- drawn over the whole window, and its size is the picture's shape. A
+-- palette with no entry keeps the flat window fill.
 
 ns.Backdrops = {
 	forest = {
@@ -42,7 +43,8 @@ ns.Backdrops = {
 		thickness = { left = 23, top = 30, right = 23, bottom = 25 },
 		fade = 5,
 		corner = 63,
-		Middle = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-Middle.tga", 100, 45 },
+		cover = true,
+		Middle = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-Middle.tga", 1408, 768 },
 		Top = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-Top.tga", 90, 35 },
 		Bottom = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-Bottom.tga", 90, 29 },
 		Left = { "Interface\\AddOns\\WarriorKit\\Media\\Arcane-Left.tga", 28, 66 },

@@ -6,7 +6,8 @@ local UI = ns.UI
 -- A painted frame behind a window
 --
 -- The palette's painting, cut into nine by scripts/bake-backdrops.sh and
--- described in Theme/Backdrops.lua: a floor tiled under the whole window, four
+-- described in Theme/Backdrops.lua: a floor tiled under the whole window, or
+-- drawn once over it when the palette's floor is a picture with no repeat, four
 -- rails round the outside and a corner on each end of them. The rails and the
 -- corners hang outside the window by the frame's thickness, so the window's
 -- size and everything laid out in it stay where they were, and the title bar
@@ -127,6 +128,25 @@ function Backdrop:Thickness(side)
 	return self.art.thickness[side] * self.scale
 end
 
+-- A floor that is one picture rather than a tile: drawn once over the whole
+-- rectangle, scaled until it covers it, and the overflow cropped off both ends
+-- evenly. Its size in Backdrops.lua is the picture's shape, which is what the
+-- crop keeps. Returns how many textures it used.
+function Backdrop:Cover(width, height)
+	if width <= 0 or height <= 0 then
+		return 0
+	end
+	local piece = self.art.Middle
+	local fit = math.max(width / piece[2], height / piece[3])
+	local across, down = width / (piece[2] * fit), height / (piece[3] * fit)
+	local texture = self:Tile("Middle", 1)
+	texture:ClearAllPoints()
+	texture:SetPoint("TOPLEFT", self.frame, "TOPLEFT", 0, 0)
+	texture:SetSize(width, height)
+	texture:SetTexCoord((1 - across) / 2, (1 + across) / 2, (1 - down) / 2, (1 + down) / 2)
+	return 1
+end
+
 -- How far a corner's ornament reaches into the window past the rail on one
 -- side, at the scale it is drawn at. Anything laid along an edge the corners
 -- end, the footer's two numbers, starts this far in or it is written on them.
@@ -146,7 +166,9 @@ function Backdrop:Layout(width, height)
 	-- be in phase with the painting. None round the minimap, whose map is the
 	-- floor.
 	local used = 0
-	if self.floor then
+	if self.floor and art.cover then
+		used = self:Cover(width, height)
+	elseif self.floor then
 		local tileW, tileH = art.Middle[2] * scale, art.Middle[3] * scale
 		for y = 0, height - 1, tileH do
 			for x = 0, width - 1, tileW do
