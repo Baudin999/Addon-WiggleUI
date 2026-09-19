@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WVYF6DQBTYHRM7S7DK5598
 type: task
-status: todo
+status: doing
 title: "The alliance floor is one painting drawn over the window, not a tile"
 ---
 
