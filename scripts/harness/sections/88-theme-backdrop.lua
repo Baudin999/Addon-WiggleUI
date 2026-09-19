@@ -72,5 +72,22 @@ check(corner.width == art.corner / 2, ("the corner is drawn at half, %s against 
 check(ring:Thickness("bottom") == art.thickness.bottom / 2, "the thickness is asked at half")
 check(ring.pool.Top[1].height == art.Top[3] / 2, "the rail is drawn at half its height")
 
+-- A gauge's floor: the tile alone, no rails and no corners, and the track
+-- kept over it thin enough for the pattern to show. Laid in design pixels at a
+-- unit, the way the rails and the cast bar lay it after their zoom.
+local Gauge = UI.Gauge
+local gauge = Gauge.New(CreateFrame("Frame", nil, UIParent))
+check(Gauge.Floor(gauge) ~= nil, "a palette with a painting gives a gauge a floor")
+Gauge.LayFloor(gauge, 2, 200, 14)
+check(#gauge.floor.pool.Middle > 0, "the floor is laid across the gauge")
+check(#gauge.floor.pool.Top == 0 and #gauge.floor.pool.TopLeft == 0,
+	"a floor alone draws no rail and no corner")
+check(gauge.floor.pool.Middle[1].width == art.Middle[2] * 0.35 * 2,
+	"the floor tile is drawn at the gauge's scale times the unit")
+Gauge.Paint(gauge, gauge.track, { 1, 0, 0 })
+check(gauge.track.a == 0.35, ("the track over a floor is a thin tint, got %s"):format(tostring(gauge.track.a)))
+
 frame:Hide()
 UI.ChooseBackdrop(nil)
+check(Gauge.Floor(Gauge.New(CreateFrame("Frame", nil, UIParent))) == nil,
+	"a palette with no painting gives a gauge no floor")

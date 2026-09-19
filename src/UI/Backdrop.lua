@@ -91,6 +91,12 @@ function Backdrop:Run(key, x, y, length, across)
 	self:Trim(key, used)
 end
 
+-- The scale is set again by an owner on the pixel grid, whose unit moves with
+-- its zoom, before it lays the painting out again.
+function Backdrop:SetScale(scale)
+	self.scale = scale
+end
+
 -- How far the frame hangs outside the rectangle it is laid round, on one
 -- side, at the scale it is drawn at. The minimap's clock tab hangs below this.
 function Backdrop:Thickness(side)
@@ -122,6 +128,9 @@ function Backdrop:Layout(width, height)
 		end
 	end
 	self:Trim("Middle", used)
+	if not self.framed then
+		return
+	end
 
 	-- The rails, between the corners. Each starts where its corner ends,
 	-- which is the phase the bake cut it at.
@@ -148,7 +157,8 @@ end
 -- and opts.floor = false leaves the floor out and draws the frame alone. The
 -- minimap takes both: half, because a corner sized for a bag window reaches
 -- forty pixels into a map two hundred wide, and no floor, because the map is
--- what it is round.
+-- what it is round. opts.frame = false is the other half, the floor alone,
+-- which is what a bar's empty end is drawn on.
 function UI.Backdrop(frame, opts)
 	if not chosen then
 		return nil
@@ -156,7 +166,7 @@ function UI.Backdrop(frame, opts)
 	opts = opts or {}
 	local backdrop = setmetatable({
 		frame = frame, art = chosen, pool = {},
-		scale = opts.scale or 1, floor = opts.floor ~= false,
+		scale = opts.scale or 1, floor = opts.floor ~= false, framed = opts.frame ~= false,
 	}, Backdrop)
 	for key in pairs(SUBLEVEL) do
 		backdrop.pool[key] = {}

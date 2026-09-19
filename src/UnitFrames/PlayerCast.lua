@@ -330,6 +330,8 @@ local function Build()
 	-- Made after the fill, because within one draw layer the order is the order
 	-- the textures were made and this one has to stay on top of both of them.
 	bar.edges = ns.Outline(bar, EDGE[1], EDGE[2], EDGE[3], 1, "OVERLAY")
+	-- The palette's floor under the empty end, when it has one.
+	Gauge.Floor(bar)
 
 	-- Both on the bar rather than on the frame, so they sit over the fill. Flat
 	-- and unshadowed: this is an opaque surface the addon painted itself, which
@@ -364,6 +366,7 @@ function PlayerCast.Apply()
 	local width, height = ns.db.playerCastWidth, ns.db.playerCastHeight
 	frame:SetSize(width * unit, height * unit)
 	bar:SetSize(width * unit, height * unit)
+	Gauge.LayFloor(bar, unit, width, height)
 	-- One screen pixel, and one at every zoom, which is what ns.Pixel answers
 	-- and ns.UI.Unit does not.
 	ns.EdgeSize(bar.edges, ns.Pixel(bar))

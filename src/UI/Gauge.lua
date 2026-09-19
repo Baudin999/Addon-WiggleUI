@@ -153,7 +153,39 @@ function Gauge.Paint(bar, track, color)
 		set(bar, r, g, b, 1)
 	end
 	if track then
-		track:SetColorTexture(r * TRACK, g * TRACK, b * TRACK, TRACK_ALPHA)
+		track:SetColorTexture(r * TRACK, g * TRACK, b * TRACK, bar and bar.wkTrackAlpha or TRACK_ALPHA)
+	end
+end
+
+-- The palette's painted floor under a gauge's empty end.
+--
+-- Under the track, on the lowest sublevel UI/Backdrop.lua draws its floor on,
+-- and the track stays over it at FLOOR_TINT rather than nine tenths: thin
+-- enough that the pattern shows, thick enough that it is darkened and taken
+-- toward the bar's own colour, so the name and the number written on the bar
+-- read on it the way they read on the flat track.
+--
+-- At FLOOR_SCALE of the bag window's size, which puts about one row of slabs
+-- across a bar of the height the rails and the cast bar ship at. Nil when the
+-- palette has no painting, and the bar is drawn as it always was.
+local FLOOR_SCALE = 0.35
+local FLOOR_TINT = 0.35
+
+function Gauge.Floor(bar)
+	local floor = UI.Backdrop(bar, { frame = false })
+	if floor then
+		bar.floor = floor
+		bar.wkTrackAlpha = FLOOR_TINT
+	end
+	return floor
+end
+
+-- Laid across the bar at the size just given it, in design pixels, with the
+-- unit the owner's zoom puts them in.
+function Gauge.LayFloor(bar, unit, width, height)
+	if bar.floor then
+		bar.floor:SetScale(FLOOR_SCALE * unit)
+		bar.floor:Layout(width * unit, height * unit)
 	end
 end
 
