@@ -30,8 +30,11 @@ ns.FrameBlock = Block
 --------------------------------------------------------------------------
 
 -- How much of the gauge the health bar takes. The rest is power, less the
--- three hairlines: one along the top, one along the bottom, one between.
+-- hairlines: one along the top, one along the bottom, and under the flat bar
+-- look one between. The modern look stacks the two with no line between and a
+-- thinner power bar, so the pair reads as one bar with a coloured foot.
 local HEALTH_SHARE = 0.70
+local MODERN_HEALTH_SHARE = 0.76
 
 -- The gap between a small block and the block it is parked against, in pixels:
 -- target of target under the target, and the pet beside the player.
@@ -58,9 +61,9 @@ local LEVEL_LOW, LEVEL_HIGH = -100, 100
 local VALUE_FLOOR = 9
 
 -- The block's own geometry, in pixels, because everything this file draws is
--- on the grid. Three hairlines cross the square: one along the top of the
--- gauge, one along the bottom and one between the two bars.
-local HAIRLINES = 3
+-- on the grid. Two hairlines cross the square, along the top of the gauge and
+-- along the bottom, and the flat look adds the seam between the two bars.
+local HAIRLINES = 2
 local TEXT_PAD = 4
 
 -- The ammo pill: the space between its outline and its number, and the gap
@@ -373,8 +376,10 @@ function Block.Place(entry)
 	-- Whole pixels, because the two bars have to add up to the square exactly:
 	-- health plus power plus the three hairlines is the side, and a fractional
 	-- share leaves a seam along one of them that reads as a rendering fault.
-	local inner = side - HAIRLINES
-	local health = math.floor(inner * HEALTH_SHARE)
+	local modern = ns.Theme.Modern()
+	local seam = modern and 0 or 1
+	local inner = side - HAIRLINES - seam
+	local health = math.floor(inner * (modern and MODERN_HEALTH_SHARE or HEALTH_SHARE))
 	local power = inner - health
 
 	-- The whole inside of the block, in one row of three: the portrait's square,
@@ -391,7 +396,7 @@ function Block.Place(entry)
 		{ frame = entry.slot, width = side * px, align = "stretch",
 			direction = "row", reverse = spec.mirror, pad = { 0, px, 0, px },
 			{ grow = 1 }, { frame = entry.divider, width = px } },
-		{ direction = "column", grow = 1, gap = px, align = "stretch",
+		{ direction = "column", grow = 1, gap = seam * px, align = "stretch",
 			pad = { 0, px, 0, px },
 			{ frame = entry.healthBar, height = health * px },
 			{ frame = entry.powerBar, height = power * px } },
@@ -435,7 +440,7 @@ function Block.Place(entry)
 	-- has been breathed on.
 	local pad = TEXT_PAD * px
 	local healthMid = -(1 + math.floor(health / 2)) * px
-	local powerMid = -(2 + health + math.floor(power / 2)) * px
+	local powerMid = -(1 + seam + health + math.floor(power / 2)) * px
 
 	-- Anchored to the square's inner corner rather than to its side, because a
 	-- side point sits at half height and the vertical offsets here are all
