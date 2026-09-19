@@ -140,8 +140,12 @@ end
 -- normalised away, because on an item that colour is information: the name is
 -- the quality, the red line is the requirement you do not meet, the green is
 -- the enchant.
-local function Side(index, side)
-	local string = _G[NAME .. "Text" .. side .. index]
+--
+-- `prefix` is whose lines: the scanner's by default, and the client's own
+-- tooltip for a world object, which is the one box whose text nothing can ask
+-- for a second time. See Scan.Theirs.
+local function Side(index, side, prefix)
+	local string = _G[(prefix or NAME) .. "Text" .. side .. index]
 	if not string or type(string.GetText) ~= "function" then
 		return nil
 	end
@@ -481,6 +485,185 @@ end
 
 function Scan.Suppressing()
 	return suppressing
+end
+
+--------------------------------------------------------------------------
+-- A thing in the world that is not a creature
+--
+-- An ore vein, a herb, a chest, a mailbox, a fishing bobber. The client
+-- describes each of these in GameTooltip and in nothing else: there is no token
+-- for one, no event when the pointer finds one, and no setter a scanner of our
+-- own could be pointed at. The unit hover above has UPDATE_MOUSEOVER_UNIT to
+-- tell it a hover began and `mouseover` to ask about; an object has neither.
+--
+-- So the client's own tooltip is the only witness, and this is the half of it
+-- that listens. World/World.lua is the half that decides, which is why the
+-- hook hands over a boolean and nothing else: whether the box is about the
+-- world is a question about the pointer, and this file only knows tooltips.
+--
+-- **Held at no alpha, never hidden.** The unit hover can take Blizzard's box
+-- down because UnitExists("mouseover") says when the pointer leaves. Nothing
+-- says that about an object except the client taking its own tooltip down, so
+-- hiding it would throw away the one signal the addon's box has to close on.
+-- Invisible, it goes on doing its job: it hides when the pointer leaves, and
+-- OnHide is the close.
+--
+-- **Handed back at the first doubt.** GameTooltip is the furniture every other
+-- addon draws in, and a box of theirs landing in a frame this file left at
+-- nought is a tooltip that says nothing on screen. Every show that is not an
+-- object puts the alpha back before anybody else's hook can read it, every hide
+-- puts it back, and World.lua's sweep lets go the moment the subject changes
+-- under it.
+--------------------------------------------------------------------------
+
+-- The client's own lines are globals built off this name, the same way the
+-- scanner's are built off NAME.
+local THEIRS = "GameTooltip"
+local THEIRS_TITLE = "GameTooltipTextLeft1"
+
+-- The three questions whose answer means a setter could have named the thing,
+-- and so it is not loose.
+local NAMED = { "GetUnit", "GetItem", "GetSpell" }
+
+local watcher
+local watched = false
+local holding = false
+
+-- Whether the client's tooltip is up about a thing that is none of the three
+-- things a setter can name. Owned by UIParent, which is what the client's
+-- default anchor for the world passes; a frame's tooltip is owned by the frame.
+local function Loose(theirs)
+	if type(theirs) ~= "table" or type(theirs.IsShown) ~= "function" or not theirs:IsShown() then
+		return false
+	end
+	if type(theirs.GetOwner) ~= "function" or theirs:GetOwner() ~= UIParent then
+		return false
+	end
+	for index = 1, #NAMED do
+		local fn = theirs[NAMED[index]]
+		if type(fn) == "function" then
+			local _, about = fn(theirs)
+			if about ~= nil then
+				return false
+			end
+		end
+	end
+	return true
+end
+
+-- The alpha given back, and nothing else. Its own function because four
+-- places let go and a fifth copy is the one that forgets.
+local function Release()
+	if not holding then
+		return
+	end
+	holding = false
+	local theirs = GameTooltip
+	if type(theirs) == "table" and type(theirs.SetAlpha) == "function" then
+		theirs:SetAlpha(1)
+	end
+end
+
+local function Shown()
+	Release()
+	if watcher then
+		watcher(true)
+	end
+end
+
+local function Hidden()
+	Release()
+	if watcher then
+		watcher(false)
+	end
+end
+
+-- Hand in the one function that hears the client's tooltip go up and come
+-- down, with true and false. One and not a list, for the reason Tip.SetCompare
+-- takes one: two parts deciding what a world object gets are two boxes.
+--
+-- Answered as whether the hooks took. False on a client that refuses them, and
+-- then the parchment is what the player sees, which is the right way to fail.
+function Scan.Watch(fn)
+	watcher = type(fn) == "function" and fn or nil
+	if watched then
+		return true
+	end
+	local theirs = GameTooltip
+	if type(theirs) ~= "table" or type(theirs.HookScript) ~= "function" then
+		return false
+	end
+	if not pcall(theirs.HookScript, theirs, "OnShow", Shown)
+		or not pcall(theirs.HookScript, theirs, "OnHide", Hidden) then
+		return false
+	end
+	watched = true
+	return true
+end
+
+-- The client's lines about the loose thing it is showing, and the name first
+-- among them, or nil where it is showing something else.
+--
+-- Read once, when the box opens. The lines come back in the shape Scan.Read
+-- hands out, colour and all: "Requires Mining" is red on a vein you cannot
+-- work, and that red is the client's whole answer to whether you can.
+function Scan.Theirs()
+	local theirs = GameTooltip
+	if not Loose(theirs) or type(theirs.NumLines) ~= "function" then
+		return nil
+	end
+	local lines = {}
+	for index = 1, theirs:NumLines() or 0 do
+		local left, lr, lg, lb = Side(index, "Left", THEIRS)
+		local right, rr, rg, rb = Side(index, "Right", THEIRS)
+		if left or right then
+			lines[#lines + 1] = { left, lr, lg, lb, right, rr, rg, rb }
+		end
+	end
+	if not lines[1] or not lines[1][1] then
+		return nil
+	end
+	return lines[1][1], lines
+end
+
+-- The name on the client's tooltip while it is still about a loose thing, or
+-- nil. What World.lua's sweep asks a few times a second, so it builds nothing:
+-- a name that changed is the pointer on a different vein, and nil is the
+-- tooltip gone or taken over by something a setter names.
+function Scan.TheirName()
+	local theirs = GameTooltip
+	if not holding or type(theirs) ~= "table" or not theirs:IsShown()
+		or theirs:GetOwner() ~= UIParent then
+		return nil
+	end
+	local title = _G[THEIRS_TITLE]
+	if not title or type(title.GetText) ~= "function" then
+		return nil
+	end
+	return title:GetText()
+end
+
+-- Hold the client's box at nought, or let it go. Answered as whether it is
+-- held, which is false on a client with no alpha to set and then both boxes
+-- stand.
+function Scan.Hold(on)
+	if not on then
+		Release()
+		return false
+	end
+	local theirs = GameTooltip
+	if type(theirs) ~= "table" or type(theirs.SetAlpha) ~= "function" then
+		return false
+	end
+	if not holding then
+		theirs:SetAlpha(0)
+		holding = true
+	end
+	return true
+end
+
+function Scan.Holding()
+	return holding
 end
 
 function Scan.Describe()

@@ -194,6 +194,58 @@ function H.blizzardTooltip(unit)
 	return theirs:IsShown()
 end
 
+-- A thing in the world that is not a creature: an ore vein, a chest.
+--
+-- The client describes one in this tooltip and nowhere else, so the stub has
+-- to be able to write lines into it the way the client does and to answer the
+-- questions UI/Scan.lua asks to tell a vein from everything else the tooltip
+-- carries: who owns it, and whether a unit, an item or a spell is on it. The
+-- lines are reachable as GameTooltipTextLeft1 and on, which is how the client
+-- publishes them and the only way the addon can read them.
+theirs.name = "GameTooltip"
+theirs.lines = {}
+theirs.item, theirs.spell = nil, nil
+theirs.GetOwner = function(self) return self.owner end
+theirs.SetOwner = function(self, owner)
+	self:Hide()
+	self.owner = owner
+end
+theirs.GetItem = function(self)
+	if not self.item then
+		return nil, nil
+	end
+	return self.item, self.item
+end
+theirs.GetSpell = function(self)
+	if not self.spell then
+		return nil, nil
+	end
+	return self.spell, self.spell
+end
+theirs.NumLines = function(self) return #self.lines end
+
+-- The client's box put up about a loose thing, owned the way its default
+-- anchor owns one. `owner` is for the section that proves a box owned by
+-- anything else is left alone; nil is UIParent. Lines are `{ left, right,
+-- color }`, the shape every other entry in this file takes.
+function H.blizzardObject(lines, owner)
+	theirs:SetOwner(owner or _G.UIParent)
+	theirs.unit, theirs.item, theirs.spell = nil, nil, nil
+	for index = 1, #theirs.lines do
+		String(theirs, "Left", index):SetText("")
+		String(theirs, "Right", index):SetText("")
+	end
+	Fill(theirs, lines)
+	theirs:Show()
+	return theirs:IsShown()
+end
+
+-- The pointer leaving it, which the client says by taking its box down.
+function H.blizzardLeave()
+	theirs:Hide()
+	theirs.owner = nil
+end
+
 -- Where the pointer is.
 --
 -- The client answers in physical pixels, which is UIParent's own units only at

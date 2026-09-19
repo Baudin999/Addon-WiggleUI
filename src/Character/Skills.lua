@@ -190,6 +190,64 @@ function Skills.Behind()
 	return behind, worst
 end
 
+--------------------------------------------------------------------------
+-- The skill a thing in the world asks for
+--
+-- Point at a vein and the client says "Requires Mining 125", in red if you are
+-- short of it. What it does not say is where you are: 118 and two nodes from
+-- it, or 30 and a zone away. That number is on this page and nowhere near the
+-- vein, so the world hover carries it as a bar, the same bar the skills tab
+-- draws.
+--
+-- Matched on the skill's own name in the client's own lines, which are in the
+-- same language the skill list is. No table of which objects want which skill:
+-- the client already wrote the answer on the tooltip, and a fishing bobber, a
+-- locked chest and a herb all name theirs.
+--------------------------------------------------------------------------
+
+-- Whether any of the client's lines names this skill.
+local function Named(lines, name)
+	for index = 1, #lines do
+		local left = lines[index][1]
+		if type(left) == "string" and left:find(name, 1, true) then
+			return true
+		end
+	end
+	return false
+end
+
+-- A bar for every skill of yours the client's lines about a thing name.
+function Skills.Asked(lines)
+	if type(lines) ~= "table" or #lines < 1 then
+		return nil
+	end
+	Expand()
+	local fill = ns.Unit.Color.progress.experience
+	local count = Ask("GetNumSkillLines") or 0
+	local rows
+	for index = 1, count do
+		local name, header, _, rank, temporary, modifier, maximum = Ask("GetSkillLineInfo", index)
+		if not header and type(name) == "string" and name ~= ""
+			and maximum and maximum > 0 and Named(lines, name) then
+			local total = (rank or 0) + (temporary or 0) + (modifier or 0)
+			rows = rows or {}
+			rows[#rows + 1] = { name, ("%d / %d"):format(total, maximum),
+				bar = total / maximum, fill = fill }
+		end
+	end
+	return rows
+end
+
+ns.Tip.Source({
+	name = "your skill in it",
+	kind = "object",
+	band = "body",
+	order = 30,
+	fill = function(subject)
+		return Skills.Asked(subject.scan)
+	end,
+})
+
 function Skills.Describe()
 	local count = Ask("GetNumSkillLines")
 	if not count then

@@ -98,10 +98,15 @@ local READS = {
 
 -- Every kind a subject may name. `note` is here and not above because it is a
 -- real kind that a source can register against; it simply has no client text.
+--
+-- `object` is not above either, and for the opposite reason: it has client
+-- text and no way to ask for it. An ore vein or a chest is described in the
+-- client's own tooltip and nowhere else, so World/World.lua reads those lines
+-- off it as the hover opens and the subject carries them in `scan`.
 local KINDS = {
 	note = true, item = true, action = true, pet = true, spell = true,
 	buff = true, debuff = true, inventory = true, unit = true,
-	talent = true, craft = true,
+	talent = true, craft = true, object = true,
 }
 
 -- The bands a source may write into, and the order they are drawn in. `head` is
@@ -287,6 +292,9 @@ end
 -- SetBagItem on it, both land there and get the text every other item hover in
 -- the addon gets.
 local function Head(subject)
+	if subject.kind == "object" then
+		return subject.scan
+	end
 	if subject.kind == "item" and subject.bag and subject.slot then
 		local lines = UI.Scan.Read("bag", subject.bag, subject.slot)
 		if lines then

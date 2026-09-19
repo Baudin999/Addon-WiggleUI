@@ -362,6 +362,10 @@ local SECTIONS = {
 	-- as it found it.
 	"48-tooltip-arrival",
 	"49-world-hover",
+	-- Straight after it, because it is the other half of the same hover: a vein
+	-- or a chest rather than a creature. It puts the pointer over the world for
+	-- its own length and hands the mouse focus back as it found it.
+	"49-world-objects",
 	-- After 48-tooltips, which is fine and is worth saying why: what that
 	-- section leaves registered is a source that answers only a subject
 	-- carrying its own probe field, and nothing here carries one.

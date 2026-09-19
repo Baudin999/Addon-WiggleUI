@@ -505,30 +505,25 @@ local function Quest(into, npcId, questId, objectives)
 			into[#into + 1] = { Wording(objective) }
 		end
 		-- Only an item has a drop rate. A creature you have to kill eight of
-		-- drops itself every time, and a line saying so would be furniture.
-		if objective.Type == "item" then
+		-- drops itself every time, and a line saying so would be furniture. A
+		-- chest has no rate at all: the ledger counts corpses, and a thing on
+		-- the ground is not one.
+		if objective.Type == "item" and npcId then
 			Rates(into, npcId, objective.Id)
 		end
 	end
 	return into
 end
 
--- Everything this creature is wanted for, grouped by the quest that wants it.
---
--- Grouped rather than listed flat because two objectives of one quest on one
--- creature is ordinary, and repeating the quest's name over each of them is how
--- a four line box becomes an eight line one saying the same thing twice.
-function Drops.Lines(unit)
-	local npcId = Drops.NpcId(UnitGUID and UnitGUID(unit))
-	local registered = Registered(npcId)
-	if not registered then
-		return nil
-	end
-
-	local order, byQuest = {}, {}
-	for _, entry in pairs(registered) do
+-- Every live objective in one of Questie's registry entries, filed under its
+-- quest. `seen` is keyed by the registry's own key, which is the quest and the
+-- objective index, because two objects that share a name are two entries
+-- holding the same objective and it is one line.
+local function File(registered, order, byQuest, seen)
+	for key, entry in pairs(registered) do
 		local objective, questId = Live(entry)
-		if objective then
+		if objective and not seen[key] then
+			seen[key] = true
 			if not byQuest[questId] then
 				byQuest[questId] = {}
 				order[#order + 1] = questId
@@ -537,14 +532,17 @@ function Drops.Lines(unit)
 			at[#at + 1] = objective
 		end
 	end
+end
 
+-- The lines for what was filed, or nil where nothing was.
+--
+-- Sorted, because pairs over Questie's table hands them back in whatever order
+-- its hashing happened to land on and a tooltip whose lines swap places between
+-- two hovers of the same mob is a tooltip you cannot read.
+local function Told(npcId, order, byQuest)
 	if #order < 1 then
 		return nil
 	end
-
-	-- Sorted, because pairs over Questie's table hands them back in whatever
-	-- order its hashing happened to land on and a tooltip whose lines swap
-	-- places between two hovers of the same mob is a tooltip you cannot read.
 	table.sort(order)
 
 	local lines = {}
@@ -558,6 +556,102 @@ function Drops.Lines(unit)
 	return lines
 end
 
+-- Everything this creature is wanted for, grouped by the quest that wants it.
+--
+-- Grouped rather than listed flat because two objectives of one quest on one
+-- creature is ordinary, and repeating the quest's name over each of them is how
+-- a four line box becomes an eight line one saying the same thing twice.
+function Drops.Lines(unit)
+	local npcId = Drops.NpcId(UnitGUID and UnitGUID(unit))
+	local registered = Registered(npcId)
+	if not registered then
+		return nil
+	end
+	local order, byQuest = {}, {}
+	File(registered, order, byQuest, {})
+	return Told(npcId, order, byQuest)
+end
+
+--------------------------------------------------------------------------
+-- A thing on the ground
+--
+-- A chest you have to open, a crate you have to burn, a flower a quest wants
+-- picked. Questie registers those under `o_<object id>` exactly as it registers
+-- creatures under `m_`, and the hover says the same three things about them in
+-- the same shape. What it cannot do is the lookup a creature gets for free: the
+-- client hands over a creature's id in its GUID and hands over nothing at all
+-- about an object but the name printed on the tooltip.
+--
+-- So the name is the key, through the table Questie builds from its own
+-- database at boot for this exact question. A name several objects share,
+-- which is every "Wanted Poster" and every "Chest", is narrowed to the ones
+-- that stand in the zone you are in or the zone above it. That is Questie's own
+-- rule in its TooltipHandler.lua, and without it a crate in Westfall would
+-- answer for a quest about a crate in the Barrens. A name only one object has
+-- is not narrowed, because there is nothing to tell apart and an object with
+-- no spawn rows would be filtered out by a rule written for the ambiguous case.
+--------------------------------------------------------------------------
+
+-- Whether one object stands in the zone you are in or the one above it. True
+-- for an object Questie has no spawns for, which is its rule too: nothing to
+-- compare is not evidence it is elsewhere.
+local function Nearby(db, id, here)
+	local ok, spawns = pcall(db.QueryObjectSingle, id, "spawns")
+	if not ok or type(spawns) ~= "table" or next(spawns) == nil then
+		return true
+	end
+	return spawns[here.area] ~= nil or (here.parent ~= nil and spawns[here.parent] ~= nil)
+end
+
+-- Every object id Questie has under this name that could be the one under the
+-- pointer, or nil.
+local function Named(name)
+	local l10n = ns.Questie("l10n")
+	local lookup = l10n and type(l10n.objectNameLookup) == "table" and l10n.objectNameLookup[name]
+	if type(lookup) ~= "table" or #lookup < 1 then
+		return nil
+	end
+	if #lookup == 1 then
+		return lookup
+	end
+	local db = ns.Questie("QuestieDB", "QueryObjectSingle")
+	local here = ns.QuestHere.Now()
+	if not db or not here or type(here.area) ~= "number" then
+		return lookup
+	end
+	local near = {}
+	for _, id in ipairs(lookup) do
+		if Nearby(db, id, here) then
+			near[#near + 1] = id
+		end
+	end
+	return near
+end
+
+-- Everything a thing on the ground is wanted for, in the creature hover's
+-- shape and order.
+function Drops.ObjectLines(name)
+	if type(name) ~= "string" or name == "" then
+		return nil
+	end
+	local tips = ns.Questie("QuestieTooltips")
+	if not tips or type(tips.lookupByKey) ~= "table" then
+		return nil
+	end
+	local ids = Named(name)
+	if not ids then
+		return nil
+	end
+	local order, byQuest, seen = {}, {}, {}
+	for _, id in ipairs(ids) do
+		local registered = tips.lookupByKey["o_" .. id]
+		if type(registered) == "table" then
+			File(registered, order, byQuest, seen)
+		end
+	end
+	return Told(nil, order, byQuest)
+end
+
 ns.Tip.Source({
 	name = "quest drops",
 	kind = "unit",
@@ -569,6 +663,21 @@ ns.Tip.Source({
 	-- See Drops.Epoch. The unit is not read at all: a hover cannot change which
 	-- creature it is about, and everything else these lines are built from moves
 	-- only when the quest log does.
+	stamp = function()
+		return Drops.Epoch()
+	end,
+})
+
+ns.Tip.Source({
+	name = "quest objects",
+	kind = "object",
+	band = "extra",
+	order = 41,
+	fill = function(subject)
+		return Drops.ObjectLines(subject.title)
+	end,
+	-- The same epoch and for the same reason: a chest cannot become another
+	-- chest under the pointer, and the count on it moves with the quest log.
 	stamp = function()
 		return Drops.Epoch()
 	end,

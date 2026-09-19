@@ -31,6 +31,16 @@ ns.World = World
 -- not come back until the pointer finds a different unit. That is a smaller
 -- wrong than a tooltip that guesses which frames belong to whom.
 --
+-- **And a thing in the world that is not a creature.** An ore vein, a herb, a
+-- chest, a mailbox. The client resolves no token for one and fires no event,
+-- so UPDATE_MOUSEOVER_UNIT never hears about it and for a long time this file
+-- drew nothing while Blizzard's parchment went up untouched: the one hover in
+-- the addon still in the old design, on the thing a gatherer points at most.
+-- The client's own tooltip is the only witness, so UI/Scan.lua listens to it
+-- and hands this file a show and a hide. The half that asks whether the
+-- pointer is over the world at all is here, because that is a question about
+-- the pointer and not about a tooltip.
+--
 -- **The event says when a hover begins and not when it ends.**
 -- UPDATE_MOUSEOVER_UNIT fires when the token resolves to somebody new. Nothing
 -- fires reliably when the pointer slides off onto empty ground, and a box that
@@ -57,6 +67,13 @@ local open = false
 -- every band laid out again and the suppression armed on top of the box it was
 -- already holding down. The same guid is the same box.
 local looking
+
+-- The name of the loose thing the box on screen is about, or nil where it is
+-- about a creature or about nothing. Its own field rather than `looking`,
+-- because the two are asked different questions on every sweep: a creature by
+-- whether the token still exists, a vein by whether the client's tooltip still
+-- carries its name.
+local thing
 
 -- Whether the last arm of the suppression actually took, for Describe. Nil
 -- until the first hover, because "not tried yet" and "this client refused" are
@@ -129,8 +146,10 @@ function World.Close(now)
 	local ours = Ours()
 	open = false
 	looking = nil
+	thing = nil
 	ticker:Hide()
 	ns.UI.Scan.Suppress(false)
+	ns.UI.Scan.Hold(false)
 	if ours then
 		ns.Tip.Close(now)
 	end
@@ -163,6 +182,11 @@ function World.Open()
 	if open and guid and guid == looking and Ours() then
 		return true
 	end
+	-- A creature found while the box was about a vein. The client's tooltip is
+	-- about the creature now, so the alpha goes back before the suppression
+	-- takes it down the ordinary way.
+	thing = nil
+	ns.UI.Scan.Hold(false)
 	if not ns.Tip.Open(ns.UI.Tooltip.CURSOR, Subject(), "world") then
 		World.Close()
 		return false
@@ -187,10 +211,63 @@ end
 local function Yield()
 	open = false
 	looking = nil
+	thing = nil
 	ticker:Hide()
 	ns.UI.Scan.Suppress(false)
+	ns.UI.Scan.Hold(false)
 	return true
 end
+
+-- Open on the loose thing the client just described, if the pointer is over
+-- the world.
+--
+-- **Over WorldFrame, and nothing else will do.** UIParent owns the client's
+-- tooltip for a vein, and it owns it for the client's basic one-line tooltip
+-- and for any addon that anchors to the screen rather than a frame. Those are somebody
+-- else's words about something that is not in the world, and taking them over
+-- would put this box at the pointer describing a thing the pointer is not on.
+--
+-- A creature's box is left alone. The client describes a mob in the same
+-- tooltip and the unit path owns that; Scan.Theirs refuses a tooltip that
+-- answers a unit, so the two never meet here.
+function World.Found()
+	if not World.Wanted() or ns.MouseFocus() ~= WorldFrame then
+		return false
+	end
+	local name, lines = ns.UI.Scan.Theirs()
+	if not name then
+		return false
+	end
+	if not ns.Tip.Open(ns.UI.Tooltip.CURSOR,
+		{ kind = "object", title = name, scan = lines }, "world") then
+		World.Close()
+		return false
+	end
+
+	open = true
+	looking = nil
+	thing = name
+	ns.UI.Scan.Suppress(false)
+	ns.UI.Scan.Hold(true)
+	ticker:Show()
+	return true
+end
+
+-- What UI/Scan.lua hands over: the client's tooltip going up, or coming down.
+--
+-- Down is the pointer leaving the vein, and it is the only notice there is. It
+-- closes with the linger, the way the box goes when the pointer leaves a mob.
+function World.Heard(shown)
+	if shown then
+		return World.Found()
+	end
+	if thing then
+		return World.Close()
+	end
+	return false
+end
+
+local watching = ns.UI.Scan.Watch(World.Heard)
 
 -- One pass, and it asks two questions rather than one.
 --
@@ -199,7 +276,16 @@ end
 -- that yields. Both used to be one question, and the second was not asked at
 -- all.
 function World.Sweep()
-	if not UnitExists(UNIT) then
+	if thing then
+		-- Nil is the tooltip gone or taken over by something a setter names,
+		-- and a different name is somebody else's words in it. Both are this
+		-- hover over. The next vein is not this: the client re-owns its tooltip
+		-- to describe one, re-owning hides it, and the show after that is a
+		-- fresh World.Heard.
+		if ns.UI.Scan.TheirName() ~= thing then
+			return World.Close()
+		end
+	elseif not UnitExists(UNIT) then
 		return World.Close()
 	end
 	if Ours() then
@@ -239,6 +325,9 @@ function World.Describe()
 	end
 	if not ns.UI.Scan.Ready("unit") then
 		return "on, but this client hands over no text about a unit, so a hover shows the name and nothing more"
+	end
+	if not watching then
+		return "on for creatures, but this client would not let the addon hear its own tooltip, so a vein or a chest gets Blizzard's"
 	end
 	if suppressed == false then
 		return "on, but this client would not let the addon hold Blizzard's box down, so a mob is described twice"
