@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WGPAEFDRCE4GJ1CHAZ7FQF
 type: task
-status: doing
+status: done
 title: XP and cast bars wear the palette's floor; XP bar gets a slim frame
 ---
 
