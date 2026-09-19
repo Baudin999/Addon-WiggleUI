@@ -168,9 +168,9 @@ end
 ----------------------------------------------------------------------
 
 do
-	local long = ("the quick brown fox jumps over the lazy dog "):rep(6)
-	check(Messages.Hold(long) == 8,
-		("a %d character line holds %s seconds, and the ceiling is eight")
+	local long = ("the quick brown fox jumps over the lazy dog "):rep(12)
+	check(Messages.Hold(long) == 30,
+		("a %d character line holds %s seconds, and the ceiling is thirty")
 			:format(#long, tostring(Messages.Hold(long))))
 	check(Messages.Hold("hi") == 3, "a two letter line does not hold the three second floor")
 
@@ -190,7 +190,9 @@ do
 			("a long line laid its row out %s tall, which is not three lines of %d")
 				:format(tostring(frame:GetHeight()), line))
 	end
-	beat(10)
+	-- The hold and two seconds for the slide out, off the ceiling rather than a
+	-- number of its own, so the next section starts with an empty tween list.
+	beat(Messages.Hold(long) + 2)
 	check(Messages.Count() == 0 and Animations.Running() == 0,
 		("%d messages and %d tweens are left"):format(Messages.Count(), Animations.Running()))
 end

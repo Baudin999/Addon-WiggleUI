@@ -52,10 +52,11 @@ local DEFAULTS = {
 }
 
 -- Fifteen characters a second is a slow read of a sentence you did not expect,
--- which is what a message crossing the screen is. The ceiling is so a pasted
--- paragraph does not sit on the screen for a quarter of a minute.
+-- which is what a message crossing the screen is. The ceiling is half a minute,
+-- so a message from your family is still up when you look over from the pull,
+-- and a pasted paragraph still goes eventually.
 local READ_RATE = 15
-local MOST_HOLD = 8
+local MOST_HOLD = 30
 
 -- Three lines and cut. A fourth is a paragraph, and the window has it whole.
 local MOST_LINES = 3

@@ -502,10 +502,10 @@ local function MessagesPage(ui)
 	end
 	ui.Hint("System messages are everything the server says in yellow: a friend logging in, an instance reset, a restart coming. Your own party lines never float.")
 
-	ui.Slider("time on screen at least", 1, 8, 0.25,
+	ui.Slider("time on screen at least", 1, 30, 0.25,
 		function() return ns.db.msgFloatHold end,
 		function(value) ns.db.msgFloatHold = value end, Seconds)
-	ui.Hint("A long message stays up longer than this, a second for every fifteen letters, and eight seconds at most.")
+	ui.Hint("A long message stays up longer than this, a second for every fifteen letters, and thirty seconds at most.")
 
 	ui.Size("text", 8, 36, 1,
 		function() return ns.db.msgFloatText end,
