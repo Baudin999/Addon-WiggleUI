@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2X776T9VV8TKQAENKMR43DD
 type: feature
-status: todo
+status: doing
 title: "Each mode ships its own screen, and the setup lays it on the profile"
 ---
 
