@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WM84BV5QMBJRTSDX6AJ5C7
 type: task
-status: doing
+status: done
 title: The purse slides out left of the loot feed on hover and back in
 parent: 01M2WM7H2QD0KYVCRBZZ25T564
 ---
