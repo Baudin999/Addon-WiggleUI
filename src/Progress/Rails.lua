@@ -90,6 +90,11 @@ local MINIMAL_HEIGHT = 4
 local GLOW = { 1, 1, 1, 0.35 }
 local GLOW_WIDTH = 24
 
+-- Where handing in every ready quest would land you: the experience colour at
+-- this much of itself, from the fill's edge to the landing, over the rested
+-- pool and under the fill, ended by a one pixel tick in the name colour.
+local HANDIN_ALPHA = 0.5
+
 -- Under this much width the marks come off on their own, whatever the setting
 -- says. Eight design pixels a segment is where a rail stops reading as a bar
 -- with divisions in it and starts reading as a fence, and it is inside the
@@ -175,6 +180,13 @@ local function BuildRail(bubbles)
 		rail.rested:SetDrawLayer("BACKGROUND", 1)
 		rail.rested:Hide()
 
+		rail.handin = ns.Fill(bar, "BACKGROUND",
+			XP_FILL[1], XP_FILL[2], XP_FILL[3], HANDIN_ALPHA)
+		rail.handin:SetDrawLayer("BACKGROUND", 2)
+		rail.handin:Hide()
+		rail.landing = ns.Fill(bar, "OVERLAY", NAME_TEXT[1], NAME_TEXT[2], NAME_TEXT[3], 1)
+		rail.landing:Hide()
+
 		rail.marks = {}
 		for index = 1, SEGMENTS - 1 do
 			local mark = ns.Fill(bar, "OVERLAY", MARK[1], MARK[2], MARK[3], MARK[4])
@@ -212,6 +224,7 @@ local function BuildRail(bubbles)
 	-- and the alternative is this file handing out its own state table.
 	bar.left, bar.right = rail.left, rail.right
 	bar.rested, bar.marks, bar.glow = rail.rested, rail.marks, rail.glow
+	bar.handin, bar.landing = rail.handin, rail.landing
 	return rail
 end
 
@@ -242,6 +255,15 @@ local function ExperienceLines()
 	if rested then
 		lines[#lines + 1] = { "Rested",
 			("%s, worth double until it is spent"):format(ns.Thousands(math.floor(rested))) }
+	end
+	local handin, ready = Progress.Handin()
+	if handin and ready > 0 then
+		local quests = ready == 1 and "1 quest" or ("%d quests"):format(ready)
+		local after = value + handin
+		lines[#lines + 1] = { "Ready to hand in", after >= max
+			and ("%s, %s, enough for level %d"):format(quests, ns.Thousands(handin), level + 1)
+			or ("%s, %s, to %d%%"):format(quests, ns.Thousands(handin),
+				math.floor(after / max * 100)) }
 	end
 	local rate, eta = Progress.Rate(), Progress.Eta()
 	if rate and eta then
@@ -438,6 +460,19 @@ end
 -- Painting
 --------------------------------------------------------------------------
 
+-- One section of the experience rail placed by hand, from `left` for `span`
+-- design pixels, or taken away where it is under one.
+local function Span(texture, left, span)
+	if span < 1 then
+		texture:Hide()
+		return
+	end
+	texture:ClearAllPoints()
+	texture:SetPoint("TOPLEFT", xp.bar, "TOPLEFT", left * unit, 0)
+	texture:SetSize(span * unit, laidHeight * unit)
+	texture:Show()
+end
+
 local function PaintXP()
 	local level, value, max, rested = Progress.Experience()
 	if not level then
@@ -447,6 +482,8 @@ local function PaintXP()
 		xp.right:SetText("nothing left to earn")
 		xp.rested:Hide()
 		xp.glow:Hide()
+		xp.handin:Hide()
+		xp.landing:Hide()
 		return
 	end
 
@@ -487,15 +524,24 @@ local function PaintXP()
 	-- clamped at the end of the level. A pool bigger than the level is a real
 	-- state after a week away, and drawn unclamped it would hang off the end of
 	-- the rail.
-	local span = Whole(math.min(rested or 0, max - value) / max * width)
-	if span < 1 then
-		xp.rested:Hide()
-		return
+	Span(xp.rested, left, Whole(math.min(rested or 0, max - value) / max * width))
+
+	-- Where the ready quests land you, on the expressive rail only: on a
+	-- four pixel line a second pale section beside the rested one is noise.
+	-- Clamped at the end of the level like the pool, and the hover says which
+	-- level a hand in that runs past it reaches.
+	local handin = not Minimal() and Progress.Handin() or 0
+	local reach = Whole(math.min(handin, max - value) / max * width)
+	Span(xp.handin, left, reach)
+	if reach >= 1 then
+		xp.landing:ClearAllPoints()
+		xp.landing:SetPoint("TOPLEFT", xp.bar, "TOPLEFT",
+			math.min(left + reach, width - 1) * unit, 0)
+		xp.landing:SetSize(ns.Pixel(xp.bar), laidHeight * unit)
+		xp.landing:Show()
+	else
+		xp.landing:Hide()
 	end
-	xp.rested:ClearAllPoints()
-	xp.rested:SetPoint("TOPLEFT", xp.bar, "TOPLEFT", left * unit, 0)
-	xp.rested:SetSize(span * unit, laidHeight * unit)
-	xp.rested:Show()
 end
 
 local function PaintFaction()

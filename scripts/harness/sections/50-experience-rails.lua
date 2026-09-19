@@ -470,6 +470,82 @@ do
 	end
 
 	------------------------------------------------------------------
+	-- Where handing in the ready quests lands you
+	--
+	-- One quest in the log ready to hand in and nothing else, so the sums are
+	-- the fixture's rather than whatever section 47 left the log in. Every
+	-- row's state is put back at the end.
+	------------------------------------------------------------------
+
+	do
+		scene()
+		local rows, pays = H.quests.rows, H.questXP
+		local was, ready = {}, nil
+		for index, row in ipairs(rows) do
+			was[index] = row.complete
+			if not row.header then
+				row.complete = (ready == nil) and 1 or nil
+				ready = ready or row
+			end
+		end
+
+		-- A tenth of the level: 4000 of 40000 is 46 of the rail's 460, from
+		-- where the fill ends at three tenths.
+		local width = ns.db.progressWidth
+		local fill = width * 3 / 10
+		pays[ready.id] = 4000
+		fire("QUEST_LOG_UPDATE")
+		local total, count = Progress.Handin()
+		check(total == 4000 and count == 1,
+			("the log reads %s XP over %s quests ready and holds 4000 over one")
+				:format(tostring(total), tostring(count)))
+		check(xp.handin:IsShown() and xp.handin:GetWidth() == width / 10,
+			("the hand in section is %.1f px and a tenth of the rail is %.1f")
+				:format(xp.handin:GetWidth(), width / 10))
+		local _, _, _, from = xp.handin:GetPoint()
+		local _, _, _, tick = xp.landing:GetPoint()
+		check(from == fill and tick == fill + width / 10 and xp.landing:IsShown(),
+			("the hand in section runs from %s with its tick at %s, and belongs from"
+				.. " %.1f to %.1f"):format(tostring(from), tostring(tick), fill, fill + width / 10))
+
+		xp.scripts.OnEnter(xp)
+		local said = false
+		for index = 1, Box.Lines() do
+			said = said or Box.Text(index) == "Ready to hand in"
+		end
+		check(said, "the hover says nothing about the quests ready to hand in")
+		xp.scripts.OnLeave(xp)
+
+		-- More than the level has left: clamped at the end of the rail.
+		pays[ready.id] = 100000
+		fire("QUEST_LOG_UPDATE")
+		check(xp.handin:GetWidth() == width - fill,
+			("a hand in past the level drew %.1f px of the %.1f left")
+				:format(xp.handin:GetWidth(), width - fill))
+
+		-- Not on the minimal line, and not without Questie.
+		ns.db.progressStyle = "minimal"
+		Rails.Apply()
+		check(not xp.handin:IsShown() and not xp.landing:IsShown(),
+			"the minimal line draws the hand in section")
+		ns.db.progressStyle = "expressive"
+		local module = _G.QuestieLoader:ImportModule("QuestXP")
+		local call = module.GetQuestLogRewardXP
+		module.GetQuestLogRewardXP = nil
+		Rails.Apply()
+		check(Progress.Handin() == nil and not xp.handin:IsShown(),
+			"with no Questie to say what a quest pays, a hand in section is drawn anyway")
+		module.GetQuestLogRewardXP = call
+
+		pays[ready.id] = nil
+		for index, row in ipairs(rows) do
+			row.complete = was[index]
+		end
+		fire("QUEST_LOG_UPDATE")
+		scene()
+	end
+
+	------------------------------------------------------------------
 	-- What a hover says
 	------------------------------------------------------------------
 

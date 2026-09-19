@@ -135,6 +135,38 @@ function Progress.Experience()
 end
 
 --------------------------------------------------------------------------
+-- The quests ready to hand in
+--------------------------------------------------------------------------
+
+-- What every quest in the log that is ready to hand in pays, and how many of
+-- them there are. Nil where Questie is not loaded: neither client says what a
+-- quest pays, and Questie's QuestXP is the only thing on the machine that
+-- does. Its answer is already scaled to the player's level, which is the
+-- number the client will hand over.
+--
+-- Read straight off the log rather than through Quests/, which is a feature
+-- tree this one may not name. A quest under a collapsed header is not in the
+-- log's rows and is not counted; Questie and the quest window both keep every
+-- header open, so that is a log nobody here has shut.
+function Progress.Handin()
+	local questXP = ns.Questie("QuestXP", "GetQuestLogRewardXP")
+	if not questXP then
+		return nil
+	end
+	local total, ready = 0, 0
+	for index = 1, (GetNumQuestLogEntries()) or 0 do
+		local _, _, _, isHeader, _, isComplete, _, questId = GetQuestLogTitle(index)
+		if not isHeader and isComplete == 1 and type(questId) == "number" then
+			local ok, xp = pcall(questXP.GetQuestLogRewardXP, questXP, questId)
+			if ok and type(xp) == "number" and xp > 0 then
+				total, ready = total + xp, ready + 1
+			end
+		end
+	end
+	return total, ready
+end
+
+--------------------------------------------------------------------------
 -- The watched faction
 --------------------------------------------------------------------------
 
@@ -408,6 +440,10 @@ for _, event in ipairs({ "PLAYER_XP_UPDATE", "PLAYER_LEVEL_UP", "UPDATE_EXHAUSTI
 	pcall(events.RegisterEvent, events, event)
 end
 
+-- A quest finishing or being handed in moves what the log would pay. That is
+-- no change to the readings above, so it is announced without a sample.
+pcall(events.RegisterEvent, events, "QUEST_LOG_UPDATE")
+
 -- The last write of a session. Without it the stretch between the last kill and
 -- the door is missing from the divisor, and a character logged out mid level
 -- comes back with an estimate built on the minutes it happened to be looking at
@@ -417,6 +453,10 @@ events:RegisterEvent("PLAYER_LOGOUT")
 events:SetScript("OnEvent", function(_, event)
 	if event == "PLAYER_LOGOUT" then
 		Fold(GetTime())
+		return
+	end
+	if event == "QUEST_LOG_UPDATE" then
+		Announce()
 		return
 	end
 	Sample()

@@ -61,7 +61,19 @@ local DROP_RATES = {
 	[3002] = { [1234] = 22 },
 }
 
+-- What each quest pays, by id, which is what Questie's QuestXP answers off its
+-- own database. Empty until a section writes a quest in: a quest Questie has
+-- no row for pays nothing, and QuestXP answers that as 0 rather than nil.
+local QUEST_XP = {}
+
 local questieModules = {
+	-- Colon defined in Questie and called that way, so the stub takes the
+	-- module as its first argument too.
+	QuestXP = {
+		GetQuestLogRewardXP = function(_, questId)
+			return QUEST_XP[questId] or 0
+		end,
+	},
 	QuestieDB = {
 		QueryItemSingle = function(itemId, field)
 			local row = QUESTIE_ITEMS[itemId]
@@ -212,6 +224,7 @@ function questiePublic.Listening()
 end
 
 H.questie = questiePublic
+H.questXP = QUEST_XP
 
 -- The icon paths, so a section can name the art Questie ships rather than
 -- writing the five strings out a second time and testing that two copies of a
