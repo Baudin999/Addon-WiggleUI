@@ -370,6 +370,7 @@ CombatText/Anchors.lua:2:Anchors.Apply places four anchors, on a settings change
 CombatText/Anchors.lua:2:Build makes one anchor, on the first pass after the part is switched on
 CombatText/Numbers.lua:1:Build makes one number's frame, on the spawn a busier second than any before it needs another
 Cooldowns/Row.lua:1:Place is layout rather than tick
+Feeds/Drawer.lua:1:Fill draws the panel once, on the frame the hover wait ran out
 Standing/Row.lua:1:Place is layout, run when the plan is rebuilt or a setting moves
 Perf/Hud.lua:3:FillCost writes the five rows under the strip, on the second the ranking moved
 Perf/Hud.lua:3:FillDips writes the log, on the tick a dip arrived or an age rolled over a second
@@ -401,7 +402,8 @@ CombatText/Numbers.lua:2:Release is handed to a style as onGone and called back 
 Comfort/Thanks.lua:1:OnLog is a combat log reader, called back out of ns.CombatLog's list
 Cooldowns/Cooldowns.lua:1:Cooldowns.Scan runs on every UNIT_AURA on the player, off an OnEvent closure
 Feeds/Combat.lua:1:CombatFeed.OnLog is a combat log reader, called back out of ns.CombatLog's list
-Feeds/Purse.lua:1:Purse.Line is handed to a stream as onStatus and called back through the field
+Feeds/Drawer.lua:2:Due is a tween's onDone, called back through the field when the hover wait runs out
+Feeds/Drawer.lua:2:Landed is a tween's onDone, called back through the field when the panel has finished sliding
 Meter/Meter.lua:1:OnLog is a combat log reader, called back out of ns.CombatLog's list
 Perf/Census.lua:1:Census.Count runs on every event the client sends, off this file's OnEvent closure
 Perf/Feature.lua:1:Paint is assigned to ns.Perf.OnSample and called back through the field
@@ -432,7 +434,6 @@ Charge/Charge.lua:1:a fallback path the live client's GetNamePlateForUnit never 
 Chat/Feed.lua:1:one string per chat line, which is the line the window draws
 Core/Core.lua:1:one join per denomination in one money reading, and every caller compares the copper figure first
 Feeds/Combat.lua:1:one preposition per feed row, which is a thing that happened to you rather than a tick
-Feeds/Purse.lua:1:the words for a rate, built where Purse.Line found the figure in whole gold moved
 Meter/Window.lua:1:the words for a number, built where the row found the number moved
 UI/Ticker.lua:1:one object per tick a part arms, built where the tick is created
 Unit/Color.lua:3:one tint and one fill per class, filled once behind a lookup the scan cannot see
@@ -1197,7 +1198,6 @@ fi
 # path:how many ticks in that file hang off a frame of their own:why it can hide
 FRAMED_TICKERS_ALLOWED="
 Character/Paperdoll.lua:1:the turn hangs off the figure it turns, so a sheet shut mid drag stops it with no line anywhere to remember
-Feeds/Stream.lua:1:the strip is a region of the feed window and goes with it
 Perf/Hud.lua:1:the repaint goes with the window it draws, which is the whole of what hanging a tick off a frame buys
 UI/Chart.lua:2:the follow and the drift both go with the board they are drawn on
 UI/Feed.lua:1:the repaint goes with the feed's own frame

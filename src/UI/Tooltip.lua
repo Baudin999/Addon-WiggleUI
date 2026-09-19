@@ -576,20 +576,26 @@ end
 -- reachable as globals built from it, and none of these is that. The main box
 -- keeps a name anyway because other addons and a player typing /framestack look
 -- for it.
-local function Build(name)
+--
+-- `parent` is nil for every box that is a tooltip. A surface handed one is a
+-- panel of somebody else's, see Tooltip.Surface, and it is drawn at its
+-- parent's size and in its parent's layer rather than at the hover setting's
+-- and on top of everything.
+local function Build(name, parent)
 	local box = NewBox()
 	box.zoom = Wanted()
 
-	local frame = CreateFrame("Frame", name, UIParent)
-	-- Above everything the addon draws and above the world, which is what a
-	-- tooltip is for. TOOLTIP is the client's own name for that layer and
-	-- Blizzard's own sits on it, so this lands beside it rather than under it.
-	frame:SetFrameStrata("TOOLTIP")
-	frame:SetClampedToScreen(true)
+	local frame = CreateFrame("Frame", name, parent or UIParent)
 	frame:Hide()
 	box.frame = frame
-
-	UI.Adopt(frame, box.zoom)
+	if not parent then
+		-- Above everything the addon draws and above the world, which is what a
+		-- tooltip is for. TOOLTIP is the client's own name for that layer and
+		-- Blizzard's own sits on it, so this lands beside it rather than under it.
+		frame:SetFrameStrata("TOOLTIP")
+		frame:SetClampedToScreen(true)
+		UI.Adopt(frame, box.zoom)
+	end
 
 	box.shadow = Shadow(frame)
 
@@ -1118,6 +1124,28 @@ function Tooltip.Show(owner, data, above, where, alongside)
 		end
 	end
 	return true
+end
+
+-- A box of this file's own, drawn into somebody else's frame rather than on the
+-- tooltip layer.
+--
+-- Feeds/Drawer.lua's purse panel is the caller. It says what the purse tooltip
+-- said, and a second renderer for the same lines would be a second place for
+-- the floor, the hairline and the column rule to drift from this one. So it
+-- takes a box built here and fills it with Tooltip.Paint; where the box goes,
+-- whether it is shown and what it does with the mouse stay the caller's.
+function Tooltip.Surface(parent)
+	assert(type(parent) == "table", "a surface is drawn into a frame")
+	return Build(nil, parent)
+end
+
+-- One surface filled from one description, measured, and its width and height
+-- handed back, or nil for a description with nothing in it.
+function Tooltip.Paint(box, data)
+	if not Draw(box, data) then
+		return nil
+	end
+	return box.frame:GetWidth(), box.frame:GetHeight()
 end
 
 -- Where the box opens, as one of the three words above.

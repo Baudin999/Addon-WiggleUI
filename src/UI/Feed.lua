@@ -588,13 +588,9 @@ function UI.Feed(parent, opts)
 		feed.bar = BuildBar(feed)
 	end
 
-	-- The strip as it was asked for: a title if there is one. Last, because it anchors the scroll bar as well as the rows, and
-	-- Feeds/Stream.lua writes both from settings a moment later.
-	--
-	-- Chrome rather than Dress, which is what this was called for an afternoon.
-	-- Feeds/Stream.lua already has a Dress and it is the purse along the bottom;
-	-- two methods of one name on two objects in one folder, one of them called
-	-- on self and the other on self.feed, is a line nobody can read at a glance.
+	-- The strip as it was asked for: a title if there is one. Last, because it
+	-- anchors the scroll bar as well as the rows, and Feeds/Stream.lua writes
+	-- both from settings a moment later.
 	feed:Chrome(feed.title ~= nil)
 	return feed
 end
@@ -619,7 +615,8 @@ function Feed:Chrome(titled)
 	-- its control is the only thing on screen saying drops are being refused.
 	local count = self.list and self.watch.count() or 0
 	local listed = count > 0
-	self.head = (titled or listed) and (HEADER + RULE) or 0
+	-- And so does an owner that has taken the right end, see Feed:Aside.
+	self.head = (titled or listed or self.aside) and (HEADER + RULE) or 0
 	self.titled, self.listed = titled, listed
 
 	-- At the strip's own inset, centred on the header's height.
@@ -659,6 +656,35 @@ function Feed:Chrome(titled)
 		self.bar:SetPoint("BOTTOMRIGHT")
 	end
 	return true
+end
+
+-- The right end of the strip, handed to the owner.
+--
+-- It is the count until somebody says otherwise. The loot feed says otherwise:
+-- it puts the session's takings there, and this file does not know that is
+-- money. Nil gives the end back to the count. Text holds the strip up the way a
+-- title does, so an owner that sets it calls Chrome after, and a text that only
+-- changes which words are there needs nothing else.
+--
+-- Answers the string, which is what an owner that wants to hover it anchors a
+-- mouse frame to. A font string takes no mouse of its own.
+function Feed:Aside(text, color)
+	local tone = text and color or C.quiet
+	if self.aside ~= text then
+		self.aside = text
+		self.tally:SetText(text or "")
+		-- The count's own guard, told its string is no longer on the screen, so
+		-- the paint this books writes it back when the owner lets go.
+		self.shownTally = nil
+		if not text then
+			self.stale = true
+		end
+	end
+	if self.asideTone ~= tone then
+		self.asideTone = tone
+		self.tally:SetTextColor(tone[1], tone[2], tone[3])
+	end
+	return self.tally
 end
 
 --------------------------------------------------------------------------
@@ -1625,8 +1651,8 @@ function Feed:Paint()
 		Blank(self.rows[index])
 	end
 
-	-- The count, which is what the feed holds.
-	if self.tally then
+	-- The count, which is what the feed holds, unless the owner has the end.
+	if self.tally and not self.aside then
 		local held = count > 0 and tostring(count) or ""
 		if self.shownTally ~= held then
 			self.shownTally = held

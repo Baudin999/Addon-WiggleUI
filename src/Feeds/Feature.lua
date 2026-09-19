@@ -181,8 +181,8 @@ local function SharedWords(entry)
 	}
 end
 
--- The words only the loot feed answers to: who it counts, and the purse under
--- it.
+-- The words only the loot feed answers to: who it counts, and the purse on
+-- its header.
 local function LootWords()
 	return {
 		{ "group", toggle = true, key = "lootFeedGroup", apply = false,
@@ -196,8 +196,8 @@ local function LootWords()
 		  apply = function() STREAMS.loot.stream:Apply() end,
 		  say = function(on)
 			return "the purse " .. (on
-				and "sits along the bottom of the feed."
-				or "is off and the feed has the height back.")
+				and "is on the feed's header. Hover it for the ledger."
+				or "is off and the header shows the count.")
 		  end },
 	}
 end
@@ -525,12 +525,12 @@ local function Panel(ui)
 		function(on) ns.db.lootFeedGroup = on end)
 	ui.Hint("Off by default. Everyone else's loot is what makes the client's own chat unreadable in a raid.")
 
-	ui.Check("the purse along the bottom", function() return ns.db.lootFeedPurse end,
+	ui.Check("the purse on the header", function() return ns.db.lootFeedPurse end,
 		function(on)
 			ns.db.lootFeedPurse = on
 			STREAMS.loot.stream:Apply()
 		end)
-	ui.Hint("What you carry, what the account carries between it, and gold an hour since you logged in. Hover it for the list.")
+	ui.Hint("What this session has made you, on the right of the header. Hold the pointer on it and the ledger slides out beside the feed: every character, the account, and gold an hour.")
 
 	ui.Reading("the delete list", function()
 		local items, refused = ns.LootFeed.List()

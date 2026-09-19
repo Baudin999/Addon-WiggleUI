@@ -8,15 +8,15 @@ local C = ns.UI.Color
 --------------------------------------------------------------------------
 -- The purse
 --
--- Three numbers about money, for the strip along the bottom of the loot feed:
--- what this character is carrying, what every character on the account is
--- carrying between them, and how fast the total is moving.
+-- Money, for the loot feed: what this session has made you on the right end of
+-- its header, and behind a hover what every character on the account is
+-- carrying and how fast the total is moving.
 --
 -- **Why it hangs off the loot feed.** That window is already the answer to
 -- "what did I just get", and gold was the one part of a pull it could not
 -- say. Coin gets a row when it drops and the row scrolls away with everything
--- else; what you actually want to know an hour later is the slope, and a slope
--- belongs on a status line rather than in a list.
+-- else; what you actually want to know an hour later is the sum and the slope,
+-- and neither belongs in a list.
 --
 -- **Why the account total is written down rather than asked for.** The client
 -- will only ever tell you about the character you are standing in. Every other
@@ -35,20 +35,16 @@ local C = ns.UI.Color
 -- convenient: the alternative carries the rate across a gap the addon slept
 -- through, which divides what you earned by hours you were not playing.
 --
--- Nothing here is on a ticker of its own. Feeds/Stream.lua reads these on the
--- status strip's beat and the strip only has a beat while it is on screen,
--- which is why every answer below is cached and every cache is invalidated by
--- an event rather than by time.
+-- Nothing here is on a ticker. The header is written on a change of money and
+-- the panel on a hover, which is why every answer below is cached and every
+-- cache is invalidated by an event rather than by time.
 --------------------------------------------------------------------------
 
--- Gold, for the one line here that divides by it. The formatter that used to
--- need this pair is ns.Coin in Core now, and the silver went with it.
-local GOLD = ns.GOLD
 local HOUR = 3600
 
 -- Under a minute there is no slope worth drawing. The first copper of a session
 -- divided by four seconds is nine hundred thousand gold an hour, which is a
--- true number and a useless one, so the cell stays empty until the span behind
+-- true number and a useless one, so the panel says why until the span behind
 -- it is long enough to mean something.
 local SETTLE = 60
 
@@ -84,7 +80,7 @@ local mine = nil
 -- Which purse the client is standing in.
 --
 -- Resolved on first use rather than at a login event, and that is not belt and
--- braces. Feeds/Stream.lua builds and paints the strip at PLAYER_LOGIN, and
+-- braces. Feeds/Stream.lua builds and paints the header at PLAYER_LOGIN, and
 -- this file does not hear anything until PLAYER_ENTERING_WORLD, which is
 -- strictly later. A ledger walked with no idea which row is yours counts this
 -- character twice, once out of the ledger and once out of GetMoney, so the
@@ -148,7 +144,7 @@ end
 -- The ledger
 --------------------------------------------------------------------------
 
--- Registered through Feeds/Loot.lua, because the status line is that feed's
+-- Registered through Feeds/Loot.lua, because the takings are that feed's
 -- and a default nothing on screen reads is a default that rots.
 function Purse.Defaults()
 	return {
@@ -158,8 +154,9 @@ function Purse.Defaults()
 		-- "broke", and the tooltip says which.
 		purse = {},
 
-		-- The strip itself. Off, the loot feed is the column it always was and
-		-- the frame loses the height back.
+		-- The takings on the feed's header and the panel behind them. Off, the
+		-- header's right end is the feed's count again, and a feed with no title
+		-- loses the header altogether.
 		lootFeedPurse = true,
 	}
 end
@@ -228,7 +225,7 @@ end
 -- Everything, everywhere, in copper.
 --
 -- The walk is cached because it only moves when a character is written down,
--- which is a login, a logout and a change of money, and never the beat that
+-- which is a login, a logout and a change of money, and never a hover that
 -- reads this.
 function Purse.Account()
 	if dirty then
@@ -271,89 +268,70 @@ function Purse.Rate()
 	return ((GetMoney() or 0) - opening) * HOUR / elapsed, elapsed
 end
 
---------------------------------------------------------------------------
--- Numbers as words
---------------------------------------------------------------------------
-
--- The right hand cell. Empty while the session has no slope yet, because the
--- honest alternative is a number nobody should read.
-local function RateText(perHour)
-	if perHour == false then
-		return ""
-	end
-	if perHour == 0 then
-		return "0g/h"
-	end
-	if perHour > 0 then
-		return "+" .. ns.Thousands(perHour) .. "g/h"
-	end
-	return "-" .. ns.Thousands(-perHour) .. "g/h" -- allocates: Purse.Line compares the rate in whole gold before it asks for this, so the words are built when the figure moves and not on the beat
-end
-
--- What colour that cell is. Stable tables, handed back rather than built, for
--- the reason Feeds/Loot.lua keeps its own quality palette: this is read on a
--- ticker and every guard downstream compares a colour by identity.
-local function Tone(perHour)
-	if perHour == false or perHour == 0 then
+-- What colour a figure about the session is. Stable tables, handed back rather
+-- than built, because every guard downstream compares a colour by identity.
+local function Tone(figure)
+	if figure == 0 then
 		return C.quiet
 	end
-	if perHour > 0 then
+	if figure > 0 then
 		return C.tick
 	end
 	return C.loss
 end
 
 --------------------------------------------------------------------------
--- The status line
+-- The takings
+--
+-- One number on the right end of the loot feed's header: what this session has
+-- made you. It replaced a strip of three along the bottom, which spent a row of
+-- the window on what you are holding, what the account holds and the rate, and
+-- read as a status bar bolted under a list. The other two and the rate are one
+-- hover away in Feeds/Drawer.lua's panel, which is where a figure you read once
+-- an evening belongs.
 --------------------------------------------------------------------------
 
-local heldAt, heldText = nil, ""
-local hoardAt, hoardText = nil, ""
-local rateAt, rateText = nil, ""
+-- What a session that has not moved says. Zero in the coarse form is "0s 0c",
+-- which is two denominations spent on nothing.
+local NOTHING = "0g"
 
--- The three cells, and nil for all of them when the strip should not be drawn.
+local takenAt, takenText = nil, NOTHING
+
+-- The takings as words, or nil with the purse switched off.
 --
--- This runs on the strip's beat, which is why every branch is a comparison and
--- only the branch that took builds a string. The rate is compared in whole gold
--- rather than in copper: the copper figure moves every frame the clock does and
--- the text it renders to changes about once a minute.
--- hot: Feeds/Loot.lua hands this to a stream as onStatus and the stream's tick
--- calls it back through that field, which is an edge scripts/hot.lua cannot see.
-function Purse.Line()
+-- Built only when the copper moved, and read on a change of money and on a
+-- settings change, never on a tick. The baseline is taken here as well as at
+-- the events, which is a heal: a loading screen that answered an unvouched
+-- zero leaves the session with no start, and the next reading with real money
+-- in it gives it one.
+function Purse.Takings()
 	if not ns.db or not ns.db.lootFeedPurse then
 		return nil
 	end
-
-	local held = GetMoney() or 0
-	if held ~= heldAt then
-		heldAt = held
-		heldText = ns.Coined(held)
-		-- And written down from here, which is what makes the ledger heal
-		-- itself. Every event this file listens to fires once, at a moment
-		-- somebody else decided; this branch fires a second after the loading
-		-- screen and again on every change, off a reading the strip is already
-		-- showing you. If the number on screen is right then the number in the
-		-- ledger is right, and the two cannot drift.
-		Purse.Note()
-		if not openedAt then
-			Purse.Start()
+	if not openedAt then
+		Purse.Start()
+	end
+	local earned = opening and ((GetMoney() or 0) - opening) or 0
+	if earned ~= takenAt then
+		takenAt = earned
+		if earned == 0 then
+			takenText = NOTHING
+		elseif earned > 0 then
+			takenText = "+" .. ns.Coin(earned)
+		else
+			takenText = ns.Coin(earned)
 		end
 	end
+	return takenText
+end
 
-	local hoard = Purse.Account()
-	if hoard ~= hoardAt then
-		hoardAt = hoard
-		hoardText = "all " .. ns.Coined(hoard)
-	end
+-- Who is told when the money moves. One listener, because one window shows
+-- the takings; Feeds/Loot.lua sets it to its stream.
+local watcher = nil
 
-	local rate = Purse.Rate()
-	local perHour = rate and math.floor(rate / GOLD) or false
-	if perHour ~= rateAt then
-		rateAt = perHour
-		rateText = RateText(perHour)
-	end
-
-	return heldText, hoardText, rateText, Tone(perHour)
+function Purse.Watch(fn)
+	watcher = fn
+	return true
 end
 
 --------------------------------------------------------------------------
@@ -406,8 +384,8 @@ local function Session(lines)
 	lines[#lines + 1] = { "Started with", ns.Coined(opening, true) }
 	lines[#lines + 1] = { "Earned", ns.Coined(earned, true), color = Tone(earned) }
 
-	-- The same refusal the strip makes, said in words because a hover has room
-	-- for the reason. Under a minute there is no slope, and the honest thing to
+	-- Said in words rather than as a figure, because a hover has room for the
+	-- reason. Under a minute there is no slope, and the honest thing to
 	-- print is why rather than a number nobody should read.
 	if not rate then
 		lines[#lines + 1] = { "An hour", "too short a session to divide by" }
@@ -417,8 +395,8 @@ local function Session(lines)
 	return lines
 end
 
--- What the status line has no room to say: every character on the account and
--- what each is carrying.
+-- What the header has no room to say: every character on the account and what
+-- each is carrying, and the session behind the one figure it does show.
 function Purse.Ledger()
 	local lines = {}
 
@@ -470,4 +448,7 @@ events:SetScript("OnEvent", function(_, event)
 		Purse.Start(certain)
 	end
 	Purse.Note(certain)
+	if watcher then
+		watcher()
+	end
 end)

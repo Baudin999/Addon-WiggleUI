@@ -1,12 +1,11 @@
 -- The purse
 --
--- Feeds/Purse.lua is three numbers about money and Feeds/Stream.lua draws them
--- along the bottom of the loot feed. Its own section rather than a corner of
--- 31-feeds.lua, because none of this is about a column of rows: the feed above
--- the strip could be deleted and every question below would still be worth
--- asking.
---
--- Seven of them, and each is a way this has already gone wrong or could.
+-- Feeds/Purse.lua is money for the loot feed: the session's takings on the
+-- right end of the feed's header, and the ledger on a panel behind them. Its own
+-- section rather than a corner of 31-feeds.lua, because none of this is about a
+-- column of rows: the feed could be deleted and every question below would
+-- still be worth asking. The panel's motion is 81-purse-drawer.lua, under the
+-- sections that need the tween tick left alone.
 --
 -- Does an unvouched zero stay out of the ledger. This one is not hypothetical
 -- and it took two goes. It shipped, and it recorded an alt carrying sixty three
@@ -16,16 +15,9 @@
 -- really be holding, so no amount of picking the right event settles it. Only
 -- PLAYER_MONEY vouches for a zero, and that is what is asserted.
 --
--- Does the strip cost the frame the height it takes. It hangs under the last
--- row and the feed above it has no idea it is there, so a frame sized to the
--- feed alone would draw the strip over the bottom row, which reads as a
--- clipping bug rather than as a missing sum.
---
--- Is the ticker on the strip. It is the only OnUpdate in this part and it beats
--- a second apart forever. The client stops calling OnUpdate on a frame whose
--- parent is hidden, so the strip being a child of the feed is the whole reason
--- a hidden feed costs nothing, and a ticker parented anywhere else would go on
--- beating into a window nobody can see.
+-- Does the header carry the takings, in the heading gold, and does it stand up
+-- on a feed that ships with no title. The loot feed has no word over it, so a
+-- header that only came up for a title would take the figure away with it.
 --
 -- Does the account total mean the account. It is the one number here the client
 -- cannot be asked for: every other character's gold is something the addon
@@ -34,16 +26,11 @@
 -- holding now. Both look right on a fresh install with one character on it.
 --
 -- Does the rate refuse to answer while the span is too short. The first coin of
--- a session over four seconds is a true number in the millions, and a status
--- line that prints it once per login is a status line nobody believes again.
+-- a session over four seconds is a true number in the millions, and a panel
+-- that prints it once per login is a panel nobody believes again.
 --
--- Is the beat guarded. The claim in Feeds/Stream.lua is that a beat with
--- nothing to say writes nothing at all, and the only way to state that as a
--- test rather than as a measurement is to clear a cell by hand and watch a
--- quiet beat leave it cleared.
---
--- And does switching it off give the height back, rather than leaving a band of
--- empty window under the rows.
+-- And does switching it off give the header's end back to the count, and the
+-- height back on a feed with no title.
 
 local H = ...
 local ns, check = H.ns, H.check
@@ -54,88 +41,11 @@ local Purse = ns.Purse
 local lootStream = ns.LootFeed.Stream()
 local GOLD = 10000
 
-local strip, held, hoard, rate = lootStream:Strip()
-check(strip ~= nil, "the loot feed was built with no status strip")
+local hit = lootStream:Figure()
+check(hit ~= nil, "the loot feed was built with no figure on its header")
 
-check(strip:GetScript("OnUpdate") ~= nil, "the status strip registered no ticker")
-
--- On the strip itself, which is what makes a hidden feed free.
-check(strip:GetParent() == _G.WarriorKitLootFeed,
-	"the strip is not a child of the feed it hangs under")
-
--- All three cells shadowed, and all three at 14.
---
--- This is the one that got reported by eye, and it took two fixes. The strip
--- looks like it is painted on a surface, and the surface is a slider the player
--- drags to zero, at which point the strip is three numbers over the world. The
--- first fix read that as an argument for a rim and left the size at 12, two
--- under what a rim needs: an outline spends a pixel of every stroke, so the
--- hole in a 6 closed and the waist of an 8 filled in on the one line in the
--- window that is nothing but digits.
---
--- The second took the rim off. A rim is what a string carries when it has no
--- ground, the feed above these three paints its own now, and a shadow holds a
--- digit off whatever is behind it without spending a pixel of the digit. Flat
--- is still the state that loses them completely the moment the background goes,
--- which is why the shadow is asserted rather than assumed.
---
--- Checked here as well as by the grep in scripts/check.sh, because the grep
--- reads the call and this reads the font the client actually ended up with.
-for _, entry in ipairs({
-	{ "the held cell", held },
-	{ "the account cell", hoard },
-	{ "the rate cell", rate },
-}) do
-	local _, size, flags = entry[2]:GetFont()
-	flags = flags or ""
-	check(flags:find("OUTLINE", 1, true) == nil,
-		("%s still carries a rim, which costs a pixel of every stroke")
-			:format(entry[1]))
-	check(select(1, entry[2]:GetShadowOffset()) ~= 0,
-		("%s went flat, and the background under it slides to nothing")
-			:format(entry[1]))
-	check(size == 14,
-		("%s is %s pixels and the strip is 20 to hold 14")
-			:format(entry[1], tostring(size)))
-end
-
--- And the ground that lets the rim come off, which is the row of rows getting
--- what the rows got.
---
--- Up the strip rather than along it, and that is the check worth having. A wash
--- running left to right is solid under the held reading and gone by the rate,
--- and one running right to left abandons the held reading instead; both draw a
--- rectangle, measure fine and leave one of the three numbers on the grass. Read
--- back off the texture, because which end is solid is the one thing about a
--- gradient that a call site cannot be asserted for.
-do
-	local wash = lootStream.statusWash
-	check(wash ~= nil, "the strip has no ground under its three readings")
-	check(wash.layer == "BACKGROUND",
-		("the strip's wash is on %s, so it is over the numbers rather than under them")
-			:format(tostring(wash.layer)))
-	check(wash.allPoints, "the strip's wash does not cover the strip")
-
-	local ramp = wash:GetGradient()
-	check(ramp ~= nil and ramp.orientation == "VERTICAL",
-		"the strip's wash runs along it, so it grounds one reading and abandons another")
-	check(ramp.min[4] == ns.UI.Color.shadow[4] and ramp.max[4] == 0,
-		("the strip washes from %s at its foot to %s at the hairline")
-			:format(tostring(ramp.min[4]), tostring(ramp.max[4])))
-
-	-- The same slider as the rows above, so the foot of the window darkens by
-	-- as much as the column and the two never read as two surfaces.
-	check(wash:GetAlpha() == ns.db.lootFeedAlpha / 100,
-		("the strip's ground is at %s and the slider says %d%%")
-			:format(tostring(wash:GetAlpha()), ns.db.lootFeedAlpha))
-	check(wash:GetAlpha() == lootStream:Feed():Row(1).wash:GetAlpha(),
-		"the strip and the rows are painted at different strengths")
-end
-
--- One second of the client, which is one beat of the strip.
-local function beat()
-	strip:GetScript("OnUpdate")(strip, 1)
-end
+-- The string the figure is, which the mouse frame is laid over.
+local figure = select(2, hit:GetPoint(1))
 
 ------------------------------------------------------------
 -- Numbers as words
@@ -270,67 +180,60 @@ fire("PLAYER_MONEY")
 
 advance(30)
 check(Purse.Rate() == nil, "a thirty second session was given a rate")
-beat()
-check(rate:GetText() == "",
-	"the rate cell said " .. tostring(rate:GetText()) .. " before there was one")
 
 -- Thirty gold over a minute is eighteen hundred an hour, which is the
--- arithmetic the whole strip exists for.
+-- arithmetic the panel's last line exists for.
 advance(30)
 state.purse = 160 * GOLD
-beat()
-check(rate:GetText() == "+1,800g/h",
-	"the rate cell says " .. tostring(rate:GetText()))
-check(plain(held:GetText()) == "160g",
-	"the held cell says " .. tostring(held:GetText()))
--- 205g 50s, and the fifty silver is dropped rather than shown. That is the
--- coarse form doing its job on the cell that reaches four figures first:
--- the middle of the strip is the narrowest of the three and the silver on
--- an account total is the digit nobody has ever wanted.
-check(Purse.Account() == 205 * GOLD + 50 * 100,
-	("the account holds %d"):format(Purse.Account()))
-check(plain(hoard:GetText()) == "all 205g",
-	"the account cell says " .. tostring(hoard:GetText()))
+fire("PLAYER_MONEY")
+check(math.floor(Purse.Rate() / GOLD + 0.5) == 1800,
+	"the rate is " .. tostring(Purse.Rate()))
 
 ------------------------------------------------------------
--- A quiet beat
+-- The header
 ------------------------------------------------------------
 
-held:SetText(nil)
-beat()
-check(held:GetText() == nil, "a beat with nothing to say wrote a cell anyway")
+-- The session started at 130 and the purse holds 160. The money moving is
+-- what writes it, so no hover and no beat stands between the coin and the
+-- figure.
+check(figure:GetText() == "+30g 0s",
+	"the header says " .. tostring(figure:GetText()) .. " for thirty gold made")
+local r, g, b = figure:GetTextColor()
+local gold = ns.UI.Color.heading
+check(r == gold[1] and g == gold[2] and b == gold[3],
+	"the takings are not in the heading gold")
+check(hit:IsShown() and hit:IsMouseEnabled(),
+	"the figure takes no mouse, so nothing can slide the panel out")
 
-state.purse = 161 * GOLD
-beat()
-check(plain(held:GetText()) == "161g",
-	"a beat after a coin left the cell at " .. tostring(held:GetText()))
+-- The loot feed ships with no title, and the header stands up anyway.
+check(not ns.db.lootFeedHeader, "the loot feed ships with a title now; this check needs one that does not")
+check(figure:IsShown(),
+	"the header is down on a feed with no title, and the takings with it")
 
-------------------------------------------------------------
--- What it costs the frame
-------------------------------------------------------------
-
+-- Switched off, the end goes back to the count and the header with it.
 local tall = _G.WarriorKitLootFeed:GetHeight()
 ns.db.lootFeedPurse = false
 lootStream:Apply()
-local short = _G.WarriorKitLootFeed:GetHeight()
-check(not strip:IsShown(), "the strip is still drawn with the setting off")
-check(tall > short,
-	("the frame is %s either way, so the strip costs it nothing")
-		:format(tostring(tall)))
+check(not hit:IsShown(), "the figure still takes the mouse with the purse off")
+check(_G.WarriorKitLootFeed:GetHeight() < tall,
+	"the purse went and the header stayed, on a feed with no title")
 
 ns.db.lootFeedPurse = true
 lootStream:Apply()
-check(_G.WarriorKitLootFeed:GetHeight() == tall,
-	("the strip came back and the frame is %s rather than %s")
-		:format(tostring(_G.WarriorKitLootFeed:GetHeight()), tostring(tall)))
+check(figure:GetText() == "+30g 0s" and _G.WarriorKitLootFeed:GetHeight() == tall,
+	("the purse came back as %s and the frame is %s rather than %s")
+		:format(tostring(figure:GetText()),
+			tostring(_G.WarriorKitLootFeed:GetHeight()), tostring(tall)))
 
 ------------------------------------------------------------
 -- The hover
 ------------------------------------------------------------
 
+-- What the panel draws, read through the tooltip it shares a renderer with.
+-- The slide itself is 81-purse-drawer.lua's.
 local Tip = ns.UI.Tooltip
-strip:GetScript("OnEnter")(strip)
-check(Tip.IsShown(), "hovering the strip opened nothing")
+ns.Tip.Open(hit, Purse.Ledger())
+check(Tip.IsShown(), "the ledger drew nothing")
 check(Tip.Text(1) == "The purse", "the tooltip is titled " .. tostring(Tip.Text(1)))
 
 local names = 0
@@ -343,8 +246,8 @@ end
 check(names == 3, ("the tooltip lists %d of the three characters"):format(names))
 
 -- The session block under the account line. Three rows, and the middle one is
--- the number the strip has never had room for: what the evening made you,
--- rather than what you are holding and how fast it is moving.
+-- the number the header shows: what the evening made you, beside where it
+-- started and how fast it is moving.
 local said = {}
 for index = 2, Tip.Lines() do
 	said[Tip.Text(index)] = true
@@ -363,11 +266,11 @@ for index = 2, Tip.Lines() do
 	end
 end
 check(coined, "not one figure in the hover is coloured by denomination")
-strip:GetScript("OnLeave")(strip)
+ns.Tip.Close(true)
 
-print(("purse  %s held, %s on the account across %d characters, %s")
+print(("purse  %s held, %s on the account across %d characters, %s this session")
 	:format(ns.Coin(_G.GetMoney()), ns.Coin(Purse.Account()), names,
-		rate:GetText() == "" and "no rate yet" or rate:GetText()))
+		tostring(figure:GetText())))
 
 -- The two invented characters go away, because the sections after this one
 -- have nothing to do with them and a ledger with strangers in it is a

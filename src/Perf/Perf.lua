@@ -67,7 +67,7 @@ local SAMPLE_RATE = 1.0
 local ORDER = { "marker", "swing", "icon", "action", "pet", "bars", "cast", "playercast",
 	"castsweep", "tip", "settle", "fresh", "chart", "skin", "skinread", "party",
 	"partyread", "meter",
-	"buffs", "cooldowns", "standing", "stream", "world", "trace", "hide", "clock", "bagstack",
+	"buffs", "cooldowns", "standing", "world", "trace", "hide", "clock", "bagstack",
 	-- Which of the addon's own rectangles are under a window the player has
 	-- opened. Ten times a second while one is up and nothing at all while none
 	-- is, and on most of those ticks it reads eight rectangles and writes

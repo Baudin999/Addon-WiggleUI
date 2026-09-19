@@ -56,37 +56,17 @@ local KEYS = {
 }
 
 --------------------------------------------------------------------------
--- The status strip
+-- The header's right end
 --
--- An optional row along the bottom of a stream, under a hairline, holding three
--- short readings: one at each end and one in the middle. A stream that is given
--- no onStatus has none of it and is the frame it always was.
+-- A stream may hand in what the right end of the feed's header says instead of
+-- the feed's count, and what a hover of it slides out from behind the feed.
+-- The loot feed does, with the purse: the session's takings in the heading
+-- gold, and the ledger on a panel. A stream given neither has the count there,
+-- as it always had.
 --
--- **Why the strip has a beat and the feed does not.** Everything above it
--- changes when something happens to you, and the header of UI/Feed.lua refuses
--- a ticker on exactly that ground. A reading is the other kind of number: gold
--- an hour moves because the clock moved, and nothing fires an event when a
--- minute passes. So the strip carries the only OnUpdate in this part, one
--- second apart, and it is a child of the stream frame, which means the client
--- stops calling it the moment the feed is hidden.
+-- Nothing here beats. The figure is written when the stream's owner says it
+-- moved, which for the purse is a change of money.
 --------------------------------------------------------------------------
-
-local STATUS = 20     -- the strip's own height
-local STATUS_RULE = 1 -- the hairline over it
-local STATUS_INSET = 4
--- The strip is 20 to hold it. This was 12 in a 17 tall strip and it is what the
--- report about the purse's font was looking at: the strings carried a rim then,
--- an outlined glyph spends a pixel of every stroke on it, and at 12 the hole in
--- a 6 closed and the waist of an 8 filled in on the one line in the window that
--- is nothing but digits. The rim is gone and the floor with it; 14 stays
--- because these three read at a glance from across a room and 12 does not.
-local STATUS_TEXT = 14
-
--- One second. The three readings behind this change about once a minute
--- between them, so a faster beat would be four comparisons a frame to write
--- nothing, and a slower one would leave a gold figure visibly behind the coin
--- you just picked up.
-local BEAT = 1
 
 local Instance = {}
 Instance.__index = Instance
@@ -110,10 +90,10 @@ local streams = {}
 -- spec.watch     the delete list, see UI/Feed.lua's opts.watch
 -- spec.held      how many entries the stream keeps, see UI/Feed.lua's opts.held
 -- spec.bar       whether the column has a scroll bar, see UI/Feed.lua's opts.bar
--- spec.onStatus  function(), answering the three readings along the bottom and
---                the colour of the last one, or nothing at all for a stream
---                whose strip is switched off. Absent for a stream with no strip
--- spec.onStatusTooltip function(), the table hovering that strip renders
+-- spec.aside     function(), answering what the header's right end says in
+--                place of the count, or nil to leave the count there
+-- spec.onAside   function(), the UI/Tip.lua subject the panel behind that
+--                figure shows. See Feeds/Drawer.lua
 --------------------------------------------------------------------------
 
 function Stream.New(spec)
@@ -126,11 +106,10 @@ function Stream.New(spec)
 		onTooltip = spec.onTooltip,
 		removable = spec.removable,
 		watch = spec.watch,
-		-- Not `held`, which is the purse strip's first label on this same table.
 		cap = spec.held,
 		barred = spec.bar,
-		onStatus = spec.onStatus,
-		onStatusTooltip = spec.onStatusTooltip,
+		aside = spec.aside,
+		onAside = spec.onAside,
 		keys = { on = spec.prefix },
 	}, Instance)
 
@@ -214,151 +193,61 @@ function Instance:Setting(word)
 end
 
 --------------------------------------------------------------------------
--- The strip, written
---
--- On the strip's own beat, which is why every write here is behind a
--- comparison. A SetText costs a measure and a relayout whether or not the
--- string changed, and two of these three change about once a minute; the
--- colour changes when the rate crosses zero, which is a handful of times an
--- evening.
---
--- Colours are compared by identity rather than by component, which is the same
--- bargain UI/Feed.lua strikes and the reason Feeds/Purse.lua hands back stable
--- tables instead of building one per reading.
+-- The figure and the panel behind it
 --------------------------------------------------------------------------
 
-local function Refresh(stream)
-	local held, hoard, rate, tone = stream.onStatus()
-	if not held then
+-- The mouse frame over the figure and the drawer it opens, built once. A font
+-- string takes no mouse, so the hover is a frame laid over the string the feed
+-- hands back, and it follows the string as the string grows.
+function Instance:BuildAside()
+	local label = self.feed:Aside(nil)
+	local hit = CreateFrame("Frame", nil, self.frame)
+	self.hit = hit
+	hit:SetPoint("TOPLEFT", label, "TOPLEFT", 0, 0)
+	hit:SetPoint("BOTTOMRIGHT", label, "BOTTOMRIGHT", 0, 0)
+	hit:Hide()
+
+	if self.onAside then
+		self.drawer = ns.Drawer.New(self.frame, self.feed.frame, self.onAside)
+		hit:SetScript("OnEnter", function() self.drawer:Enter("figure") end)
+		hit:SetScript("OnLeave", function() self.drawer:Leave("figure") end)
+		UI.PassCamera(hit)
+	end
+	return true
+end
+
+-- What the right end says, written, and whether it is the owner's at all.
+-- Guarded on the text, because a change of money that did not change the
+-- figure is most of them.
+local function WriteAside(stream)
+	local text = stream.aside()
+	if text == stream.asideAt then
+		return text ~= nil
+	end
+	stream.asideAt = text
+	stream.feed:Aside(text, C.heading)
+	stream.hit:SetShown(text ~= nil)
+	if not text and stream.drawer then
+		stream.drawer:Shut()
+	end
+	return text ~= nil
+end
+
+-- The money moved. The figure is rewritten, and if it came or went the header
+-- came or went with it, which is a new height for everything under it and is
+-- Apply's to work out.
+function Instance:Aside()
+	if not (self.frame and self.aside) then
 		return false
 	end
-
-	if stream.heldAt ~= held then
-		stream.heldAt = held
-		stream.held:SetText(held)
-	end
-	if stream.hoardAt ~= hoard then
-		stream.hoardAt = hoard
-		stream.hoard:SetText(hoard)
-	end
-	if stream.rateAt ~= rate then
-		stream.rateAt = rate
-		stream.rate:SetText(rate)
-	end
-	if stream.toneAt ~= tone then
-		stream.toneAt = tone
-		stream.rate:SetTextColor(tone[1], tone[2], tone[3])
+	local was = self.asideAt ~= nil
+	if WriteAside(self) ~= was then
+		return self:Apply()
 	end
 	return true
 end
 
--- The instance is found on the strip rather than closed over, because a ticker
--- takes a named function and there is one strip per stream.
-local function Beat(_, strip)
-	Refresh(strip.stream)
-end
-
--- The strip itself, built once. Three font strings and a hairline, and the one
--- ticker in this part.
-function Instance:BuildStatus()
-	local frame, unit = self.frame, self.unit
-
-	local strip = CreateFrame("Frame", nil, frame)
-	self.status = strip
-	strip:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
-	strip:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
-	strip:SetHeight(STATUS * unit)
-	strip.stream = self
-
-	-- The ground the three readings are read on, which is the feed's own answer
-	-- applied to the row under the rows.
-	--
-	-- Up from the bottom rather than out from one end, and that is the whole of
-	-- the decision. A wash along the strip's length is solid at the edge it
-	-- starts from and gone by the other, and these three readings sit left,
-	-- centre and right: running it from the left grounds yours and abandons the
-	-- rate, and from the right it is the other way round. Up the strip's twenty
-	-- units the ramp crosses all three at the same height, so what darkens is
-	-- the foot of the window rather than a bar laid across it under one number.
-	--
-	-- Three washes cut to the three readings is the other answer and it is worse
-	-- here. The middle reading is centred and the two ends are cells a third of
-	-- the width, so what it would draw is three separate shadows with daylight
-	-- between them along a strip that is one strip.
-	self.statusWash = UI.Wash(strip, C.shadow, "BOTTOM", "BACKGROUND")
-	self.statusWash:SetAllPoints()
-
-	self.statusRule = ns.Fill(frame, "ARTWORK", C.hairline[1], C.hairline[2],
-		C.hairline[3], 1)
-	self.statusRule:SetPoint("BOTTOMLEFT", strip, "TOPLEFT", 0, 0)
-	self.statusRule:SetPoint("BOTTOMRIGHT", strip, "TOPRIGHT", 0, 0)
-	self.statusRule:SetHeight(STATUS_RULE * unit)
-
-	-- Yours in the addon's heading gold, the account's dim in the middle
-	-- because it is context rather than news, and the rate on the right in
-	-- whatever colour the rate has earned.
-	--
-	-- Shadowed, like every row of the feed above, and the same argument moved
-	-- them both: a rim is what a string carries when it has no ground, it
-	-- thickens every stroke to say so, and there is ground under all four now.
-	-- The strip's is the wash above, on the same slider as the rows'.
-	self.held = UI.Label(strip, STATUS_TEXT, C.heading, "LEFT", UI.SHADOW)
-	self.held:SetPoint("LEFT", strip, "LEFT", STATUS_INSET * unit, 0)
-
-	self.hoard = UI.Label(strip, STATUS_TEXT, C.dim, "CENTER", UI.SHADOW)
-	self.hoard:SetPoint("CENTER", strip, "CENTER", 0, 0)
-
-	self.rate = UI.Label(strip, STATUS_TEXT, C.quiet, "RIGHT", UI.SHADOW)
-	self.rate:SetPoint("RIGHT", strip, "RIGHT", -STATUS_INSET * unit, 0)
-
-	UI.Ticker(strip, BEAT, "stream", Beat)
-
-	if self.onStatusTooltip then
-		strip:SetScript("OnEnter", function()
-			ns.Tip.Open(strip, self.onStatusTooltip())
-		end)
-		strip:SetScript("OnLeave", function()
-			ns.Tip.Close()
-		end)
-	end
-	return true
-end
-
--- The strip, sized to the feed above it, and the height the frame has to add to
--- the feed's own for it. Zero for a stream with no strip and for one whose
--- reading says it has nothing to report, which is how the setting behind the
--- strip reaches the geometry rather than only the paint.
-function Instance:Dress()
-	if not self.status then
-		return 0
-	end
-
-	local unit = self.unit
-	if not (self.onStatus and self.onStatus()) then
-		self.status:Hide()
-		self.statusRule:Hide()
-		return 0
-	end
-
-	-- Three cells across the width, so the middle reading stays in the middle
-	-- and the two ends clip rather than run into it. A feed at its narrowest is
-	-- still three cells; what it loses is the tail of the longest number, and
-	-- the tooltip is where the whole of it lives.
-	local cell = math.max(math.floor((self:Setting("width") - STATUS_INSET * 2) / 3), 1)
-	self.held:SetWidth(cell * unit)
-	self.hoard:SetWidth(cell * unit)
-	self.rate:SetWidth(cell * unit)
-
-	self.status:SetHeight(STATUS * unit)
-	self.statusRule:SetHeight(STATUS_RULE * unit)
-	-- Whether it takes the mouse is Lock's alone, which Apply calls after this.
-	self.status:Show()
-	self.statusRule:Show()
-	Refresh(self)
-	return (STATUS + STATUS_RULE) * unit
-end
-
--- The frame, the column and the strip, made the first time the part is switched
+-- The frame, the column and the figure, made the first time the part is switched
 -- on and not before.
 --
 -- Both feeds were built at login whatever the switches said. The combat feed
@@ -434,8 +323,8 @@ function Instance:Build()
 	-- column once at every login for nobody.
 	self.feed:Awake(self:Visible())
 
-	if self.onStatus then
-		self:BuildStatus()
+	if self.aside then
+		self:BuildAside()
 	end
 
 	return true
@@ -466,14 +355,16 @@ function Instance:Apply()
 	-- What the column is dressed in, before what size it is. The strip over the
 	-- rows is either there or not and everything below it is measured off that
 	-- answer, so a resize that ran first would place every row against the last
-	-- answer and then be told the new one.
+	-- answer and then be told the new one. The figure on its right end is one of
+	-- the things that holds it up, so it is written first of all.
+	if self.aside then
+		WriteAside(self)
+	end
 	self.feed:Chrome(self:Setting("header"))
 
 	local width, height = self.feed:Resize(self:Setting("width"), self:Setting("rows"),
 		self:Setting("icon"))
-	-- The strip is measured after the feed and before the frame, because it is
-	-- the only thing in here whose height is a decision rather than a setting.
-	self.frame:SetSize(width, height + self:Dress())
+	self.frame:SetSize(width, height)
 
 	-- The ground under the rows, and the edge that follows it and its own
 	-- switch. At zero the player has asked for rows over the world with nothing
@@ -485,15 +376,6 @@ function Instance:Apply()
 	self.feed:Wash(alpha)
 	for index = 1, 4 do
 		self.edges[index]:SetAlpha(edged)
-	end
-	-- The strip's own ground is the same slider as the rows', so the foot of the
-	-- window darkens by as much as the column above it and the two never read as
-	-- two surfaces. Its hairline goes out at zero with the edge and for the same
-	-- reason: over bare world a line under the last row divides nothing from
-	-- nothing.
-	if self.statusRule then
-		self.statusWash:SetAlpha(alpha)
-		self.statusRule:SetAlpha(alpha > 0 and 1 or 0)
 	end
 
 	self.feed:Mouse(self:Setting("mouse"))
@@ -508,13 +390,13 @@ function Instance:Lock()
 	end
 	local unlocked = not ns.db.locked
 	self.place:Lock(unlocked)
-	-- The strip lets go of the mouse while the feed is being placed. It sits
-	-- along the bottom edge, which is where a hand reaches for a window, so a
-	-- strip still taking the mouse is a corner of the frame you cannot drag by.
-	-- Placeable does the frame's half; which children stand aside for it is
-	-- this file's own business.
-	if self.status then
-		self.status:EnableMouse((not unlocked and self.onStatusTooltip
+	-- The figure lets go of the mouse while the feed is being placed, and when
+	-- the feed takes none. It is on the top edge, which is where a hand reaches
+	-- for a window, so a figure still taking the mouse is a corner of the frame
+	-- you cannot drag by. Placeable does the frame's half; which children stand
+	-- aside for it is this file's own business.
+	if self.hit then
+		self.hit:EnableMouse((not unlocked and self.drawer
 			and self:Setting("mouse")) and true or false)
 	end
 	return true
@@ -559,13 +441,13 @@ function Instance:Feed()
 	return self.feed
 end
 
--- The status strip and the three readings on it, for the panel and for
+-- The mouse frame over the header's figure and the drawer it opens, for
 -- scripts/harness.lua. Handed out for the reason UI/Feed.lua hands out a row:
--- "the strip is 17 units tall and the frame grew by 18" is a claim the harness
--- has to be able to make, and reaching into a stream's own fields to make it
--- would be asserting this file's spelling rather than its arithmetic.
-function Instance:Strip()
-	return self.status, self.held, self.hoard, self.rate
+-- "a hover opens the panel" is a claim the harness has to be able to make, and
+-- reaching into a stream's own fields to make it would be asserting this
+-- file's spelling rather than its behaviour.
+function Instance:Figure()
+	return self.hit, self.drawer
 end
 
 function Instance:Describe()

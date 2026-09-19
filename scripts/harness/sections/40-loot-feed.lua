@@ -82,9 +82,17 @@ check(ns.db.combatFeedHeader and ns.db.combatFeedEdge,
 
 do
 	local rows, unit = ns.db.lootFeedRows, ns.UI.Unit(_G.WarriorKitLootFeed)
-	-- With the word off and the delete list empty there is no strip at all,
-	-- which is the only state in which the first row sits against the top of
-	-- the frame.
+	-- The purse holds the strip up on its own, because its figure is on the
+	-- strip's right end, so it ships with a strip and no word.
+	check(feed:Row(1):GetTop() < _G.WarriorKitLootFeed:GetTop(),
+		"the purse is on and the first row is against the top of the frame, so its figure has nowhere to be")
+
+	-- With the word off, the purse off and the delete list empty there is no
+	-- strip at all, which is the only state in which the first row sits
+	-- against the top of the frame.
+	local purse = ns.db.lootFeedPurse
+	ns.db.lootFeedPurse = false
+	lootStream:Apply()
 	local top = _G.WarriorKitLootFeed:GetTop()
 	check(feed:Row(1):GetTop() == top,
 		"with no word and nothing on the delete list the first row is still hanging off a strip")
@@ -99,6 +107,7 @@ do
 	check(feed:Row(1):GetTop() < _G.WarriorKitLootFeed:GetTop(),
 		"turning the word on left the first row against the top of the frame")
 	ns.db.lootFeedHeader = false
+	ns.db.lootFeedPurse = purse
 	lootStream:Apply()
 end
 

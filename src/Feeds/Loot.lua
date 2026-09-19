@@ -327,15 +327,21 @@ local stream = ns.Stream.New({
 	-- number is what reached the feed.
 	removable = removable,
 	watch = watch,
-	-- The strip along the bottom, which is Feeds/Purse.lua's three numbers. It
-	-- is on this feed and not on the combat one because this is the window
-	-- already answering "what did I just get", and gold was the part of that
-	-- answer a list of rows could not give: coin gets a row when it drops and
-	-- the row scrolls away, and what you want an hour later is the total and
-	-- the slope.
-	onStatus = ns.Purse.Line,
-	onStatusTooltip = ns.Purse.Ledger,
+	-- The purse: the session's takings on the header's right end and the
+	-- ledger on a panel behind them. It is on this feed and not on the combat
+	-- one because this is the window already answering "what did I just get",
+	-- and gold was the part of that answer a list of rows could not give: coin
+	-- gets a row when it drops and the row scrolls away, and what you want an
+	-- hour later is the sum.
+	aside = ns.Purse.Takings,
+	onAside = ns.Purse.Ledger,
 })
+
+-- The figure rewritten on every change of money, which is the only thing that
+-- moves it.
+ns.Purse.Watch(function()
+	stream:Aside()
+end)
 
 function LootFeed.Stream()
 	return stream
@@ -378,8 +384,8 @@ function LootFeed.Defaults()
 	-- have replaced one unreadable column with a prettier one.
 	defaults.lootFeedGroup = false
 
-	-- The status strip's, folded in here rather than registered on their own.
-	-- Feeds/Feature.lua merges one table per stream and the strip belongs to
+	-- The purse's, folded in here rather than registered on their own.
+	-- Feeds/Feature.lua merges one table per stream and the purse belongs to
 	-- this one, so this is where its keys reach the account file.
 	for key, value in pairs(ns.Purse.Defaults()) do
 		defaults[key] = value

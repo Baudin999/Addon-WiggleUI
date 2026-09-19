@@ -182,8 +182,9 @@ do
 	-- The strip, with the title off
 	----------------------------------------------------------------------
 
-	local header = ns.db.lootFeedHeader
-	ns.db.lootFeedHeader = false
+	-- The purse off too, because its figure holds the strip up on its own.
+	local header, purse = ns.db.lootFeedHeader, ns.db.lootFeedPurse
+	ns.db.lootFeedHeader, ns.db.lootFeedPurse = false, false
 	lootStream:Apply()
 	check(feed.head > 0 and feed.list:IsShown(),
 		"with the title off the delete list took the strip down")
@@ -197,7 +198,7 @@ do
 	check(feed:Held(0).link == LINEN and counted(4, 1) == 4,
 		"an item taken off the list still makes no row, or is still destroyed")
 
-	ns.db.lootFeedHeader = header
+	ns.db.lootFeedHeader, ns.db.lootFeedPurse = header, purse
 	lootStream:Apply()
 	check(not feed.list:IsShown(), "the delete list's control came back with the title")
 	feed:Clear()

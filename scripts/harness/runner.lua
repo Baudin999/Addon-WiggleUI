@@ -565,6 +565,11 @@ local SECTIONS = {
 	-- expire them and read as that section's failure. Here the list is empty
 	-- when it starts and empty when it hands over.
 	"81-gear-arrival",
+	-- Under it for the same reason: the purse panel slides on the same tween
+	-- tick, so it has to run where that list is empty, and it leaves it empty.
+	-- It lifts the loot feed a few levels and moves it to the left edge of the
+	-- screen, and puts both back at the foot of the file.
+	"81-purse-drawer",
 	-- Last, because it reads the state four sections above it left. It wants a
 	-- quest in the log, a profession window that has been walked and a corpse in
 	-- front of you at the same time, and 47, 69 and 70 are what put those three
