@@ -65,8 +65,8 @@ UI.Color = {
 	-- and keyed by the word it answers, so a fourth reason is a fourth entry
 	-- here and nothing else.
 	--
-	-- The orange is the one the loot feed already rings a quest item with, and
-	-- it is the only orange in the addon: gold is what the coin rows are and
+	-- The orange is what the loot feed's hover says "Quest item" in, and it is
+	-- the only orange in the addon: gold is what the coin rows are and
 	-- what the account's own accent is, and a quest marker in that colour is a
 	-- marker you have to work out. Green for a reagent still worth a point,
 	-- because the answer it stands for is yes. Grey for what the loot filter

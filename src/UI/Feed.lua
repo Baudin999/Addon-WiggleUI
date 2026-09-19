@@ -347,9 +347,9 @@ local function BuildRow(feed, index)
 	row.icon:SetPoint("LEFT", row, "LEFT", (STRIPE + INSET) * unit, 0)
 
 	-- A ring round the icon, for the one thing about an item that its quality
-	-- colour cannot say. A quest item is white, the same white as a stack of
-	-- linen, and the row that hands in your chain of five kills reads exactly
-	-- like the row that hands you a bandage.
+	-- colour cannot say. A reagent a profession of yours still learns from is
+	-- white, the same white as a stack of linen it does not, and the two rows
+	-- would otherwise read exactly alike.
 	--
 	-- A frame rather than four textures anchored to the icon, because ns.Outline
 	-- pins its edges to the corners of the frame it is given and the icon is a
@@ -360,6 +360,14 @@ local function BuildRow(feed, index)
 	row.mark:SetPoint("TOPLEFT", row.icon, "TOPLEFT")
 	row.mark:SetPoint("BOTTOMRIGHT", row.icon, "BOTTOMRIGHT")
 	row.mark:Hide()
+
+	-- A picture the entry lays over its icon, for a feed whose item has one the
+	-- client already draws. The path is the entry's `badge`; this file knows it
+	-- is a texture and nothing about what it means. OVERLAY because the client
+	-- draws its own at that layer over a bag square's icon.
+	row.badge = row:CreateTexture(nil, "OVERLAY")
+	row.badge:SetAllPoints(row.icon)
+	row.badge:Hide()
 
 	-- Every column is given its width in Resize, and never its right edge.
 	-- Chaining each one's right edge to the next one's left, which is what this
@@ -1434,7 +1442,7 @@ end
 
 -- The ring round the icon, and how strongly it is painted.
 --
--- On the loot feed the ring means a quest item and on any other feed it means
+-- On the loot feed the ring means a reagent and on any other feed it means
 -- whatever the capture file decided to say with it. A marker has no icon, so it
 -- can never have one round it.
 --
@@ -1464,6 +1472,24 @@ local function Ringed(row, mark, entry)
 	return true
 end
 
+-- The picture over the icon, off the entry's `badge`. A marker has no icon, so
+-- it has none, the same as the ring. Its own function for the reason Ringed is.
+local function Badged(row, mark, entry)
+	local badge = (not mark) and entry.badge or nil
+	if row.shownBadge == badge then
+		return false
+	end
+
+	row.shownBadge = badge
+	if badge then
+		row.badge:SetTexture(badge)
+		row.badge:Show()
+	else
+		row.badge:Hide()
+	end
+	return true
+end
+
 local function PaintRow(row, entry, faded)
 	if row.shownEntry ~= entry or not row:IsShown() then
 		row.shownEntry = entry
@@ -1481,6 +1507,7 @@ local function PaintRow(row, entry, faded)
 	end
 
 	Ringed(row, mark, entry)
+	Badged(row, mark, entry)
 
 	if row.shownName ~= entry.name then
 		row.shownName = entry.name

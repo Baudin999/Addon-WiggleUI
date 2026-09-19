@@ -11,8 +11,8 @@
 -- string, "from Plains Creeper", measures 131 in the shipped face at a row's
 -- text size, so there is no width of that feed at which the column holds it:
 -- the panel's ceiling of 520 units grants the whole 96 and 96 is not enough.
--- Feeds/Loot.lua does not clip, because item 86 sized its 48 units against the
--- widest quest count an objective can carry, which is 37.
+-- Feeds/Loot.lua has no middle column: its quest count stands in the number
+-- column, whose 52 units hold the widest count an objective can carry.
 --
 -- Three claims, and not one of them can be read off the source.
 --
@@ -176,16 +176,14 @@ end
 ----------------------------------------------------------------------
 -- The feed that does not clip
 --
--- Item 86 cut the loot feed's phrase to a quest count and sized the column
--- against the widest count an objective can carry, and this is the claim the
--- two have to keep agreeing on. The count is measured on the combat row's own
--- string rather than on a ruler this section invented, because both rows are
--- built by UI/Feed.lua at one size in one face and a second ruler is a second
--- thing to keep true.
+-- The loot feed's quest count stands in the number column, where the stack
+-- size goes, and has no middle column of its own. So the claim is that the
+-- widest count an objective can carry fits the number column, measured on the
+-- combat row's own string rather than on a ruler this section invented,
+-- because both rows are built by UI/Feed.lua at one size in one face.
 --
--- Both ends of the loot feed's own width, because the column is 48 at the top
--- and 41 at the panel's floor, and 41 is the number item 86 said a four digit
--- count still fits in.
+-- Both ends of the loot feed's own width, because the number column is the one
+-- that never gives way and the panel's floor is where that would show.
 ----------------------------------------------------------------------
 
 do
@@ -195,15 +193,17 @@ do
 	local widest = ruler:GetStringWidth()
 	ruler:SetText(held)
 
-	check(widest <= loot:Row(1).notemax,
-		("the widest quest count measures %.1f and the loot column is %.1f")
-			:format(widest, loot:Row(1).notemax))
+	check(lootStream.note == 0 and not loot:Row(1).noted,
+		"the loot feed still asks for a middle column its count moved out of")
+	check(widest <= loot:Row(1).amount:GetWidth(),
+		("the widest quest count measures %.1f and the number column is %.1f")
+			:format(widest, loot:Row(1).amount:GetWidth()))
 
 	ns.db.lootFeedWidth = 200
 	lootStream:Apply()
-	check(widest <= loot:Row(1).notemax,
-		("dragged to the panel's floor the loot column is %.1f and the count is %.1f")
-			:format(loot:Row(1).notemax, widest))
+	check(widest <= loot:Row(1).amount:GetWidth(),
+		("dragged to the panel's floor the number column is %.1f and the count is %.1f")
+			:format(loot:Row(1).amount:GetWidth(), widest))
 
 	ns.db.lootFeedWidth = shippedLoot
 	lootStream:Apply()
@@ -217,5 +217,6 @@ ns.Stream.Each("Apply")
 ns.CombatFeed.Apply()
 
 print(("note   the combat feed asks for %d units, gets %d at the width it ships at"
-	.. " and its widest string wants more than either; the loot feed's %d holds its count")
-	:format(combatStream.note, row.notemax, lootStream.note))
+	.. " and its widest string wants more than either; the loot feed's number column"
+	.. " holds its count")
+	:format(combatStream.note, row.notemax))

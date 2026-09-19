@@ -361,15 +361,15 @@ do
 	fire("CHAT_MSG_LOOT", FEMUR)
 
 	local entry = feed:Held(0) or {}
-	check(entry.ring == ns.UI.Color.trash,
-		"a grey the filter refused off the corpse reached the feed with no trash ring")
-	check(entry.note == nil,
-		("the trash mark put %s in the row's own column"):format(tostring(entry.note)))
-	-- Quiet on purpose. `look` is what holds a ring at full while the stripe
-	-- beside it rests, and trash is the commonest answer of the three and the
-	-- one nobody is looking for: a column of greys each wearing a bright ring is
-	-- the feed back where it started.
-	check(entry.look == nil, "the trash ring is held at full brightness")
+	local femur = _G.WarriorKitItemLink("Splintered Femur")
+	check(entry.link == femur and ns.Need(femur) == "trash",
+		"a grey the filter refused off the corpse reached the feed with no trash answer")
+	-- Quiet on purpose. Trash is the commonest answer of the three and the one
+	-- nobody is looking for, so it draws no ring at all and says itself on the
+	-- hover: a column of greys each wearing a ring is the feed back where it
+	-- started.
+	check(entry.ring == nil and entry.badge == nil,
+		"the trash answer drew a mark on the row")
 end
 
 -- And nothing at all while the filter is off, which is the state this addon
@@ -385,7 +385,7 @@ do
 	pass()
 	feed:Clear()
 	fire("CHAT_MSG_LOOT", FEMUR)
-	check((feed:Held(0) or {}).ring == nil,
+	check(ns.Need(_G.WarriorKitItemLink("Splintered Femur")) == nil,
 		"the filter switched off still marked a grey as trash")
 	ns.dbc.lootFilter = true
 	feed:Clear()

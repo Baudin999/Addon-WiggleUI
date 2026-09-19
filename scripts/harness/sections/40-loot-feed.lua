@@ -35,8 +35,8 @@
 -- each row carries a gradient that has to end where the text ends, because a
 -- wash the width of the row is the panel again with a fade on one side.
 --
--- And does the row say why you want it. The middle column and the ring are one
--- answer out of Need/Need.lua, and the half a reading cannot settle is that a
+-- And does the row say why you want it. The border, the count and the ring are
+-- one answer out of Need/Need.lua, and the half a reading cannot settle is that a
 -- row which folded six of something reads the count as it stands now.
 
 local H = ...
@@ -328,21 +328,49 @@ check(feed.chips == nil and feed.filter == nil,
 --
 -- Class 12 and white, which is the whole problem: it is the same colour as a
 -- stack of linen and the row that hands in your chain of five kills reads
--- exactly like the row that hands you a bandage. So it gets a ring.
+-- exactly like the row that hands you a bandage. So it wears the border the
+-- client lays over a quest item, the client's own texture rather than a ring
+-- of ours.
+--
+-- And one that begins a quest wears the bang instead. A loot row has a link
+-- and no bag slot, so the tooltip's own "This Item Begins a Quest" line is
+-- what says so; seeded here the way the client would write it.
 ----------------------------------------------------------------------
+
+local BORDER, BANG = _G.TEXTURE_ITEM_QUEST_BORDER, _G.TEXTURE_ITEM_QUEST_BANG
 
 feed:Clear()
 drop("You receive loot: %s.", _G.WarriorKitItemLink("Hogger's Claw"))
 check(newest().quest, "a quest item did not read as one")
-check(newest().ring ~= nil, "a quest item got no ring round its icon")
-check(feed:Row(1).mark:IsShown(), "the ring round a quest item's icon is not drawn")
+check(newest().badge == BORDER,
+	("a quest item wears %s rather than the client's quest border")
+		:format(tostring(newest().badge)))
+check(feed:Row(1).badge:IsShown() and feed:Row(1).badge:GetTexture() == BORDER,
+	"the quest border over a quest item's icon is not drawn")
+check(newest().ring == nil and not feed:Row(1).mark:IsShown(),
+	"a quest item still drew a ring round its icon under the border")
 
 drop("You receive loot: %s.", _G.WarriorKitItemLink("Linen Cloth"))
 check(not newest().quest, "an ordinary item read as a quest item")
 check(not feed:Row(1).mark:IsShown(), "an ordinary row drew a ring round its icon")
+check(newest().badge == nil and not feed:Row(1).badge:IsShown(),
+	"an ordinary row drew a quest border over its icon")
 check(newest().color == ns.UI.Quality[1], "the white item beside the quest item is not white")
 check(feed:Row(2).shownEntry ~= nil and feed:Row(2).shownEntry.quest,
 	"the quest item is not drawn under the linen that dropped after it")
+
+-- And one that begins a quest.
+do
+	H.ITEMS["Sealed Orders"] = { id = 8403, classId = 12, subClassId = 0,
+		quality = 1, price = 0, icon = "Interface\\Icons\\Orders" }
+	local orders = _G.WarriorKitItemLink("Sealed Orders")
+	H.tooltips.item[orders] = { { "Sealed Orders" }, { _G.ITEM_STARTS_QUEST } }
+	drop("You receive loot: %s.", orders)
+	check(newest().badge == BANG and feed:Row(1).badge:GetTexture() == BANG,
+		("an item that begins a quest wears %s rather than the bang")
+			:format(tostring(newest().badge)))
+	H.tooltips.item[orders] = nil
+end
 
 ----------------------------------------------------------------------
 -- One picture in both windows
@@ -374,20 +402,27 @@ do
 	check(row.stripe:GetAlpha() == M.rest,
 		"the stripe stayed lit after the cursor left the row")
 
-	-- The quest ring, which is the one thing on the row telling you to look and
-	-- is drawn at full whatever the cursor is on.
-	drop("You receive loot: %s.", _G.WarriorKitItemLink("Hogger's Claw"))
+	-- A claimed ring, which is the one thing on the row telling you to look and
+	-- is drawn at full whatever the cursor is on. Pushed by hand because the
+	-- loot feed's only claimed ring is a reagent's, and a reagent wants a
+	-- profession list that the reagent block further down stands up.
+	local claimed = feed:Entry()
+	claimed.name, claimed.amount = "Claimed", ""
+	claimed.color, claimed.stripe = C.text, C.text
+	claimed.ring, claimed.look = C.skill, true
+	feed:Push()
+	feed:Paint()
 	row = feed:Row(1)
 	check(row.mark:IsShown() and row.mark:GetAlpha() == 1,
-		("the quest ring is at %s rather than at full")
+		("a claimed ring is at %s rather than at full")
 			:format(tostring(row.mark:GetAlpha())))
 	check(row.stripe:GetAlpha() == M.rest,
-		"the stripe on a quest row is lit as well as the ring")
+		"the stripe on a ringed row is lit as well as the ring")
 	feed:Enter(1)
 	check(row.mark:GetAlpha() == 1 and row.stripe:GetAlpha() == 1,
-		"hovering the quest row left something short of full")
+		"hovering the ringed row left something short of full")
 	feed:Leave()
-	check(row.mark:GetAlpha() == 1, "the quest ring dimmed when the cursor left")
+	check(row.mark:GetAlpha() == 1, "a claimed ring dimmed when the cursor left")
 
 	-- And a ring the entry has not claimed. Nothing pushes one today; item 86
 	-- turns the quest ring into a reason ring and this is the half of the
@@ -682,20 +717,21 @@ ns.UI.Tooltip.Close()
 
 -- Why the row matters
 --
--- The dim middle column is Core/Need.lua's phrase and the ring round the icon
--- is its colour, and the point of them being one answer is that they cannot
--- disagree: a row reading `4/8` in the green a reagent is drawn in is a row
--- saying two things about one item.
+-- Each reason Core/Need.lua answers is drawn one way. A quest is the client's
+-- quest border and its count to go in the number column, where the stack size
+-- goes; a reagent is a green ring and the profession on the hover; trash is
+-- nothing on the row and a line on the hover. A ring that meant all three in
+-- three colours was a mark nobody could read at a glance.
 --
--- Only a quest count reaches the column, and the reason is a measurement:
--- "Leatherworking" is 104 units in the shipped face at a row's text size and
--- this column is 48 and is never handed more than 81. So a reagent is a green
--- ring and a word on the hover, and the row never draws part of a word.
+-- Only a quest count reaches the row as words, and the reason is a
+-- measurement: "Leatherworking" is 104 units in the shipped face at a row's
+-- text size and the number column is 52. So the row never draws part of a
+-- word.
 --
 -- 82-need.lua is where the answer itself is held to its order and its cache.
 -- What is asserted here is the half only a row can be wrong about, which is the
 -- fold. A row that folded six bandanas is showing a count that moved while it
--- was folding, and a note written once on the arrival that opened the row would
+-- was folding, and a count written once on the arrival that opened the row would
 -- tell you to keep six more of something your log has stopped counting.
 ----------------------------------------------------------------------
 
@@ -715,13 +751,19 @@ local COUNTING = OBJECTIVE[1]
 feed:Clear()
 fire("QUEST_LOG_UPDATE")
 drop("You receive loot: %s.", BANDANA)
-check(newest().note == COUNTING:match("(%d+/%d+)"),
-	("a bandana the log is counting reads %s"):format(tostring(newest().note)))
-check(newest().ring == ns.UI.Color.quest,
-	"the ring round a quest objective is not the palette's quest colour")
-check(feed:Row(1).note:GetText() == newest().note,
-	("the row drew %s in its middle column"):format(tostring(feed:Row(1).note:GetText())))
-check(feed:Row(1).note:IsShown(), "the loot feed asks for no middle column")
+check(newest().amount == COUNTING:match("(%d+/%d+)"),
+	("a bandana the log is counting reads %s"):format(tostring(newest().amount)))
+check(feed:Row(1).amount:GetText() == newest().amount,
+	("the row drew %s where the stack size goes")
+		:format(tostring(feed:Row(1).amount:GetText())))
+-- Class 15 and not a quest item to the client, so the border is Need's answer
+-- and not the class: an objective in your log is a quest item on the row.
+check(newest().badge == _G.TEXTURE_ITEM_QUEST_BORDER,
+	"an item the log is counting did not wear the quest border")
+check(newest().ring == nil and not feed:Row(1).mark:IsShown(),
+	"a quest objective still drew a ring round its icon")
+check(not feed:Row(1).note:IsShown(),
+	"the loot feed still draws a middle column the count moved out of")
 
 -- The sentence, which is the half a column three characters wide cannot say.
 -- The row is the glance and the hover is the reading.
@@ -735,10 +777,27 @@ ns.UI.Tooltip.Close()
 -- and no ring, and a feed that ringed everything would be a feed with no marks
 -- on it.
 drop("You receive loot: %s.", _G.WarriorKitItemLink("Linen Cloth"))
-check(newest().note == nil,
-	("an item with no reason reads %s"):format(tostring(newest().note)))
+check(newest().amount == "x1",
+	("an item with no reason reads %s"):format(tostring(newest().amount)))
 check(newest().ring == nil, "an item with no reason got a ring round its icon")
 check(not feed:Row(1).mark:IsShown(), "the ring is drawn on a row with no reason")
+
+-- Trash, which draws nothing. Comfort/Loot.lua's memory of what the filter
+-- refused is 82-need.lua's to stand up with a corpse; here it is answered yes
+-- for the one drop, because what is asserted is the row and not the memory.
+do
+	local refused = ns.Loot.Refused
+	ns.Loot.Refused = function() return true end
+	local linen = _G.WarriorKitItemLink("Linen Cloth")
+	check(ns.Need(linen) == "trash",
+		("the refused linen reads %s"):format(tostring(ns.Need(linen))))
+	drop("You receive loot: %s.", linen)
+	ns.Loot.Refused = refused
+	check(newest().ring == nil and not feed:Row(1).mark:IsShown(),
+		"trash drew a ring round its icon")
+	check(newest().badge == nil and (newest().amount or ""):match("^x%d+$"),
+		("trash drew %s rather than its stack size"):format(tostring(newest().amount)))
+end
 
 -- A reagent still worth a point: a green ring, an empty column and the
 -- profession on the hover. The column is the check that carries the weight.
@@ -754,12 +813,12 @@ do
 	ns.dbc.lootReagents = { [8402] = { owner = "Blacksmithing", kind = "optimal" } }
 	fire("SKILL_LINES_CHANGED")
 	drop("You receive loot: %s.", _G.WarriorKitItemLink("Rough Ingot"))
-	check(newest().note == nil,
-		("a blacksmithing reagent put %s in the row's column"):format(tostring(newest().note)))
-	check(feed:Row(1).note:GetText() == "",
-		("the row drew %s beside a reagent"):format(tostring(feed:Row(1).note:GetText())))
-	check(newest().ring == ns.UI.Color.skill,
-		"the ring round a reagent is not the palette's skill colour")
+	check(newest().amount == "x1",
+		("a blacksmithing reagent put %s in the number column")
+			:format(tostring(newest().amount)))
+	check(newest().ring == ns.UI.Color.skill and newest().look,
+		"the ring round a reagent is not the palette's skill colour, claimed")
+	check(newest().badge == nil, "a reagent wore the quest border")
 	check(feed:Row(1).mark:IsShown(), "the ring round a reagent's icon is not drawn")
 	hover()
 	check(said("Rough Ingot, Blacksmithing") == false,
@@ -769,12 +828,12 @@ do
 	fire("SKILL_LINES_CHANGED")
 end
 
--- And the fold. Five more bandanas is one row and one count, and the note on it
+-- And the fold. Five more bandanas is one row and one count, and the count on it
 -- is the objective as it stands now rather than as it stood when the row opened.
 feed:Clear()
 fire("QUEST_LOG_UPDATE")
 drop("You receive loot: %s.", BANDANA)
-check(newest().note == "0/6", "the row did not open on the count it arrived with")
+check(newest().amount == "0/6", "the row did not open on the count it arrived with")
 
 OBJECTIVE[1] = "Red Silk Bandana: 5/6"
 fire("QUEST_LOG_UPDATE")
@@ -782,10 +841,10 @@ advance(5)
 drop("You receive loot: %sx5.", BANDANA)
 check(feed:Count() == 1, "the second pickup of a bandana opened a second row")
 check(newest().count == 6, ("the folded row counts %s"):format(tostring(newest().count)))
-check(newest().note == "5/6",
-	("the folded row still says %s"):format(tostring(newest().note)))
-check(feed:Row(1).note:GetText() == "5/6",
-	("the row drew %s after the fold"):format(tostring(feed:Row(1).note:GetText())))
+check(newest().amount == "5/6",
+	("the folded row still says %s"):format(tostring(newest().amount)))
+check(feed:Row(1).amount:GetText() == "5/6",
+	("the row drew %s after the fold"):format(tostring(feed:Row(1).amount:GetText())))
 hover()
 check(said("Red Silk Bandana, 5 of 6") == false,
 	"the hover after a fold is dating the note by the pickup that opened the row")
@@ -798,7 +857,6 @@ fire("QUEST_LOG_UPDATE")
 
 print(("loot   no word and no line, %d rows, icon %d px on a %d px row,"
 	.. " vendor price per item and per stack, a stub scanner asked for the auction;"
-	.. " a %d unit note column holding a quest count and nothing else, a green ring"
-	.. " where the profession would not fit, and a fold that reread the count")
-	:format(ns.db.lootFeedRows, ns.db.lootFeedIcon, feed.row,
-		lootStream.note))
+	.. " the client's quest border and bang, a quest count where the stack size goes,"
+	.. " a green ring for a reagent only, and a fold that reread the count")
+	:format(ns.db.lootFeedRows, ns.db.lootFeedIcon, feed.row))

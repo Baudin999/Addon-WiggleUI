@@ -706,6 +706,16 @@ _G.COPPER_AMOUNT = "%d Copper"
 _G.ITEM_SOULBOUND = "Soulbound"
 _G.ITEM_BIND_ON_EQUIP = "Binds when equipped"
 
+-- The line the client writes on an item that begins a quest, and the two
+-- pictures it lays over a quest item's icon. The line is the global Syndicator
+-- and DialogueUI compare a tooltip against on this client; the paths are
+-- TEXTURE_ITEM_QUEST_BORDER and TEXTURE_ITEM_QUEST_BANG as
+-- Blizzard_FrameXMLBase/Classic/Constants.lua writes them, lines 334 and 335
+-- on the classic_anniversary branch of Gethe/wow-ui-source.
+_G.ITEM_STARTS_QUEST = "This Item Begins a Quest"
+_G.TEXTURE_ITEM_QUEST_BORDER = "Interface\\ContainerFrame\\UI-Icon-QuestBorder"
+_G.TEXTURE_ITEM_QUEST_BANG = "Interface\\ContainerFrame\\UI-Icon-QuestBang"
+
 -- The wall clock, which a loot row's tooltip turns GetTime into so it can say
 -- what time something dropped. Beside `date` above it in every sense but the
 -- line it is written on.

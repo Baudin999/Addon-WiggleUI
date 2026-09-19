@@ -12,15 +12,17 @@ local C = ns.UI.Color
 -- quality colour, how many of it there were, and why you want it.
 --
 -- **The last of those is not this file's.** Core/Need.lua answers it, and what
--- happens here is that its colour goes round the icon, its phrase goes in the
--- dim middle column and its sentence goes on the hover. A quality colour says
--- what the game thinks an item is worth and cannot say that eight of this one
--- finishes a quest, which is the whole of what a loot feed is read for.
+-- happens here is that a quest item wears the client's own quest border with
+-- its count to go where the stack size would be, a reagent gets a green ring
+-- round its icon, and every answer's sentence goes on the hover. A quality
+-- colour says what the game thinks an item is worth and cannot say that eight
+-- of this one finishes a quest, which is the whole of what a loot feed is read
+-- for.
 --
--- Only a quest reason reaches the column, because only a quest reason has a
--- number in it. A reagent's answer is a profession's name in the player's own
--- language, which measures 104 units against a column that is never wider than
--- 81, so it is a green ring on the row and a word on the hover.
+-- Only a quest reason reaches the row as words, because only a quest reason has
+-- a number in it. A reagent's answer is a profession's name in the player's own
+-- language, which measures 104 units against a row that has no column that
+-- wide, so it is a green ring on the row and a word on the hover.
 --
 -- **Why this reads chat rather than the loot window.** The obvious source is
 -- the loot window itself, and it is the wrong one twice over. Comfort/Loot.lua
@@ -58,12 +60,36 @@ local QUALITY = ns.UI.Quality
 -- one decision.
 local QUEST_CLASS = 12
 
--- The ring round a quest item's icon, and the line on its hover.
+-- What the client lays over a quest item's icon, and the one it lays over an
+-- item that starts a quest. The paths are Blizzard's own, taken off
+-- TEXTURE_ITEM_QUEST_BORDER and TEXTURE_ITEM_QUEST_BANG in
+-- Blizzard_FrameXMLBase/Classic/Constants.lua on the classic_anniversary branch
+-- of Gethe/wow-ui-source, lines 334 and 335, and read through those globals
+-- where the client has them. Written out as well, because a client missing the
+-- global would otherwise lay nothing over a quest item at all.
 --
--- Orange rather than the heading gold beside it. Gold is what the coin rows are
--- and what the account's own accent is, and a quest marker in that colour is a
--- marker you have to work out. This is the only orange in the addon.
-local QUEST = { 0.98, 0.55, 0.15 }
+-- The stock 2.5.6 bags do not draw either. Blizzard_UIPanels_Game loads
+-- Vanilla/ContainerFrame.lua for tbc, and its ContainerFrame_UpdateQuestItem
+-- only hides the texture; Wrath/ContainerFrame.lua is the one that sets these
+-- two. Baganator, installed here, sets them on this client off the same two
+-- globals, so the picture is the one a quest item wears in the bags you open.
+local QUEST_BORDER = _G.TEXTURE_ITEM_QUEST_BORDER
+	or "Interface\\ContainerFrame\\UI-Icon-QuestBorder"
+local QUEST_BANG = _G.TEXTURE_ITEM_QUEST_BANG
+	or "Interface\\ContainerFrame\\UI-Icon-QuestBang"
+
+-- The line the client writes on an item that begins a quest, which is how a
+-- loot row knows to draw the bang rather than the border.
+--
+-- The bag asks C_Container.GetContainerItemQuestInfo, which takes a bag and a
+-- slot, and a loot row has a link. The same fact reaches a link as this line of
+-- its tooltip, and it is the line Syndicator's QuestCheck and DialogueUI's quest
+-- item widget both read on this client. What the link cannot say is the bag's
+-- other half, whether the quest is already in your log: the bag draws the
+-- border rather than the bang for a starter whose quest is active. A starter
+-- nearly always goes when its quest is taken, so one dropping onto a loot row
+-- is one whose quest you do not have, and the bang is the answer.
+local STARTS_QUEST = _G.ITEM_STARTS_QUEST
 
 local COIN = "Interface\\Icons\\INV_Misc_Coin_01"
 
@@ -81,11 +107,11 @@ local UNKNOWN = "Interface\\Icons\\INV_Misc_QuestionMark"
 -- slider on it would be one more control over what this column shows.
 local FOLD_WINDOW = 60
 
--- Need/Need.lua's word for the one reason this feed draws differently from the
--- other two. Written as the word rather than tested some other way, because the
--- brightness of a ring is the only thing in this file that has to tell the three
--- answers apart and the word is what the call hands over.
-local TRASH = "trash"
+-- Need/Need.lua's words for the two reasons this feed draws, one each. A quest
+-- is the client's border and a count; a reagent is the ring. Written as the
+-- word rather than tested some other way, because the word is what the call
+-- hands over.
+local QUEST_REASON, SKILL = "quest", "skill"
 
 --------------------------------------------------------------------------
 -- The delete list
@@ -220,11 +246,12 @@ local function Fill(entry)
 	local lines = {}
 
 	if entry.quest then
-		lines[#lines + 1] = { "Quest item", color = QUEST }
+		lines[#lines + 1] = { "Quest item", color = C.quest }
 	end
 	-- Why you want it, at the width a line has rather than the width a column
 	-- has. This is where a reagent says which profession, because the row can
-	-- only afford the green ring, and where a quest count is spelled out.
+	-- only afford the green ring, where a quest count is spelled out, and where
+	-- trash says the filter would have left it, because trash draws nothing.
 	--
 	-- Asked here rather than read off the entry, because the answer the row was
 	-- painted with is as old as the pickup and an objective moves while a stack
@@ -279,25 +306,11 @@ local stream = ns.Stream.New({
 	name = "WarriorKitLootFeed",
 	title = "Loot",
 	empty = "nothing yet",
-	-- Forty eight units, and the number is a measurement rather than a guess.
-	-- The only thing this column ever draws is a quest count, and a count in the
-	-- shipped face at a row's text size is 8.03 units a digit and 5.14 for the
-	-- slash: 21 for `4/8`, 29 for `0/12`, 37 for `10/12` and 45 for `0/100`.
-	-- Forty eight holds the last of those whole, and nothing wider than that
-	-- exists as an item objective.
-	--
-	-- It has to hold at the narrow end as well, because UI/Feed.lua gives this
-	-- column half of what is left after the number at most and hands back less
-	-- than was asked for rather than saying so. Dragged to the panel's floor of
-	-- 200 units the column is 41 at the shipped icon, which still holds a four
-	-- digit count whole; the icon has to go past 33 at that same width before it
-	-- reaches 37 and a count starts to clip, and at that setting the item's name
-	-- has six characters and the row has lost more than its note.
-	--
-	-- The profession's name is not in this list because it cannot be. It
-	-- measures 104 units and this column is never wider than 81, so it is the
-	-- sentence on the hover and a green ring on the row.
-	note = 48,
+	-- No middle column. The only thing it ever drew was a quest count, and the
+	-- count stands in the number column now, where the stack size goes: 52
+	-- units, and `0/100`, the widest count an item objective carries, is 45 of
+	-- them in the shipped face at a row's text size. The name has the room back.
+	note = 0,
 	onTooltip = Fill,
 	-- A cross on the row under the cursor, which destroys what the row counts
 	-- and takes the row out. LootFeed.Counts still counts it, because that
@@ -370,48 +383,56 @@ end
 
 local seen = 0
 
--- Why this item matters to you, onto the row's middle column and onto the ring
--- round its icon.
+-- Why this item matters to you, onto the row.
 --
--- Both off the one answer, because they are the one fact. A row saying `4/8` in
--- the green a reagent is drawn in would be a row disagreeing with itself, and
--- two rings for two reasons would be a row with two rings on it.
+-- A quest item wears the client's quest border over its icon, and the bang
+-- instead when it starts a quest, and its count to go stands in the number
+-- column where the stack size would be. `4/8` is the one thing on the row you
+-- read a quest item for, and the stack size it displaces is on the hover's
+-- Stack line whenever it is more than one.
 --
--- A reagent leaves the column empty, because Core/Need.lua gives it no phrase
--- and no row can hold the one it would have given. That is the ring carrying a
--- reason on its own, which is what the ring already does for trash everywhere
--- else this answer is drawn.
+-- A quest item is the answer ns.Need gave or the class the client files it
+-- under. Core/Need.lua matches an objective by the name the client writes on
+-- it, and the handful whose objective is worded differently from the item
+-- would otherwise lose the border; and an item nobody's log is counting yet is
+-- still a quest item in the bag, which is the picture this copies.
+--
+-- The ring round the icon is a reagent's and nothing else's. It was the quest
+-- colour, the reagent green and the trash grey on one frame, which is three
+-- meanings no glance can tell apart; the quest one has the client's own
+-- picture now, and trash is the commonest answer of the three and the one
+-- nobody is looking for, so it gets no ring and says itself on the hover. A
+-- ring that is only ever a reagent's is one worth reading, so it is claimed
+-- with `look` and stays at full while the stripe beside it rests.
 --
 -- Asked with no loot slot, because CHAT_MSG_LOOT is the server saying what
 -- reached your bags and the corpse behind it is gone by the time it arrives.
--- Trash still answers: Comfort/Loot.lua wrote down what the filter refused at
--- the moment it refused it, and Need/Need.lua reads that back by link. This is
--- the only window in the addon that ever sees a slot the filter binned, and a
--- rule set too tight is otherwise a rule nobody finds out about.
 --
--- Trash is also the one reason that does not light the ring. It is the
--- commonest answer of the three and the one nobody is looking for, so it is
--- drawn at the row's own brightness with the stripe rather than held at full: a
--- column of greys each wearing a bright ring is a column where nothing stands
--- out.
---
--- The ring falls back to the quest colour for an item the client files as a
--- quest item. Core/Need.lua matches an objective by the name the client writes
--- on it and says so in its own header, and the handful whose objective is
--- worded differently from the item would otherwise lose a ring the feed has
--- drawn round them since it was written.
---
--- The ring stays at full while the stripe beside it rests. The stripe is a
--- grade and a column of grades is worth reading as a ribbon; the ring is the
--- one thing on the row telling you to look, and a thing telling you to look at
--- three fifths strength is furniture. `look` is what UI/Feed.lua reads for
--- that, and it is written here rather than at the arrival so a row that folded
--- into a reason it did not have keeps its ring lit.
+-- Written here rather than at the arrival so a row that folded reads the count
+-- as it stands now: twelve wolf livers is a row that opened at 4/8 and is at
+-- 8/8 by the last of them.
 local function Reason(entry)
 	local why, phrase, tone = ns.Need(entry.link)
-	entry.note = phrase
-	entry.ring = tone or (entry.quest and C.quest) or nil
-	entry.look = (entry.ring and why ~= TRASH) and true or nil
+	local quest = why == QUEST_REASON or entry.quest
+	entry.amount = (why == QUEST_REASON and phrase) or ("x" .. (entry.count or 1))
+	entry.ring = (why == SKILL) and tone or nil
+	entry.look = entry.ring and true or nil
+	entry.badge = (entry.starts and QUEST_BANG) or (quest and QUEST_BORDER) or nil
+end
+
+-- Whether this item begins a quest, off the one line of its tooltip that says
+-- so. True or nil, and nil for a client with no such global or a scanner that
+-- would not take the link, because either one is the border rather than the
+-- bang and never an error.
+--
+-- A scan per arrival and not per fold, because a fold is the same item and
+-- the line cannot have moved. UI/Scan.lua's Has allocates nothing, and the bag
+-- window asks it of every piece of armour you carry on every bag update.
+local function Starts(link)
+	if not STARTS_QUEST then
+		return nil
+	end
+	return ns.UI.Scan.Has("item", STARTS_QUEST, link) == true or nil
 end
 
 -- Whether an entry the feed is holding is the row a fresh one belongs on.
@@ -460,7 +481,6 @@ local function AddItem(who, link, count)
 	local entry = stream:Feed():Entry()
 	entry.icon = icon or UNKNOWN
 	entry.name = name or link
-	entry.amount = "x" .. count
 	entry.color = color
 	entry.stripe = color
 	entry.tone = C.text
@@ -473,7 +493,9 @@ local function AddItem(who, link, count)
 	-- sold.
 	entry.quest = (class == QUEST_CLASS) or nil
 	entry.price = price
-	-- After `quest`, which is one of the two things the ring is read off.
+	entry.starts = Starts(link)
+	-- After `quest`, `starts` and `count`, which the border and the number
+	-- column are read off.
 	Reason(entry)
 
 	-- The same item again inside the window is the row you are already looking
@@ -487,7 +509,6 @@ local function AddItem(who, link, count)
 		-- itself is the feed's slot rather than something to keep past this
 		-- call.
 		into.count = (into.count or 1) + count
-		into.amount = "x" .. into.count
 		into.picks = (into.picks or 1) + 1
 		-- The row is now about the last one you picked up, which is what the
 		-- tooltip's clock reads and what the next arrival's window is measured
@@ -495,9 +516,10 @@ local function AddItem(who, link, count)
 		into.at = foldAt
 		-- And why it matters, read again, because the count on an objective
 		-- moved while this row was folding. Twelve arrivals of a wolf liver is a
-		-- row that opened at 4/8 and is at 8/8 by the time it reads x12, and a
-		-- note written once is a row telling you to keep four more of something
-		-- you already have.
+		-- row that opened at 4/8 and has reached 8/8, and a count written once
+		-- is a row telling you to keep four more of something you already have.
+		-- The number column is written there too, which on any other item is
+		-- the stack size this fold just grew.
 		--
 		-- Cheap, because Core/Need.lua answers off a cache keyed by item id and
 		-- empties it on the quest log's own events. A fold that changed nothing
