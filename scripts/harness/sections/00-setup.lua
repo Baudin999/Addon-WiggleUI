@@ -34,6 +34,13 @@ for _, entry in ipairs(Setup.STEPS[1].cards) do
 		:format(tostring(entry.value)))
 end
 
+-- The unit frame card paints your class and your power, and a colour that is
+-- not three numbers raises in the client where the stub here takes it.
+local health, power = ns.SetupPreviews.Colours()
+check(type(health) == "table" and type(health[1]) == "number"
+	and type(power) == "table" and type(power[1]) == "number",
+	"the unit frame card's class or power colour is not a colour")
+
 -- What was there, so it can be put back at the foot.
 local kept = {
 	theme = ns.db.theme, palette = ns.db.palette,

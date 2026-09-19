@@ -207,11 +207,15 @@ end
 -- block will actually be when you log in. The portrait is the client's picture
 -- of your character where the call exists, and the palette's control grey
 -- where it does not.
-local function Colours()
+--
+-- A class entry is its tint and its fill, and the bar wears the fill, the same
+-- colour the player block paints. Public for the harness, whose texture stub
+-- takes a nil colour without a word where the client raises.
+function Previews.Colours()
 	local class = select(2, UnitClass("player"))
-	local health = ns.Unit.Color.class[class] or ns.Unit.Color.class.WARRIOR
+	local entry = ns.Unit.Color.class[class] or ns.Unit.Color.class.WARRIOR
 	local power = ns.Unit.Color.power[UnitPowerType("player") or 1] or ns.Unit.Color.power[1]
-	return health, power
+	return entry.fill, power
 end
 
 local function Portrait(frame, size)
@@ -257,7 +261,7 @@ end
 -- each. Modern: no portrait, the bars take its room, stacked tight, and one
 -- dark edge round the whole unit.
 function Previews.Plate(preview, width, height, modern)
-	local health, power = Colours()
+	local health, power = Previews.Colours()
 	local unit = CreateFrame("Frame", nil, preview)
 	local tall = math.floor(height * 0.42)
 	local wide = math.floor(width * 0.8)
