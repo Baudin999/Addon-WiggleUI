@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2W86KFV68M7XRVCXX7VAN66
 type: bug
-status: doing
+status: done
 title: The bars page's buttons and readings run past the ? column
 ---
 
