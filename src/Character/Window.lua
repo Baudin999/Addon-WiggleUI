@@ -145,9 +145,9 @@ end
 local function Sheet()
 	return UI.Window({
 		name = "WarriorKitCharacter",
-		-- Against the right hand edge of the monitor, with no title bar, no line
-		-- round the outside, no ground and no saved point, at the floor of the
-		-- frame pile so every window the player opens flows over the top of it.
+		-- Against the right hand edge of the monitor until the player moves it,
+		-- with no title bar and no line round the outside, never lifted so every
+		-- window the player opens flows over the top of it.
 		-- UI/Window.lua carries the whole of what that means; what it means here
 		-- is that no width and no height are passed at construction, because the
 		-- page they would describe has not been built yet. Fit above is what
@@ -166,6 +166,10 @@ local function Sheet()
 		-- its own, because the grip sits underneath it: the gear squares still take
 		-- their clicks and the figure still turns under the left drag.
 		screen = true,
+		-- The palette's painted frame, when it has one. The anchor keeps a margin
+		-- off the monitor's edge wider than the frame's thickness, so the rails
+		-- hang inside the screen.
+		backdrop = true,
 		zoom = function() return ns.Zoom("characterZoom") end,
 		-- The grid moved: the screen changed size, combat let go of a frame, or
 		-- this sheet's own zoom was dragged. The rezoom is handed over rather

@@ -118,6 +118,17 @@ check(painted.backdrop ~= nil and painted.bg == nil, "a painted window has the p
 check(painted.titleRule ~= nil, "a painted window's header is ruled like its footer")
 painted:Hide()
 
+-- A screen window takes the flag like any other: the painting when it asks,
+-- and then no wash, which would only darken the opaque floor. One that does
+-- not ask keeps the wash and no painting.
+local sheet = UI.Window({ screen = true, secure = true, backdrop = true })
+check(sheet.backdrop ~= nil and sheet.bg == nil, "a screen window that asks for the painting gets it")
+check(sheet.dark == nil, "a painted screen window lays no wash over its floor")
+sheet:Hide()
+local bare = UI.Window({ screen = true, secure = true })
+check(bare.backdrop == nil and bare.dark ~= nil, "a screen window that does not ask keeps the wash")
+bare:Hide()
+
 -- A feed row's wash on the floor: the tile's file under the same ramp, and
 -- rows stacked down a feed cut consecutive bands so the column reads as one
 -- painting. A band that would run off the tile's foot ends on it instead.

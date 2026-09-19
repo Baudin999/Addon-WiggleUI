@@ -38,11 +38,9 @@ local C, M = UI.Color, UI.Metric
 -- scrollbar already gives.
 --------------------------------------------------------------------------
 
--- Every window the library has made, in creation order. Nothing in the addon
--- reads it yet. It exists because a UI layer that means to own the screen has
--- to be able to answer "what is open", and because the harness drives the
--- options panel through it rather than through a hook cut into the panel for
--- the harness's benefit.
+-- Every window the library has made, in creation order. Settings/Settings.lua
+-- finds the options window through it, and the harness finds every other one
+-- the same way rather than through a hook cut into each window for its benefit.
 UI.Windows = {}
 
 -- What the screen asks for, before the player has said anything. Whole steps
@@ -198,10 +196,6 @@ local function Clearing(window, frame, opts)
 	end)
 end
 
--- The bar across the top: the strip, the name on it and the close box. Its own
--- function because it is the whole of what a window that is not bare has and
--- none of what a bare one does, so the alternative is fifteen lines of one
--- window's chrome sitting inside the constructor both kinds run through.
 -- The ground a window is drawn on, and the hairline round it. Beside TitleBar
 -- for the reason TitleBar is beside the constructor: it is a piece of chrome
 -- whose colour the caller decides, and the argument for the line is a paragraph
@@ -210,23 +204,29 @@ end
 -- Returns the frame's pixel, which the title bar is placed in and which cannot
 -- be asked for before the frame is on the grid.
 local function Surface(window, frame, opts)
-	-- Kept on the window rather than left local, because how opaque a window is
-	-- is a property of that window. The panel wants to be read and takes the
-	-- palette's own alpha; a chat window sits over the world all night and the
-	-- player decides how much of the world comes through it.
+	-- A window that asks for a backdrop is drawn on the palette's painting, when
+	-- the palette has one, and then has no fill to thin and no hairline: the
+	-- painted frame is the edge. The first resize, which the constructor makes,
+	-- lays it out. See UI/Backdrop.lua.
 	--
-	-- A screen window has none. It is the size of the screen, so a ground on it
-	-- is the game painted out, and what it draws is meant to be read against the
-	-- world rather than against a panel.
+	-- The flag answers on its own, screen window or not. A screen window used to
+	-- be refused one, because it was the size of the monitor and a ground on it
+	-- was the game painted out. It is half a screen at most now, so whether it
+	-- has a painting is the caller's to say.
+	window.backdrop = opts.backdrop and UI.Backdrop(frame) or nil
+	-- The fill is kept on the window rather than left local, because how opaque
+	-- a window is is a property of that window. The panel wants to be read and
+	-- takes the palette's own alpha; a chat window sits over the world all night
+	-- and the player decides how much of the world comes through it.
 	--
-	-- A window that asks for a backdrop is drawn on the palette's painting
-	-- instead, when the palette has one, and then has no fill to thin and no
-	-- hairline: the painted frame is the edge. See UI/Backdrop.lua.
-	window.backdrop = opts.backdrop and not opts.screen and UI.Backdrop(frame) or nil
-	-- A backdrop is drawn by the first resize, which the constructor makes, and
-	-- a screen never has one.
+	-- A screen window has no fill. It is read against the world, so what it has
+	-- instead is the wash behind it, and a painted one does without even that:
+	-- the painted floor is opaque, so a wash over it darkens the painting and
+	-- nothing behind it.
 	if opts.screen then
-		Darkness(window, frame, opts)
+		if not window.backdrop then
+			Darkness(window, frame, opts)
+		end
 		Clearing(window, frame, opts)
 	elseif not window.backdrop then
 		window.bg = ns.Fill(frame, "BACKGROUND", C.window[1], C.window[2], C.window[3], C.window[4])
@@ -359,14 +359,11 @@ end
 -- opens, which is what SetToplevel(false) buys: a sheet that jumped a strata on
 -- a click would put itself over the bags the moment you clicked a gear square.
 --
--- It is not the floor any more, and BACKGROUND is what it used to be. A screen
--- window has no ground, so the pile it was at the bottom of was the whole
--- screen: every rectangle this addon draws over the world sits at MEDIUM or
--- HIGH, so did the client's, and all of them drew over the page. HIGH is above
--- the HUD and below DIALOG, which is the two facts a screen window needs to be
--- true at once. UI/Hush.lua is the other half of the same answer and shuts the
--- addon's own rows away while the sheet is up; this is what covers everything
--- neither file owns.
+-- HIGH, because it has to be above the HUD and below DIALOG at once: every
+-- rectangle this addon and the client draw over the world sits at MEDIUM or
+-- HIGH. UI/Hush.lua is the other half of the same answer and shuts the addon's
+-- own rows away while the sheet is up; this is what covers everything neither
+-- file owns.
 local function Pile(frame, opts)
 	if opts.screen then
 		frame:SetFrameStrata(opts.strata or "HIGH")
@@ -388,21 +385,10 @@ end
 -- placing the HUD.
 --
 -- A screen window is dragged by its background: every pixel of it the page has
--- not put something on.
+-- not put something on. A strip along the top would be a handle you cannot see
+-- on a window with no chrome to say where it is.
 --
--- It had no drag at all while it was the whole monitor, which was right then: a
--- frame the size of the screen is already where it goes. It is half the screen
--- now, and half a screen is a thing a player has an opinion about, so the drag
--- is back.
---
--- The first answer was a strip along the top, twenty four pixels of title bar in
--- everything but the paint, kept narrow because a drag target the size of a wall
--- takes the left button and the camera's right drag out of half the game. That
--- is a real cost and the strip is still worse: a handle you cannot see, on a
--- window with no chrome to say where it is, and the player has to find it before
--- the sheet moves at all.
---
--- So the grip is the whole window and it sits under the page instead of over it.
+-- The grip is the whole window and it sits under the page instead of over it.
 -- Under is what makes it safe to be that big. Everything the page draws that
 -- answers the mouse wins the click: the nineteen gear squares still use what is
 -- in them, the figure still turns under the left drag and zooms under the wheel,
@@ -412,11 +398,8 @@ end
 -- moves the sheet rather than reaching the mob. This client has no
 -- SetPassThroughButtons to split that, and UI/Press.lua carries why.
 --
--- Nothing is drawn for it. The strip that used to light under the cursor was
--- there to point at a handle you could not otherwise find; a handle that is the
--- whole window has nothing to point at, and a bar along the top would now be
--- saying the drag lives up there when it lives everywhere. The sheet is a page
--- drawn on the world and it keeps no chrome it does not need.
+-- Nothing is drawn for it. A handle that is the whole window has nothing to
+-- point at.
 --
 -- Beside TitleBar and Footer for the reason both of those are: it is one piece
 -- of what a window is, and the argument for the shape it has is a paragraph
@@ -493,23 +476,18 @@ local function Drag(window, frame, opts)
 		-- refused in combat the same way showing it is.
 		secure = window.secure,
 		-- A window with chrome is grabbed by its own chrome, so the frame is the
-		-- grip. A screen window has none, and names the strip above instead.
+		-- grip. A screen window has none, and names its background instead.
 		grip = window.screen and Grip(window, frame) or nil,
 	})
 end
 
--- opts.zoom is a number or a getter returning one, and a getter is what every
--- window in the addon passes. This layer is still not allowed to know the name
--- of a setting, so the window is handed a way to ask rather than a key to read,
--- the same way every widget in the kit is. A getter is also what lets the
--- window keep itself on the grid, which is KeepOnGrid below.
+-- opts.zoom is a getter, or nothing for a dialog that takes the UI layer's own
+-- size. This layer is not allowed to know the name of a setting, so the window
+-- is handed a way to ask rather than a key to read, the same way every widget in
+-- the kit is. A getter is also what lets the window keep itself on the grid,
+-- which is KeepOnGrid below.
 local function ZoomOf(opts)
-	if type(opts.zoom) == "function" then
-		return opts.zoom
-	end
-	return function()
-		return tonumber(opts.zoom) or UI.DialogZoom()
-	end
+	return opts.zoom or UI.DialogZoom
 end
 
 -- The grid moved: a monitor swap, combat letting go of a frame, or this
@@ -518,10 +496,8 @@ end
 -- shape it has is a paragraph nobody reading how a window is assembled has to
 -- step through.
 --
--- Ten windows carried these two lines in a listener of their own, which is
--- todo.md item 19 and was six windows worse than the item said. The library made
--- the frame; keeping it at the size it is meant to be drawn at is the library's
--- job and not something each caller re-derives.
+-- The library made the frame; keeping it at the size it is meant to be drawn at
+-- is the library's job and not something each caller re-derives.
 --
 -- What the caller gets is the rezoom as a function rather than a callback after
 -- it, because two of the twelve do not want it run where it would fall by
@@ -562,19 +538,14 @@ function UI.Window(opts)
 
 	-- Whether this is a window on the screen or the screen itself.
 	--
-	-- One asks and one ever will: the character sheet. It is a page drawn on the
-	-- world with the game still showing through it, so it has none of what makes
-	-- a window a window. No ground, because a ground under half the monitor is
-	-- that half of the game painted out. No line round the outside, because it is
-	-- read as part of the scene rather than as a panel over it. No title bar,
-	-- because there is nothing to name. And the floor of the pile, so everything
-	-- the player opens over it flows over the top.
+	-- One asks: the character sheet. It is a page read against the world rather
+	-- than a panel over it. No flat fill, the wash behind it instead unless it
+	-- asks for the palette's painting. No line round the outside. No title bar,
+	-- because there is nothing to name. And it is never lifted, so everything the
+	-- player opens over it flows over the top. See Pile.
 	--
-	-- It is still dragged and it still remembers where you put it. Both came back
-	-- when it stopped being the whole monitor and became half of one: a frame the
-	-- size of the screen is already where it goes, half a screen is a corner the
-	-- player has an opinion about. With no title bar to grab, Grip below hands it
-	-- a strip along its top instead.
+	-- It is still dragged and it still remembers where you put it. With no title
+	-- bar to grab, Grip hands it its own background instead.
 	--
 	-- Its own frame does not take the mouse. What is on it answers for itself:
 	-- the gear squares take their own clicks, the figure takes the drag that turns
@@ -874,9 +845,9 @@ end
 -- How much of the world comes through the window, as a fraction of the
 -- palette's own alpha rather than instead of it. A window at 1 is the window
 -- the theme describes; below that it is the same colour, thinner.
--- A screen window has no ground to make more or less opaque, and asking one how
--- see-through it should be is a question with no answer rather than a mistake:
--- it is already the world with writing on it.
+-- A screen window or a painted one has no fill to make more or less opaque, and
+-- asking one how see-through it should be is a question with no answer rather
+-- than a mistake.
 function Window:SetOpacity(fraction)
 	if not self.bg then
 		return
