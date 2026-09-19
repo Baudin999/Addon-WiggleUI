@@ -136,7 +136,8 @@ ns.FrameSkin.Apply()
 -- The palette, restated rather than reached for
 --
 -- UnitIsPlayer is true for the player alone, so the player wears their own
--- class colour and the other two fall to the hostile one on a reaction of 2.
+-- class colour, the pet wears its owner's, and the other two fall to the
+-- hostile one on a reaction of 2.
 -- This half is an identity check against the palette; the contrast section
 -- below is the half that is independent.
 ----------------------------------------------------------------------
@@ -145,7 +146,7 @@ local TRACK, EDGE_DIM = ns.Unit.Color.track, 0.60
 local HOSTILE = ns.Unit.Color.reaction.hostile
 local TINT = {
 	player = ns.Unit.Color.Class(PLAYER_CLASS),
-	pet = HOSTILE,
+	pet = ns.Unit.Color.Class(PLAYER_CLASS),
 	target = HOSTILE,
 	tot = HOSTILE,
 }

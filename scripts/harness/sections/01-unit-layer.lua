@@ -50,6 +50,8 @@ check(Color.OfUnit("player") == Color.Class(playerClass),
 	("the player's own frame is not wearing the %s colour"):format(tostring(playerClass)))
 check(Color.OfUnit("nameplate1") == Color.reaction.hostile,
 	"a mob with no class did not fall back to its reaction")
+check(Color.OfUnit("pet") == Color.OfUnit("player"),
+	"your pet is not wearing your class colour, so its block and yours read as two units")
 
 -- Dimming writes into one scratch table rather than allocating.
 local dim = Color.Dim(Color.reaction.hostile, 0.5)

@@ -639,9 +639,23 @@ function Color.Frame(unit)
 	return reaction == 4 and Color.frame.neutral or Color.frame.hostile
 end
 
--- The colour a unit's own gauge wears. A player wears their class; anything
--- else has no class and falls back to what it thinks of you.
+-- The owner behind each pet token. A pet has no class of its own, and on
+-- reaction alone a hunter's pet drew friendly green beside the hunter's class
+-- green: two near greens that read as a mistake rather than a pair. Tokens
+-- only, because a nameplate's token says nothing about whose pet it is.
+local OWNER = { pet = "player" }
+for index = 1, 4 do
+	OWNER["partypet" .. index] = "party" .. index
+end
+for index = 1, 40 do
+	OWNER["raidpet" .. index] = "raid" .. index
+end
+
+-- The colour a unit's own gauge wears. A player wears their class and a pet
+-- its owner's; anything else has no class and falls back to what it thinks
+-- of you.
 function Color.OfUnit(unit)
+	unit = OWNER[unit] or unit
 	if UnitIsPlayer(unit) then
 		local _, class = UnitClass(unit)
 		local tint = Color.Class(class)
