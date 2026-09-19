@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WH9RKDE6PQ00YEW17WN25K
 type: task
-status: doing
+status: done
 title: The XP bar drops its painted border
 ---
 
