@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WYSAS7NHKXB229SFZND0WZ
 type: task
-status: todo
+status: doing
 title: A pet's frame wears its owner's class colour
 ---
 
