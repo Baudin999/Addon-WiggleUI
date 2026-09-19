@@ -60,6 +60,10 @@ function Region:GetTextColor()
 end
 function Region:SetSpacing(v) self.spacing = v end
 function Region:SetWordWrap(v) self.wordWrap = v and true or false end
+-- Modelled rather than left to the no-op, because a wrapped string cut at a
+-- line count answers GetStringHeight for the lines it kept, and a row laid out
+-- off the uncut height is a row with a hole under the text.
+function Region:SetMaxLines(v) self.maxLines = v end
 function Region:SetJustifyH(v) self.justify = v end
 function Region:FontSize()
 	return self.fontSize or (self.fontObject and self.fontObject.fontSize) or 12
@@ -73,7 +77,11 @@ function Region:StringLines()
 		return 1
 	end
 	local wide = #text * ADVANCE * self:FontSize()
-	return math.max(1, math.ceil(wide / self.width))
+	local lines = math.max(1, math.ceil(wide / self.width))
+	if self.maxLines and self.maxLines > 0 and lines > self.maxLines then
+		return self.maxLines
+	end
+	return lines
 end
 function Region:GetStringHeight()
 	local lines = self:StringLines()

@@ -713,6 +713,9 @@ Feeds\Combat.lua
 # the feed's quality chips filtered out is still a drop you want to see. After
 # Ck\Float.lua, which is the column it pushes into.
 Feeds\Floats.lua
+# Party chat, whispers, skill-ups and system lines floated the same way, into
+# the drops' lane or a mirror of it. After Floats.lua, whose lane it borrows.
+Feeds\Messages.lua
 Feeds\Feature.lua
 
 # The breakdown. What this character does, counted out of the combat log and

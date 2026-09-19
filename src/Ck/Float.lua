@@ -73,7 +73,8 @@ local CORNER = { RIGHT = "TOPRIGHT", LEFT = "TOPLEFT" }
 -- spec.stagger     the least time between two messages entering
 -- spec.most        how many messages the column shows at once
 -- spec.ease        the curve the travel follows
--- spec.onGone      called with a frame the lane has finished with
+-- spec.onGone      called with a frame the lane has finished with, unless the
+--                  push that sent it named its own
 function Float.Lane(spec)
 	local side = spec.side or "RIGHT"
 	assert(CORNER[side], "a lane comes in from the RIGHT or the LEFT")
@@ -165,12 +166,12 @@ local function Leave(tween)
 	Animations.Stop(row.move)
 	Animations.Stop(row.hold)
 
-	local frame = row.frame
+	local frame, gone = row.frame, row.onGone or lane.onGone
 	frame:Hide()
-	row.frame = nil
+	row.frame, row.onGone = nil, nil
 	lane.spare[#lane.spare + 1] = row
-	if lane.onGone then
-		lane.onGone(frame)
+	if gone then
+		gone(frame)
 	end
 	Reflow(lane)
 end
@@ -228,7 +229,14 @@ end
 -- is asked for rather than measured because a row that grows to fit its own
 -- text has not been laid out yet at the moment it is pushed, and a height read
 -- off it here would be last message's.
-function Lane:Push(frame, height)
+--
+-- The last two are for a lane two callers share. A drop's name is read in a
+-- second and a whisper of a hundred characters is not, so `ttl` holds this one
+-- message for as long as its caller says and leaves the lane's own for the
+-- rest. `onGone` hands this frame back to the caller that pushed it, because a
+-- chat row returned to the loot pool comes out again as a drop with no count
+-- and a sentence where the name goes.
+function Lane:Push(frame, height, ttl, onGone)
 	-- The ceiling, before anything else. A column that grew with the drops
 	-- would cover the screen on a full bag, and the message worth losing is the
 	-- oldest one rather than the one that just arrived.
@@ -247,7 +255,7 @@ function Lane:Push(frame, height)
 	end
 
 	local row = table.remove(self.spare) or NewRow(self)
-	row.frame, row.height, row.leaving = frame, height, false
+	row.frame, row.height, row.leaving, row.onGone = frame, height, false, onGone
 	row.move.frame, row.fade.frame, row.hold.frame = frame, frame, frame
 	self.rows[#self.rows + 1] = row
 
@@ -309,7 +317,7 @@ function Lane:Push(frame, height)
 	-- armed when the first lands. Chaining would put the hold's start on the
 	-- frame the travel finished, which is a frame late and drifts by that much
 	-- every time; this lands exactly ttl after the message came to rest.
-	Animations.Arm(row.hold, self.seconds + self.ttl, Ease.linear, delay)
+	Animations.Arm(row.hold, self.seconds + (ttl or self.ttl), Ease.linear, delay)
 	Animations.Start(row.hold, Expire)
 	return row
 end

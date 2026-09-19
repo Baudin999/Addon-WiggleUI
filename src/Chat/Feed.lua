@@ -148,19 +148,18 @@ function Feed.Stamp()
 	return Stamp()
 end
 
--- The class colour of whoever spoke, as an escape code.
+-- The class of whoever spoke, as the English token.
 --
 -- The GUID is the only reliable way to it: the client puts one on every chat
 -- event and GetPlayerInfoByGUID reads the class straight out of it, for anyone,
--- in or out of your group. ns.Unit.Color owns the palette so the name in this
--- window is the colour that name is on a nameplate and in the meters.
+-- in or out of your group.
 --
 -- Nil where the client will not say, which is a Battle.net whisper, a system
--- line and anything on a client with no GUID on the event. The caller draws
--- those white. It is nil here rather than white because the caller keeps what it
--- built, and a name that arrived once without a GUID must not stay white for the
--- rest of the session.
-local function NameColor(guid)
+-- line and anything on a client with no GUID on the event.
+--
+-- Public for Feeds/Messages.lua, which puts the same name in the same colour on
+-- a message floating past, and the class icon beside it.
+function Feed.Class(guid)
 	if type(guid) ~= "string" or guid == "" then
 		return nil
 	end
@@ -172,6 +171,21 @@ local function NameColor(guid)
 	-- that reads right in a debugger gives every name white on a French client.
 	local ok, _, class = pcall(_G.GetPlayerInfoByGUID, guid)
 	if not ok then
+		return nil
+	end
+	return class
+end
+
+-- The class colour of whoever spoke, as an escape code. ns.Unit.Color owns the
+-- palette so the name in this window is the colour that name is on a nameplate
+-- and in the meters.
+--
+-- Nil where the class is, and the caller draws those white. It is nil here
+-- rather than white because the caller keeps what it built, and a name that
+-- arrived once without a GUID must not stay white for the rest of the session.
+local function NameColor(guid)
+	local class = Feed.Class(guid)
+	if not class then
 		return nil
 	end
 	return ns.Unit.Color.ClassHex(class)
@@ -222,7 +236,7 @@ end
 -- player who has recoloured a channel in the client's chat settings sees that
 -- colour here; the theme's ordinary text colour where the client has no table
 -- or no entry for this kind.
-local function LineColor(key)
+function Feed.LineColor(key)
 	local info = _G.ChatTypeInfo and _G.ChatTypeInfo[key]
 	if info and info.r then
 		return info.r, info.g, info.b
@@ -241,7 +255,7 @@ end
 --------------------------------------------------------------------------
 
 local function Emit(rooms, line, key, important)
-	local r, g, b = LineColor(key)
+	local r, g, b = Feed.LineColor(key)
 	if not Feed.OnLine then
 		if #pending < PENDING then
 			-- The ids are copied out. ns.Rooms.Route hands back a list it fills

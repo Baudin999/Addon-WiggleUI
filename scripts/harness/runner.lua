@@ -547,6 +547,11 @@ local SECTIONS = {
 	-- state no section above it expects to find and none below it would
 	-- survive.
 	"79-floating-messages",
+	-- Under it, because it wants the tick that section ran out and the lane
+	-- it drained: the whispers 29 and 59 fired floated too, and 79's ten
+	-- seconds took them off with the drops. It writes the drops' numbers and
+	-- the messages' own and hands every one back at the foot of the file.
+	"79-floating-chat",
 	-- After it, which is the one place a section that drives an animation can
 	-- sit beside that one. 79 runs the tween tick out to nothing and asserts it
 	-- gave its OnUpdate back; this drives a different library on a different

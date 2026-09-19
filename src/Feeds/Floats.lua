@@ -225,7 +225,7 @@ end
 -- The two alphas are the only settings that are not the spec's own units: they
 -- are stored as the percentages the panel row shows and the library wants a
 -- fraction, so the division happens here, once, at the boundary.
-local function Spec()
+function Floats.Spec()
 	local db = ns.db
 	return {
 		side = db.lootFloatSide,
@@ -271,10 +271,21 @@ end
 -- anything the client grades below green gets the theme's edge instead: a white
 -- hairline round a picture of a bear organ is the brightest thing on the screen
 -- and it would be shouting about the least interesting drop of the pull.
-function Floats.Show(link, count)
+-- The lane the drops are in, built if the settings threw the last one away.
+--
+-- Public for Feeds/Messages.lua, which pushes into this one when chat floats on
+-- the same side and mirrors it when chat floats on the other. It compares what
+-- it gets back against the lane it mirrored, which is how a slider moved on
+-- this page reaches that one without this file knowing it exists.
+function Floats.Lane()
 	if not lane then
-		lane = Float.Lane(Spec())
+		lane = Float.Lane(Floats.Spec())
 	end
+	return lane
+end
+
+function Floats.Show(link, count)
+	Floats.Lane()
 
 	local frame = table.remove(pool) or Build()
 	Dress(frame)

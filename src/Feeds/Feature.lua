@@ -534,6 +534,47 @@ local function FloatPage(ui)
 	ui.Hint("A row is as tall as the tallest of the three and the column is laid out by summing the rows.")
 end
 
+-- Where chat floats, said against the drops rather than as a screen edge,
+-- because moving the drops to the other side has to take the messages with it.
+local PLACES = {
+	{ value = "opposite", text = "the other side from the drops" },
+	{ value = "same", text = "in the drops' own column" },
+}
+
+local function MessagesPage(ui)
+	ui.Check("float what is said to you across the screen",
+		function() return ns.db.msgFloat end,
+		function(on) ns.db.msgFloat = on end)
+	ui.Hint("A separate stream from the chat window, which keeps every line either way. The immersive theme takes it off the screen.")
+
+	ui.Picker("comes in", function() return ns.db.msgFloatSide end,
+		function(value) ns.db.msgFloatSide = value end,
+		function() return PLACES end)
+	ui.Hint("The other side is the drops' lane mirrored in the middle of the screen, the way the target frame mirrors yours. Every number on the loot float moves both.")
+
+	for _, row in ipairs({
+		{ "party chat", "msgFloatParty" },
+		{ "whispers", "msgFloatWhisper" },
+		{ "skill ups", "msgFloatSkill" },
+		{ "system messages", "msgFloatSystem" },
+	}) do
+		local key = row[2]
+		ui.Check(row[1], function() return ns.db[key] end,
+			function(on) ns.db[key] = on end)
+	end
+	ui.Hint("System messages are everything the server says in yellow: a friend logging in, an instance reset, a restart coming. Your own party lines never float.")
+
+	ui.Slider("time on screen at least", 1, 8, 0.25,
+		function() return ns.db.msgFloatHold end,
+		function(value) ns.db.msgFloatHold = value end, Seconds)
+	ui.Hint("A long message stays up longer than this, a second for every fifteen letters, and eight seconds at most.")
+
+	ui.Size("text", 8, 36, 1,
+		function() return ns.db.msgFloatText end,
+		function(value) ns.db.msgFloatText = value end)
+	ui.Hint("Three lines and then cut. The name over it is the size of a drop's name.")
+end
+
 local function Panel(ui)
 	ui.Section("Loot feed", "Feeds and meters")
 	ui.Lede("What dropped, newest at the top, in the item's own quality colour, filtered by the chips over it.")
@@ -646,6 +687,11 @@ local function Panel(ui)
 		local seen, ignored = ns.CombatFeed.Counts()
 		return ("%d, and %d under the floor"):format(seen, ignored)
 	end)
+
+	ui.Section("Messages", "Feeds and meters")
+	ui.Lede("Party chat, whispers, skill ups and system lines, sliding in the way a drop does.")
+
+	MessagesPage(ui)
 end
 
 --------------------------------------------------------------------------
@@ -658,6 +704,9 @@ for key, value in pairs(CombatFeed.Defaults()) do
 	defaults[key] = value
 end
 for key, value in pairs(ns.Floats.Defaults()) do
+	defaults[key] = value
+end
+for key, value in pairs(ns.Messages.Defaults()) do
 	defaults[key] = value
 end
 
@@ -725,6 +774,13 @@ ns.Register({
 			end
 		end
 		ns.Floats.Apply()
+
+		-- The messages' two numbers and their side, and none of the five
+		-- switches, which are decisions about what floats rather than a screen
+		-- somebody cannot read.
+		for _, key in ipairs({ "msgFloatSide", "msgFloatHold", "msgFloatText" }) do
+			ns.db[key] = ns.DefaultCopy(key)
+		end
 	end,
 
 	panel = Panel,
