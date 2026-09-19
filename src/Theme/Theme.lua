@@ -271,10 +271,10 @@ loader:SetScript("OnEvent", function(self, _, name)
 	if not listed[ns.db.palette] then
 		ns.db.palette = "dark"
 	end
-	if ns.db.barLook ~= "modern" then
-		ns.db.barLook = "flat"
+	if ns.db.gaugeLook ~= "modern" then
+		ns.db.gaugeLook = "flat"
 	end
-	drawnTheme, drawnPalette, drawnLook = ns.db.theme, ns.db.palette, ns.db.barLook
+	drawnTheme, drawnPalette, drawnLook = ns.db.theme, ns.db.palette, ns.db.gaugeLook
 	drawnPortraits = ns.db.portraits ~= false
 	Paint(drawnPalette)
 	chosen = themed[drawnTheme]
@@ -307,7 +307,7 @@ end
 
 local function Pending()
 	return ns.db.theme ~= drawnTheme or ns.db.palette ~= drawnPalette
-		or ns.db.barLook ~= drawnLook or (ns.db.portraits ~= false) ~= drawnPortraits
+		or ns.db.gaugeLook ~= drawnLook or (ns.db.portraits ~= false) ~= drawnPortraits
 end
 
 -- One word, the saved setting it writes, and the list it has to be on.
@@ -339,7 +339,7 @@ ns.Register({
 		-- drawn, so nobody's screen changes by upgrading.
 		theme = "informational",
 		palette = "dark",
-		barLook = "flat",
+		gaugeLook = "flat",
 		portraits = true,
 	},
 
@@ -350,19 +350,19 @@ ns.Register({
 		palette = function(arg)
 			Word("palette", Theme.PALETTES, arg, "palette")
 		end,
-		bars = function(arg)
-			Word("barLook", Theme.BAR_LOOKS, arg, "bar look")
+		gauges = function(arg)
+			Word("gaugeLook", Theme.BAR_LOOKS, arg, "bar look")
 		end,
 	},
 
 	help = {
 		"theme informational|immersive|exploration, how much of the addon is on the screen, from the next /reload",
 		"palette dark|forest|desert|arcane, the addon's colours, from the next /reload",
-		"bars flat|modern, how every gauge is drawn, from the next /reload",
+		"gauges flat|modern, how every health, power and cast bar is drawn, from the next /reload",
 	},
 
 	status = function()
-		return ("theme %s, palette %s, bars %s")
+		return ("theme %s, palette %s, gauges %s")
 			:format(drawnTheme or "?", drawnPalette or "?", drawnLook or "?")
 	end,
 
@@ -393,10 +393,10 @@ ns.Register({
 			function() return palettes end)
 
 		ui.Picker("bar look",
-			function() return ns.db.barLook end,
-			function(value) ns.db.barLook = value end,
+			function() return ns.db.gaugeLook end,
+			function(value) ns.db.gaugeLook = value end,
 			function() return looks end)
-		ui.Hint("Flat is one colour per bar with a hairline round each. Modern shades every bar from light at the top to dark at the bottom, stacks health on power with no line between, and edges each unit in the palette's accent.")
+		ui.Hint("Modern shades each bar light to dark, stacks health on power with no line between, and edges each unit in the palette's accent.")
 
 		ui.Check("portraits on the player and target frames",
 			function() return ns.db.portraits ~= false end,

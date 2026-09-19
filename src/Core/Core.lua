@@ -3133,6 +3133,25 @@ local function MigrateAimPrior()
 	end
 end
 
+-- The gauge look shipped for one session under barLook, the action bars' own
+-- key, and the theme's loader wrote its string over their table of per-bar
+-- records. The string is carried across to the key it has now and the table
+-- is left to come back empty from the defaults, which is all a string there
+-- can be turned back into.
+--
+-- Runs before the defaults are applied, because ApplyDefaults keeps a saved
+-- value of the wrong type and Buttons/Look.lua would index the string.
+local function MigrateGaugeLook()
+	local was = WarriorKitDB.barLook
+	if type(was) == "table" or was == nil then
+		return
+	end
+	WarriorKitDB.barLook = nil
+	if WarriorKitDB.gaugeLook == nil and (was == "flat" or was == "modern") then
+		WarriorKitDB.gaugeLook = was
+	end
+end
+
 local loader = CreateFrame("Frame")
 loader:RegisterEvent("ADDON_LOADED")
 loader:SetScript("OnEvent", function(self, _, name)
@@ -3143,6 +3162,7 @@ loader:SetScript("OnEvent", function(self, _, name)
 	WarriorKitCharDB = WarriorKitCharDB or {}
 	Retire()
 	Migrate()
+	MigrateGaugeLook()
 	Ship()
 	ns.db = ApplyDefaults(WarriorKitDB, defaults)
 	ns.dbc = ApplyDefaults(WarriorKitCharDB, charDefaults)

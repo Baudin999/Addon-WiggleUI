@@ -65,7 +65,7 @@ local BRANCHES = 30
 local ALLOWED = {
 	{ path = "./UnitFrames/EnemyBars.lua", fn = "LayoutWidget", own = 167,
 	  why = "places every region of one nameplate widget in one pass" },
-	{ path = "./UnitFrames/Block.lua", fn = "Block.Place", own = 136,
+	{ path = "./UnitFrames/Block.lua", fn = "Block.Place", own = 106,
 	  why = "places every region of one block in one pass" },
 	{ path = "./UI/Widgets.lua", fn = "UI.Kit", own = 115,
 	  why = "the kit's own body, one closure per control, returned as a table" },

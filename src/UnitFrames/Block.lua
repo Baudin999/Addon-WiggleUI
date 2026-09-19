@@ -332,6 +332,66 @@ function Block.Build(entry)
 	ns.FrameAuras.Build(entry)
 end
 
+-- The four strings, sized off the two bars and pinned to the block's edges.
+-- Answers the small size and its font, which the ammo pill wears too.
+local function PlaceText(entry, px, health, power, seam, portrait)
+	local frame, mirror = entry.frame, entry.spec.mirror
+	local portraitEdge = mirror and "RIGHT" or "LEFT"
+	local gaugeEdge = mirror and "LEFT" or "RIGHT"
+	local pull = mirror and 1 or -1
+
+	-- Sized off the block, because the same code draws a 34 pixel player frame
+	-- and a 21 pixel target of target. One shared object per size; UI/Text.lua
+	-- says why. Not rounded: `big` is a whole count of pixels and `px` is what
+	-- one costs in units, so `big * px` is already exact. Shadowed, not
+	-- outlined: all four sit on an opaque bar.
+	local big = math.min(math.max(math.floor(health * BIG_SHARE), BIG_MIN), BIG_MAX)
+	local small = math.min(math.max(math.floor(power * SMALL_SHARE), SMALL_MIN), SMALL_MAX)
+	local bigFont = ns.UI.Font(big * px, ns.UI.FLAT)
+	local smallFont = ns.UI.Font(small * px, ns.UI.FLAT)
+
+	entry.nameText:SetFontObject(bigFont)
+	entry.healthText:SetFontObject(bigFont)
+	entry.levelText:SetFontObject(smallFont)
+	entry.powerText:SetFontObject(smallFont)
+
+	-- Floored to a whole pixel rather than left on the bar's exact centre.
+	-- Half of an odd bar is half a pixel, and a glyph asked for at half a pixel
+	-- is rasterised across two, which is what makes small text look like it
+	-- has been breathed on.
+	local pad = TEXT_PAD * px
+	local healthMid = -(1 + math.floor(health / 2)) * px
+	local powerMid = -(1 + seam + health + math.floor(power / 2)) * px
+
+	-- Anchored to the square's inner corner rather than to its side, because a
+	-- side point sits at half height and the vertical offsets here are all
+	-- measured down from the top of the block.
+	entry.healthText:ClearAllPoints()
+	entry.healthText:SetPoint(gaugeEdge, frame, "TOP" .. gaugeEdge, pull * pad, healthMid)
+
+	-- The inner edge the name and the level start from: the square's, or the
+	-- block's own when there is no square.
+	local start, startPoint = entry.slot, "TOP" .. gaugeEdge
+	if not portrait then
+		start, startPoint = frame, "TOP" .. portraitEdge
+	end
+
+	entry.nameText:ClearAllPoints()
+	entry.nameText:SetPoint(portraitEdge, start, startPoint, -pull * pad, healthMid)
+	entry.nameText:SetPoint(gaugeEdge, entry.healthText, portraitEdge, pull * pad, 0)
+
+	-- The level goes on the power bar's inner end, which is empty on every
+	-- unit in the game, and the power number on its outer end.
+	entry.levelText:ClearAllPoints()
+	entry.levelText:SetPoint(portraitEdge, start, startPoint, -pull * pad, powerMid)
+
+	entry.powerText:ClearAllPoints()
+	entry.powerText:SetPoint(gaugeEdge, frame, "TOP" .. gaugeEdge, pull * pad, powerMid)
+	entry.powerText:SetShown(power >= VALUE_FLOOR)
+
+	return small, smallFont
+end
+
 -- Sized off the two settings and laid out from the corner the portrait is on,
 -- which is the left of the player frame and the right of the target frame, so
 -- the block grows away from it in opposite directions on the two. The inside
@@ -437,54 +497,7 @@ function Block.Place(entry)
 	-- width it last drew, and that width is now a different number of pixels.
 	entry.pixel, entry.healSpan = px, nil
 
-	-- Sized off the block, because the same code draws a 34 pixel player frame
-	-- and a 21 pixel target of target. One shared object per size; UI/Text.lua
-	-- says why. Not rounded: `big` is a whole count of pixels and `px` is what
-	-- one costs in units, so `big * px` is already exact. Shadowed, not
-	-- outlined: all four sit on an opaque bar.
-	local big = math.min(math.max(math.floor(health * BIG_SHARE), BIG_MIN), BIG_MAX)
-	local small = math.min(math.max(math.floor(power * SMALL_SHARE), SMALL_MIN), SMALL_MAX)
-	local bigFont = ns.UI.Font(big * px, ns.UI.FLAT)
-	local smallFont = ns.UI.Font(small * px, ns.UI.FLAT)
-
-	entry.nameText:SetFontObject(bigFont)
-	entry.healthText:SetFontObject(bigFont)
-	entry.levelText:SetFontObject(smallFont)
-	entry.powerText:SetFontObject(smallFont)
-
-	-- Floored to a whole pixel rather than left on the bar's exact centre.
-	-- Half of an odd bar is half a pixel, and a glyph asked for at half a pixel
-	-- is rasterised across two, which is what makes small text look like it
-	-- has been breathed on.
-	local pad = TEXT_PAD * px
-	local healthMid = -(1 + math.floor(health / 2)) * px
-	local powerMid = -(1 + seam + health + math.floor(power / 2)) * px
-
-	-- Anchored to the square's inner corner rather than to its side, because a
-	-- side point sits at half height and the vertical offsets here are all
-	-- measured down from the top of the block.
-	entry.healthText:ClearAllPoints()
-	entry.healthText:SetPoint(gaugeEdge, frame, "TOP" .. gaugeEdge, pull * pad, healthMid)
-
-	-- The inner edge the name and the level start from: the square's, or the
-	-- block's own when there is no square.
-	local start, startPoint = entry.slot, "TOP" .. gaugeEdge
-	if not portrait then
-		start, startPoint = frame, "TOP" .. portraitEdge
-	end
-
-	entry.nameText:ClearAllPoints()
-	entry.nameText:SetPoint(portraitEdge, start, startPoint, -pull * pad, healthMid)
-	entry.nameText:SetPoint(gaugeEdge, entry.healthText, portraitEdge, pull * pad, 0)
-
-	-- The level goes on the power bar's inner end, which is empty on every
-	-- unit in the game, and the power number on its outer end.
-	entry.levelText:ClearAllPoints()
-	entry.levelText:SetPoint(portraitEdge, start, startPoint, -pull * pad, powerMid)
-
-	entry.powerText:ClearAllPoints()
-	entry.powerText:SetPoint(gaugeEdge, frame, "TOP" .. gaugeEdge, pull * pad, powerMid)
-	entry.powerText:SetShown(power >= VALUE_FLOOR)
+	local small, smallFont = PlaceText(entry, px, health, power, seam, portrait)
 
 	PlaceBadges(entry, px, side, portraitEdge)
 	PlaceAmmo(entry, px, level, small, smallFont, gaugeEdge, pull, side)
