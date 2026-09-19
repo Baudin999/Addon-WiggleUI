@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WE9SPRHGM6442N5SA4XJND
 type: task
-status: doing
+status: done
 title: The bag window wears its palette's painted backdrop
 ---
 
