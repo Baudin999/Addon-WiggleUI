@@ -222,6 +222,42 @@ local function WithPlaces(defaults)
 	return defaults
 end
 
+-- Three lists, and the split is what makes the page usable rather than
+-- complete. Twenty three rows with a sentence under each came to forty
+-- nine cells and a thousand units of stack in a view that holds three
+-- hundred and fifty, so the row you opened the page for was three
+-- screens down. The windows and the things drawn over the world were
+-- the two halves anybody thinks in, and each fit without scrolling
+-- until the thirteenth window: a list is fifteen cells at most with
+-- its reading and its button under it, and the spell book was the
+-- sixteenth. So the windows are two lists now, split the way the
+-- Blizzard page already splits them: the ones that stand in for a
+-- window of the client's, and the ones the client has no copy of.
+--
+-- The sentence under every row is gone with it. It said which stop that
+-- screen was on and whether the stop kept a hairline sharp, twenty three
+-- times, and the reading at the foot of each list answers that for every
+-- row at once: the stops that stay exact are a fact about the monitor,
+-- not about the screen being sized.
+--
+-- And the same thing happened again to the things drawn over the world.
+-- Fourteen of them is fifteen cells with the reading and the button
+-- under them, which is the wall the windows hit, and the fourteenth
+-- arrived with the floating numbers. So they are two lists as well, and
+-- the line between them is the one a player already has in their head:
+-- what a pull puts on the screen, and what was there before it.
+--
+-- Which list a screen is on is read off three flags on its
+-- registration: `window` says it is a window at all, `own` that the
+-- client has no copy of it, and `fight` that a screen drawn over the
+-- world is one you read while something is hitting you.
+local function Where(zoom)
+	if zoom.window ~= true then
+		return zoom.fight and "fight" or "screen"
+	end
+	return zoom.own and "own" or "client"
+end
+
 ns.Register({
 	name = "settings",
 	order = 20,
@@ -343,42 +379,6 @@ ns.Register({
 	panel = function(ui)
 		local low, high = ns.UI.Tooltip.LingerRange()
 		local fontLow, fontHigh = ns.UI.Tooltip.FontRange()
-
-		-- Three lists, and the split is what makes the page usable rather than
-		-- complete. Twenty three rows with a sentence under each came to forty
-		-- nine cells and a thousand units of stack in a view that holds three
-		-- hundred and fifty, so the row you opened the page for was three
-		-- screens down. The windows and the things drawn over the world were
-		-- the two halves anybody thinks in, and each fit without scrolling
-		-- until the thirteenth window: a list is fifteen cells at most with
-		-- its reading and its button under it, and the spell book was the
-		-- sixteenth. So the windows are two lists now, split the way the
-		-- Blizzard page already splits them: the ones that stand in for a
-		-- window of the client's, and the ones the client has no copy of.
-		--
-		-- The sentence under every row is gone with it. It said which stop that
-		-- screen was on and whether the stop kept a hairline sharp, twenty three
-		-- times, and the reading at the foot of each list answers that for every
-		-- row at once: the stops that stay exact are a fact about the monitor,
-		-- not about the screen being sized.
-		--
-		-- And the same thing happened again to the things drawn over the world.
-		-- Fourteen of them is fifteen cells with the reading and the button
-		-- under them, which is the wall the windows hit, and the fourteenth
-		-- arrived with the floating numbers. So they are two lists as well, and
-		-- the line between them is the one a player already has in their head:
-		-- what a pull puts on the screen, and what was there before it.
-		--
-		-- Which list a screen is on is read off three flags on its
-		-- registration: `window` says it is a window at all, `own` that the
-		-- client has no copy of it, and `fight` that a screen drawn over the
-		-- world is one you read while something is hitting you.
-		local function Where(zoom)
-			if zoom.window ~= true then
-				return zoom.fight and "fight" or "screen"
-			end
-			return zoom.own and "own" or "client"
-		end
 
 		local function Rows(want, title, lede)
 			ui.Section(title, "The screen")
