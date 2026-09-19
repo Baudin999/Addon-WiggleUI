@@ -377,6 +377,7 @@ Perf/Hud.lua:3:FillDips writes the log, on the tick a dip arrived or an age roll
 Perf/Hud.lua:3:FillNow turns the second's numbers into words, on the tick one of them moved
 Perf/Trace.lua:1:Record writes one dip down, on the frames that already went wrong
 Core/Core.lua:1:ns.Print writes one line into the chat frame, which is the addon telling you something
+Theme/Theme.lua:1:Theme.Pin redresses every worn frame, on a shake of the mouse and never twice inside a second
 UI/Ability.lua:1:Ability.Size is a settings change and a rescale, never a tick
 UI/Aura.lua:1:Aura.Size is a settings change and a rescale, never a tick
 UI/Feed.lua:1:Feed:Enter fills a tooltip, which is a hover, and the one reopen that is not is throttled to a fifth of a second

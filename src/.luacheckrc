@@ -317,6 +317,10 @@ read_globals = {
 	-- than not putting one up. It is an entry here because the probe is the
 	-- shim and it lives beside the caller.
 	"GetCursorPosition",
+	-- Whether a mouse button is turning the camera, read by Theme/Theme.lua so
+	-- a camera turn is not taken for a shake. Questie's tracker calls it on the
+	-- installed 2.5.6 client, which is the proof it is there.
+	"IsMouselooking",
 	-- what one action slot is doing, read by Buttons/Slot.lua on the bar's
 	-- ticker. Probed by name in Slot.CanRead for the same reason the writers
 	-- above are: nothing installed here proves any of them is on 2.5.6, and a

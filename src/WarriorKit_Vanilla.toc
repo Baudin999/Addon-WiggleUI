@@ -314,6 +314,9 @@ UI\Placeable.lua
 # pointer, without touching the part that built it. After UI\Press.lua for the
 # hover-only mouse and UI\Ticker.lua for the recheck.
 UI\Veil.lua
+# A shake of the mouse, read off the pointer. Nothing here but the arithmetic;
+# Theme\Theme.lua owns the tick that feeds it and what a shake does.
+UI\Wiggle.lua
 # Which elements each theme shows, hides, dims or leaves under the pointer, and
 # the file that applies it. After UI\Veil.lua, which is how it does that, and
 # before every part, because each part hands its frames to ns.Theme.Wear as it

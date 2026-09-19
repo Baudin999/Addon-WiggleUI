@@ -628,6 +628,7 @@ local SECTIONS = {
 	-- load painted. Builds one frame, hides it at the foot, reads nothing any
 	-- other section left.
 	"88-theme-veil",
+	"88-theme-wiggle",
 	-- The painted frame's tiling on a frame of its own, with a palette chosen
 	-- by hand and put back to none at the foot.
 	"88-theme-backdrop",

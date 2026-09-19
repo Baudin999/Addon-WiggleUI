@@ -111,6 +111,10 @@ local ORDER = { "marker", "swing", "icon", "action", "pet", "bars", "cast", "pla
 	-- on it. Five times a second, and only while the pointer is over one of
 	-- that frame's own buttons; it stops itself when the pointer leaves.
 	"reveal",
+	-- The pointer read for a shake, fifty times a second in a theme that keeps
+	-- something under the pointer and never in one that does not. One cursor
+	-- read and a few comparisons, and this row is here to keep it that small.
+	"wiggle",
 	-- The one slot that is not a ticker. Bags/Window.lua brackets its refresh,
 	-- which the bag events book up to ten times a second at a vendor, and
 	-- scripts/check.sh reads a literal ns.Perf.Start as a slot for that reason.

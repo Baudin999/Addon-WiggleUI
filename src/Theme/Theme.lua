@@ -20,8 +20,9 @@ ns.Theme = Theme
 -- saved variables and drawn at the next /reload, because a live switch would
 -- mean every window repainting itself on a signal and every part listening for
 -- one, and the theme's promise is that it costs nothing once you are in the
--- world. The one exception is the frames being placed: /wk unlock brings every
--- element up so it can be dragged, and locking puts the theme back.
+-- world. Two exceptions. The frames being placed: /wk unlock brings every
+-- element up so it can be dragged, and locking puts the theme back. And the
+-- pin: a shake of the mouse brings up what the theme keeps under the pointer.
 --------------------------------------------------------------------------
 
 -- The palettes in the order the options page cycles them. Every palette file
@@ -166,6 +167,10 @@ end
 
 local worn = {} -- { key, frame } for every frame a part has handed over
 
+-- Every element the theme keeps under the pointer brought up at once and held
+-- there, by a shake of the mouse. See the pin, below.
+local pinned = false
+
 local function Dress(frame, mode)
 	if mode == "show" and not UI.Veiled(frame) then
 		return true
@@ -186,6 +191,10 @@ local function Dress(frame, mode)
 	end
 	if mode == "hide" then
 		veil:Hide()
+	elseif mode == "hover" and pinned then
+		veil:Show()
+		UI.Unreveal(frame)
+		veil:SetAlpha(1)
 	elseif mode == "hover" then
 		veil:Show()
 		UI.Reveal(frame, 0)
@@ -230,6 +239,61 @@ function Theme.Wear(key, frame)
 		ns.Lockdown.Done(Pass, false)
 	end
 end
+
+--------------------------------------------------------------------------
+-- The pin
+--
+-- A shake of the mouse brings every element the theme keeps under the pointer
+-- up at once, and the next shake puts them back. It sits beside the reveal
+-- rather than instead of it: at rest the pointer on one frame still brings
+-- that frame up alone. Pinned, the catchers are gone and the recheck stopped,
+-- so a frame stays up with the pointer anywhere.
+--
+-- Only a theme with something under the pointer arms the tick, and it arms it
+-- once, at login. The informational and immersive themes never read the mouse.
+--------------------------------------------------------------------------
+
+-- cold: runs on a shake, which is a second apart at the closest, and not on the tick's own frames
+function Theme.Pin(on)
+	pinned = on and true or false
+	return Pass()
+end
+
+function Theme.Pinned()
+	return pinned
+end
+
+-- Whether the theme drawn this session keeps anything under the pointer.
+function Theme.Hovering()
+	for _, mode in pairs(chosen or Themes.informational) do
+		if mode == "hover" then
+			return true
+		end
+	end
+	return false
+end
+
+local shake = UI.Wiggle()
+
+local function Shake()
+	if IsMouselooking() then
+		UI.WiggleLose(shake)
+		return
+	end
+	local x = GetCursorPosition()
+	if UI.WiggleFeed(shake, x / UIParent:GetEffectiveScale(), GetTime()) then
+		Theme.Pin(not pinned)
+	end
+end
+
+local shaker = CreateFrame("Frame")
+shaker:RegisterEvent("PLAYER_LOGIN")
+shaker:SetScript("OnEvent", function(self)
+	self:UnregisterEvent("PLAYER_LOGIN")
+	if Theme.Hovering() then
+		UI.Ticker(UI.Forever, 0.02, "wiggle", Shake)
+	end
+end)
 
 --------------------------------------------------------------------------
 -- The palette
