@@ -1006,9 +1006,10 @@ ns.Register({
 		ns.EnemyBars.ApplyLayout()
 		ns.EnemyBars.Rebuild()
 		ns.db.skin = ns.DefaultCopy("skin")
-		-- A fresh table, not ns.DefaultFor: the default is handed out by
-		-- reference and every toggle since has been writing into it.
-		ns.db.skinFrames = { player = true, pet = true, target = true, tot = true }
+		-- A copy, not ns.DefaultFor: the default is handed out by reference
+		-- and every toggle since has been writing into it. Not a literal
+		-- either, which would put back the code's list and not the shipped one.
+		ns.db.skinFrames = ns.DefaultCopy("skinFrames")
 		ns.db.skinHeight = ns.DefaultCopy("skinHeight")
 		ns.db.skinWidth = ns.DefaultCopy("skinWidth")
 		ns.db.skinHeals = ns.DefaultCopy("skinHeals")

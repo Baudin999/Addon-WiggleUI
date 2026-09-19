@@ -33,6 +33,11 @@ local check = H.check
 
 local Upkeep, Racials, Nag = ns.Upkeep, ns.Racials, ns.BuffNag
 
+-- The pulse on, whatever the shipped screen says: half of what this section
+-- measures is the racial breathing. Put back at the foot.
+local WAS_PULSE = ns.db.buffPulse
+ns.db.buffPulse = true
+
 check(ns.UI.Ticking("buffs") ~= nil, "the buff nag registered no ticker")
 local ticker = H.tick("buffs")
 
@@ -778,6 +783,8 @@ tick()
 -- still up here is one anchored to a nag square, and the sections after this
 -- one hover things of their own.
 ns.UI.Tooltip.Close()
+
+ns.db.buffPulse = WAS_PULSE
 
 -- Left drawn on purpose. The anchor sweep at the end of this file walks
 -- every frame on the grid, and a row that had put itself away would be a row

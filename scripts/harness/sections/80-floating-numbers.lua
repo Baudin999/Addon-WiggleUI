@@ -570,7 +570,7 @@ do
 	-- Long enough that the ordinary hit's life has run out and the critical's
 	-- has not, which is the whole of "fades a bit slower" and is one style table
 	-- against another rather than a branch anywhere.
-	beat(0.1, 14)
+	beat(0.1, math.floor(ns.db.hitsLife * 10) + 1)
 	check(plain.frame == nil or Stream.Count() == 1,
 		"an ordinary hit outlived a critical thrown after it")
 	check(Stream.Count() >= 1, "the critical went with the ordinary hit")

@@ -774,14 +774,18 @@ do
 		-- constants, because the point of the fix is that the file no longer
 		-- writes its own numbers. Multiplied by nothing: a size inside an
 		-- adopted frame is a count of design pixels and so is the metric.
+		-- The body is the shipped setting and the title one step over it, the
+		-- step the heading metric takes over the body.
 		local M = ns.UI.Metric
-		check(Tip.Size(1) == M.heading,
-			("the tooltip title is %s pixels and the addon's heading is %d")
-				:format(tostring(Tip.Size(1)), M.heading))
+		local body = ns.DefaultFor("tipFont")
+		local heading = body + M.heading - M.font
+		check(Tip.Size(1) == heading,
+			("the tooltip title is %s pixels and the shipped heading is %d")
+				:format(tostring(Tip.Size(1)), heading))
 		for _, index in ipairs({ 5, 6, 7 }) do
-			check(Tip.Size(index) == M.font,
-				("tooltip line %d is %s pixels and the addon's body is %d")
-					:format(index, tostring(Tip.Size(index)), M.font))
+			check(Tip.Size(index) == body,
+				("tooltip line %d is %s pixels and the shipped body is %d")
+					:format(index, tostring(Tip.Size(index)), body))
 		end
 		check(M.heading > M.font,
 			("a title at %d and a body at %d is not a title")

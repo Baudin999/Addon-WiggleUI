@@ -679,13 +679,16 @@ do
 	-- addon has shipped once already.
 	------------------------------------------------------------------
 
+	-- The shipped size is Core/Shipped.lua's answer, which is a capture of the
+	-- author's screen and not the body metric, so it is read off the defaults.
 	local M = ns.UI.Metric
-	check(Box.Font() == M.font,
-		("the shipped tooltip body is %s and the addon's body is %d")
-			:format(tostring(Box.Font()), M.font))
+	local shipped = ns.DefaultFor("tipFont")
+	check(Box.Font() == shipped,
+		("the shipped tooltip body is %s and the shipped setting is %d")
+			:format(tostring(Box.Font()), shipped))
 
 	Tip.Open(owner, { kind = "note", title = "Sized", lines = { { "A fact" } } }, "control")
-	check(Box.Size(1) == M.heading and Box.Size(2) == M.font,
+	check(Box.Size(1) == shipped + M.heading - M.font and Box.Size(2) == shipped,
 		("the shipped box drew %s over %s")
 			:format(tostring(Box.Size(1)), tostring(Box.Size(2))))
 
