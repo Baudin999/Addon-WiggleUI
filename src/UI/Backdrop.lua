@@ -188,5 +188,24 @@ function UI.Backdrop(frame, opts)
 	return backdrop
 end
 
+-- The chosen palette's floor tile, { file, width, height } in window units,
+-- or nil when the palette has no painting. A feed row washes with it.
+function UI.Floor()
+	return chosen and chosen.Middle or nil
+end
+
+-- Cuts the band of a floor tile that lies under a strip y units down from its
+-- owner's top, width by height, so strips stacked down one owner read as one
+-- painting. A strip wider than the tile stretches the tile across rather than
+-- repeating it: the wash on it is gone well before the stretch shows. A band
+-- that would run off the tile's foot is lifted to end on it, which costs one
+-- strip in every tile its continuity with the one above.
+function UI.FloorBand(texture, floor, y, width, height)
+	local across = math.min(width / floor[2], 1)
+	local down = math.min(height / floor[3], 1)
+	local top = math.min((y % floor[3]) / floor[3], 1 - down)
+	texture:SetTexCoord(0, across, top, top + down)
+end
+
 -- The nine pieces by name, for Theme/Theme.lua to hold every painting to.
 UI.BACKDROP_PIECES = SUBLEVEL

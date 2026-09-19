@@ -144,7 +144,12 @@ local WASH_MIN = { LEFT = true, BOTTOM = true }
 -- A client with no gradient gets a flat wash of the same colour at half
 -- strength. That is worse and it is legible, which is the trade every probe in
 -- this addon makes.
-function UI.Wash(parent, color, edge, layer)
+--
+-- art is a texture file to wash with instead of white, which is how a feed row
+-- is painted with the palette's floor. The colour then tints the painting
+-- rather than being the whole of it, and the ramp is the same ramp: a gradient
+-- is vertex colour, and vertex colour multiplies a file as it does a solid.
+function UI.Wash(parent, color, edge, layer, art)
 	local texture = parent:CreateTexture(nil, layer or "BACKGROUND")
 	edge = WASH_AXIS[edge] and edge or "LEFT"
 	local solid = { color[1], color[2], color[3], color[4] or 1 }
@@ -153,9 +158,17 @@ function UI.Wash(parent, color, edge, layer)
 	if not WASH_MIN[edge] then
 		min, max = gone, solid
 	end
-	texture:SetColorTexture(1, 1, 1, 1)
+	if art then
+		texture:SetTexture(art)
+	else
+		texture:SetColorTexture(1, 1, 1, 1)
+	end
 	if not ns.Gradient(texture, WASH_AXIS[edge], min, max) then
-		texture:SetColorTexture(solid[1], solid[2], solid[3], solid[4] * 0.5)
+		if art then
+			texture:SetVertexColor(solid[1], solid[2], solid[3], solid[4] * 0.5)
+		else
+			texture:SetColorTexture(solid[1], solid[2], solid[3], solid[4] * 0.5)
+		end
 	end
 	return texture
 end

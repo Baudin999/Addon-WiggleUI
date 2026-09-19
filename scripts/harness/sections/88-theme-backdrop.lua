@@ -118,7 +118,26 @@ check(painted.backdrop ~= nil and painted.bg == nil, "a painted window has the p
 check(painted.titleRule ~= nil, "a painted window's header is ruled like its footer")
 painted:Hide()
 
+-- A feed row's wash on the floor: the tile's file under the same ramp, and
+-- rows stacked down a feed cut consecutive bands so the column reads as one
+-- painting. A band that would run off the tile's foot ends on it instead.
+local floor = UI.Floor()
+check(floor == art.Middle, "the floor a wash paints with is the palette's Middle tile")
+local wash = UI.Wash(frame, { 0.5, 0.5, 0.5, 0.55 }, "LEFT", "BACKGROUND", floor[1])
+check(wash.texture == floor[1], "a painted wash draws the tile's file")
+check(wash.gradient and wash.gradient.min[4] == 0.55 and wash.gradient.max[4] == 0,
+	"a painted wash still fades from the shadow's alpha to nothing")
+UI.FloorBand(wash, floor, 20, floor[2] / 2, 18)
+check(math.abs(wash.texcoord[3] - 20 / floor[3]) < 1e-9
+	and math.abs(wash.texcoord[4] - 38 / floor[3]) < 1e-9,
+	"a row 20 down cuts the band 20 down the tile")
+check(math.abs(wash.texcoord[2] - 0.5) < 1e-9, "a half-tile row takes half the tile across")
+UI.FloorBand(wash, floor, floor[3] - 4, floor[2] * 2, 18)
+check(math.abs(wash.texcoord[4] - 1) < 1e-9 and wash.texcoord[2] == 1,
+	"a band past the foot ends on it, and a wide row stretches one tile")
+
 frame:Hide()
 UI.ChooseBackdrop(nil)
+check(UI.Floor() == nil, "a palette with no painting has no floor to wash with")
 check(Gauge.Floor(Gauge.New(CreateFrame("Frame", nil, UIParent))) == nil,
 	"a palette with no painting gives a gauge no floor")

@@ -202,6 +202,12 @@ local REOPEN = 0.2
 -- because it is a function of the row's position rather than of the clock.
 local FADE = 0.45
 
+-- How far the palette's painting is dimmed under a row's text. The desert's
+-- floor is sand at over half brightness, and a common item's white on that is
+-- a name you squint at; at this it is the painting in shade, and the forest's
+-- and the arcane floor, which start darker, only get deeper.
+local FLOOR_DIM = 0.45
+
 local Feed = {}
 Feed.__index = Feed
 
@@ -294,18 +300,11 @@ local function Under(button)
 	return button and button:IsShown() and button:IsMouseOver() or false
 end
 
-local function BuildRow(feed, index)
-	local unit = feed.unit
-	local row = CreateFrame("Frame", nil, feed.frame)
-	-- Both numbers are written in Resize, because both follow the icon size and
-	-- that is a slider. A row built at one height and never told about the next
-	-- one is a column that keeps the size it had at login.
-	row:SetSize(1, 1)
-	row.index = index
-
-	-- The ground the row's strings are read on, because the column has none it
-	-- can promise: the background behind a feed is a slider that reaches zero,
-	-- and at zero every row is text over grass. Solid at the stripe and gone by
+-- The ground the row's strings are read on. Its own function because BuildRow
+-- went over a hundred lines when the wash learned to paint.
+local function BuildWash(feed, row)
+	-- The column has no ground it can promise: the background behind a feed is
+	-- a slider that reaches zero, and at zero every row is text over grass. Solid at the stripe and gone by
 	-- the end of the text, which makes it a shadow the size of the row rather
 	-- than a panel behind the column.
 	--
@@ -317,9 +316,27 @@ local function BuildRow(feed, index)
 	-- Neither of its two numbers is written here. How wide it is follows the
 	-- icon and the text columns, which is ShapeRow's, and how strongly it is
 	-- painted is the background slider, which is Feed:Wash's.
-	row.wash = UI.Wash(row, C.shadow, "LEFT", "BACKGROUND")
+	--
+	-- Under a palette with a painting the wash is that painting's floor, dimmed
+	-- to hold the text and at the shadow's own alpha, so the slider's top is
+	-- still never a panel. ShapeRow cuts each row its band of the tile.
+	row.floor = UI.Floor()
+	local tint = row.floor and { FLOOR_DIM, FLOOR_DIM, FLOOR_DIM, C.shadow[4] } or C.shadow
+	row.wash = UI.Wash(row, tint, "LEFT", "BACKGROUND", row.floor and row.floor[1])
 	row.wash:SetPoint("TOPLEFT")
 	row.wash:SetAlpha(feed.washAt)
+end
+
+local function BuildRow(feed, index)
+	local unit = feed.unit
+	local row = CreateFrame("Frame", nil, feed.frame)
+	-- Both numbers are written in Resize, because both follow the icon size and
+	-- that is a slider. A row built at one height and never told about the next
+	-- one is a column that keeps the size it had at login.
+	row:SetSize(1, 1)
+	row.index = index
+
+	BuildWash(feed, row)
 
 	-- Behind everything else, and only while the mouse is on it. A feed you can
 	-- hover has to answer the hover with something other than a tooltip
@@ -1493,6 +1510,10 @@ local function ShapeRow(feed, row, index, geom)
 	-- a setting and a texture given two anchors is one whose height nothing in
 	-- this file ever wrote down.
 	row.wash:SetSize(geom.wash * unit, feed.row * unit)
+	if row.floor then
+		UI.FloorBand(row.wash, row.floor,
+			feed.head + (index - 1) * (feed.row + ROW_GAP), geom.wash, feed.row)
+	end
 
 	row.name:ClearAllPoints()
 	row.name:SetPoint("LEFT", row, "LEFT",
