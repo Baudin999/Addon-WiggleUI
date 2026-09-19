@@ -6,18 +6,23 @@
 -- the screen as a fault until the wrong window size comes up, where it is a
 -- stripe of stretched floor or a tile hanging off the edge.
 --
--- Laid out on a frame of its own with the desert painting chosen by hand, and
--- the choice put back to none at the foot, which is what the default dark
--- palette the load painted left there. Desert because its floor is a tile; the
--- forest and arcane floors are one picture each, drawn once, and are checked
--- as that below the tiles.
+-- Laid out on a frame of its own with a painting chosen by hand, and the
+-- choice put back to none at the foot, which is what the default dark palette
+-- the load painted left there. Every shipped palette's floor is one picture
+-- now, drawn once, and is checked as that below the tiles; the tiles are
+-- still what a palette with no ground bakes to, so they are checked on
+-- desert's frame with the 100 by 104 floor tile it had before its ground.
 
 local H = ...
 local ns, check = H.ns, H.check
 local UI = ns.UI
 
-local art = ns.Backdrops.desert
-check(art ~= nil and not art.cover, "the desert palette has a tiled painting")
+local art = {}
+for key, value in pairs(ns.Backdrops.desert) do
+	art[key] = value
+end
+art.cover = nil
+art.Middle = { ns.Backdrops.desert.Middle[1], 100, 104 }
 
 UI.ChooseBackdrop(nil)
 check(UI.Backdrop(CreateFrame("Frame", nil, UIParent)) == nil,

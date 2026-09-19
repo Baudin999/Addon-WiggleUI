@@ -90,7 +90,7 @@ PAINTINGS = [
 	{
 		"palette": "desert", "file": "art/desert02.jpeg", "stem": "Desert",
 		"inset": (72, 100, 82, 80), "corner": 210, "period": (334, 346),
-		"darken": 0.45,
+		"darken": 0.45, "ground": "art/desert_bg.jpeg", "dim": 0.45,
 	},
 	{
 		"palette": "arcane", "file": "art/arcane.jpeg", "stem": "Arcane",
