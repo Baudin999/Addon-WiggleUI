@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2X5Z5KZCHS8M4NNHT9W028V
 type: feature
-status: doing
+status: done
 title: "Settings live in profiles, one per character, shared by a pasted string"
 ---
 
