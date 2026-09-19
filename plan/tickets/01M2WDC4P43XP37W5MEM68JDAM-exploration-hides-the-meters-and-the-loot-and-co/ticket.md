@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WDC4P43XP37W5MEM68JDAM
 type: task
-status: doing
+status: done
 title: Exploration hides the meters and the loot and combat feeds
 parent: 01M2W8X3ZSH458FRQ1VXBS2KC1
 ---
