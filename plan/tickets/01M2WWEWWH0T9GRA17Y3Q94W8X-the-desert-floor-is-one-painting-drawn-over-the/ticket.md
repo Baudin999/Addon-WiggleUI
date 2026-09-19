@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2WWEWWH0T9GRA17Y3Q94W8X
 type: task
-status: todo
+status: doing
 title: "The desert floor is one painting drawn over the window, not a tile"
 ---
 
