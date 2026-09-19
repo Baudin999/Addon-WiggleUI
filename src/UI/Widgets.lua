@@ -1006,7 +1006,9 @@ local function InstallProse(kit, ctx)
 
 		local value = UI.Label(row, M.small, C.accent, "RIGHT", UI.FLAT)
 		UI.Wrap(value, false)
-		value:SetPoint("TOPRIGHT")
+		-- Short of the row by the `?` column Paired keeps, so the value ends
+		-- under the controls above it rather than one column to their right.
+		value:SetPoint("TOPRIGHT", -(MARK + M.rowGap), 0)
 		value:SetPoint("LEFT", name, "RIGHT", M.gutter, 0)
 
 		stack:Add(row, {
@@ -1586,7 +1588,9 @@ function UI.Kit(host)
 		local left = UI.Button(row, { width = 1, height = M.row, onClick = leftClick })
 		left:SetPoint("TOPLEFT")
 		local right = UI.Button(row, { width = 1, height = M.row, onClick = rightClick })
-		right:SetPoint("TOPRIGHT")
+		-- Short of the row by the `?` column, for Paired's reason: a pair that
+		-- ran to the edge sat one column right of every control on the page.
+		right:SetPoint("TOPRIGHT", -(MARK + M.rowGap), 0)
 
 		-- Two entries on one row, because a pair is two things you can do and
 		-- searching for either has to land you here.
@@ -1596,7 +1600,7 @@ function UI.Kit(host)
 		return Remember(row, function()
 			-- Half the row each, less the gutter between them, worked out on every
 			-- refresh because the stack's width is not known when the row is built.
-			local half = math.floor((TextWidth(stack, cell) - M.gutter) / 2)
+			local half = math.floor((TextWidth(stack, cell, MARK + M.rowGap) - M.gutter) / 2)
 			left:SetWidth(math.max(half, 1))
 			right:SetWidth(math.max(half, 1))
 			left.text:SetText(leftLabel())
