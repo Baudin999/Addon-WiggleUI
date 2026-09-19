@@ -272,6 +272,69 @@ local function Moved(box)
 end
 
 --------------------------------------------------------------------------
+-- A Battle.net whisper
+--
+-- The one channel no slash reaches. A Battle.net friend is named by a token,
+-- `|Kq12|k`, and the client's parser refuses a whisper target that starts with
+-- a bar, so `/w |Kq12|k ` would sit in the line as text. The client's own
+-- friends list aims the line instead: ChatFrameUtil.SendBNetTell writes the
+-- channel and the token onto the field and then opens it empty.
+--
+-- **Which is the Whisper on the social panel this used to eat.** The field
+-- took the focus, found an empty line and filled in the room's slash, and the
+-- parser moved the channel off her. Nothing about the write says the client
+-- aimed it, because the client resets the channel on every close without a
+-- text change to see it by. So the hook below runs after the client's call
+-- has finished and puts its aim back, the same way Opened leaves a line the
+-- client pointed somewhere, and the window follows it into her room.
+--------------------------------------------------------------------------
+
+-- The field aimed at `kind` and `target` with nothing in it. Written as the
+-- client writes it, attributes first and the header from the client's own
+-- method, so the word in front of the cursor names her.
+function Field.Aim(box, kind, target)
+	if type(box) ~= "table" or type(target) ~= "string" or target == "" then
+		return false
+	end
+	local was = filling
+	filling = true
+	box:SetAttribute("tellTarget", target)
+	box:SetAttribute("chatType", kind)
+	box:SetText("")
+	if type(box.UpdateHeader) == "function" then
+		box:UpdateHeader()
+	end
+	filling = was
+	filled = Key(box)
+	return true
+end
+
+local function Told(target)
+	local box = Field.Box()
+	if not box or not box:HasFocus() then
+		return
+	end
+	waiting = false
+	Field.Aim(box, "BN_WHISPER", target)
+	pointed = true
+	Moved(box)
+end
+
+-- Hooked once, at the first Adopt rather than at load, so the hook goes in with
+-- the field it serves.
+local told = false
+
+local function HookTold()
+	local util = _G.ChatFrameUtil
+	if told or type(util) ~= "table" or type(util.SendBNetTell) ~= "function"
+		or type(hooksecurefunc) ~= "function" then
+		return
+	end
+	told = true
+	hooksecurefunc(util, "SendBNetTell", Told)
+end
+
+--------------------------------------------------------------------------
 -- Dressing one field
 --------------------------------------------------------------------------
 
@@ -555,6 +618,7 @@ end
 -- whenever the window is laid out, because the count is the client's and a
 -- tenth window can appear in the middle of an evening.
 function Field.Adopt()
+	HookTold()
 	local made = 0
 	for index = 1, Windows() do
 		local name = ("ChatFrame%dEditBox"):format(index)

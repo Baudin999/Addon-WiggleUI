@@ -92,6 +92,9 @@ end
 -- is about to do. It reads what is in the field rather than describing it,
 -- because those are the two things that must never disagree.
 function Compose.Note(kind, target)
+	if kind == "BN_WHISPER" then
+		return "enter whispers over Battle.net"
+	end
 	local prefix = Compose.Prefix(kind, target)
 	if prefix == "" then
 		return "nothing to type into"

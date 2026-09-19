@@ -295,6 +295,45 @@ check(line:GetAttribute("chatType") == "WHISPER",
 _G.ChatEdit_DeactivateChat(line)
 ns.db.chatPrefix = heldPrefix
 
+-- Whisper on a Battle.net friend in the social panel. The client aims the line
+-- itself and opens it empty, and the room's slash used to go in over that aim.
+-- The hook is installed the way every hook in this fixture is, for the block
+-- alone.
+_G.hooksecurefunc = function(target, name, post)
+	local original = target[name]
+	target[name] = function(...)
+		original(...)
+		post(...)
+	end
+end
+ns.ChatField.Adopt()
+_G.hooksecurefunc = nil
+
+local friend = "|Kq7|k"
+_G.ChatEdit_DeactivateChat(line)
+Window.Go(ns.Rooms.ALL)
+_G.ChatFrameUtil.SendBNetTell(friend)
+check(line:GetAttribute("chatType") == "BN_WHISPER" and line:GetAttribute("tellTarget") == friend,
+	("whisper on a Battle.net friend pointed the line at %s %s")
+		:format(tostring(line:GetAttribute("chatType")), tostring(line:GetAttribute("tellTarget"))))
+check(Window.Line() == "",
+	("whisper on a Battle.net friend left %q in the line"):format(Window.Line()))
+check(Window.Room() == ns.Rooms.WhisperId(friend),
+	("whisper on a Battle.net friend left the window in %s rather than their room")
+		:format(tostring(Window.Room())))
+
+-- And their room types to them the same way, which is what Enter does when
+-- they were the last to say something.
+_G.ChatEdit_DeactivateChat(line)
+Window.Go(ns.Rooms.ALL)
+H.fire("CHAT_MSG_BN_WHISPER", "dinner", friend)
+_G.ChatFrame_OpenChat("")
+check(line:GetAttribute("chatType") == "BN_WHISPER" and line:GetAttribute("tellTarget") == friend,
+	("Enter after a Battle.net whisper pointed the line at %s %s")
+		:format(tostring(line:GetAttribute("chatType")), tostring(line:GetAttribute("tellTarget"))))
+_G.ChatEdit_DeactivateChat(line)
+Window.Close(ns.Rooms.WhisperId(friend))
+
 ----------------------------------------------------------------------
 -- Sending
 ----------------------------------------------------------------------

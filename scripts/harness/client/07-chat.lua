@@ -119,6 +119,10 @@ local function EditBox(index)
 	box.header = child("fontstring", box, name .. "Header")
 	box.header:SetWidth(40)
 	child("fontstring", box, name .. "HeaderSuffix"):SetWidth(6)
+	-- The header as a method, which is how 2.5.6's edit box mixin carries it.
+	box.UpdateHeader = function(self)
+		_G.ChatEdit_UpdateHeader(self)
+	end
 	box:SetScript("OnEnterPressed", function(self)
 		_G.ChatEdit_SendText(self, 1)
 		self:SetText("")
@@ -293,6 +297,23 @@ _G.ChatFrame_SendTell = function(name)
 	_G.ChatEdit_ParseText(box, 0)
 	return box
 end
+
+-- Whisper on a Battle.net friend in the social panel, which is 2.5.6's
+-- ChatFrameUtil.SendBNetTell. No slash reaches a friend named by a token, so
+-- the client writes the channel and the token onto the field and opens it
+-- empty, in that order: the aim is on the field before the focus arrives.
+_G.ChatFrameUtil = {
+	SendBNetTell = function(token)
+		local box = _G.ChatEdit_ChooseBoxForSend()
+		box:SetAttribute("tellTarget", token)
+		box:SetAttribute("chatType", "BN_WHISPER")
+		if box:IsShown() then
+			_G.ChatEdit_UpdateHeader(box)
+		else
+			_G.ChatFrame_OpenChat("")
+		end
+	end,
+}
 
 _G.ChatEdit_SendText = function(box)
 	chat.slash[#chat.slash + 1] = box:GetText()

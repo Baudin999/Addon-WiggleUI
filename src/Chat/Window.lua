@@ -1178,7 +1178,8 @@ function ChatWindow.Follow(kind, target, meant)
 	-- Only ever on `meant`. The same channel arriving because somebody typed a
 	-- name into the line is the case above and stays refused: a room per
 	-- keystroke is a rail full of people who do not exist.
-	if not id and meant and kind == "WHISPER" and target and target ~= "" then
+	if not id and meant and (kind == "WHISPER" or kind == "BN_WHISPER")
+		and target and target ~= "" then
 		id = ns.Rooms.Whisper(target)
 		if id then
 			Refresh()
@@ -1239,7 +1240,13 @@ function ChatWindow.Fill(field, opening)
 	if opening then
 		ChatWindow.Answer()
 	end
-	local prefix = ns.Compose.Prefix(ns.Rooms.Target(active))
+	local kind, target = ns.Rooms.Target(active)
+	-- A Battle.net friend has no slash that reaches them, so the line is aimed
+	-- the way the client's own friends list aims it.
+	if kind == "BN_WHISPER" then
+		return ns.ChatField.Aim(field, kind, target)
+	end
+	local prefix = ns.Compose.Prefix(kind, target)
 	if prefix == "" then
 		return false
 	end

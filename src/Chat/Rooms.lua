@@ -658,6 +658,14 @@ local function GroupTarget(id)
 	return "SAY", nil
 end
 
+-- A Battle.net friend is named by a token the client hands out, `|Kq12|k`, and
+-- not by a character. The same token comes in on their whispers and goes out of
+-- the friends list, so the name alone says which kind of whisper answers them.
+-- A slash cannot: the client's parser refuses a name that starts with a bar.
+local function Battle(name)
+	return type(name) == "string" and name:sub(1, 2) == "|K"
+end
+
 function Rooms.Target(id)
 	local fixed = Fixed(id)
 	if fixed then
@@ -665,7 +673,7 @@ function Rooms.Target(id)
 	end
 	local entry = Whispered(id)
 	if entry then
-		return "WHISPER", entry.name
+		return Battle(entry.name) and "BN_WHISPER" or "WHISPER", entry.name
 	end
 	if Keyed(id, GROUP) then
 		return GroupTarget(id)
@@ -699,7 +707,7 @@ local ROOM_FOR = {
 }
 
 function Rooms.For(kind, target)
-	if kind == "WHISPER" then
+	if kind == "WHISPER" or kind == "BN_WHISPER" then
 		-- Only a conversation that is already on the rail. The name arrives one
 		-- letter at a time while somebody types `/w Aria`, and a room made off
 		-- each of them is a rail filling with Ar and Ari.
