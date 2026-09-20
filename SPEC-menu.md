@@ -141,8 +141,8 @@ one of two headers depending on whether you are a warrior.
 **Fighting**, 11. Charge key, Charge, Action targeting, Weapon, Marking, Switch
 target, Loadouts, Swapping, Buttons, Our own bars, Spell ranks.
 
-**You**, 8. Player and target frames, Swing timer, The Slam window, Missing
-buffs, What it watches, Racials, Your own buffs, Placing.
+**You**, 7. Player and target frames, Swing timer, Missing buffs, What it
+watches, Racials, Your own buffs, Placing.
 
 **Them**, 2. Enemy bars, Debuffs on the bar.
 

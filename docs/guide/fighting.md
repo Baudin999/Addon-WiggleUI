@@ -32,15 +32,17 @@ something one character knows.
     /wui hover on|off, hover show, hover remove <key>, hover clear
     /wui hover list on|off, the sheet over the world
 
-**A swing timer, with the Slam press marked on it.** One bar per hand, filling
-towards the next swing off the combat log, and a green band on the main hand bar
-showing where to press Slam so the cast finishes exactly as the swing does.
-Press before the band and the Slam restart throws away the swing you had
-charged; press after it and the swing is pushed out to the end of the cast. The
-whole bar goes green while you are on the band. The cast time is the client's
-own, measured off your last Slam, and it follows your haste, so the band moves
-when Flurry lands. The bars are drawn for anybody holding a weapon; the band is
-a warrior's.
+**A swing timer for the weapon you are holding.** One bar per hand, filling
+towards the next swing off the combat log. A two hander gets one bar, a pair
+gets two, a shield gets one, and nothing in your main hand gets none. Nothing
+is drawn on the bars: no band, no numbers, no mark to aim at.
+
+It follows the weapon the whole way. Flurry landing mid swing shortens the bar
+in flight instead of restarting it. A Heroic Strike or a Cleave eats the white
+swing and starts the bar again, which is what a swing timer built on white hits
+alone gets wrong, and so does a finished Slam. Swapping a weapon in a fight
+throws the swing away and starts a fresh one, because that is what the game
+does.
 
     /wui swing on|off, swing width 180, height 10, zoom 1 to 3
 
@@ -95,10 +97,9 @@ one more plan and one more reader rather than a second feature.
 
 ## The class pages
 
-The Charge button, the warrior bar loadout and the Slam band are warrior only,
-and on any other class they are not there at all: no button, no icon in the
-world, no key taken, no band on the swing bar, and your action targeting setting
-left exactly where you had it. The rail in the settings window grows a group
+The Charge button and the warrior bar loadout are warrior only, and on any
+other class they are not there at all: no button, no icon in the world, no key
+taken, and your action targeting setting left exactly where you had it. The rail in the settings window grows a group
 named after your class only if your class has pages nobody else does.
 
 Everything else in this guide works the same on a hunter as it does on a

@@ -16,11 +16,10 @@ local CARRIED, carrying, itemLink = H.CARRIED, H.carrying, H.itemLink
 local counted = H.counted
 
 local swing = {
-	main = 3.4,   -- a slow two hander, which is the weapon Slam is pressed with
+	main = 3.4,   -- a slow two hander, which is what the swing bars are read on
 	off = nil,    -- nothing in the off hand until a test puts one there
 	mainhand = nil, -- the link slot 16 answers with
 	offhand = nil,  -- and slot 17
-	talent = 0,   -- points in the talent whose name contains Slam's
 	cast = nil,   -- a cast in flight, as start and stop in milliseconds
 }
 _G.WiggleUISwing = swing
@@ -161,28 +160,12 @@ _G.OffhandHasWeapon = function()
 	return swing.off ~= nil
 end
 
--- The talent trees, read by index rather than by tab name. Meter/Spec.lua uses
--- GetTalentTabInfo and this is the other call on the same data, so the two do
--- not collide.
---
--- Tab 1 slot 2 is the talent the Slam window's estimate looks for, and its name
--- carries the spell's own name inside it, which is the rule the addon matches
--- on. Every other slot is a talent that does not, so a matcher that took the
--- first talent it found would fail here rather than pass by luck.
-_G.GetNumTalents = function() return 3 end
-_G.GetTalentInfo = function(tab, index)
-	if tab == 1 and index == 2 then
-		return "Improved Spell1464", "Interface\\Icons\\Slam", 4, 1, swing.talent, 5
-	end
-	return ("Talent%d%d"):format(tab, index), "Interface\\Icons\\T", 1, 1, 0, 5
-end
-
 -- A cast in flight, in the client's own milliseconds. Nil is nothing being
 -- cast, which is every moment except the one a test opens.
 --
 -- Three tables and two calls. `swing.cast` is the player's, in milliseconds
--- already, because the Slam window measures itself off the one cast the player
--- makes. `enemyCasts` is keyed by unit and counted in seconds for the test's
+-- already, because the player's own cast bar reads it straight.
+-- `enemyCasts` is keyed by unit and counted in seconds for the test's
 -- convenience, because the enemy bars' cast row reads any unit the client will
 -- answer for, which is the whole reason that row can exist at all.
 --

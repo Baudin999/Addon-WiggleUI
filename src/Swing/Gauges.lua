@@ -4,45 +4,45 @@ local SwingGauges = {}
 ns.SwingGauges = SwingGauges
 
 --------------------------------------------------------------------------
--- Two bars and a mark
+-- One bar per hand
 --
--- One gauge per hand, drawn with ns.UI.Gauge on the pixel grid, and the Slam
--- band drawn over the main hand one. No window round them, no text on them and
--- no chrome at all, for the reason Meter/Window.lua carries: this is read out
--- of the corner of your eye during a pull and every pixel of frame around it
--- is a pixel of the fight it stands on.
+-- Drawn with ns.UI.Gauge on the pixel grid. No window round them, no text on
+-- them and no chrome at all, for the reason Meter/Window.lua carries: this is
+-- read out of the corner of your eye during a pull and every pixel of frame
+-- around it is a pixel of the fight it stands on.
 --
--- The bar counts in pixels rather than in a fraction from zero to one, so the
--- band, the mark and the fill are all measured in the same units. That is what
--- makes "press on the mark" mean anything: a band at 70.4 percent of a 180
--- pixel bar and a mark at 70.6 percent of it are the same pixel and the eye
--- cannot tell which side of the line it is on.
+-- What is on the screen is the weapon you are holding. One bar for a two
+-- hander, two for a pair, and none at all for a hand with nothing in it. The
+-- second bar appears and disappears with the off hand weapon rather than with
+-- a setting, because a setting for it would be a second way of asking a
+-- question the character sheet already answers.
 --
--- The band and the mark land on whole pixels. The fill does not, and this file
--- is where the addon's two pixel rules first disagree. Both are in
--- docs/README.md and both are gated in scripts/harness.lua.
+-- The bar counts in pixels rather than in a fraction from zero to one, so what
+-- is drawn is measured in the units the eye reads it in.
 --
--- A static edge lands on a whole pixel. A border, an icon crop or a band drawn
--- across two rows of pixels reads as blurry, and blurry is what the grid exists
--- to stop. The band and the mark move only when your weapon speed does, which
--- is a few times a fight, so they are static edges.
+-- The fill is not quantised, and this is where the addon's two pixel rules
+-- disagree. Both are in docs/README.md and both are gated in
+-- scripts/harness.lua.
+--
+-- A static edge lands on a whole pixel. A border or an icon crop drawn across
+-- two rows of pixels reads as blurry, and blurry is what the grid exists to
+-- stop.
 --
 -- A moving fill is not quantised. What the eye reads on a moving edge is its
 -- velocity, and velocity lives in where the edge sits between two pixels as
 -- much as in which pixel it is on. Rounding throws that away to buy a sharpness
 -- nobody can see on something in motion, and rounding is also a throttle: the
--- fill crosses 180 units in a 3.4 second swing, so a rounded fill changes value
--- 53 times a second and no oftener, whatever rate the tick runs at. It stands
--- still on 7 of the 60 frames a 60 Hz screen draws and on 91 of the 144 a fast
--- one draws, and each move is a whole unit, which is three screen pixels at
--- swing zoom 3. Deleting the 20 Hz ticker raised the drawn rate from 20 to 53
--- and left that second throttle standing, which is why the bar still stepped
--- after the first repair.
+-- fill crosses 330 units in a 3.4 second swing, so a rounded fill changes value
+-- 97 times a second and no oftener, whatever rate the tick runs at. Deleting
+-- the 20 Hz ticker raised the drawn rate and left that second throttle
+-- standing, which is why the bar still stepped after the first repair.
 --
 -- So the fill is written as a fraction, on every frame a hand is swinging, with
 -- no comparison in front of it except the one that catches a hand that is not.
--- What that costs was measured rather than argued: the harness reads 0.03 KB
--- per fifty ticks rounded and guarded, and 0.03 unguarded.
+-- What that costs was measured rather than argued: the harness read 0.03 KB per
+-- fifty ticks rounded and guarded and 0.03 unguarded, so dropping the guard
+-- bought smooth motion for nothing. It reads 0.00 now that the Slam band is not
+-- repainting the gauge twice a swing.
 --
 -- Every other part of this addon draws on a ticker, because every other part is
 -- a readout and a readout fifty milliseconds stale is one nobody can fault.
@@ -71,17 +71,7 @@ local GAP = 2
 local MAIN_FILL = ns.Unit.Color.swing.main
 local OFF_FILL = ns.Unit.Color.swing.off
 
--- What the main hand gauge becomes while the press is on. A colour flip on the
--- whole bar rather than only a band, because the band is four percent of the
--- screen area of the bar and the flip is all of it, and this is the one moment
--- the feature exists for.
-local NOW_FILL = { 0.34, 0.86, 0.44 }
-
-local BAND = { 0.34, 0.86, 0.44, 0.40 }
-local MARK = { 1, 1, 1, 0.85 }
-
-local EDGE_QUIET = ns.UI.Color.chrome
-local EDGE_NOW = { 0.40, 0.94, 0.52, 1 }
+local EDGE = ns.UI.Color.chrome
 
 local frame, main, off, place
 local built = false
@@ -99,38 +89,20 @@ local events, tick
 -- a value read once.
 local unit = 1
 
-local Whole = ns.UI.Whole
-
 --------------------------------------------------------------------------
 -- Building
 --------------------------------------------------------------------------
 
-local function BuildBar(parent, fill, banded)
+local function BuildBar(parent, fill)
 	local bar = Gauge.New(parent)
 	Gauge.Paint(bar, bar.track, fill)
-	bar.color = fill
 
 	-- No width until the layout has given it one. Not 1: a bar counting to one
 	-- pixel draws a whole swing in two positions, empty and full, which reads
 	-- as a bar that teleports rather than as a bar that has not been laid out.
 	bar.pixels = 0
 
-	-- The band and the press line are the main hand's alone, drawn on OVERLAY
-	-- so they sit over the fill rather than under it. The fill is ARTWORK and a
-	-- band on the same layer would be covered by whatever the status bar drew
-	-- last.
-	if banded then
-		bar.band = ns.Fill(bar, "OVERLAY", BAND[1], BAND[2], BAND[3], BAND[4])
-		bar.band:Hide()
-		bar.mark = ns.Fill(bar, "OVERLAY", MARK[1], MARK[2], MARK[3], MARK[4])
-		bar.mark:Hide()
-	end
-
-	-- The border is made last, because within one draw layer the order is the
-	-- order the textures were made and the band runs the full height of the
-	-- bar. Built first, the edge would vanish behind the band for exactly the
-	-- span of screen the band exists to draw attention to.
-	bar.edges = ns.Outline(bar, EDGE_QUIET[1], EDGE_QUIET[2], EDGE_QUIET[3], 1, "OVERLAY")
+	bar.edges = ns.Outline(bar, EDGE[1], EDGE[2], EDGE[3], 1, "OVERLAY")
 	return bar
 end
 
@@ -149,9 +121,7 @@ local function SizeBar(bar, width, height)
 	bar:SetValue(0)
 	bar.shownValue = 0
 	-- The hairline is one screen pixel and stays one when the zoom grows, which
-	-- is what ns.Pixel answers and ns.UI.Unit does not. The mark inside the
-	-- band is the other kind: it is a design pixel and grows with the bar,
-	-- because a press mark you cannot see is not a mark.
+	-- is what ns.Pixel answers and ns.UI.Unit does not.
 	ns.EdgeSize(bar.edges, ns.Pixel(bar))
 end
 
@@ -160,7 +130,7 @@ end
 --
 -- The part ships off. It was built at login anyway, and its ticker was armed at
 -- interval zero, so a feature nobody had turned on ran a function on every frame
--- the client drew for the whole session to find out it had nothing to draw.
+-- the client drew for the whole session.
 local function Build()
 	frame = CreateFrame("Frame", FRAME_NAME, UIParent)
 	ns.UI.Adopt(frame, ns.db.swingZoom)
@@ -177,7 +147,7 @@ local function Build()
 		end,
 	})
 
-	main = BuildBar(frame, MAIN_FILL, true)
+	main = BuildBar(frame, MAIN_FILL)
 	main:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
 	off = BuildBar(frame, OFF_FILL)
 	-- Anchored after both bars exist, because the off hand hangs off the main
@@ -230,7 +200,6 @@ function SwingGauges.Apply()
 	SizeBar(main, width, height)
 	SizeBar(off, width, height)
 	off:SetShown(dual)
-	main.shownOpen, main.shownClose, main.shownMark, main.shownNow = nil, nil, nil, nil
 
 	local total = dual and (height * 2 + GAP) or height
 	frame:SetSize(width * unit, total * unit)
@@ -240,9 +209,8 @@ function SwingGauges.Apply()
 	SwingGauges.Show()
 end
 
--- Whether there is a swing worth drawing on this character right now. The bars
--- are gated on a weapon rather than on a class, so a hunter in melee gets
--- them; the Slam band on top of them is gated on Slam, which is warrior only.
+-- Whether there is a swing worth drawing on this character right now. A weapon
+-- rather than a class, so a hunter standing in melee gets the bars.
 function SwingGauges.Applicable()
 	return ns.Swing.Ready() and ns.Swing.HasMainhand()
 end
@@ -284,12 +252,6 @@ end
 
 --------------------------------------------------------------------------
 -- Painting
---
--- Everything below runs on every frame and nothing below allocates. Every
--- write to the band, the mark and the colours is guarded on what is already on
--- the widget, because those are static edges that change a few times a swing.
--- The fill is guarded on the one value it repeats, which is the empty bar
--- between two swings.
 --------------------------------------------------------------------------
 
 -- Fraction returns zero for a hand with no swing running, so a bar between
@@ -310,71 +272,6 @@ local function DrawHand(bar, which)
 	end
 end
 
--- The band, the line down the middle of it, and the colour of the whole gauge
--- while the fill is inside. All three come off one call, because two calls
--- could disagree about where the window is and the disagreement would be a bar
--- that flips colour a pixel away from its own mark.
-local function DrawWindow(bar)
-	local open, close, at = ns.Slam.Window()
-	if not open then
-		if bar.shownOpen ~= false then
-			bar.shownOpen, bar.shownMark = false, nil
-			bar.band:Hide()
-			bar.mark:Hide()
-		end
-		if bar.shownNow ~= false then
-			bar.shownNow = false
-			ns.Recolor(bar.edges, EDGE_QUIET)
-			Gauge.Paint(bar, bar.track, bar.color)
-		end
-		return
-	end
-
-	local width = bar.pixels
-	local left = Whole(open * width)
-	local right = Whole(close * width)
-	if right <= left then
-		right = left + 1
-	end
-
-	-- The line is compared as well as the two edges. Two windows a hair apart
-	-- round to the same pair of edges and to two different lines, and guarded on
-	-- the edges alone the band would be right and the line inside it stale.
-	local line = Whole(at * width)
-	if line < left then
-		line = left
-	end
-	if line > right then
-		line = right
-	end
-
-	if bar.shownOpen ~= left or bar.shownClose ~= right or bar.shownMark ~= line then
-		bar.shownOpen, bar.shownClose, bar.shownMark = left, right, line
-		bar.band:ClearAllPoints()
-		bar.band:SetPoint("TOPLEFT", bar, "TOPLEFT", left * unit, 0)
-		bar.band:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", left * unit, 0)
-		bar.band:SetWidth((right - left) * unit)
-		bar.band:Show()
-		bar.mark:ClearAllPoints()
-		bar.mark:SetPoint("TOPLEFT", bar, "TOPLEFT", line * unit, 0)
-		bar.mark:SetPoint("BOTTOMLEFT", bar, "BOTTOMLEFT", line * unit, 0)
-		bar.mark:SetWidth(unit)
-		bar.mark:Show()
-	end
-
-	-- Inside the band, measured against the band's own drawn edges rather than
-	-- against the fractions they were rounded from. The bar flips the instant
-	-- the fill reaches the green the player is aiming at, which is the only
-	-- reading of "inside" that matches what is on the screen.
-	local now = bar.shownValue >= left and bar.shownValue <= right
-		and ns.Swing.Armed(ns.Swing.MAIN)
-	if bar.shownNow ~= now then
-		bar.shownNow = now
-		ns.Recolor(bar.edges, now and EDGE_NOW or EDGE_QUIET)
-		Gauge.Paint(bar, bar.track, now and NOW_FILL or bar.color)
-	end
-end
-
 function SwingGauges.Update()
 	if not built or not frame:IsShown() then
 		return
@@ -383,7 +280,6 @@ function SwingGauges.Update()
 	if dual then
 		DrawHand(off, ns.Swing.OFF)
 	end
-	DrawWindow(main)
 end
 
 --------------------------------------------------------------------------
@@ -405,15 +301,7 @@ function SwingGauges.Describe()
 	if dual then
 		line = line .. (", off hand %.2fs"):format(ns.Swing.Speed(ns.Swing.OFF))
 	end
-	if not ns.Slam.Known() then
-		return line
-	end
-	if ns.Slam.Longer() then
-		return line .. (", Slam casts in %.2fs and does not fit the swing"):format(ns.Slam.Cast())
-	end
-	local _, _, at = ns.Slam.Window()
-	return line .. (", Slam at %.0f%% of it, %s %.2fs cast"):format((at or 0) * 100,
-		ns.Slam.Measured() and "measured" or "estimated", ns.Slam.Cast())
+	return line
 end
 
 --------------------------------------------------------------------------
@@ -425,8 +313,8 @@ events = CreateFrame("Frame")
 -- the screen is drawn on or it is drawn in steps.
 
 events:RegisterEvent("PLAYER_LOGIN")
--- A weapon swap changes how many bars there are and how long each of them is,
--- and this addon swaps weapons itself out of the charge macro. Both events are
+-- A weapon swap changes how many bars there are, and this addon swaps weapons
+-- itself out of the charge macro and out of a loadout key. Both events are
 -- taken because one of them is the client telling you the item moved and the
 -- other is it telling you the speed did, and neither implies the other on
 -- these clients.
@@ -443,8 +331,18 @@ events:SetScript("OnEvent", function(_, event, token)
 		return
 	end
 
-	if token == "player" then
+	if token ~= "player" or not built then
+		return
+	end
+
+	-- Only the one thing these two events can move here, which is how many bars
+	-- there are. UNIT_INVENTORY_CHANGED is every bag change as well, and a
+	-- layout pass sets the fill back to nothing: run on all of them, the bar
+	-- blanked for a frame every time a mob dropped something.
+	if ns.Swing.HasOffhand() ~= dual then
 		SwingGauges.Apply()
+	else
+		SwingGauges.Show()
 	end
 end)
 

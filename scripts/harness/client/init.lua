@@ -132,21 +132,20 @@ local CHURN = {
 -- and eighty throwaway tables a second, which is the number this gate exists to
 -- refuse.
 
--- The swing timer's tick, in KB per fifty ticks with both hands running and the
--- Slam band drawn. This is the only thing in the addon that draws on every
--- frame, so it is the tick where an allocation costs the most.
+-- The swing timer's tick, in KB per fifty ticks with both hands running. This
+-- is the only thing in the addon that draws on every frame, so it is the tick
+-- where an allocation costs the most.
 --
--- Nothing on that path builds anything. The fill is one multiply and one
--- SetValue, the band is placed only when one of its two pixel edges moves, and
--- ns.Slam.Window hands back three numbers rather than a table.
+-- Nothing on that path builds anything: the fill is one multiply and one
+-- SetValue per hand and there is nothing else on the tick at all.
 --
 -- It measured 0.03 with the fill rounded to a pixel and written only when that
--- pixel changed, and it measures 0.03 with the fill written unguarded on every
--- frame. That is the measurement the unguarded write was asked for: dropping
--- the guard bought smooth motion and cost nothing the collector can see. The
--- gate stays at 0.05. What is left of the 0.03 is the flip: the gauge repaints
--- its fill, its spent track and its four edges twice a swing, on the two ticks
--- the window opens and closes on.
+-- pixel changed, and 0.03 again with the fill written unguarded on every frame:
+-- dropping the guard bought smooth motion and cost nothing the collector can
+-- see. What was left of the 0.03 was the Slam band's colour flip repainting
+-- the gauge twice a swing, and with the band gone the tick reads 0.00. The
+-- gate stays at 0.05, which is the floor every zero-allocation tick here sits
+-- behind, because a gate of zero is a claim a sampled figure can never move.
 
 -- The enemy cast fills, in KB per two hundred frames with two mobs each casting
 -- a three second spell over and over. The second thing in the addon to draw on
@@ -263,8 +262,7 @@ for _, part in ipairs({
 	"17-merchant",
 	-- Last, and it reads what 06-log.lua left: the three trees the window
 	-- heads its boards with, so a spec run that gives one tree every point is
-	-- the same run the talent window paints. It takes GetNumTalents over from
-	-- 04-hands.lua and leaves that file's GetTalentInfo for the Slam window.
+	-- the same run the talent window paints.
 	"18-talents",
 	-- Last, and it takes the four book calls over from 03-player.lua: that
 	-- file answers three indices and no tabs, which is all the drag readers

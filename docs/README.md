@@ -8,7 +8,7 @@ loadout that fills the action bars, enemy bars that replace the
 Blizzard nameplate and carry a cast bar of their own, a chat window with a room
 per conversation in place of the client's own and a voice
 channel joined at login, a strip of the Blizzard bar art, three chores the
-client makes you do by hand, a swing timer with the Slam window marked on it,
+client makes you do by hand, a swing timer for the weapon in your hand,
 a row over your character counting down the cooldowns that decide fights, a
 second one holding a shaman's four totem slots with a hole where one is missing,
 a loot stream and a combat log drawn as scrolling feeds, and one Edit Mode
@@ -82,8 +82,8 @@ name of none of them.
                          because all of them read facts off it
     Class/Warrior.lua    the whole of what the addon knows about a warrior: the
                          forms, the charge abilities, the two a fight hands you,
-                         Slam, Battle Shout, the four long cooldowns, and the
-                         bar plan
+                         the three that eat a white swing, Battle Shout, the
+                         four long cooldowns, and the bar plan
     Class/Mage.lua       three of those seven
     Class/Shaman.lua     three of those seven
     Class/Priest.lua     two, and neither of them opens a page
@@ -240,10 +240,7 @@ name of none of them.
 
     Swing/Swing.lua          when the next swing lands, in each hand, out of
                              the combat log and UnitAttackSpeed
-    Swing/Slam.lua           what Slam costs to cast and where on the swing the
-                             press that costs no swing sits
-    Swing/Gauges.lua         a gauge per hand, the band on the main hand one,
-                             and the tick that paints them
+    Swing/Gauges.lua         a gauge per hand and the tick that paints them
     Swing/Feature.lua
 
     Buffs/Upkeep.lua         what should be up and is not: your own auras, and
@@ -761,22 +758,14 @@ goes through `Feature.lua` or through the shared surface below:
     ns.Swing.Speed(hand) / Armed / Remaining / Fraction   how long a swing is,
                                  whether one is running, how much of it is left
                                  and how much of it is spent, per hand
-    ns.Swing.Duration(hand)      how long the swing being drawn is, which is
-                                 what Fraction divides by. Anything marking up
-                                 that bar asks this rather than Speed
     ns.Swing.Start(hand) / Stop(hand) / Retime()   a swing landed, a swing is
-                                 not coming, and the speed moved under one
+                                 not coming, and the speed or the weapon moved
+                                 under one
     ns.Swing.Ready() / HasMainhand() / HasOffhand()   whether the client will
                                  say, and what is in each hand
-    ns.Slam.Window()             where the press that costs no swing sits, as
-                                 three shares of the main hand swing: open,
-                                 close and the exact press between them
-    ns.Slam.Cast() / Measured() / Estimate() / Rank() / Known() / Longer()
-                                 the cast time being drawn, the one the client
-                                 measured, the one worked out from the talent,
-                                 the points in it, whether this character has
-                                 Slam, and whether the cast outruns the swing
-    ns.Slam.Open()               whether pressing Slam right now is the press
+    ns.Swing.EatCount()          how many abilities this character has that eat
+                                 a white swing, which is what the class file
+                                 named
     ns.Upkeep.OUT / IN / BOTH    the two lines, checked between fights and
                                  during one, and the saved word for an entry
                                  that stands on both
@@ -1199,9 +1188,9 @@ every case it had met produced a bar that visibly stepped. See "one pixel rule
 was two" under traps already hit.
 
 Which rule an edge falls under is not a judgement call: it is whether the edge
-moves under a moving clock. The Slam band and its mark move, but they move when
-your weapon speed does, which is a few times a fight, so they are static edges
-and they land on whole pixels.
+moves under a moving clock. A bar's border moves when you change its width,
+which is a handful of times ever, so it is a static edge and lands on a whole
+pixel.
 
 Three consequences worth knowing before changing anything under it:
 
@@ -1705,7 +1694,7 @@ in `UI/Ticker.lua`. Before it, twelve files wrote out the same accumulator by
 hand and one of the twelve got it wrong. It is one line each now, and the list
 below is the whole of what runs.
 
-    Swing/Gauges.lua         every frame  two gauges and the Slam band
+    Swing/Gauges.lua         every frame  one gauge per hand
     UnitFrames/EnemyBars.lua every frame  the cast fill on every bar on screen
     UnitFrames/PlayerCast.lua every frame your own cast fill, moving
     UI/Tooltip.lua           every frame  the linger before a box goes
@@ -3881,7 +3870,7 @@ seven tenths of a second rather than emptying. That is the one state a mob's
 cast bar has no use for and it is not a nicety: an empty bar is exactly what a
 cast that finished leaves behind, so a cast that died has to look like something
 else or the bar has answered the wrong question. On a warrior it is Slam, which
-is the one cast in the rotation and the one `Swing/Slam.lua` exists to time.
+is the one cast in the rotation and the one that restarts the swing.
 
 `UNIT_SPELLCAST_FAILED` is also what the client says when a press was refused
 before anything started, so the hold does nothing where the bar was already
@@ -4988,10 +4977,18 @@ client.**
 
 Each has a test that fails without its fix.
 
-**Swing timer.** Two gauges under the character, one per hand, and a green band
-on the main hand one marking the press that costs no swing. The bars are worth
-the same to anybody standing in melee and are gated on holding a weapon rather
-than on being a warrior. The band is Slam's and is warrior only.
+**Swing timer.** One gauge per hand under your character, filling towards the
+next swing. Nothing else on it: no band, no text, no mark. What decides how many
+bars there are and how long each takes to fill is the weapon you are holding,
+which is why the bars are gated on holding one rather than on being a warrior.
+
+It replaced a version whose point was a green band on the main hand bar marking
+the one press of Slam that costs no swing. The band was arithmetically right and
+the feature was wrong: it turned a bar you glance at into a bar you aim at, and
+aiming at it meant playing the rotation the band wanted rather than the one the
+fight wanted. The report back was "it forces Slam, which does not work". That is
+the honest verdict on a readout that tells you what to press. The clock under it
+was good, so the clock is what was kept.
 
 **The combat log is the clock.** There is no event for a swing starting, no
 timer to read and nothing on the player that moves with one. What there is is
@@ -5022,90 +5019,29 @@ and is not enough on its own: the event does not reliably follow an aura on
 these clients, so `UNIT_AURA` on the player is registered too and every one of
 them ends in a comparison against the speed already held.
 
-`UNIT_INVENTORY_CHANGED` is the third door into the same arithmetic, and this
-addon opens it itself: a loadout key swaps both hands mid fight.
+**Heroic Strike and Cleave eat the white hit, and nothing in the log calls them
+a swing.** An on next swing ability replaces the white hit rather than landing
+beside it, and a finished Slam restarts the swing outright. All three arrive as
+`SPELL_DAMAGE`, or `SPELL_MISSED` where the server took the swing and the
+ability did nothing, under the ability's own name. A timer built on white hits
+alone freezes for a whole swing on every one of them, which on a warrior is most
+presses, and that is the defect that made the old bar useless in a real fight
+whatever the band was doing.
 
-**The Slam window is the point of the feature.** Slam has a cast time, it does
-not interrupt the swing while it casts, and finishing it restarts the swing.
-Press early and the restart throws away the charge you had. Press late and the
-swing is pushed out to the end of the cast. The one right press is where the
-cast ends as the swing ends, which is the moment the swing has exactly a cast
-time left to run. A swing of `D` seconds drawn as a bar puts that press at
-`(D - C) / D` of the way along, and the band is that plus and minus a tenth of a
-second, because a key press lands within about a tenth of where you aimed and a
-mark with no width is one you can only hit by luck.
+The three ids live in `Class/Warrior.lua` and the match is on the name the
+client gives them, because Heroic Strike is ten ids and one name and the game
+hands a level 70 warrior rank 9. A class that named none pays one table lookup
+per `SPELL_DAMAGE` line and nothing else.
 
-The band and the mark are drawn in whole pixels, which is what makes pressing on
-a mark mean anything: a band at 70.4 percent of a 180 pixel bar and a mark at
-70.6 percent of it are the same pixel and the eye cannot tell which side of the
-line it is on. They move only when your weapon speed does, which is a few times
-a fight, so they are static edges under the first pixel rule.
-
-The fill is not drawn in whole pixels, and that is the second pixel rule rather
-than an exception to the first. The bar is asked which side of the drawn band
-its fill is on, in the band's own units, so the colour flips the instant the
-edge reaches the green you are aiming at rather than a pixel either side of it.
-The whole gauge goes green while the fill is inside the band, because four
-percent of a bar is not enough to catch out of the corner of an eye and all of
-it is.
-
-**Exactly one thing is allowed to move the mark, and it is your weapon speed.**
-That is the repair the feature needed after it shipped: the report back was that
-the mark "moves around depending on when I click the spell", and it did, because
-the cast time under it was re-measured on every cast.
-
-`D` is the swing being drawn, out of `ns.Swing.Duration`, rather than what
-`UnitAttackSpeed` says right now. Those are the same number today and asking for
-the first is what keeps the mark and the fill two readings of one thing rather
-than two answers that agree by luck.
-
-`C` is a constant per character. Haste does not touch Slam's cast time on either
-of these clients: Warcraft wiki's patch history dates that to Cataclysm 4.0.1,
-2010-10-12, "Slam can now be cast while moving, and haste now reduces the cast
-time". Before that patch it is 1.5 seconds less the talent and nothing else. So
-a second reading of it carries no information, and every difference a second
-reading could carry is noise the mark would move for.
-
-The mark does still move when the swing speed does, and it has to: the press is
-the moment with a cast time left to run, and a shorter swing spends a bigger
-share of itself on the same cast. Flurry landing walks the band back down the
-bar, not up it. The harness asserts that as the invariant rather than as a
-percentage, at three weapon speeds and across a proc that lands mid swing,
-because the percentage is the number that moves.
-
-**The cast time is measured once and then held.** `UNIT_SPELLCAST_START` carries
-what the server actually started, as a start and an end in milliseconds, with
-the talent already in it. The first Slam of a session replaces the estimate.
-Every Slam after it is ignored.
-
-The reading is snapped to a twentieth of a second, because every value the real
-cast can take is a multiple of a tenth and the milliseconds under that are the
-server's own rounding. It is refused if it snaps to zero, since zero is truthy
-in Lua and a held zero would win over the estimate and then report that this
-character has no Slam. It is refused if it is longer than the spell's own cast
-time, because that reading is some other cast. What drops the held number is
-`CHARACTER_POINTS_CHANGED`, which is the one event that means the answer really
-changed.
-
-Until the first cast it is the spell's own cast time out of `ns.SpellCastTime`,
-less 0.1 seconds per point of Improved Slam. The talent is found by name rather
-than by position, because a talent's tab and index are not stable and its name
-is: every "Improved X" talent in this game carries the ability's own localised
-name inside it, in every locale Blizzard ships, so the talent whose name
-contains the localised name of Slam and is not Slam is Improved Slam.
-
-The 0.1 is a seed and is not trusted. Warcraft wiki's rank table gives 0.1 per
-point over five points for Classic and for Burning Crusade and dates the two
-point, 0.5 per point version to patch 3.0.2, one expansion past both of these
-clients. Wowhead's TBC entry for spell 12330 reads -1000 milliseconds, which
-does not agree. Nothing in the API settles it, the measurement replaces it on
-the first cast, and the panel says "estimated" until it has.
-
-**Slam restarts the swing and nothing in the log says so.** The next log event
-you would see is the swing that lands a full weapon speed later, so a timer
-built on the log alone draws the whole of that swing wrong.
-`UNIT_SPELLCAST_SUCCEEDED` for your own Slam restarts the main hand timer, and
-the spell is matched by name across every shape that event arrives in.
+**A weapon swap restarts the swing rather than scaling it.** Haste moves the
+length of a swing already in flight; equipping a weapon throws that swing away
+and starts one of the new weapon's length. Both arrive on
+`UNIT_INVENTORY_CHANGED`, so what tells them apart is the link in the slot and
+not the speed: two swords of one speed are a swap the speed cannot see. Only a
+hand whose link changed restarts, and only while it was already swinging, since
+that event is every trinket and every bag as well. This addon swaps weapons
+itself out of the charge macro and out of a loadout key, which is where it
+shows.
 
 **The bar is drawn every frame and nothing else in the addon is.** See ticker
 discipline above for why, and for why that costs nothing.
@@ -5115,7 +5051,7 @@ discipline above for why, and for why that costs nothing.
 interval, which made the real rate 15 Hz and the real step three and a half
 pixels. That was a genuine bug and fixing it left the bar still stepping,
 because the rounding to whole pixels was a second throttle behind the first: a
-rounded fill changes value 53 times a second at the shipped width whatever the
+rounded fill changes value 97 times a second at the shipped width whatever the
 tick does. Two throttles on one edge, and finding the first is what hid the
 second. When a fix that was demonstrably correct does not change the symptom,
 look for a second cause of the same symptom before doubting the fix.
@@ -5128,10 +5064,11 @@ value changes on every frame, and every step is the same size as every other.
 That is asserted at 60 fps and at 144. The last mile is a person looking at it.
 
 **What could not be verified without the client.** That `SWING_DAMAGE` really
-carries the off hand flag in slot 21 on 2.5.6 and 1.15.9, that
-`UNIT_SPELLCAST_START` fires for Slam at all, and that the server scales a swing
-in flight rather than restarting it when haste changes. All three are asserted
-against the stub, which proves the arithmetic and proves nothing about the game.
+carries the off hand flag in slot 21 on 2.5.6 and 1.15.9, that the server scales
+a swing in flight rather than restarting it when haste changes, and that Heroic
+Strike reaches the log as `SPELL_DAMAGE` rather than as a swing. All three are
+asserted against the stub, which proves the arithmetic and proves nothing about
+the game.
 
 **Buff nag.** A row of squares over your character, and only when something is
 wrong. Nothing missing means nothing drawn.
@@ -6578,13 +6515,13 @@ and zero errors.
    13, so a parser reading one index for both fails here. Flurry lands at the
    halfway mark and the assertion is that 1.7 seconds of a 3.4 second swing
    becomes 1.2 seconds of a 2.4 second one rather than a bar that jumps
-   backwards. The Slam band is asserted as pixels: a 1.5 second cast less five
-   points of Improved Slam against a 3.4 second swing puts the press at 70
-   percent of a 180 pixel bar, the band is two tenths of a second wide either
-   side of it, and the gauge flips colour on the tick the fill reaches it and
-   back on the tick it leaves. Then a completed Slam restarts the swing, a
-   cast from 5000 to 6200 milliseconds replaces the estimate with 1.2 seconds,
-   and the band moves with it.
+   backwards. Then the two things that restart a swing with nothing in the log
+   calling it one: a Heroic Strike, a dodged Cleave and a dodged Slam each
+   throw away the swing in flight, a later rank of Heroic Strike does it under
+   an id the addon has never seen, and a bleed and a stranger's press leave it
+   alone. And a weapon swap restarts the swing under an unchanged speed, which
+   a timer comparing speeds would call no change at all, while an inventory
+   event that moved no weapon lets the swing run on.
 
    The buff nag is driven through a character who is missing things. A bare
    main hand is noticed and a sharpened one is not, a shield in the off hand is
@@ -6651,14 +6588,8 @@ and zero errors.
    same size as every other, which is what constant velocity means. A fourth
    assertion is the positive form of the second pixel rule, that the fill really
    does land between pixels, so that reintroducing a round is a failure rather
-   than a silence. Then five Slams are
-   cast in a row, each declaring a different length, and the press mark has to
-   stay on the same pixel through all of them, through an aura event that moved
-   no speed, and through readings that are refused for being longer than the
-   spell or for rounding away to nothing. What is allowed to move it is asserted
-   as the invariant it comes from: at 3.4, 2.4 and 1.6 second swings, and across
-   a proc that lands mid swing, the moment the fill reaches the mark is the
-   moment the swing has exactly a cast time left to run.
+   than a silence. Then the width setting is moved under the bar, because a
+   fill left on the old scale runs off the end of a narrower widget.
 8. Holds the harness to the shape it was split into. No file over 40 names at
    chunk level unless it carries its own ceiling and a reason, ratcheting in
    each direction, and the runner's section list has to match what is on disk. This one is here because the harness was a single
@@ -7517,15 +7448,13 @@ Everything below was written from the API contract and has never executed:
   install's Details saved variables as a buff with uptime, recorded off a live
   2.5.6 session. The other eight are read through `ns.SpellName`, so an id this
   client does not know drops that entry rather than drawing a blank square.
-- Whether `UNIT_SPELLCAST_START` fires for Slam and `UnitCastingInfo` answers a
-  start and an end for it. That measurement is what replaces the estimated cast
-  time, so a client that never fires it leaves the band drawn from the spell's
-  own cast time less 0.1 seconds per point of Improved Slam, which is the state
-  the first Slam of every session is drawn in anyway.
-
-  What is no longer on this list is whether that start and end are stable from
-  one cast to the next. Only the first reading is taken, so a client that varies
-  it cannot move the mark, and the answer stopped mattering.
+- Whether an on next swing ability reaches the combat log as `SPELL_DAMAGE`
+  under its own name rather than as a swing. Heroic Strike and Cleave replace
+  the white hit, and every swing timer written for these clients reads them out
+  of `SPELL_DAMAGE`, but nothing on this machine proves it. Getting it wrong
+  costs a main hand bar that freezes for a swing on most of a warrior's presses,
+  which is what the harness drives and what a person would see in ten seconds of
+  a real pull.
 - Whether the swing bar looks smooth. This is not a client question, it is a
   screen and an eye question, and no test in this repo can answer it. What is
   asserted is that on every frame the addon is given it hands the widget the
@@ -7539,18 +7468,12 @@ Everything below was written from the API contract and has never executed:
   swing timer written for these clients assumes and what Flurry visibly does.
   Getting it wrong costs a bar that is out by the difference for one swing after
   every proc.
-- Whether this client folds Improved Slam into `GetSpellInfo`, and whether the
-  talent is 0.1 seconds a point on 2.5.6 or 0.2. Warcraft wiki's rank table says
-  0.1 for both Classic and Burning Crusade; Wowhead's TBC entry for spell 12330
-  says -1000 milliseconds, which would be 0.2. Either way the estimate is out by
-  at most half a second and only until the first Slam of the session is cast,
-  and the measurement corrects it from then on. This is the one place in the
-  feature where being wrong was designed to be temporary.
-
-  What is settled, and did not need the client: haste does not reduce Slam's
-  cast time on either of these versions. Warcraft wiki's patch history dates
-  that to Cataclysm 4.0.1. The mark is built on the cast being a constant per
-  character, and that is where the constant comes from.
+- Whether equipping a weapon mid fight really starts a fresh swing rather than
+  carrying the old one over. Every account of these clients says it resets, and
+  `docs/README.md` has said so about loadout swaps since before the swing timer
+  existed. The restart only ever touches a hand that was already swinging when
+  its link changed, so the worst a wrong answer costs is one restarted bar at
+  the moment you swapped.
 - Whether `RegisterStateDriver` and `SecureHandlerStateTemplate` re-point bar 1
   at another twelve action slots in combat on 2.5.6. `Charge/Icon.lua` already
   builds a handler and registers a driver on the same client, so the machinery is

@@ -169,8 +169,9 @@ check(CHARGE or (status and status:find(Class.Label(), 1, true) ~= nil),
 check(ns.Reaction.Watching() == (Class.Of("reactive") ~= nil),
 	("the reaction windows disagree with the registry on a %s: %s")
 		:format(PLAYER_CLASS, ns.Reaction.Describe()))
-check(ns.Slam.Available() == (Class.Of("swing") ~= nil),
-	("the swing window disagrees with the registry on a %s"):format(PLAYER_CLASS))
+check(ns.Swing.EatCount() == #(Class.Of("swing") or {}),
+	("the swing timer knows %d abilities that eat a swing and the registry gave %d")
+		:format(ns.Swing.EatCount(), #(Class.Of("swing") or {})))
 check((ns.Layout.Plan() ~= nil) == (Class.Of("loadout") ~= nil),
 	("the loadout disagrees with the registry on a %s"):format(PLAYER_CLASS))
 check(ns.Stance.Count() == #(Class.Of("forms") or {}),
@@ -275,12 +276,12 @@ if classGroup then
 	-- find on the character they were looking for it on.
 	for _, section in ipairs(classGroup.sections) do
 		local part = section.feature and section.feature.name
-		check(part == "charge" or part == "swing" or part == "standing",
+		check(part == "charge" or part == "standing",
 			("%s put %q under the class group and is not gated on a class")
 				:format(tostring(part), section.title))
 	end
 else
-	check(not CHARGE and not ns.Slam.Available(),
+	check(not CHARGE,
 		("a %s opened a class page and got no rail entry for it"):format(PLAYER_CLASS))
 end
 

@@ -1,11 +1,10 @@
 local ADDON, ns = ...
 
--- Everything Core and the panel need to know about the swing timer. The three
--- files above hold the clock, the Slam arithmetic and the drawing, and none of
--- them knows the name of anything outside this folder.
+-- Everything Core and the panel need to know about the swing timer. The two
+-- files above hold the clock and the drawing, and neither knows the name of
+-- anything outside this folder.
 
 local Swing = ns.Swing
-local Slam = ns.Slam
 local Gauges = ns.SwingGauges
 
 local LOW_WIDTH, HIGH_WIDTH = 80, 400
@@ -111,7 +110,7 @@ ns.Register({
 
 	panel = function(ui)
 		ui.Section("Swing timer", "Fighting")
-		ui.Lede("One bar per hand under your character, filling towards the next white swing.")
+		ui.Lede("One bar per hand under your character, filling towards the next swing of the weapon you are holding.")
 
 		ui.Size("width", LOW_WIDTH, HIGH_WIDTH, 10,
 			function() return ns.db.swingWidth end,
@@ -147,41 +146,6 @@ ns.Register({
 
 		ui.Action(function() return "put the swing bars back" end, function()
 			Gauges.Reset()
-		end)
-
-		-- The window is the one part of this that belongs to a class rather than
-		-- to a swing, so on anyone whose class named no such cast there is no tab
-		-- of numbers about a spell they do not have. The spell names the page,
-		-- because a page called "the cast window" says nothing on any character.
-		if not Slam.Available() then
-			return
-		end
-		local cast = Slam.Name() or "the cast"
-
-		ui.Section(("The %s window"):format(cast), ns.Options.CLASS)
-		ui.Lede(("A green band on the main hand bar marking the one press of %s that costs no swing.")
-			:format(cast))
-
-		ui.Reading(cast, function()
-			if not Slam.Known() then
-				return "not on this character yet"
-			end
-			if Slam.Longer() then
-				return ("%.2fs cast against a %.2fs swing: no band, it does not fit")
-					:format(Slam.Cast(), Swing.Speed(Swing.MAIN))
-			end
-			local _, _, at = Slam.Window()
-			return ("band at %.0f%% of the bar, %.2fs cast"):format((at or 0) * 100, Slam.Cast())
-		end)
-
-		ui.Reading("the cast time", function()
-			local rank = Slam.Rank()
-			if Slam.Measured() then
-				return ("%.2fs measured, Improved Slam reads as %d point%s")
-					:format(Slam.Measured(), rank, rank == 1 and "" or "s")
-			end
-			return ("estimated, less %.1fs for %d point%s: cast one to measure it")
-				:format(rank * 0.1, rank, rank == 1 and "" or "s")
 		end)
 	end,
 })

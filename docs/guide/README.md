@@ -19,7 +19,7 @@ for what it just described, because everything in the settings window has one.
 ## The screen, in the order you meet it
 
 - [Fighting](fighting.md). The Charge button, raid marking, casting on what the
-  mouse is over, the swing timer and the Slam band, the nag row, cooldowns and
+  mouse is over, the swing timer, the nag row, cooldowns and
   the totem bar.
 - [Action bars](bars.md). Your own bars on your own slots, and the rings.
 - [Frames](frames.md). You, your target, the party, the raid and the enemy bars.

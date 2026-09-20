@@ -317,8 +317,7 @@ _G.RAID_CLASS_COLORS = {
 -- answered every number would leave that path unreachable.
 --
 -- The fourth return is the cast time in milliseconds, which is what
--- ns.SpellCastTime reads and what the Slam window is built on. Empty here and
--- filled by the swing section, so every other spell in this file stays the
+-- ns.SpellCastTime reads. Empty here, so every spell in this file is the
 -- instant it was.
 _G.WiggleUISpellCast = {}
 -- The handful of ids whose real name is what the test is about, spelled the way

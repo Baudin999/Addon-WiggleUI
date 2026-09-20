@@ -2,6 +2,45 @@
 
 ## Unreleased
 
+### The swing timer is about the weapon, and the Slam band is gone
+
+The green band on the main hand bar is deleted, along with `Swing/Slam.lua` and
+everything that fed it: the talent walk, the cast time measured off
+`UNIT_SPELLCAST_START`, the colour flip, the second settings page. The band was
+arithmetically right and wrong as a feature. It turned a bar you glance at into
+a bar you aim at, and aiming at it meant playing the rotation the band wanted
+rather than the one the fight wanted. The verdict on it was "it forces Slam,
+which does not work".
+
+What is left is one gauge per hand and nothing on them. A two hander draws one
+bar, a pair draws two, nothing in your main hand draws none. No band, no text,
+no mark.
+
+The clock under it was the good part and it got the two things it was missing.
+
+An on next swing ability now restarts the bar. Heroic Strike and Cleave replace
+the white hit rather than landing beside it, and a finished Slam resets the
+swing outright, and none of the three reaches the combat log as `SWING_DAMAGE`.
+What arrives is `SPELL_DAMAGE`, or `SPELL_MISSED` where the server took the
+swing and the ability did nothing. Reading white hits alone, the main hand bar
+froze for a whole swing on most of a warrior's presses, which is the defect that
+made the feature useless in a real fight whatever the band was doing. The three
+ids live in `Class/Warrior.lua` and the match is on the name the client gives
+them, because Heroic Strike is ten ids and one name and the game hands a level
+70 warrior rank 9.
+
+A weapon swap now restarts the swing rather than scaling it. Haste moves the
+length of a swing already in flight; equipping a weapon throws that swing away
+and starts one of the new weapon's length. Both arrive on
+`UNIT_INVENTORY_CHANGED`, so what tells them apart is the link in the slot and
+not the speed: two swords of one speed are a swap the speed cannot see.
+
+The tick now allocates 0.00 KB per fifty ticks, down from 0.03, because what was
+left of the 0.03 was the band repainting the gauge twice a swing.
+
+`Class.Of("swing")` changed shape with the feature. It was a cast time and a
+talent step; it is now the list of spell ids that eat a white swing.
+
 ### Gear sets, and the addon hears a dual spec swap
 
 Named sets of gear, per character, saved from what you have on and put back on

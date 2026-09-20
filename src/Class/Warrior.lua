@@ -12,7 +12,7 @@ local Spell, Macro = ns.Class.Spell, ns.Class.Macro
 --   charge     Charge\Charge.lua
 --   reactive   Buttons\Reaction.lua
 --   requires   Buttons\Requires.lua
---   swing      Swing\Slam.lua
+--   swing      Swing\Swing.lua
 --   upkeep     Buffs\Upkeep.lua, added to the row everybody gets
 --   rotation   Cooldowns\Cooldowns.lua, the big squares on the top line
 --   cooldowns  Cooldowns\Cooldowns.lua, the small ones docked under them
@@ -209,24 +209,26 @@ ns.Class.Register("WARRIOR", {
 	},
 
 	--------------------------------------------------------------------------
-	-- The cast that lives inside a swing
+	-- The abilities that eat a white swing
 	--
-	-- Slam, rank one. Only the name is taken off it and every rank shares that
-	-- name, so one id covers a warrior at level 30 and one at 70.
+	-- Three of a warrior's presses restart the main hand swing timer and none
+	-- of them reaches the combat log as SWING_DAMAGE. Heroic Strike and Cleave
+	-- replace the white hit and arrive under their own names; a Slam restarts
+	-- the swing when it completes and arrives under its. Without these a timer
+	-- built on white hits alone freezes for a whole swing every time you press
+	-- one, which on a warrior is most presses.
 	--
-	-- perPoint is what one point of Improved Slam takes off the cast, in
-	-- seconds. Warcraft wiki's rank table gives 0.1 per point across five
-	-- points for Classic and for Burning Crusade, and dates the two point, 0.5
-	-- per point version to patch 3.0.2, which is one expansion past both of
-	-- these clients. Wowhead's TBC entry for spell 12330 reads -1000
-	-- milliseconds, which does not agree, and no API will settle it: a talent's
-	-- effect lives in its tooltip text and parsing that is a worse dependency
-	-- than this number. It is a seed for the first cast and nothing more, and
-	-- the measurement replaces it the moment one is cast.
+	-- Rank one of each, because Swing\Swing.lua matches on the name and every
+	-- rank of an ability shares it. One id here covers a warrior at level 10
+	-- and one at 70.
+	--
+	-- Wowhead's TBC entries for 78 and 845 both carry the on next swing flag,
+	-- which is the mechanic this list is about. 1464 is Slam, rank 1.
 	--------------------------------------------------------------------------
 	swing = {
-		cast = 1464, -- Slam, rank 1
-		perPoint = 0.1,
+		78,   -- Heroic Strike, rank 1
+		845,  -- Cleave, rank 1
+		1464, -- Slam, rank 1
 	},
 
 	--------------------------------------------------------------------------

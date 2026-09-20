@@ -35,7 +35,7 @@ ns.PlayerCast = PlayerCast
 -- bar goes red and holds for most of a second rather than vanishing, because a
 -- cast that disappeared and a cast that finished look identical on a bar that
 -- only ever empties. On a warrior that is Slam, which is the one cast in the
--- rotation and the one Swing/Slam.lua exists to time, so it is worth the hold.
+-- rotation and the one that restarts the swing, so it is worth the hold.
 --
 -- Two rates, the same split every moving bar in this addon has. The client is
 -- asked five times a second and again on every cast event, which is what puts

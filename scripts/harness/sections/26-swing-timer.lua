@@ -1,6 +1,6 @@
 -- The swing timer
 --
--- Five questions, and only the last of them is about drawing.
+-- Six questions, and only the last of them is about drawing.
 --
 -- Does the log start the right hand. The off hand flag is the twenty-first
 -- value of SWING_DAMAGE and the second of SWING_MISSED, and reading the wrong
@@ -19,22 +19,27 @@
 -- the single thing a warrior's swing timer has to get right and it is one line
 -- of arithmetic, which is exactly the kind of line that gets rewritten wrong.
 --
--- Does the Slam band land where the arithmetic says. The band is the whole
--- feature: a cast of C seconds against a swing of D belongs at (D - C) over D
--- of the bar, in whole pixels, and a band drawn a pixel off is a press that
--- clips. It is asserted as pixels rather than as a fraction, because pixels
--- are what the eye is aiming at.
+-- Does an ability that eats the white hit restart the swing. Heroic Strike and
+-- Cleave replace it and a finished Slam resets it, and none of the three
+-- arrives as SWING_DAMAGE. A timer reading white hits alone freezes for a
+-- whole swing on most of a warrior's presses, which is the defect that made
+-- the bar useless in game.
+--
+-- Does a weapon swap restart the swing rather than scale it. Haste scales what
+-- is left; equipping a weapon throws it away. Both arrive on
+-- UNIT_INVENTORY_CHANGED, so this swaps the link under an unchanged speed: a
+-- timer that told the two apart by the speed would call that one no change.
 --
 -- And does the tick stay free. This is the only thing in the addon that draws
 -- on every frame, so what it allocates per tick is gated below and the fill's
 -- unguarded write is measured rather than argued about.
 
 local H = ...
-local PLAYER_CLASS, WARRIOR, CHURN = H.PLAYER_CLASS, H.WARRIOR, H.CHURN
+local PLAYER_CLASS, CHURN = H.PLAYER_CLASS, H.CHURN
 local guids, advance = H.guids, H.advance
 local itemLink, swing, logArgs = H.itemLink, H.swing, H.logArgs
 local ns, fire, check = H.ns, H.fire, H.check
-local drawn, window = H.carry.drawn, H.carry.window
+local window = H.carry.window
 
 -- The running swing tick, or nothing. It goes with the switch: armed when the
 -- part is turned on and stopped when it is turned off, so this answers both
@@ -46,7 +51,17 @@ end
 
 local ME = "Player-0-0000000f"
 local SOMEBODY = "Player-0-0000001f"
-local SLAM = 1464
+
+-- Rank one of each of the three a warrior's file names, a later rank of one of
+-- them, and one that is not on the list at all.
+--
+-- 11564 is a later rank of Heroic Strike on Wowhead's TBC database. It is here
+-- because the class file names rank 1 and nothing else, and the game hands a
+-- level 70 warrior rank 9: a match on the id would miss every press a real
+-- character makes. Rend lands beside the swing rather than instead of it, so
+-- it is what proves the match is a list and not "any spell of yours".
+local HEROIC_STRIKE, CLEAVE, SLAM = 78, 845, 1464
+local LATER_RANK, REND = 11564, 772
 
 -- Nothing at all with the part off, which is how it ships. It was built at
 -- login whatever the switch said and its ticker was armed at interval zero, so
@@ -93,27 +108,6 @@ check(not offBar:IsShown(), "the off hand bar is drawn with nothing in the off h
 check(frame:GetHeight() == ns.db.swingHeight,
 	("one bar and the frame is %.1f px tall, the bar is %d")
 		:format(frame:GetHeight(), ns.db.swingHeight))
-
--- The band and the press line sit over the fill, which is ARTWORK, and under
--- nothing. And the border is made after both, because within one draw layer
--- the order is the order the textures were made and the band runs the full
--- height of the bar: made the other way round, the edge disappears behind
--- the band for exactly the span of screen the band exists to point at.
-check(mainBar.band.layer == "OVERLAY" and mainBar.mark.layer == "OVERLAY",
-	("the band draws on %s and the line on %s, and both belong on OVERLAY")
-		:format(tostring(mainBar.band.layer), tostring(mainBar.mark.layer)))
-local bandAt, edgeAt
-for index, drawn in ipairs(mainBar.regions) do
-	if drawn == mainBar.band then
-		bandAt = index
-	end
-	if drawn == mainBar.edges[1] then
-		edgeAt = index
-	end
-end
-check(bandAt ~= nil and edgeAt ~= nil and bandAt < edgeAt,
-	("the band is region %s and the border region %s, and the border is made last")
-		:format(tostring(bandAt), tostring(edgeAt)))
 
 -- The scale is the bar's own width, which is what makes a fill a whole
 -- number of pixels rather than a fraction of one.
@@ -236,36 +230,112 @@ check(math.abs(ns.Swing.Speed(ns.Swing.MAIN) - 3.4) < 1e-6,
 		:format(ns.Swing.Speed(ns.Swing.MAIN)))
 
 ----------------------------------------------------------------------
--- The Slam window
+-- The abilities that eat a swing
+--
+-- Heroic Strike and Cleave replace the white hit and a finished Slam resets
+-- the swing. None of the three reaches the log as SWING_DAMAGE: what arrives
+-- is SPELL_DAMAGE, or SPELL_MISSED where the server took the swing and the
+-- ability did nothing, under the ability's own name.
+--
+-- Which abilities those are is the registry's answer and not a warrior's, so a
+-- class whose file named none is given none and every SPELL_DAMAGE line it
+-- sends leaves the swing alone.
 ----------------------------------------------------------------------
 
-_G.WiggleUISpellCast[SLAM] = 1500
-swing.talent = 5
-ns.Slam.Forget()
-
--- Whether there is a window at all is the registry's answer, not a warrior's.
--- A class whose file named no cast that lives inside a swing must be given no
--- band, no measurement and no page.
-if not ns.Slam.Available() then
-	check(ns.Slam.Window() == nil,
-		("a %s was given a swing window"):format(PLAYER_CLASS))
-	check(not ns.Slam.Known(), ("a %s knows a cast it was never given"):format(PLAYER_CLASS))
-else
-	check(ns.Slam.Rank() == 5,
-		("Improved Slam read as %d points, and the tree holds 5"):format(ns.Slam.Rank()))
-	check(math.abs(ns.Slam.Estimate() - 1.0) < 1e-6,
-		("a 1.5s cast less 5 points of Improved Slam should estimate 1.00s and estimates %.3f")
-			:format(ns.Slam.Estimate()))
-	check(ns.Slam.Measured() == nil, "a cast was measured before one was ever made")
-
-	local open, close, at = ns.Slam.Window()
-	check(math.abs(at - (3.4 - 1.0) / 3.4) < 1e-6,
-		("the press sits at %.4f of the bar, and (3.4 - 1.0) / 3.4 is %.4f")
-			:format(at, (3.4 - 1.0) / 3.4))
-	check(math.abs(close - open - 0.2 / 3.4) < 1e-9,
-		("the band is %.4f of the bar, and two tenths of a 3.4s swing is %.4f")
-			:format(close - open, 0.2 / 3.4))
+-- The same twenty-one values, with the spell in slot 12 and its name in 13.
+-- Slot 13 is the off hand flag on SWING_MISSED, which is the client's own
+-- layout and the reason Swing.lua reads that slot as two different things.
+local function ability(subevent, source, spell, name)
+	for index = 1, 21 do
+		logArgs[index] = nil
+	end
+	logArgs[1] = GetTime()
+	logArgs[2] = subevent
+	logArgs[4] = source
+	logArgs[12] = spell
+	logArgs[13] = name or ns.SpellName(spell)
+	logArgs[15] = (subevent == "SPELL_MISSED") and "DODGE" or 300
+	fire("COMBAT_LOG_EVENT_UNFILTERED")
 end
+
+local eats = ns.Class.Of("swing") ~= nil
+
+white("SWING_DAMAGE", ME)
+advance(2.0)
+ability("SPELL_DAMAGE", ME, HEROIC_STRIKE)
+if eats then
+	check(math.abs(ns.Swing.Remaining(ns.Swing.MAIN) - 3.4) < 1e-6,
+		("a Heroic Strike left %.3fs of swing, and it eats the white hit")
+			:format(ns.Swing.Remaining(ns.Swing.MAIN)))
+
+	-- A dodged one counts as much as a landed one, for the reason SWING_MISSED
+	-- does: the server took the swing either way. And the other two abilities
+	-- on the list, because a match on one id is not a match on a list.
+	for _, spell in ipairs({ CLEAVE, SLAM }) do
+		white("SWING_DAMAGE", ME)
+		advance(2.0)
+		ability("SPELL_MISSED", ME, spell)
+		check(math.abs(ns.Swing.Remaining(ns.Swing.MAIN) - 3.4) < 1e-6,
+			("a dodged %s left %.3fs of swing, and it eats the white hit")
+				:format(ns.SpellName(spell), ns.Swing.Remaining(ns.Swing.MAIN)))
+	end
+
+	-- And a rank the class file never named, under the name every rank shares.
+	-- The id is one the addon has never seen; matched on the id rather than on
+	-- the name, this is the press a level 70 warrior actually makes and the bar
+	-- would freeze for the whole swing.
+	white("SWING_DAMAGE", ME)
+	advance(2.0)
+	ability("SPELL_DAMAGE", ME, LATER_RANK, ns.SpellName(HEROIC_STRIKE))
+	check(math.abs(ns.Swing.Remaining(ns.Swing.MAIN) - 3.4) < 1e-6,
+		("a later rank of Heroic Strike left %.3fs of swing, and every rank is one name")
+			:format(ns.Swing.Remaining(ns.Swing.MAIN)))
+else
+	check(math.abs(ns.Swing.Remaining(ns.Swing.MAIN) - 1.4) < 1e-6,
+		("a %s was given an ability that eats a swing"):format(PLAYER_CLASS))
+end
+
+-- Somebody else's, and one of yours that lands beside the swing rather than
+-- instead of it.
+white("SWING_DAMAGE", ME)
+advance(1.0)
+local untouched = ns.Swing.Remaining(ns.Swing.MAIN)
+ability("SPELL_DAMAGE", SOMEBODY, HEROIC_STRIKE)
+ability("SPELL_DAMAGE", ME, REND)
+check(math.abs(ns.Swing.Remaining(ns.Swing.MAIN) - untouched) < 1e-6,
+	"a spell that does not eat the swing restarted it")
+
+----------------------------------------------------------------------
+-- A weapon swap restarts the swing
+--
+-- Haste scales what is left of a swing already in flight. Equipping a weapon
+-- throws it away and starts one of the new weapon's length, which is what
+-- makes a swap mid fight cost a swing.
+--
+-- Both arrive on UNIT_INVENTORY_CHANGED and the speed is left at 3.4 across
+-- the swap on purpose: a timer that told a swap from a proc by comparing
+-- speeds would rescale this by one and call it no change at all.
+----------------------------------------------------------------------
+
+white("SWING_DAMAGE", ME)
+advance(2.0)
+swing.mainhand = itemLink("Bloodspiller")
+fire("UNIT_INVENTORY_CHANGED", "player")
+check(math.abs(ns.Swing.Remaining(ns.Swing.MAIN) - 3.4) < 1e-6,
+	("a weapon swap left %.3fs of the old swing, and it starts a whole new one")
+		:format(ns.Swing.Remaining(ns.Swing.MAIN)))
+
+-- And a trinket is not a weapon. The same event, nothing moved in either hand,
+-- so the swing runs on rather than restarting under every bag change in a
+-- fight.
+advance(1.0)
+local held = ns.Swing.Remaining(ns.Swing.MAIN)
+fire("UNIT_INVENTORY_CHANGED", "player")
+check(math.abs(ns.Swing.Remaining(ns.Swing.MAIN) - held) < 1e-6,
+	"an inventory change that moved no weapon restarted the swing")
+
+swing.mainhand = itemLink("Arcanite Reaper")
+fire("UNIT_INVENTORY_CHANGED", "player")
 
 ----------------------------------------------------------------------
 -- What that draws
@@ -282,89 +352,8 @@ check(math.abs(mainBar:GetValue() - 0.5 * width) < 1e-9,
 	("half of a %d pixel bar is %.1f and the fill drew %s")
 		:format(width, 0.5 * width, tostring(mainBar:GetValue())))
 
-if WARRIOR then
-	local open, close, at = ns.Slam.Window()
-	local left = math.floor(open * width + 0.5)
-	local right = math.floor(close * width + 0.5)
-	check(mainBar.band:IsShown(), "the Slam band is not drawn")
-	check(mainBar.band:GetWidth() == right - left,
-		("the band drew %.1f px, and %d to %d is %d")
-			:format(mainBar.band:GetWidth(), left, right, right - left))
-	local point = mainBar.band.points and mainBar.band.points[1]
-	check(point and point[4] == left,
-		("the band starts at %s px, and %.4f of a %d pixel bar is %d")
-			:format(tostring(point and point[4]), open, width, left))
-	check(mainBar.mark:IsShown(), "the press line inside the band is not drawn")
-	local markAt = mainBar.mark.points and mainBar.mark.points[1]
-	check(markAt and markAt[4] == math.floor(at * width + 0.5),
-		("the press line is at %s px and the arithmetic says %d")
-			:format(tostring(markAt and markAt[4]), math.floor(at * width + 0.5)))
-
-	-- Outside the band at half a swing, because a 1.0s cast against a 3.4s
-	-- swing belongs at 70 percent of the bar and not at 50.
-	check(not mainBar.shownNow,
-		"the gauge flipped colour halfway through a swing, nowhere near the window")
-
-	-- And inside it. The press is at 2.4 seconds spent of 3.4, so another
-	-- seven tenths puts the fill on the mark.
-	advance(0.7)
-	swingTicker:Beat(0.05)
-	check(mainBar.shownNow, "the fill reached the press mark and the gauge did not flip")
-	check(mainBar.edges.r > 0.3 and mainBar.edges.g > 0.9,
-		("the border did not go green while the window was open: %.2f, %.2f, %.2f")
-			:format(mainBar.edges.r, mainBar.edges.g, mainBar.edges.b))
-
-	-- Out the other side.
-	advance(0.6)
-	swingTicker:Beat(0.05)
-	check(not mainBar.shownNow, "the window never closed")
-
-	----------------------------------------------------------------
-	-- A finished Slam restarts the swing
-	----------------------------------------------------------------
-
-	white("SWING_DAMAGE", ME)
-	advance(2.0)
-	fire("UNIT_SPELLCAST_SUCCEEDED", "player", "cast-1", SLAM)
-	check(math.abs(ns.Swing.Remaining(ns.Swing.MAIN) - 3.4) < 1e-6,
-		("a finished Slam left %.3fs of swing, and it restarts the whole 3.4")
-			:format(ns.Swing.Remaining(ns.Swing.MAIN)))
-
-	-- Somebody else's cast, and one of yours that is not Slam, both leave
-	-- it alone.
-	advance(1.0)
-	local running = ns.Swing.Remaining(ns.Swing.MAIN)
-	fire("UNIT_SPELLCAST_SUCCEEDED", "party1", "cast-2", SLAM)
-	fire("UNIT_SPELLCAST_SUCCEEDED", "player", "cast-3", 772)
-	check(math.abs(ns.Swing.Remaining(ns.Swing.MAIN) - running) < 1e-6,
-		"a cast that was not your Slam restarted your swing")
-
-	----------------------------------------------------------------
-	-- And the client's own number replaces the estimate
-	--
-	-- The estimate is a guess about whether this client folds a talent into
-	-- the spell's cast time. UNIT_SPELLCAST_START carries what the server
-	-- actually started, so from the first Slam of a session there is
-	-- nothing left to guess.
-	----------------------------------------------------------------
-
-	swing.cast = { name = ns.Slam.Name(), start = 5000, stop = 6200 }
-	fire("UNIT_SPELLCAST_START", "player", "cast-4", SLAM)
-	swing.cast = nil
-	check(ns.Slam.Measured() ~= nil and math.abs(ns.Slam.Measured() - 1.2) < 1e-6,
-		("a cast from 5000 to 6200 milliseconds measured as %s seconds")
-			:format(tostring(ns.Slam.Measured())))
-	check(math.abs(ns.Slam.Cast() - 1.2) < 1e-6,
-		"the measurement did not replace the estimate")
-	local _, _, moved = ns.Slam.Window()
-	check(math.abs(moved - (3.4 - 1.2) / 3.4) < 1e-6,
-		("the band did not move with the measured cast: %.4f"):format(moved))
-else
-	check(not mainBar.band:IsShown(),
-		("a %s was drawn a Slam band"):format(PLAYER_CLASS))
-	check(mainBar:IsShown(),
-		("a %s holding a weapon was not drawn a swing bar"):format(PLAYER_CLASS))
-end
+check(mainBar:IsShown(),
+	("a %s holding a weapon was not drawn a swing bar"):format(PLAYER_CLASS))
 
 ----------------------------------------------------------------------
 -- The page, which is where the check box lives
@@ -378,7 +367,7 @@ for _, group in ipairs(window.groups) do
 		end
 	end
 end
-check(tabs == (WARRIOR and 2 or 1),
+check(tabs == 1,
 	("the swing part opened %d tabs on a %s"):format(tabs, PLAYER_CLASS))
 
 -- On and off, from the setting the check box writes.
@@ -426,11 +415,10 @@ check(swingKb <= CHURN.swing,
 	("the swing timer allocates %.2f KB per 50 ticks, the gate is %.2f")
 		:format(swingKb, CHURN.swing))
 
-print(("swing  %d x %d px per hand, main %.2fs off %.2fs, Slam window %s, %.2f KB per 50 ticks, gate is %.2f")
+print(("swing  %d x %d px per hand, main %.2fs off %.2fs, %s, %.2f KB per 50 ticks, gate is %.2f")
 	:format(ns.db.swingWidth, ns.db.swingHeight, ns.Swing.Speed(ns.Swing.MAIN),
 		ns.Swing.Speed(ns.Swing.OFF),
-		ns.Slam.Available() and ("%.0f%% of the bar"):format(select(3, ns.Slam.Window()) * 100)
-			or "no cast to mark",
+		eats and "three abilities eat a swing" or "no ability eats a swing",
 		swingKb, CHURN.swing))
 
 ----------------------------------------------------------------------
@@ -439,9 +427,7 @@ print(("swing  %d x %d px per hand, main %.2fs off %.2fs, Slam window %s, %.2f K
 
 guids.player = nil
 swing.mainhand, swing.offhand, swing.off = nil, nil, nil
-swing.main, swing.talent = 3.4, 0
-_G.WiggleUISpellCast[SLAM] = nil
-ns.Slam.Forget()
+swing.main = 3.4
 fire("UNIT_INVENTORY_CHANGED", "player")
 ns.Swing.Stop(ns.Swing.MAIN)
 ns.Swing.Stop(ns.Swing.OFF)
