@@ -201,6 +201,19 @@ check(Color.ClassHex("DEATHKNIGHT") == "ffc41e3a",
 	("a death knight's chat colour came back %q, not the client's own")
 		:format(Color.ClassHex("DEATHKNIGHT")))
 
+-- Color.ClassTint hands back that same unshaped colour as three numbers,
+-- which is what the meter caps a bar's end with. Asserted against the fill
+-- rather than against a literal: the two are the pair the palette's class
+-- table is built on, and a tint that came back no brighter than the fill
+-- under it would be the whole point of having two.
+for class in pairs(Color.class) do
+	local tint, fill = Color.ClassTint(class), Color.Class(class)
+	check(tint and fill, ("the palette has no pair for %s"):format(class))
+	check(Color.Luma(tint) >= Color.Luma(fill) - 1e-9,
+		("%s's tint is darker than its fill, so the pair is the wrong way round")
+			:format(class))
+end
+
 local summary = Color.Describe()
 print(("colour %s"):format(summary))
 print("unit   palette shared, colours by reference, threat walk skips you, vanilla fallback")

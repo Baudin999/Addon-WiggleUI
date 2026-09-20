@@ -280,6 +280,22 @@ Color.text = {
 	-- because running dry mid pull is the same kind of news as losing a mob.
 	short  = HUE.red,
 
+	-- Short text ON a fill that says this is about to go wrong. One caller so
+	-- far: the threat meter's row for the member climbing toward you, and the
+	-- header that names them and counts the seconds.
+	--
+	-- A token and not a fill, which is the whole reason it is here rather than
+	-- written at the site it came from. It is read against a class colour that
+	-- has already been taken under FILL_CEILING, so it needs the floor the
+	-- shaping pass raises a token to; at the 0.94 0.42 0.35 Meter/Window.lua
+	-- typed by hand it was a coral on a dark fill and nothing held it there.
+	--
+	-- Its own three numbers rather than HUE.coral, which is two hundredths
+	-- away. That one is what killing a mob is worth on Color.xp's scale, this
+	-- is a player pulling a mob off you, and a palette that spends one entry on
+	-- two facts drifts on the first edit that meant one of them.
+	alarm  = { 0.94, 0.42, 0.35 },
+
 	-- The quest badge beside an enemy bar: how many of this one you still need.
 	--
 	-- Gold because gold has meant "quest" in this game since 2004, and a colour
@@ -484,7 +500,8 @@ end
 for _, color in pairs(Color.xp) do
 	tokens[#tokens + 1] = color
 end
-for _, color in ipairs({ Color.text.value, Color.text.target, Color.text.count }) do
+for _, color in ipairs({ Color.text.value, Color.text.target, Color.text.count,
+	Color.text.alarm }) do
 	tokens[#tokens + 1] = color
 end
 
@@ -592,6 +609,28 @@ function Color.Class(class)
 	Darken(fill)
 	CLASS[class] = { tint = { color.r, color.g, color.b }, fill = fill } -- allocates: once per unknown class, same guard
 	return fill
+end
+
+-- The other half of the pair, for the one caller that draws both at once.
+--
+-- A meter row fills its bar with Color.Class and caps the end of that fill in
+-- this, and the two colours are doing the two jobs the table above names. The
+-- fill is a background and is held under the ceiling so the name written on it
+-- can be read. The cap is two pixels with nothing on top of them, so it is the
+-- identity colour at the brightness Blizzard chose it for, and being too bright
+-- to be a background is what makes it the one mark on the row that reads from
+-- across the screen.
+--
+-- Nil for no class, like Color.Class, and the same reason: white would be a
+-- claim rather than an absence. The Color.Class call is what fills CLASS for a
+-- class off the end of the table, so a caller that wants both gets one
+-- allocation between them rather than two.
+function Color.ClassTint(class)
+	if not class then
+		return nil
+	end
+	local known = CLASS[class] or (Color.Class(class) and CLASS[class])
+	return known and known.tint or nil
 end
 
 -- The same colour as the eight hex digits a chat escape wants. Separate from

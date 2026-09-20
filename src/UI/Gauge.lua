@@ -32,9 +32,13 @@ UI.Gauge = Gauge
 -- nothing behind it and no spent part to colour. Putting a status bar under
 -- every row would add a frame per row, an ordering question between that frame
 -- and the row's own icon and text, and float arithmetic where the meter rounds
--- a share to whole pixels on purpose. It looks like the same widget from a
--- distance and shares one line of code with it, which is the colour, and that
--- line is class colour at its own alpha rather than anything on this page.
+-- a share to whole pixels on purpose.
+--
+-- It takes one call off this page, which is Gauge.Sheen, and that is the
+-- difference between a meter bar and a health bar being the same surface lit
+-- the same way and being two flat slabs that happen to share a palette. What it
+-- does not take is Gauge.Paint: a row has no spent end, so its colour is
+-- written straight onto the texture at the alpha the meter's own setting holds.
 --------------------------------------------------------------------------
 
 -- What the spent part keeps of the fill's colour. Off the unit palette rather
@@ -133,15 +137,36 @@ local SHINE = { 1, 1, 1, 0.08 }
 local SHADE = { 0, 0, 0, 0.12 }
 local SHEEN_LAYER = 1
 
-local function Sheen(bar, fill)
-	local lit = UI.Wash(bar, SHINE, "TOP", "ARTWORK")
-	lit:SetDrawLayer("ARTWORK", SHEEN_LAYER)
+-- Public, and the meter's rows are why. A row's bar is a texture on the row
+-- rather than a status bar's fill, so it cannot come through Gauge.New, and
+-- every other way of giving it the modern look is a second copy of 0.08 and
+-- 0.12 in Meter/Window.lua. Two copies of a wash is how a meter bar and a
+-- health bar stop agreeing about what lit from above means, which is a thing
+-- nobody would notice for a year and then could not unsee.
+--
+-- The layer is the caller's because the two callers stack differently. A status
+-- bar's fill is on ARTWORK and this goes one sublevel over it, under every
+-- label. A meter row draws its bar on BACKGROUND and its spec icon on ARTWORK,
+-- so there the sheen goes on BORDER, over the colour and under the art, which
+-- must not be washed: a sheen over an icon is the icon in a different shade at
+-- the top than at the bottom.
+--
+-- The parent is the caller's too, and it is the frame rather than the fill,
+-- because a texture cannot carry a texture. The anchors are what pin the two
+-- washes to the fill, so they are exactly as long as it is whichever way the
+-- bar runs and however often the tick rewrites its width.
+function Gauge.Sheen(parent, fill, layer, sublevel)
+	layer = layer or "ARTWORK"
+	sublevel = sublevel or SHEEN_LAYER
+	local lit = UI.Wash(parent, SHINE, "TOP", layer)
+	lit:SetDrawLayer(layer, sublevel)
 	lit:SetPoint("TOPLEFT", fill, "TOPLEFT", 0, 0)
 	lit:SetPoint("BOTTOMRIGHT", fill, "RIGHT", 0, 0)
-	local dark = UI.Wash(bar, SHADE, "BOTTOM", "ARTWORK")
-	dark:SetDrawLayer("ARTWORK", SHEEN_LAYER)
+	local dark = UI.Wash(parent, SHADE, "BOTTOM", layer)
+	dark:SetDrawLayer(layer, sublevel)
 	dark:SetPoint("TOPLEFT", fill, "LEFT", 0, 0)
 	dark:SetPoint("BOTTOMRIGHT", fill, "BOTTOMRIGHT", 0, 0)
+	return lit, dark
 end
 
 -- A gauge of our own: the fill, spent track behind it, and a scale of zero to
@@ -158,7 +183,7 @@ function Gauge.New(parent)
 	bar:SetMinMaxValues(0, 1)
 	bar.track = Gauge.Underlay(bar)
 	if ns.Theme.Modern() then
-		Sheen(bar, fill)
+		Gauge.Sheen(bar, fill)
 	end
 	return bar
 end

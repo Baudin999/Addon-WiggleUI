@@ -602,6 +602,78 @@ local top = damagePane.rows[1].bar:GetWidth()
 check(top == ns.db.meterWidth,
 	("the top bar is %.0f px across a %d px pane"):format(top, ns.db.meterWidth))
 
+----------------------------------------------------------------------
+-- What a row is drawn in
+--
+-- The meter drew its own colours for a year and all three things wrong with
+-- it were one thing: this file never joined the unit palette. It filled a bar
+-- out of RAID_CLASS_COLORS, which is the colour a name is written IN against
+-- a black chat window and which six of the nine classes are far too light to
+-- be a background for, and then wrote the name on that bar in the same
+-- colour, which is one to one. Sneakyman is a hunter, and the hunter is the
+-- case the screenshot came from: a pastel slab with an invisible name on it.
+--
+-- The floors themselves are gated in 01-unit-layer.lua, over every fill and
+-- every token in the palette. What is gated here is that the meter is using
+-- them: which of the two colours in a class pair goes on which surface, and
+-- that the name has stopped being one of them.
+----------------------------------------------------------------------
+
+do
+	local Color = ns.Unit.Color
+	local row = damagePane.rows[1]
+	local function near(a, b) return a and math.abs(a - b) < 1e-6 end
+	local function paints(region, color, alpha)
+		return region and near(region.r, color[1]) and near(region.g, color[2])
+			and near(region.b, color[3]) and near(region.a, alpha)
+	end
+
+	-- The bar is the fill, which is the class colour taken under the
+	-- luminance ceiling, and not the tint the client hands out.
+	local fill = Color.Class("HUNTER")
+	check(paints(row.bar, fill, ns.db.meterBarAlpha / 100),
+		("the top row's bar is %s,%s,%s and the hunter fill is %.3f,%.3f,%.3f")
+			:format(tostring(row.bar.r), tostring(row.bar.g), tostring(row.bar.b),
+				fill[1], fill[2], fill[3]))
+
+	-- The bright end of it is the other half of the pair, at full alpha
+	-- whatever the bar's own alpha says, because nothing is drawn on top of it
+	-- and it is the mark a rank is actually read off.
+	local tint = Color.ClassTint("HUNTER")
+	check(paints(row.cap, tint, 1),
+		("the bar's cap is %s,%s,%s and the hunter tint is %.3f,%.3f,%.3f")
+			:format(tostring(row.cap.r), tostring(row.cap.g), tostring(row.cap.b),
+				tint[1], tint[2], tint[3]))
+
+	-- The name is paper and stays paper. It is written where the row is built
+	-- rather than on the tick, so this is the gate that a class change cannot
+	-- put the class colour back on top of the class colour.
+	local paper = Color.text.name
+	local r, g, b = row.name:GetTextColor()
+	check(near(r, paper[1]) and near(g, paper[2]) and near(b, paper[3]),
+		("the row's name is %.2f,%.2f,%.2f and paper is %.2f,%.2f,%.2f")
+			:format(r, g, b, paper[1], paper[2], paper[3]))
+
+	-- A hairline round the art, which is what keeps a spell icon from reading
+	-- as a hole punched in the bar it sits on.
+	check(row.edges and #row.edges == 4, "a row's icon has no rim")
+	check(paints(row.edges[1], Color.iconEdge, Color.iconEdge[4]),
+		"a row's icon rim is not ns.Unit.Color.iconEdge")
+
+	-- And a bar is never drawn shorter than its own cap. The cap hangs off the
+	-- bar's right edge, so a one pixel bar would put the other pixel off the
+	-- left of the row.
+	local CAP = 2
+	check(row.cap:GetWidth() == CAP,
+		("the cap drew %.0f px and the file says %d"):format(row.cap:GetWidth(), CAP))
+	for index = 1, damagePane.visible do
+		local shown = damagePane.rows[index].shownWidth
+		check(shown == nil or shown >= CAP,
+			("row %d drew a %.0f px bar and the cap is %d px")
+				:format(index, shown or 0, CAP))
+	end
+end
+
 -- And how faint it is, which is a setting rather than a constant. The row
 -- guards its colour write on the player's class, so the half of this worth
 -- asserting is not that the number arrives but that moving it lands on the

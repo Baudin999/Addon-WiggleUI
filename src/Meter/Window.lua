@@ -19,6 +19,32 @@ ns.MeterWindow = MeterWindow
 -- what UI/Text.lua's default flag is for and the reason it exists: these
 -- glyphs sit over the world and a drop shadow disappears against a dark floor.
 --
+-- A bar is the same surface a health bar is, and for a long time it was not.
+-- Three things were wrong with it and all three came from this file drawing
+-- its own colours rather than joining the palette every other bar is on:
+--
+--   The fill was RAID_CLASS_COLORS, which is the identity colour, the one a
+--   name is written IN against a black chat window. Six of the nine are too
+--   light to be a background for anything, so the top row was a pastel slab.
+--   Unit/Color.lua's whole contrast section exists to stop exactly that, and
+--   Color.Class hands back the same colour taken under the fill ceiling.
+--
+--   The name was written in the colour it was written on. A hunter's name in
+--   hunter green on a hunter green bar is one to one, which is not low
+--   contrast, it is no contrast. The class is said once now, by the bar, and
+--   every string on a row is Color.paper, which the ceiling guarantees at four
+--   and a half to one on every fill in the palette.
+--
+--   The bar was flat while the rest of the addon went to the modern look. It
+--   wears the same sheen a unit frame's gauge does, off Gauge.Sheen, and ends
+--   in two pixels of the class's identity colour, which is the bright half of
+--   the pair being spent on the one mark that has nothing drawn over it.
+--
+-- The guarantee is at full alpha. meterBarAlpha is a setting because what is
+-- behind the meter is the zone, and every percent it comes down is contrast
+-- traded for seeing through the bar. That is the player's trade to make and
+-- the default does not make it.
+--
 -- Both panes are children of one frame, so dragging either drags both and
 -- there is one saved anchor rather than two to keep beside each other.
 --
@@ -61,6 +87,22 @@ local RULE = 1
 local INSET = 1     -- the row edge to the icon
 local GUTTER = 4    -- the icon to the name
 local PANE_GAP = 8  -- the damage pane to the threat pane
+local HAIRLINE = 1  -- the rim round a row's icon
+
+-- The bright end of a bar, in design pixels.
+--
+-- Two, and the second one is not decoration. A bar drawn at meterBarAlpha over
+-- a floor has a soft end by construction, and where a bar ends is the one thing
+-- on a meter that is actually read: the rank is a comparison of four lengths
+-- and a length you have to squint at is four you cannot compare. The cap is the
+-- class's identity colour at full alpha whatever the bar's alpha is, so the end
+-- of every bar is exact at every setting.
+--
+-- It is also the floor under a bar's width, in PaintBar. A cap anchored to the
+-- right edge of a one pixel bar would hang a pixel off the left of the row, and
+-- a player who did nothing this fight is better served by the shortest mark
+-- that is still a mark.
+local CAP = 2
 
 -- Font sizes, in pixels, because inside a frame on the grid a font size is a
 -- pixel height rather than a point.
@@ -121,10 +163,49 @@ local function BarAlpha()
 	return ns.db.meterBarAlpha / 100
 end
 
+local Color = ns.Unit.Color
+
+-- Two palettes, and which a string takes is decided by what is behind it
+-- rather than by what it says.
+--
+-- A header stands on the world above the rule, with nothing of ours under it
+-- ever, so it takes ns.UI.Color, which is the interface's own. `HEAD` is the
+-- word that names the pane and `DIM` is the reading beside it, and they differ
+-- because they did not: "DPS" and "77 11s" were one grey at one size, which is
+-- a title and its figure with nothing to say which is which. `QUIET` is the
+-- state a pane is in when it has nothing to tell you, and it is a step below
+-- DIM on purpose: "no target" is a sentence you are meant to stop reading.
+local HEAD = ns.UI.Color.text
 local DIM = ns.UI.Color.dim
-local WHITE = ns.UI.Color.text
-local WARN = { 0.94, 0.42, 0.35 }
-local GREY = { 0.50, 0.50, 0.50 }
+local QUIET = ns.UI.Color.quiet
+
+-- A row's strings stand on a bar, so they take the unit palette, where a token
+-- is held to a contrast floor against the fill under it. That is the whole
+-- reason these four are not the four above: ns.UI.Color.dim is a grey for a
+-- dark panel, and on a class colour under the fill ceiling it is a shade and a
+-- half from the bar it is written on.
+--
+-- PAPER is the name on every row and the number on a damage row, both of which
+-- are read rather than recognised, so both take the colour the ceiling was
+-- solved for. The threat pane's number says one more thing than the damage
+-- pane's, which is what the three below are: you are holding this, somebody is
+-- climbing, nobody is.
+local PAPER = Color.text.name
+local ALARM = Color.text.alarm
+local RESTING = Color.text.value
+
+-- The bar under a player whose class the roster has not answered yet, which is
+-- the reaction palette's idle slate: the same grey an empty power bar and the
+-- spent end of a unit frame's health already draw. It was 0.50 0.50 0.50, one
+-- of two colours this file wrote by hand, and a flat mid grey beside eight
+-- shaped fills is the one bar on the meter that does not belong to the palette.
+local IDLE = Color.reaction.idle
+
+-- The rim round a row's spec icon, which is the hairline every aura square in
+-- the addon already wears. Without it the art has the bar's own colour hard up
+-- against it on three sides and the icon reads as a hole in the bar rather
+-- than as a picture on it.
+local ICON_RIM = Color.iconEdge
 
 local frame, damage, threat, place
 local built = false
@@ -148,36 +229,107 @@ local unit = 1
 -- Building
 --------------------------------------------------------------------------
 
-local function ClassColor(class)
-	local color = class and RAID_CLASS_COLORS and RAID_CLASS_COLORS[class]
-	if not color then
-		return GREY[1], GREY[2], GREY[3]
+-- What this player's bar is filled with and what its end is capped in, or the
+-- idle slate twice over for somebody the roster has no class for yet.
+--
+-- Both out of ns.Unit.Color rather than off RAID_CLASS_COLORS, which is what
+-- this read for a year. The global is the identity colour and it is a global
+-- this addon does not own: absent on one of the two clients or moved by another
+-- addon that got there first, and unshaped either way, so the bar it filled was
+-- a background no name could be written on. The note at the top of the file is
+-- the whole of that argument.
+--
+-- Two tables and not six numbers, because PaintRow guards on the fill's
+-- identity: the palette hands back the same table for the same class every
+-- time, which is the contract Unit/Color.lua's header sets out, and that is
+-- what turns a colour write per row per tick into none.
+local function ClassColors(class)
+	local fill = Color.Class(class)
+	if not fill then
+		return IDLE, IDLE
 	end
-	return color.r, color.g, color.b
+	return fill, Color.ClassTint(class) or fill
 end
 
--- One row: the bar behind it, the icon, the name and the number. Nothing is
--- anchored to anything but the row itself, so a row can be moved by moving one
--- frame and the four regions come with it.
+-- The draw order inside a row, which is three layers and not one.
+--
+-- A row is one frame carrying six regions rather than a frame per part, which
+-- is what keeps twenty rows at twenty frames. Inside one frame the order is the
+-- layer and the sublevel, and nothing a caller does to frame levels can move
+-- it, which is the same argument UI/Gauge.lua's Underlay makes for drawing a
+-- spent track on BACKGROUND.
+--
+-- The bar is the bottom. The sheen is over the colour and under the art,
+-- because a wash across a spell icon is the icon lit at the top and shaded at
+-- the bottom, which is a picture of a different spell. The cap is over the
+-- sheen so the bright end stays the colour it was chosen as rather than the
+-- colour plus a twelfth of black. The icon and its rim are on ARTWORK, and
+-- every string is on OVERLAY, which is where ns.UI.Label puts one.
+local SHEEN_LAYER = 0
+local CAP_LAYER = 1
+
+-- One row: the bar, the sheen over it, the cap on its end, the icon with its
+-- rim, the name and the number. Nothing is anchored to anything but the row
+-- itself and the bar, so a row can be moved by moving one frame and everything
+-- on it comes along.
 local function BuildRow(pane, index)
 	local row = CreateFrame("Frame", nil, pane)
 	row:SetSize(pane:GetWidth(), ROW * unit)
 	row:SetPoint("TOPLEFT", pane, "TOPLEFT", 0,
 		-(HEADER + RULE + (index - 1) * (ROW + ROW_GAP)) * unit)
 
-	row.bar = ns.Fill(row, "BACKGROUND", 0.5, 0.5, 0.5, BarAlpha())
+	row.bar = ns.Fill(row, "BACKGROUND", IDLE[1], IDLE[2], IDLE[3], BarAlpha())
 	row.bar:SetPoint("TOPLEFT")
 	row.bar:SetHeight(ROW * unit)
-	row.bar:SetWidth(unit)
+	row.bar:SetWidth(CAP * unit)
+
+	-- The modern look's two washes, the same pair a unit frame's gauge wears
+	-- and out of the same file, pinned to the bar so they are exactly as long
+	-- as it is however often the tick rewrites its width.
+	--
+	-- Under the modern look only, like every other bar in the addon: a player
+	-- who chose the flat look chose it for the meter too.
+	if ns.Theme.Modern() then
+		ns.UI.Gauge.Sheen(row, row.bar, "BORDER", SHEEN_LAYER)
+	end
+
+	-- The bright end. Anchored to the bar's own right edge, so the tick writes
+	-- one width and this follows with no second write and no arithmetic.
+	row.cap = ns.Fill(row, "BORDER", IDLE[1], IDLE[2], IDLE[3], 1)
+	row.cap:SetDrawLayer("BORDER", CAP_LAYER)
+	row.cap:SetPoint("TOPRIGHT", row.bar, "TOPRIGHT")
+	row.cap:SetPoint("BOTTOMRIGHT", row.bar, "BOTTOMRIGHT")
+	row.cap:SetWidth(CAP * unit)
 
 	row.icon = ns.UI.Icon(row, "ARTWORK")
 	row.icon:SetSize(ICON * unit, ICON * unit)
 	row.icon:SetPoint("LEFT", row, "LEFT", INSET * unit, 0)
 
-	row.name = ns.UI.Label(row, ROW_TEXT, WHITE, "LEFT", ns.UI.OUTLINE)
+	-- Four hairlines round the art. ns.Outline hangs its edges off a frame's
+	-- own corners and the icon is a region, not a frame, so they are anchored
+	-- to the texture instead and ns.EdgeSize gives them their thickness.
+	row.edges = {}
+	for edge = 1, 4 do
+		row.edges[edge] = ns.Fill(row, "ARTWORK",
+			ICON_RIM[1], ICON_RIM[2], ICON_RIM[3], ICON_RIM[4])
+	end
+	row.edges[1]:SetPoint("TOPLEFT", row.icon, "TOPLEFT")
+	row.edges[1]:SetPoint("TOPRIGHT", row.icon, "TOPRIGHT")
+	row.edges[2]:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMLEFT")
+	row.edges[2]:SetPoint("BOTTOMRIGHT", row.icon, "BOTTOMRIGHT")
+	row.edges[3]:SetPoint("TOPLEFT", row.icon, "TOPLEFT")
+	row.edges[3]:SetPoint("BOTTOMLEFT", row.icon, "BOTTOMLEFT")
+	row.edges[4]:SetPoint("TOPRIGHT", row.icon, "TOPRIGHT")
+	row.edges[4]:SetPoint("BOTTOMRIGHT", row.icon, "BOTTOMRIGHT")
+	ns.EdgeSize(row.edges, HAIRLINE * unit)
+
+	-- Paper on both, and the name is no longer the class colour. On a fill the
+	-- ceiling has shaped, paper clears four and a half to one; the class colour
+	-- on the class colour cleared one.
+	row.name = ns.UI.Label(row, ROW_TEXT, PAPER, "LEFT", ns.UI.OUTLINE)
 	row.name:SetPoint("LEFT", row, "LEFT", (INSET + ICON + GUTTER) * unit, 0)
 
-	row.value = ns.UI.Label(row, ROW_TEXT, WHITE, "RIGHT", ns.UI.OUTLINE)
+	row.value = ns.UI.Label(row, ROW_TEXT, PAPER, "RIGHT", ns.UI.OUTLINE)
 	row.value:SetPoint("RIGHT", row, "RIGHT", -INSET * unit, 0)
 
 	-- The name gives way to the number, not the other way round. A truncated
@@ -199,13 +351,29 @@ local function BuildPane(clickable, percent)
 	pane.percent = percent and true or false
 	pane:SetSize(1, 1) -- both are set from the settings in MeterWindow.Apply
 
-	pane.left = ns.UI.Label(pane, HEADER_TEXT, DIM, "LEFT", ns.UI.OUTLINE)
+	-- The word that names the pane, and it is the brighter of the two. Both
+	-- were DIM at one size, so "DPS" and the total beside it were one grey
+	-- reading, and a header whose title and whose figure look identical is a
+	-- header nobody reads twice.
+	pane.left = ns.UI.Label(pane, HEADER_TEXT, HEAD, "LEFT", ns.UI.OUTLINE)
 	pane.left:SetPoint("TOPLEFT", pane, "TOPLEFT", INSET * unit, -INSET * unit)
 
 	pane.right = ns.UI.Label(pane, HEADER_TEXT, DIM, "RIGHT", ns.UI.OUTLINE)
 	pane.right:SetPoint("TOPRIGHT", pane, "TOPRIGHT", -INSET * unit, -INSET * unit)
 
-	pane.rule = ns.Fill(pane, "ARTWORK", 0.5, 0.5, 0.55, 0.35)
+	-- The line under the header, in the palette's dim rather than in the 0.5
+	-- 0.5 0.55 at a third alpha this file typed. That was the second of the two
+	-- colours written by hand here and it was the one nobody could see: a pale
+	-- hairline at 0.35 over a desert floor is the floor.
+	--
+	-- Dim and not the palette's `edge` or `hairline`, which is where a line
+	-- belongs on every other widget in the addon. Both of those are chrome, and
+	-- chrome is dark because it is drawn on a window. This line has no window
+	-- under it, so a dark one goes into a night time crypt floor the same way
+	-- the pale one went into the sand. The mid grey the headers are already
+	-- written in is the one value that survives both, at full alpha so it is a
+	-- line rather than a suggestion.
+	pane.rule = ns.Fill(pane, "ARTWORK", DIM[1], DIM[2], DIM[3], 1)
 	pane.rule:SetPoint("TOPLEFT", pane, "TOPLEFT", 0, -HEADER * unit)
 	pane.rule:SetPoint("TOPRIGHT", pane, "TOPRIGHT", 0, -HEADER * unit)
 	pane.rule:SetHeight(RULE * unit)
@@ -493,11 +661,17 @@ local function PaintRow(row, guid, class, label, value, color)
 		row.icon:SetTexCoord(left, right, top, bottom)
 	end
 
+	-- The bar and the cap on its end. The name is not written here any more: it
+	-- is paper on every row whatever the class, so it is set once where the row
+	-- is built and never again.
+	--
+	-- Still guarded on the class and not on the colour, because the colour is
+	-- two tables now and the class is the one thing that decides both.
 	if row.shownClass ~= class then
 		row.shownClass = class
-		local r, g, b = ClassColor(class)
-		row.bar:SetColorTexture(r, g, b, BarAlpha())
-		row.name:SetTextColor(r, g, b)
+		local fill, tint = ClassColors(class)
+		row.bar:SetColorTexture(fill[1], fill[2], fill[3], BarAlpha())
+		row.cap:SetColorTexture(tint[1], tint[2], tint[3], 1)
 	end
 
 	if row.shownLabel ~= label then
@@ -523,9 +697,12 @@ local function PaintBar(row, share, width)
 	if share > 1 then
 		share = 1
 	end
+	-- Never shorter than its own bright end. The cap is anchored to the bar's
+	-- right edge, so a one pixel bar would hang the other pixel off the left of
+	-- the row; see CAP at the top of the file.
 	local drawn = math.floor(share * width + 0.5) * unit
-	if drawn < unit then
-		drawn = unit
+	if drawn < CAP * unit then
+		drawn = CAP * unit
 	end
 	if row.shownWidth ~= drawn then
 		row.shownWidth = drawn
@@ -580,7 +757,7 @@ local function PaintDamage()
 			local row = damage.rows[index]
 			local name, class = ns.Unit.Roster.Who(slot.guid)
 			local rate = ns.Meter.Rate(slot, mode)
-			PaintRow(row, slot.guid, class, name or "?", math.floor(rate + 0.5), WHITE)
+			PaintRow(row, slot.guid, class, name or "?", math.floor(rate + 0.5), PAPER)
 			PaintBar(row, (top > 0) and (rate / top) or 0, width)
 			ns.Unit.Spec.Request(slot.guid)
 		end
@@ -600,13 +777,13 @@ local function PaintThreat()
 	-- would still be reading "no target" over a full list of rows.
 	if not ns.MeterThreat.Ready() then
 		threat.shownEta, threat.shownSoonest = nil, nil
-		SetRight(threat, "no api", GREY)
+		SetRight(threat, "no api", QUIET)
 		Blank(threat, 1)
 		return
 	end
 	if not ns.MeterThreat.Watching() then
 		threat.shownEta, threat.shownSoonest = nil, nil
-		SetRight(threat, "no target", DIM)
+		SetRight(threat, "no target", QUIET)
 		Blank(threat, 1)
 		return
 	end
@@ -636,7 +813,7 @@ local function PaintThreat()
 		if threat.shownEta ~= eta or threat.shownSoonest ~= soonest.guid then
 			threat.shownEta, threat.shownSoonest = eta, soonest.guid
 			local name = ns.Unit.Roster.Who(soonest.guid)
-			SetRight(threat, (name or "?") .. " in " .. eta .. "s", WARN)
+			SetRight(threat, (name or "?") .. " in " .. eta .. "s", ALARM)
 		end
 	end
 
@@ -647,7 +824,7 @@ local function PaintThreat()
 			shown = index
 			local row = threat.rows[index]
 			local name, class = ns.Unit.Roster.Who(slot.guid)
-			local color = slot.eta and WARN or (slot.tanking and WHITE or DIM)
+			local color = slot.eta and ALARM or (slot.tanking and PAPER or RESTING)
 			PaintRow(row, slot.guid, class, name or "?", math.floor(slot.pct + 0.5), color)
 			PaintBar(row, slot.pct / 100, width)
 			ns.Unit.Spec.Request(slot.guid)
