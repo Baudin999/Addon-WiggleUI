@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2ZWNG8M6A12ZPGEX4D3972J
 type: task
-status: todo
+status: done
 title: "Inspect draws the character sheet, not Blizzard's window"
 ---
 
