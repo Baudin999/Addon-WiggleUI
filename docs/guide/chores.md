@@ -49,3 +49,8 @@ play it once.
 > **Screenshot wanted:** `bags-vendor.png`, the same bag window as on
 > [windows](windows.md), but with a vendor open so the row that sells your greys
 > and pays your mending is on it.
+
+<!-- nav -->
+---
+
+Previous: [Feeds and meters](feeds.md) | [All pages](README.md) | Next: [The screen itself](screen.md)

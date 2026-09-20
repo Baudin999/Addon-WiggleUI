@@ -1,4 +1,9 @@
-# What the wiggle is
+# Themes, placing and profiles
+
+How much of the addon is on the screen, what colour it wears, where each
+piece sits, and how to keep an arrangement you like.
+
+## What the wiggle is
 
 Shake the mouse left and right and the whole screen changes.
 
@@ -141,3 +146,8 @@ favourites, the errors you muted, the flasks you track and the gold ledger.
 `defaults` on its own only reports. It is also how a default that moved in an
 update reaches you, since your saved answer wins until you ask for the shipped
 one.
+
+<!-- nav -->
+---
+
+Previous: [The first login](first-run.md) | [All pages](README.md) | Next: [Fighting](fighting.md)

@@ -159,3 +159,8 @@ voice chat has no channels you can name, so what there is to pick is short, and
 client's parchment, with the addon's own button on it.
 
     /wui menu, menu on|off
+
+<!-- nav -->
+---
+
+Previous: [Frames](frames.md) | [All pages](README.md) | Next: [Feeds and meters](feeds.md)

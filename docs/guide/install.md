@@ -36,3 +36,8 @@ rather than showing you a blank.
 
 > **Screenshot wanted:** `install-addons-list.png`, the character select addon
 > list with WiggleUI ticked.
+
+<!-- nav -->
+---
+
+[All pages](README.md) | Next: [The first login](first-run.md)

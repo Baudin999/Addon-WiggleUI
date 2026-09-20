@@ -18,7 +18,7 @@ window, because a single page is a single page whatever you put on it.
 
 - [Install](docs/guide/install.md), and what Questie adds
 - [The first login](docs/guide/first-run.md)
-- [Moving things, themes and profiles](docs/guide/look.md)
+- [Themes, placing and profiles](docs/guide/look.md)
 - [Fighting](docs/guide/fighting.md)
 - [Action bars](docs/guide/bars.md)
 - [Frames](docs/guide/frames.md)
@@ -62,13 +62,21 @@ passes, so any finding is yours.
 `scripts/hooks`. If a commit went through without a gate summary, check that
 setting first.
 
-    ./scripts/bake-guide-commands.sh           write docs/guide/commands.md
-    ./scripts/bake-guide-commands.sh --check   exit non-zero if it is stale
+    ./scripts/bake-guide-commands.sh    write docs/guide/commands.md
+    ./scripts/bake-guide-nav.sh         write the previous/next footers
+
+Two files in the guide are generated and `check.sh` fails on either being
+stale, so both take `--check` as well.
 
 The command reference is baked out of the `help` tables in every `Feature.lua`,
 which is the same text `/wui help` prints. Hand maintaining a hundred and eighty
 commands is how the old reference came to list `/wui loadout` five months after
 the weapon loadouts came out.
+
+The footers are baked out of the order `docs/guide/README.md` links the pages
+in, and each page's name in them is its own `# ` heading. So adding a page means
+editing the index and rerunning the bake, and a page the index does not link is
+a finding rather than a page nobody can reach.
 
     ./scripts/release.sh
 

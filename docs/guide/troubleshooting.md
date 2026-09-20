@@ -101,3 +101,8 @@ A report that can be acted on says:
 4. The Lua error text, if `/console scriptErrors 1` produced one.
 
 Point 4 is worth more than the other three together.
+
+<!-- nav -->
+---
+
+Previous: [Every command](commands.md) | [All pages](README.md)

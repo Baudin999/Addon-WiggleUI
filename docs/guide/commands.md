@@ -383,3 +383,8 @@ asks twice. Your groups, your mail favourites and your muted errors survive it.
     /wui profile new <name>, copy this one under a new name and wear it
     /wui profile delete <name>, delete one this character is not wearing
     /wui profile export | import, a string to share a profile with another player
+
+<!-- nav -->
+---
+
+Previous: [The screen itself](screen.md) | [All pages](README.md) | Next: [When something is wrong](troubleshooting.md)

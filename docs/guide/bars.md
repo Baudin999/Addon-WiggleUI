@@ -57,3 +57,8 @@ strip with gryphons on the ends.
     /wui art on|off
 
 > **Screenshot wanted:** `actionbars.png`, two bars at different row counts and backgrounds, one hidden behind shift.
+
+<!-- nav -->
+---
+
+Previous: [Fighting](fighting.md) | [All pages](README.md) | Next: [Frames](frames.md)

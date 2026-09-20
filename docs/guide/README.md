@@ -14,7 +14,7 @@ for what it just described, because everything in the settings window has one.
 
 1. [Install](install.md), and what Questie adds.
 2. [The first login](first-run.md). Five cards, then the settings window.
-3. [Moving things, themes and profiles](look.md). Where the wiggle comes in.
+3. [Themes, placing and profiles](look.md). Where the wiggle comes in.
 
 ## The screen, in the order you meet it
 

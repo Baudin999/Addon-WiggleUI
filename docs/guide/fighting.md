@@ -107,3 +107,8 @@ draws a warrior's stances, because both are a plan in `Class/<yours>.lua` and on
 reader.
 
 > **Screenshot wanted:** `charge-marker.png`, the marker over a mob with the button lit.
+
+<!-- nav -->
+---
+
+Previous: [Themes, placing and profiles](look.md) | [All pages](README.md) | Next: [Action bars](bars.md)

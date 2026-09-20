@@ -56,3 +56,8 @@ Blizzard's player, target, party and raid frames and its cast bar all go off the
 screen, and one tick box each puts them back.
 
 > **Screenshot wanted:** `frames-player-target.png`, player and target blocks with a heal slice and a few auras.
+
+<!-- nav -->
+---
+
+Previous: [Action bars](bars.md) | [All pages](README.md) | Next: [Windows](windows.md)

@@ -78,3 +78,8 @@ Two commands are worth knowing before the rest:
     /wui status    what every part is doing right now
 
 `/wui` is also `/wiggleui` and `/wiggle`, if the short one is taken.
+
+<!-- nav -->
+---
+
+Previous: [Install](install.md) | [All pages](README.md) | Next: [Themes, placing and profiles](look.md)

@@ -20,6 +20,11 @@ cd "$(dirname "$0")/.."
 out="docs/guide/commands.md"
 [ "${1:-}" = "--check" ] && out=$(mktemp)
 
+# The previous/next footer belongs to bake-guide-nav.sh and is appended back
+# below, so the two bakes do not overwrite each other. Read before anything
+# truncates the file, because in write mode $out is the file.
+nav=$(sed -n '/^<!-- nav -->$/,$p' docs/guide/commands.md 2>/dev/null || true)
+
 # The parts in panel order, one row each, in a file rather than down a pipe:
 # the loop that reads it runs awk per row and a loop reading a pipe it shares
 # with its own producer is a shape that has bitten this script once already.
@@ -86,6 +91,9 @@ HEAD
 	# finding. Without this the group's status is that read and set -e kills it.
 	:
 } > "$out"
+
+# Put the footer back, so what is compared or written is the whole page.
+[ -z "$nav" ] || printf '\n%s\n' "$nav" >> "$out"
 
 if [ "${1:-}" = "--check" ]; then
 	if ! diff -q "$out" docs/guide/commands.md >/dev/null 2>&1; then

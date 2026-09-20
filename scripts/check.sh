@@ -2119,6 +2119,24 @@ if [ "${theme_calls:-0}" -gt 0 ]; then
 	status=1
 fi
 
+# The guide's two baked files. docs/guide/commands.md is the help table out of
+# every Feature.lua, and the previous/next footer on each page is the order the
+# index links them in. Both are generated, so both can be stale, and a stale
+# generated file is worse than a hand written one: it looks authoritative and
+# nobody edits it.
+#
+# This is the half of the gate a commit cannot skip. The other half is the
+# pre-commit hook, which runs this whole file. Neither is CI and neither wants
+# to be.
+#
+# The check runs from the repo root, not from src/, which is where this script
+# has cd'd to by now.
+for bake in bake-guide-commands bake-guide-nav; do
+	if ! (cd .. && "./scripts/$bake.sh" --check); then
+		status=1
+	fi
+done
+
 # The old name, in every spelling it ever had. The addon was WarriorKit until
 # 2026-09-20 and the rename touched 295 files; a copied comment, a docstring or
 # a pasted slash command is how half of it comes back. The prefix on fields the
