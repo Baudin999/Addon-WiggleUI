@@ -21,10 +21,6 @@ none` turns the gesture off, which also stops the addon reading the mouse at
 all. The full mechanics are under [themes](#themes-palettes-and-the-wiggle),
 below.
 
-> **Screenshot wanted:** `theme-exploration.png` and `theme-immersive.png`,
-> the same spot and the same fight as `theme-informational.png`, so the three
-> read as one screen changing rather than three screens.
-
 ## Moving things, and how big they are
 
     /wui unlock    everything up and draggable
@@ -62,18 +58,29 @@ one of four answers:
 
 The three themes:
 
-![Informational, mid fight: quest tracker and chat down the left, bars along the bottom, the damage and threat meters on the right, enemy bars over the mob](../../assets/docs-screenshots/theme-informational.png)
-
 - **informational** draws everything, all of the time. This is the one for a new
   player and the one the wiggle target usually is.
+
+  ![Informational: quest tracker and chat down the left, bars along the bottom, the damage and threat meters on the right](../../assets/docs-screenshots/theme-informational.png)
+
 - **immersive** is you and the game. Your frame and your target's at a fifth,
   and nothing else. Bags, the map, the character sheet and every other window
   you open still open, because a theme is about what is on the screen while you
   are not asking for anything.
+
+  ![Immersive: the same beach, the frames ghosted to a fifth, nothing else on the screen](../../assets/docs-screenshots/theme-immersive.png)
+
 - **exploration** is the middle. Chat, quests, the bars and the meters wait
   under the pointer, drops and messages still slide in, and the loot and combat
   feeds go, because a feed is read as it arrives and one you have to find with
   the mouse has already scrolled past.
+
+  ![Exploration mid fight: the frames, the enemy bar and the meters, and no chat or quest tracker](../../assets/docs-screenshots/theme-exploration-02.png)
+
+  The same screen a moment after the kill, with the drops sliding in and nothing
+  else up:
+
+  ![Exploration after the kill: two loot rows top left, the frames, and the corpse tooltip](../../assets/docs-screenshots/theme-exploration-01.png)
 
 Each of the three, and the two other choices drawn at the same moment:
 

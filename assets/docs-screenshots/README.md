@@ -18,13 +18,14 @@ Every outstanding request is a blockquote beginning **Screenshot wanted**:
 | `setup-page-05.png` | [The first login](../../docs/guide/first-run.md), the tooltips question. |
 | `theme-002.png` | [The first login](../../docs/guide/first-run.md), under Getting around, for the rail and the search field. |
 | `theme-informational.png` | [Look](../../docs/guide/look.md), the informational theme. |
+| `theme-immersive.png` | [Look](../../docs/guide/look.md), the immersive theme. |
+| `theme-exploration-02.png` | [Look](../../docs/guide/look.md), exploration mid fight. |
+| `theme-exploration-01.png` | [Look](../../docs/guide/look.md), exploration a moment after the kill. |
 
 ## Still wanted
 
 | File | What it should show | Page |
 | --- | --- | --- |
-| `theme-exploration.png` | The same spot and fight as `theme-informational.png`, under exploration. | [look](../../docs/guide/look.md) |
-| `theme-immersive.png` | The same again under immersive, so the three read as one screen changing. | [look](../../docs/guide/look.md) |
 | `charge-marker.png` | The marker over the mob the charge would hit, button lit. | [fighting](../../docs/guide/fighting.md) |
 | `actionbars.png` | Two bars at different row counts and backgrounds, one hidden behind shift. | [action bars](../../docs/guide/bars.md) |
 | `frames-player-target.png` | Player and target blocks, a heal slice on the gauge, a few auras. | [frames](../../docs/guide/frames.md) |
@@ -36,17 +37,19 @@ Every outstanding request is a blockquote beginning **Screenshot wanted**:
 
 ## Shooting them
 
-Crop to the window, apart from the three theme shots, which are the whole
-screen and have to be the same spot and the same fight to be worth having as a
-set.
+Crop to the window. The four theme shots are the exception and are the whole
+screen, which is what makes them worth having: one beach, one crocolisk, three
+themes.
 
 The setup pages set the bar: the window cropped to itself, nothing of the
 desktop in frame, and the pointer somewhere that is not over the thing being
 described.
 
-A full screen shot off a 3440x1440 monitor is about 5 MB, which is more than a
-guide page should pull down. `theme-informational.png` is one and is the only
-one; halve the width before the next two land and they come out near 1.5 MB
-with nothing visible lost at the width GitHub renders them.
+A full screen shot off a 3440x1440 monitor is 5 to 6 MB, and four of them on
+one page is not a page anybody waits for. The four here were halved to 1720
+wide, which costs nothing at the width GitHub draws them and took the set from
+22 MB to 6.8. Do the same to the next full screen shot before committing it:
 
     magick shot.png -resize 1720x -strip shot.png
+
+The originals are in git history if a full size one is ever wanted.
