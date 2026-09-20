@@ -255,6 +255,9 @@ local SECTIONS = {
 	"00-setup",
 	"01-unit-layer",
 	"02-layout-engine",
+	-- The scroll view and its bar, beside the layout engine and for the same
+	-- reason: both are widgets every window below is built out of.
+	"02-scroll-bar",
 	"03-gauge",
 	"04-ability-square",
 	"04-aimed-square",

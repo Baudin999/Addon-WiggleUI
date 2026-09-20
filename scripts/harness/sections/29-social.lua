@@ -272,11 +272,18 @@ do
 	-- the screen, so the rest were measuring their own buffers and pushing
 	-- their own thumbs about for nobody, on every line in a raid. The saving
 	-- cannot be read off the bar afterwards, because coming back to the room
-	-- puts it in step: what says it is the number of writes, which is why the
-	-- slider stub counts them.
+	-- puts it in step: what says it is what was written while nobody was
+	-- looking, which is why the slider stub counts its writes.
+	--
+	-- The range as well as the value, and the range is what the return is read
+	-- off. A bar at the newest line stands at one end of its own track, and
+	-- UI/Scroll.lua counts from the other end, so forty lines of history move
+	-- the range under a value that was already right. Reading the writes alone
+	-- would call that no work done.
 	local bar = Window.Bar("party")
 	check(bar ~= nil, "the party room has no scrollbar, so nothing below proves anything")
 	local wrote = bar.valueWrites or 0
+	local span = select(2, bar:GetMinMaxValues())
 	for index = 1, 40 do
 		fire("CHAT_MSG_PARTY", "line " .. index, "Bram",
 			nil, nil, nil, nil, nil, nil, nil, nil, nil, "P1")
@@ -284,9 +291,11 @@ do
 	check((bar.valueWrites or 0) == wrote,
 		("a room nobody was looking at wrote its scrollbar %d times over forty lines")
 			:format((bar.valueWrites or 0) - wrote))
+	check(select(2, bar:GetMinMaxValues()) == span,
+		"a room nobody was looking at moved its scrollbar's range over forty lines")
 
 	Window.Go("party")
-	check((bar.valueWrites or 0) > wrote,
+	check(select(2, bar:GetMinMaxValues()) > span,
 		"the room came back on screen with a bar the last forty lines never moved")
 	check(Rooms.Unread("party") == 0, "reading a room did not clear its count")
 end

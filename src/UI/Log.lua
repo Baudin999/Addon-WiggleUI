@@ -485,11 +485,12 @@ end
 -- coming up.
 --
 -- Every write is compared first. The range is compared against what this file
--- last wrote, because nothing else writes it; the value is compared against the
--- widget, because a drag writes that one from the other end and a drag past the
--- end leaves the thumb somewhere this file never put it. A room sitting at the
--- bottom of its own history, which is every room you are not scrolled back in,
--- writes one number per line instead of four.
+-- last wrote, because nothing else writes it; the value is left to
+-- UI.ScrollAt, which compares against the widget, because a drag writes that
+-- one from the other end and a drag past the end leaves the thumb somewhere
+-- this file never put it. A room sitting at the bottom of its own history,
+-- which is every room you are not scrolled back in, writes one number per line
+-- instead of four.
 function Log:Sync()
 	local bar = self.bar
 	if not bar then
@@ -521,11 +522,9 @@ function Log:Sync()
 	self.syncing = true
 	if self.rangeAt ~= range then
 		self.rangeAt = range
-		bar:SetMinMaxValues(0, range)
+		UI.ScrollSpan(bar, range)
 	end
-	if bar:GetValue() ~= at then
-		bar:SetValue(at)
-	end
+	UI.ScrollAt(bar, at)
 	self.syncing = nil
 
 	if self.barShown ~= true then

@@ -65,8 +65,13 @@ local function Viewport(parent)
 		local canvas = CreateFrame("Frame", nil, scroll)
 		canvas:SetPoint("TOPLEFT")
 		scroll:SetScrollChild(canvas)
+		-- Positive, the same sign the offset carries everywhere else here: a
+		-- scroll frame takes how far down the content you are, and LibQTip on
+		-- this install proves the direction by scrolling its tooltip with it.
+		-- It was negative, which is the same inversion the bar had and would be
+		-- the same bug on a client that took this branch.
 		return scroll, canvas, function(offset)
-			scroll:SetVerticalScroll(-offset)
+			scroll:SetVerticalScroll(offset)
 		end, "scrollframe"
 	end
 
@@ -105,6 +110,57 @@ local function Dress(slider)
 	slider:SetThumbTexture(slider.thumb)
 end
 
+--------------------------------------------------------------------------
+-- Which way up the track is
+--
+-- **A vertical slider on this client runs upside down.** Its minimum is at the
+-- bottom of the track and its maximum at the top, so dragging the thumb
+-- downward reports a smaller value and not a larger one.
+--
+-- Everything in this addon that scrolls counts from the top: offset zero is
+-- the first line of the content, and the offset grows as you go down. Written
+-- straight into the slider, that gave a bar whose thumb sat at the bottom while
+-- the page was at the top, and a drag that moved the page the other way from
+-- the hand holding it. The quest log is where it was caught, and the wheel is
+-- why it took so long to see: the wheel never goes through the slider, so it
+-- scrolled correctly on the same list, in the same window, at the same time.
+--
+-- The three files that own one of these bars all count from the top, so the
+-- flip lives here, once, in the file that makes the widget. A caller says where
+-- it is from the top and is told where it is from the top, and nothing outside
+-- this file has to know which way round the client's track is.
+--------------------------------------------------------------------------
+
+local function Span(bar)
+	local _, room = bar:GetMinMaxValues()
+	return room or 0
+end
+
+-- How much there is to scroll, in whatever the caller counts in: pixels for the
+-- view, lines for the chat log, rows for a feed. Always from zero, because the
+-- mirror below is worked out from the span and a range that did not start at
+-- zero would make it a different sum.
+--
+-- Both of these write only what is not already there. A chat window takes a
+-- line a second in a city and a feed takes one a swing in a fight, and the
+-- steady state of either is a bar that is already where it belongs; the guard
+-- is here rather than at the three call sites because it is the widget's own
+-- state that answers it, and a caller comparing against what it last wrote
+-- cannot see a drag.
+function UI.ScrollSpan(bar, room)
+	if Span(bar) ~= room then
+		bar:SetMinMaxValues(0, room)
+	end
+end
+
+-- Where the content is now, counted from the top.
+function UI.ScrollAt(bar, offset)
+	local want = Span(bar) - offset
+	if bar:GetValue() ~= want then
+		bar:SetValue(want)
+	end
+end
+
 -- The bar on its own, with nothing to scroll behind it yet.
 --
 -- Public, because the scroll view is not the only thing in the addon that has
@@ -112,6 +168,8 @@ end
 -- in messages rather than in pixels and does its own clipping, so it cannot use
 -- the view above and still wants exactly this bar: same width, same track, same
 -- thumb, one place to change all three.
+--
+-- onValue is handed the offset from the top, not the slider's own value.
 --
 -- Nil rather than an error where the client refuses the Slider type, because
 -- the wheel still scrolls without a bar and a window with no bar is a worse
@@ -127,7 +185,7 @@ function UI.ScrollBar(parent, onValue)
 		return nil
 	end
 	slider:SetScript("OnValueChanged", function(self, value)
-		onValue(self, value)
+		onValue(self, Span(self) - value)
 	end)
 	return slider
 end
@@ -238,8 +296,8 @@ function View:Update(extent)
 		local size = math.max(M.thumb, UI.Round(self.frame, self.height * self.height / self.extent))
 		self.bar.thumb:SetSize(M.bar, size)
 		self.syncing = true
-		self.bar:SetMinMaxValues(0, room)
-		self.bar:SetValue(self.offset)
+		UI.ScrollSpan(self.bar, room)
+		UI.ScrollAt(self.bar, self.offset)
 		self.syncing = nil
 		self.bar:Show()
 	end
@@ -259,7 +317,7 @@ function View:ScrollTo(offset)
 	self.Move(offset)
 	if self.bar and self.bar:IsShown() then
 		self.syncing = true
-		self.bar:SetValue(offset)
+		UI.ScrollAt(self.bar, offset)
 		self.syncing = nil
 	end
 	return true

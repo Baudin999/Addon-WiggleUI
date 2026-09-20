@@ -1702,9 +1702,10 @@ end
 -- bar whose range grows by one and whose thumb and value do not move at all.
 --
 -- The range, the thumb size and whether the bar is up are compared against what
--- this file last wrote, because nothing else writes them. The value is compared
--- against the widget, because a drag writes that one from the other end and a
--- clamped drag leaves the thumb somewhere this file never put it.
+-- this file last wrote, because nothing else writes them. The value is left to
+-- UI.ScrollAt, which compares against the widget: a drag writes that one from
+-- the other end, and a clamped drag leaves the thumb somewhere this file never
+-- put it.
 function Feed:Sync()
 	local bar = self.bar
 	if not bar then
@@ -1731,11 +1732,9 @@ function Feed:Sync()
 	self.syncing = true
 	if self.roomAt ~= room then
 		self.roomAt = room
-		bar:SetMinMaxValues(0, room)
+		UI.ScrollSpan(bar, room)
 	end
-	if bar:GetValue() ~= self.offset then
-		bar:SetValue(self.offset)
-	end
+	UI.ScrollAt(bar, self.offset)
 	self.syncing = nil
 
 	if self.barShown ~= true then
