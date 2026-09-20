@@ -71,6 +71,33 @@ and on that client this part registers no event at all.
 
     /wui sockets on|off, sockets hide on|off, sockets gems
 
+**Gear sets, on the sheet you already have open.** Named sets of gear, saved
+from what you are wearing. Under every piece on the character page is a row of
+small circles, one per set, and the big disc beside them stays what you have on
+right now. A circle holds that set's piece for that slot: full strength when it
+is something other than what you are wearing, dimmed when it agrees with the
+disc, a hollow ring when nobody has told that set about the slot, and a barred
+ring when the set takes the slot empty on purpose. After a swap, any circle
+still at full strength is a piece that did not make it on.
+
+Click a circle to take what you are wearing into that set. Drop a piece from
+your bags onto one to name something you are not wearing, so a set can hold the
+helmet sitting in your bank. Drag a circle off its row to clear it. None of it
+moves an item: a set is a list, and only wearing one touches your bags.
+
+The toggles are the stack at the top left, one per set, each wearing the icon of
+the spec it is worn for. Press one and the set goes on, and the line that comes
+back says what moved, what was already on and what it could not find. A set may
+name one of your two talent groups, and pressing that one switches your talents
+first and puts the gear on after.
+
+Armour cannot be equipped in a fight and the client refuses it, not the addon.
+Weapons can, so a weapon swap in a set works mid pull.
+
+    /wui set, the sets on this character and how much of each you have on
+    /wui set save <name>, /wui set wear <name>, /wui set forget <name>
+    /wui set spec <name> <group|none>, /wui set swap <group>, /wui set undo
+
 **A spell book with one row per spell.** Every spell you know, one row each, and
 the button beside the rank folds out the ranks you know. What you pick is what
 the square on your bar holds.

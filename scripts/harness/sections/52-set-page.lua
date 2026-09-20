@@ -164,11 +164,13 @@ do
 
 	-- A set naming something else in that slot. The same picture at full
 	-- strength, which is the one a glance down the column is meant to stop on.
-	-- Any saved link will do: the page draws what the set says and never asks
-	-- whether the piece would go in the slot, because that is the store's
-	-- question and the answer to it is a refusal to wear rather than a refusal
-	-- to draw.
-	Sets.Put("fury", HEAD, itemLink("Breastplate of Might"))
+	--
+	-- A head piece and not any link that happens to be to hand. Sets.Put asks
+	-- ns.Gear.Replaces whether the item lands in the slot and refuses it when it
+	-- does not, which is the right place for that refusal: a set naming a chest
+	-- in the head slot is a set that can never be worn, and catching it at the
+	-- edit is one message where catching it at the wear is nineteen.
+	Sets.Put("fury", HEAD, itemLink("Lightbringer Faceguard"))
 	local other = circle(head, "fury")
 	check(other ~= nil and other.art:IsShown() and other.art:GetAlpha() == 1,
 		("a set naming a piece you are not wearing drew at %s")
@@ -221,10 +223,11 @@ do
 	-- A piece dragged out of a bag and let go over a circle fills that slot and
 	-- puts the cursor down. Leaving the item on the cursor is the failure worth
 	-- naming: a player one click away from dropping their own helmet.
-	H.hold({ id = 4004, link = itemLink("Band of the Eternal") })
+	Sets.Clear("fury", HEAD)
+	H.hold({ id = 4101, link = itemLink("Lightbringer Faceguard") })
 	mouse.Give(circle(head, "fury"))
 	local dropped, ring = Sets.Entry("fury", HEAD)
-	check(dropped == "item" and ring == itemLink("Band of the Eternal"),
+	check(dropped == "item" and ring == itemLink("Lightbringer Faceguard"),
 		("a drop onto the circle left the slot %q"):format(tostring(dropped)))
 	check(_G.GetCursorInfo() == nil, "the drop filled the slot and kept the item on the cursor")
 end

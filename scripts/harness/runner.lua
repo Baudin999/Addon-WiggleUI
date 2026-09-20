@@ -458,6 +458,16 @@ local SECTIONS = {
 	-- spells and both numbers on the talent model back at the foot of the file,
 	-- so the sections below read the character they were written against.
 	"52-spec-group",
+	-- Under the swap, because a set that follows a talent group is a set whose
+	-- own tests want both groups live and the section above is what makes them
+	-- so. The planner is the subject here and it is measured without a client:
+	-- the world it plans against is handed in, so two rings trading places is
+	-- an assertion about three cursor operations rather than about a scene.
+	"52-sets",
+	-- Under the store it draws, and under 52-inspect, whose target it borrows
+	-- for the one block asserting that none of this appears on somebody else's
+	-- sheet.
+	"52-set-page",
 	-- Last, and it has to be: it puts every setting in the account file back
 	-- to what the addon ships with, twice over, which is the one thing in the
 	-- suite that would pull the scene out from under every section above it.

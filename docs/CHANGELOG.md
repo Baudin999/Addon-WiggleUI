@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+### Gear sets, and the addon hears a dual spec swap
+
+Named sets of gear, per character, saved from what you have on and put back on
+with a click. A tanking set, a resist set for Mother Shahraz, the two hander you
+swing once the boss is down. Neither of these clients has an equipment manager:
+Blizzard's arrived in 3.3, so every part of this is built from nothing.
+
+A set names up to nineteen slots and each one is in one of three states. It
+holds a piece, it is deliberately empty, or nobody has told the set about it.
+That third state is the one that matters, because a five piece resist set leaves
+your rings alone, and it is why putting one on moves five items rather than
+nineteen.
+
+The sets live on the character sheet as a row of small circles under each piece,
+one circle per set. The big disc stays what you are wearing, so a circle that
+disagrees with the disc above it is a piece of that set you do not have on, and
+a glance down the column after a swap is the whole of "did it work". Click a
+circle to take what you are wearing into that set, drop an item from your bags
+onto one to name a piece you are not wearing, drag one off to clear it. Nothing
+in your bags moves while you edit: a set is a list of items and only wearing it
+touches anything.
+
+The toggles are a stack at the top left, one per set, each wearing the icon of
+the spec it is worn for. Press one and the set goes on. Press one that names
+your other talent group and the talents go first, then the gear, in that order,
+because the talent switch is a cast and the gear is a server round trip per
+piece.
+
+Which brings the other half. This client has dual spec, and the addon was not
+listening for it: a shaman clicking from restoration to enhancement kept the
+resto rotation squares, the resto cooldown row and the resto debuff list until
+a reload. It hears `ACTIVE_TALENT_GROUP_CHANGED` now.
+
+    /wui set, /wui set save|wear|forget|rename|spec|swap|undo
+
+
 ### Inspect draws the character sheet, not Blizzard's window
 
 Inspect on a player's right click menu now opens this addon's own sheet with

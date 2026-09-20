@@ -95,10 +95,6 @@ local SLOTS = 19
 local TOGGLE = 36
 local AIR = 4
 
--- The trees a talent group has, for a client that will not say. Three on both
--- clients this addon runs on, and it has been three since the game shipped.
-local TREES = 3
-
 -- What is drawn where a set has nothing. Read once rather than measured: a bar
 -- two pixels thick is the thinnest mark that is still a mark on a disc this
 -- small.
@@ -373,37 +369,9 @@ end
 -- right. Who you are on the right, what you are dressed for on the left.
 --------------------------------------------------------------------------
 
--- The picture for a talent group, which the client will draw for a group you
--- are not standing in. That is the whole reason this is the icon a toggle
--- wears: you are pressing it to become the other thing, so it has to show the
--- other thing.
---
--- Which of the three trees is asked for is not on the set. A set names a
--- group, a group has three trees, and the tree worth showing is the one the
--- points are in, which is the seventh value of the same call.
---
--- Probed and pcalled the way Talents/Read.lua probes the same table: the
--- vanilla client has no C_SpecializationInfo at all, and a set that gets
--- nothing back falls through to one of its own pieces below.
-local function SpecArt(group)
-	local api = _G.C_SpecializationInfo
-	if not group or type(api) ~= "table"
-		or type(api.GetSpecializationInfo) ~= "function" then
-		return nil
-	end
-	local tabs = type(_G.GetNumTalentTabs) == "function"
-		and tonumber(_G.GetNumTalentTabs()) or TREES
-	local best, art = -1, nil
-	for tree = 1, tabs or TREES do
-		local ok, _, name, _, icon, _, _, points = pcall(api.GetSpecializationInfo,
-			tree, false, false, nil, nil, group)
-		local spent = tonumber(points) or 0
-		if ok and type(name) == "string" and spent > best then
-			best, art = spent, icon
-		end
-	end
-	return art
-end
+-- The picture for a talent group is ns.SpecArt, in Core, because asking the
+-- client whether it has a call is a probe and only Core/ may hold one. What is
+-- left here is the fallback under it.
 
 -- And the fallback, which is a picture off the set itself. A resist set and a
 -- PvP set are real sets with no spec behind them, so this is the ordinary case
@@ -494,7 +462,7 @@ function SetRow.PaintStack(stack)
 		local toggle = stack.toggles[index] or Toggle(stack, index)
 		stack.toggles[index] = toggle
 		toggle.set = set
-		toggle.art:SetTexture(SpecArt(set.group) or PieceArt(set.name))
+		toggle.art:SetTexture(ns.SpecArt(set.group) or PieceArt(set.name))
 		toggle.name:SetText(set.name)
 
 		local on = active ~= nil and active.name == set.name

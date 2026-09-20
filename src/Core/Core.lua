@@ -2674,6 +2674,49 @@ function ns.SetActiveSpecGroup(group)
 	return (pcall(spec.SetActiveSpecGroup, group))
 end
 
+-- Three, on every class on both clients, and the client is asked for the real
+-- number first anyway. Named rather than written twice inside the loop below.
+local SPEC_TREES = 3
+
+-- The picture a talent group wears, which is the icon of whichever of its
+-- three trees the points are in.
+--
+-- Here rather than beside the part that draws it, because it is a probe and
+-- only Core/ may hold one. It is the same table the three above ask and the
+-- same refusal on a client without it: the vanilla client has no
+-- C_SpecializationInfo at all and a caller that gets nothing back draws
+-- something of its own.
+--
+-- The client answers this for a group you are not standing in, which is the
+-- whole reason it is worth asking. A toggle that puts the other spec on has to
+-- show the other spec, and nothing else the client will answer says what that
+-- looks like.
+--
+-- Talents/Read.lua keeps its own copies of these calls and is allow-listed for
+-- it. That file reads a group it was handed, tree by tree, to draw three trees
+-- of talents; this answers one picture for one group. Routing either through
+-- the other would be one file doing both jobs badly.
+function ns.SpecArt(group)
+	local spec = _G.C_SpecializationInfo
+	if not group or type(spec) ~= "table"
+		or type(spec.GetSpecializationInfo) ~= "function" then
+		return nil
+	end
+
+	local trees = type(_G.GetNumTalentTabs) == "function"
+		and tonumber(_G.GetNumTalentTabs()) or SPEC_TREES
+	local best, art = -1, nil
+	for tree = 1, trees or SPEC_TREES do
+		local ok, _, name, _, icon, _, _, points = pcall(spec.GetSpecializationInfo,
+			tree, false, false, nil, nil, group)
+		local spent = tonumber(points) or 0
+		if ok and type(name) == "string" and spent > best then
+			best, art = spent, icon
+		end
+	end
+	return art
+end
+
 --------------------------------------------------------------------------
 -- The binding set moving under us
 --

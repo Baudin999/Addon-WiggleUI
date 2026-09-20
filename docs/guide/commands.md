@@ -369,6 +369,17 @@ asks twice. Your groups, your mail favourites and your muted errors survive it.
 
     /wui replaces, what else is running that this addon already draws
 
+## gear sets
+
+    /wui set, the sets on this character and how much of each you have on
+    /wui set save <name>, what you have on now, under that name
+    /wui set wear <name>, put it on
+    /wui set forget <name>, drop one
+    /wui set rename <name> <new name>
+    /wui set spec <name> <group|none>, the talent group the set is worn for
+    /wui set swap <group>, change talents and then put that group's set on
+    /wui set undo, one step back
+
 ## theme
 
     /wui theme informational|immersive|exploration|<yours>, how much of the addon is on the screen, from the next /reload
