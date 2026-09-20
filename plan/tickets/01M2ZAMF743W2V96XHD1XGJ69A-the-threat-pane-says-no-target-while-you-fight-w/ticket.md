@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2ZAMF743W2V96XHD1XGJ69A
 type: bug
-status: todo
+status: doing
 title: The threat pane says no target while you fight with the camera
 ---
 
