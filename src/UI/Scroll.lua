@@ -67,9 +67,9 @@ local function Viewport(parent)
 		scroll:SetScrollChild(canvas)
 		-- Positive, the same sign the offset carries everywhere else here: a
 		-- scroll frame takes how far down the content you are, and LibQTip on
-		-- this install proves the direction by scrolling its tooltip with it.
-		-- It was negative, which is the same inversion the bar had and would be
-		-- the same bug on a client that took this branch.
+		-- this install proves the direction by scrolling its tooltip with it. It
+		-- was negative, which would scroll the wrong way on a client that took
+		-- this branch, and neither of ours does.
 		return scroll, canvas, function(offset)
 			scroll:SetVerticalScroll(offset)
 		end, "scrollframe"
@@ -113,51 +113,51 @@ end
 --------------------------------------------------------------------------
 -- Which way up the track is
 --
--- **A vertical slider on this client runs upside down.** Its minimum is at the
--- bottom of the track and its maximum at the top, so dragging the thumb
--- downward reports a smaller value and not a larger one.
+-- **A vertical slider's thumb moves from the top of its track to the bottom as
+-- its value rises.** That is the same direction everything here counts in:
+-- offset zero is the first line of the content and the offset grows going
+-- down. So the offset is the slider's value, and there is no arithmetic
+-- between them.
 --
--- Everything in this addon that scrolls counts from the top: offset zero is
--- the first line of the content, and the offset grows as you go down. Written
--- straight into the slider, that gave a bar whose thumb sat at the bottom while
--- the page was at the top, and a drag that moved the page the other way from
--- the hand holding it. The quest log is where it was caught, and the wheel is
--- why it took so long to see: the wheel never goes through the slider, so it
--- scrolled correctly on the same list, in the same window, at the same time.
+-- It is written down because it was got backwards once. 30958cfa put a
+-- `span - value` mirror on both directions and the gate under it, on the
+-- reading that this client's vertical minimum sits at the bottom of the track.
+-- It does not. What a mirror buys is a page that scrolls the right way under
+-- the wheel while the thumb beside it climbs, and a drag that moves the page
+-- against the hand.
 --
--- The three files that own one of these bars all count from the top, so the
--- flip lives here, once, in the file that makes the widget. A caller says where
--- it is from the top and is told where it is from the top, and nothing outside
--- this file has to know which way round the client's track is.
+-- Three witnesses, none of them ours. `Slider:SetOrientation` is documented as
+-- VERTICAL moving the thumb from top to bottom as the value increases.
+-- Blizzard's HybridScrollFrame hands its bar's value straight to
+-- HybridScrollFrame_SetOffset as the offset from the top of the list, and
+-- disables the down button at the maximum. AceGUI's scroll container and
+-- LibQTip's tooltip both do the same on this install, and no scrollbar on this
+-- install mirrors one.
+--
+-- So the two helpers below do no arithmetic at all. They exist for the guard
+-- in each: a chat window takes a line a second in a city and a feed takes one
+-- a swing in a fight, and the steady state of either is a bar that is already
+-- where it belongs. The guard is here rather than at the three call sites
+-- because it is the widget's own state that answers it, and a caller comparing
+-- against what it last wrote cannot see a drag.
 --------------------------------------------------------------------------
 
-local function Span(bar)
-	local _, room = bar:GetMinMaxValues()
-	return room or 0
-end
-
--- How much there is to scroll, in whatever the caller counts in: pixels for the
--- view, lines for the chat log, rows for a feed. Always from zero, because the
--- mirror below is worked out from the span and a range that did not start at
--- zero would make it a different sum.
---
--- Both of these write only what is not already there. A chat window takes a
--- line a second in a city and a feed takes one a swing in a fight, and the
--- steady state of either is a bar that is already where it belongs; the guard
--- is here rather than at the three call sites because it is the widget's own
--- state that answers it, and a caller comparing against what it last wrote
--- cannot see a drag.
+-- How much there is to scroll, in whatever the caller counts in: pixels for
+-- the view, lines for the chat log, rows for a feed. Always from zero, because
+-- an offset is a distance from the top of the content and the bar's minimum is
+-- the top of its track.
 function UI.ScrollSpan(bar, room)
-	if Span(bar) ~= room then
+	local _, was = bar:GetMinMaxValues()
+	if was ~= room then
 		bar:SetMinMaxValues(0, room)
 	end
 end
 
--- Where the content is now, counted from the top.
+-- Where the content is now, counted from the top, which is what the slider
+-- counts in too.
 function UI.ScrollAt(bar, offset)
-	local want = Span(bar) - offset
-	if bar:GetValue() ~= want then
-		bar:SetValue(want)
+	if bar:GetValue() ~= offset then
+		bar:SetValue(offset)
 	end
 end
 
@@ -169,7 +169,8 @@ end
 -- the view above and still wants exactly this bar: same width, same track, same
 -- thumb, one place to change all three.
 --
--- onValue is handed the offset from the top, not the slider's own value.
+-- onValue is handed the slider's own value, which is the offset from the top
+-- of the content. See above for why those are the same number.
 --
 -- Nil rather than an error where the client refuses the Slider type, because
 -- the wheel still scrolls without a bar and a window with no bar is a worse
@@ -185,7 +186,7 @@ function UI.ScrollBar(parent, onValue)
 		return nil
 	end
 	slider:SetScript("OnValueChanged", function(self, value)
-		onValue(self, Span(self) - value)
+		onValue(self, value)
 	end)
 	return slider
 end
