@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Puts the tree that is here on CurseForge. One command, no arguments needed.
 #
-#   ./scripts/deploy.sh              bump, gate, build, upload as an alpha
-#   ./scripts/deploy.sh --type beta  the same, tagged beta
-#   ./scripts/deploy.sh --build      gate and build, upload nothing, no bump
+#   ./scripts/deploy.sh               bump, gate, build, upload as a beta
+#   ./scripts/deploy.sh --type alpha  the same, tagged alpha
+#   ./scripts/deploy.sh --build       gate and build, upload nothing, no bump
 #
 # This is release.sh with the two things release.sh cannot guess filled in: the
 # project id, which is on the project page and never changes, and the token,
@@ -11,10 +11,11 @@
 # zip, which game versions it is tagged for and what the changelog says lives
 # in release.sh, and this file does not repeat any of it.
 #
-# alpha is the default on purpose. The project page says alpha, docs/CHANGELOG
-# says alpha, and a release type is the one part of a CurseForge upload nobody
-# can correct afterwards without deleting the file. Typing --type release is a
-# decision; getting it by leaving an argument off is an accident.
+# beta is the default on purpose, and release is not. A release type is the one
+# part of a CurseForge upload nobody can correct afterwards without deleting the
+# file, so the default is the highest type that is still wrong to hand somebody
+# as finished. Typing --type release is a decision; getting it by leaving an
+# argument off is an accident.
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
@@ -24,7 +25,7 @@ cd "$(dirname "$0")/.."
 : "${CF_PROJECT_ID:=1675955}"
 export CF_PROJECT_ID
 
-release_type="alpha"
+release_type="beta"
 upload=1
 while [ $# -gt 0 ]; do
 	case "$1" in
