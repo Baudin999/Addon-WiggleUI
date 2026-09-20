@@ -18,7 +18,9 @@
 # and a tile of one is a grid of hard lines. The ground is darkened whole, and
 # baked at 1024 by 512 because it is drawn at the size of the window rather
 # than of a tile; Backdrops.lua gives its source size, which is the shape the
-# crop keeps.
+# crop keeps. A ground of "self" is that same picture taken out of the painting
+# itself, for a painting whose floor is the same material as its frame and has
+# neither a repeat nor a second file: see flatten().
 #
 # The floor is darkened to its painting's darken, so the item icons and the
 # counts drawn over it still read. Each painting has its own, because a floor
@@ -56,13 +58,16 @@ cd "$(dirname "$0")/.."
 
 python3 - <<'PY' || exit 1
 import struct
-from PIL import Image, ImageChops, ImageDraw, ImageFilter
+from PIL import Image, ImageChops, ImageDraw, ImageFilter, ImageStat
 
 # One row per painting. inset is where the floor starts, left, top, right and
 # bottom, in source pixels; corner is the square that holds each corner's
 # ornament; period is the floor's repeat across and down, measured by
 # autocorrelation of the middle; darken is what the floor keeps of its
-# brightness; margin is flat or blurred. desert02 is the same frame as the
+# brightness; margin is flat or blurred, and fuzz overrides how far from white
+# the flood counts as margin for a painting whose margin ramps further than
+# FUZZ. lit is the other way round from darken: the whole painting, frame and
+# floor, at that fraction of itself. desert02 is the same frame as the
 # first desert painting with a calmer floor, so it kept that painting's
 # numbers; a painting with a new frame needs them measured again.
 #
@@ -94,6 +99,24 @@ from PIL import Image, ImageChops, ImageDraw, ImageFilter
 # the swirl between, and 260 down, a dragon and a wolf's head; clear is given
 # across and down, because the side rail starts above the corner square's end
 # so its dragon is whole. Its floor is never drawn, so it is not darkened.
+#
+# Parchment is a sheet of paper and is unlike the six above it in four ways,
+# all of which come from its frame and its floor being the same material.
+#
+# It has no second picture for a ground and no repeat to cut a tile at, so its
+# ground is self and flatten() takes the floor out of the painting. It is lit
+# rather than darkened, whole, because taking its middle down while its edge
+# stayed where it was read as two sheets laid on each other. Its corner is 150
+# against the carved frames' 210, because nothing is in the corner of a sheet
+# that is not in the middle of one and a corner square stands on the floor
+# everywhere it reaches past the inset. And its rails repeat at 600 by 340
+# rather than at a measured period, because there is nothing to be in phase
+# with: the only thing a join can show is the torn edge stepping, and a longer
+# tile is fewer joins for the same textures.
+#
+# Its margin also ramps out of a drop shadow over some fifty pixels, which
+# FUZZ's thirty leaves half of, so it sets its own fuzz. The leftover was a
+# grey halo round the sheet against the world.
 PAINTINGS = [
 	{
 		"palette": "forest", "file": "art/forrest.jpeg", "stem": "Forest",
@@ -134,6 +157,12 @@ PAINTINGS = [
 		"block": ([(215, 190)], [(200, 200), (285, 105)]),
 		"ground": "art/horde_bg.jpeg", "dim": 0.50,
 	},
+	{
+		"palette": "parchment", "file": "art/parchment.jpeg", "stem": "Parchment",
+		"inset": (110, 110, 110, 110), "corner": 150, "period": (600, 340),
+		"darken": 1.0, "margin": "flat", "fuzz": 55,
+		"ground": "self", "dim": 1.0, "lit": 0.46,
+	},
 ]
 
 SCALE = 0.30     # window units per source pixel
@@ -141,6 +170,7 @@ FADE = 16        # source pixels a rail and a corner reach into the floor
 OVERLAP = 24     # source pixels cross-faded at the start of each tile
 CLEAR = 40       # source pixels a tile is cut clear of a painted shadow or notch
 FUZZ = 30        # how far from the corner's colour still counts as margin, of 255
+                 # a painting whose margin ramps further than that sets its own
 EDGE = 8         # source pixels over which the darkening ramps in
 SHARP = 5        # the local detail, of 255, under which a pixel is out of focus
 
@@ -153,7 +183,7 @@ def pot(drawn):
 	return side
 
 
-def unflat(image):
+def unflat(image, fuzz=None):
 	rgba = image.convert("RGBA")
 	w, h = rgba.size
 	# A flood through the corner's colour from each corner of the image, marked
@@ -161,7 +191,7 @@ def unflat(image):
 	# stays.
 	marked = rgba.convert("RGB")
 	for x, y in ((0, 0), (w - 1, 0), (0, h - 1), (w - 1, h - 1)):
-		ImageDraw.floodfill(marked, (x, y), (255, 0, 255), thresh=FUZZ)
+		ImageDraw.floodfill(marked, (x, y), (255, 0, 255), thresh=fuzz or FUZZ)
 	r, g, b = marked.split()
 	margin = Image.eval(ImageChops.difference(
 		Image.merge("RGB", (r, g, b)), Image.new("RGB", marked.size, (255, 0, 255))
@@ -171,7 +201,7 @@ def unflat(image):
 	return rgba
 
 
-def unblur(image):
+def unblur(image, fuzz=None):
 	rgba = image.convert("RGBA")
 	w, h = rgba.size
 	# How far each pixel is from its own blur, averaged over its neighbours:
@@ -194,6 +224,26 @@ def unblur(image):
 
 
 MARGINS = {"flat": unflat, "blurred": unblur}
+
+
+def relight(rgba, keep):
+	"""The whole painting at keep of its brightness, frame and floor alike.
+
+	darken below takes the floor down and leaves the frame where it was, which
+	is right for a carved frame round a floor: the frame is the lit thing and
+	the floor is what has to stay dark enough for an item name to read on it.
+	A sheet of paper is one material all the way out, and taking its middle
+	down while its edge stays where it was reads as two sheets laid on each
+	other. So that painting is relit whole, here, and asks for no darkening and
+	no dimming after it.
+
+	It also takes the margin's last pixels down with it. The flood leaves a
+	fringe of not-quite-white round a JPEG edge, and at full brightness that
+	fringe is a pale halo round the sheet.
+	"""
+	rgb = rgba.convert("RGB").point(lambda v: int(v * keep))
+	rgb.putalpha(rgba.getchannel("A"))
+	return rgb
 
 
 def darken(rgba, inset, keep):
@@ -292,6 +342,43 @@ def unfloor(tile, inward_x, inward_y, inset_x, inset_y, block):
 	return tile
 
 
+RING = 40        # source pixels of floor just inside the inset that set a self ground's level
+
+
+def flatten(rgba, inset):
+	"""A painting's own floor, stretched to the canvas, as a ground.
+
+	For a painting whose inside is the same material as its edge and has no
+	repeat to cut a tile at, which so far is the sheet of paper: the frame is
+	the part of it nearest the fire and the floor is the rest of the same
+	sheet, so there is no second picture to take a ground from and no tile to
+	take either.
+
+	The floor inside the inset is stretched to the canvas and then levelled.
+	The levelling is the part that matters. The middle of a sheet is the
+	lightest part of it, and a ground taken from there and laid under the frame
+	puts every rail's fade-out onto a floor a shade paler than the rail itself,
+	which is a bright rectangle round the inside of every window. So the crop
+	is scaled until it is as bright as the RING of floor just inside the inset,
+	which is the brightness the frame hands off at, and the two meet with
+	nothing to see.
+	"""
+	rgb = rgba.convert("RGB")
+	width, height = rgb.size
+	left, top, right, bottom = inset
+	inner = rgb.crop((left, top, width - right, height - bottom))
+
+	def level(image):
+		stat = ImageStat.Stat(image.convert("L"))
+		return stat.sum[0] / stat.count[0]
+
+	ring = rgb.crop((left + RING, top + RING, width - right - RING, height - bottom - RING))
+	wide, narrow = level(inner) * inner.size[0] * inner.size[1], level(ring) * ring.size[0] * ring.size[1]
+	edge = (wide - narrow) / (inner.size[0] * inner.size[1] - ring.size[0] * ring.size[1])
+	scale = edge / level(inner)
+	return inner.resize((width, height), Image.LANCZOS).point(lambda v: min(255, round(v * scale)))
+
+
 def bleed(image):
 	# The colour under a transparent pixel is still the white of the margin,
 	# and both the resize here and the client's filtering read it: a visible
@@ -346,7 +433,10 @@ lua = [
 ]
 
 for p in PAINTINGS:
-	src = darken(MARGINS[p.get("margin", "flat")](Image.open(p["file"])), p["inset"], p["darken"])
+	src = MARGINS[p.get("margin", "flat")](Image.open(p["file"]), p.get("fuzz"))
+	if "lit" in p:
+		src = relight(src, p["lit"])
+	src = darken(src, p["inset"], p["darken"])
 	W, H = src.size
 	left, top, right, bottom = p["inset"]
 	c = p["corner"]
@@ -365,7 +455,8 @@ for p in PAINTINGS:
 	# and rolled back by as much: a seamless tile rolled is the same tile with
 	# its origin moved, which puts the phase back where it was.
 	if "ground" in p:
-		ground = Image.open(p["ground"]).convert("RGB")
+		ground = flatten(src, p["inset"]) if p["ground"] == "self" \
+			else Image.open(p["ground"]).convert("RGB")
 		ground = ground.point(lambda v: int(v * p["dim"])).convert("RGBA")
 		emit("Middle", ground, ground.size, (1024, 512))
 	elif "floor" in p:
