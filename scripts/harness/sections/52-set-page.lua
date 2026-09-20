@@ -7,7 +7,7 @@
 --
 -- **The page a character with no sets opens is the page that shipped.** That
 -- is the promise the growth makes to everybody who never saves one, and it is
--- the first block below: a row is thirty-six until a set exists and forty-eight
+-- the first block below: a row is thirty-six until a set exists and fifty-four
 -- from the first one on. One set is where the line starts and not two, because
 -- one saved set you are not fully wearing is exactly what a circle that
 -- disagrees with the disc above it is for. The number is read off the row rather
@@ -27,7 +27,8 @@
 -- the circles that disagree with the disc above them, and a state that drew
 -- like its neighbour would be a column that answers nothing. The pair worth
 -- the most care is the last two, a slot nobody has told the set about against
--- one deliberately left bare, which are opposite intentions ten pixels wide.
+-- one deliberately left bare, which are opposite intentions sixteen pixels
+-- wide.
 --
 -- **A click builds the set.** Not a menu, not a window: the gesture that puts
 -- what you are wearing into a set is a press on the circle for that set on the
@@ -36,6 +37,21 @@
 -- under the secure square, under the figure or under nothing at all is a
 -- circle the player cannot press and this fails rather than passing on a
 -- handler nobody could reach.
+--
+-- **Both right clicks, because both were missing and one of them was the
+-- feature.** Nothing reached the deliberate hole: a click captures, a drop
+-- names a piece and a drag off unsets, so a set could be built and could never
+-- say "take the shield off", which is the half of a set that takes anything
+-- off you. And a set could be made from what you were wearing exactly once,
+-- because the toggles put a set on and nothing on the page took one again. Both
+-- are asserted through the pointer with the button named, so a circle or a
+-- toggle that never registered the right button fails here rather than passing
+-- on a handler called by name.
+--
+-- **A set with nothing in it says so.** Wearing one used to report "0 changed,
+-- 0 already on", which is the sentence a set you are already wearing gets and
+-- says nothing about which of the two happened. The refusal names the gesture
+-- that fills the set, and that is the line asserted rather than the return.
 --
 -- **None of it on somebody else's sheet.** Every call behind a circle answers
 -- about your own sets, so a circle under their boots would be a fact about you
@@ -58,8 +74,9 @@ local SetRow = ns.SetRow
 -- times.
 local HEAD = 1
 
--- What a row is worth before and after the circles land on it.
-local PLAIN, GROWN = 36, 48
+-- What a row is worth before and after the circles land on it. The line is a
+-- sixteen pixel disc and two of air, and the row carries it whole.
+local PLAIN, GROWN = 36, 54
 
 -- What the toggle at the foot of the stack says. A word for what it does and
 -- not a name, because it is the one toggle in the column that is not a set.
@@ -291,7 +308,14 @@ do
 	-- And the same slot left bare on purpose, which is the opposite intention
 	-- and has to be the opposite picture. This is the pair that would ship
 	-- wrong: both of them are a circle with no item icon in it.
-	Sets.Empty("resist", HEAD)
+	--
+	-- Reached with the right button rather than by calling the store, because
+	-- for an hour this state was drawn and unreachable: the file painted four
+	-- states and three gestures could ask for three of them.
+	mouse.On(bare, "RightButton")
+	check(Sets.Entry("resist", HEAD) == "empty",
+		("a right click on an unset circle left the slot %q")
+			:format(tostring(Sets.Entry("resist", HEAD))))
 	check(bare.bar:IsShown() and not bare.art:IsShown(),
 		"a slot left empty on purpose drew the same as one nobody has set")
 	check(select(4, bare.ring:GetVertexColor()) == 1,
@@ -330,6 +354,62 @@ do
 	check(dropped == "item" and ring == itemLink("Lightbringer Faceguard"),
 		("a drop onto the circle left the slot %q"):format(tostring(dropped)))
 	check(_G.GetCursorInfo() == nil, "the drop filled the slot and kept the item on the cursor")
+
+	-- The right button, all the way round. A slot holding a piece goes to the
+	-- deliberate hole, the hole goes back to unset, and unset goes to the hole
+	-- again, so two presses from anywhere put the slot back where they found it
+	-- and nothing has to be dragged to undo one.
+	local cycled = circle(head, "fury")
+	mouse.On(cycled, "RightButton")
+	check(Sets.Entry("fury", HEAD) == "empty",
+		("a right click on a circle holding a piece left the slot %q")
+			:format(tostring(Sets.Entry("fury", HEAD))))
+	mouse.On(cycled, "RightButton")
+	check(Sets.Entry("fury", HEAD) == "unset",
+		("a right click on a deliberate hole left the slot %q")
+			:format(tostring(Sets.Entry("fury", HEAD))))
+	mouse.On(cycled, "RightButton")
+	check(Sets.Entry("fury", HEAD) == "empty",
+		("a right click on an unset slot left it %q and the cycle has three stops")
+			:format(tostring(Sets.Entry("fury", HEAD))))
+end
+
+----------------------------------------------------------------------
+-- Taking a whole set again, and a set with nothing in it
+----------------------------------------------------------------------
+
+do
+	-- A right click on a toggle re-takes the lot. Without it a set was a
+	-- photograph that could never be taken twice from the page: nineteen
+	-- circles clicked one at a time, or a slash word nobody was shown.
+	local toggle = stack.toggles[2]
+	check(toggle ~= nil and toggle.set ~= nil and toggle.set.name == "fury",
+		("the second toggle carries %q and the set is called fury")
+			:format(tostring(toggle and toggle.set and toggle.set.name)))
+
+	mouse.On(toggle, "RightButton")
+	local state, link = Sets.Entry("fury", HEAD)
+	check(state == "item" and link == worn,
+		("a right click on the toggle left the head slot %q holding %s")
+			:format(tostring(state), tostring(link)))
+
+	-- All nineteen and not the one row this section drives, which is the whole
+	-- difference between this gesture and a click on a circle.
+	local chest = Sets.Entry("fury", 5)
+	check(chest ~= "unset",
+		("the right click left the chest slot %q and it took everything")
+			:format(tostring(chest)))
+
+	-- And a set that names nothing refuses rather than reporting a run that did
+	-- nothing. The line names the gesture above, because that is what fills it.
+	Sets.New("bling")
+	local ok, why = Sets.Wear("bling")
+	check(ok == false, "a set with nothing in it was worn and reported a run")
+	check(tostring(why):find("nothing in it", 1, true) ~= nil,
+		("an empty set was refused with %q"):format(tostring(why)))
+	check(tostring(why):find("right click", 1, true) ~= nil,
+		("an empty set's refusal does not say how to fill it: %q"):format(tostring(why)))
+	Sets.Remove("bling")
 end
 
 ----------------------------------------------------------------------
@@ -369,5 +449,5 @@ check(showing(head) == 0,
 
 Window.Hide()
 
-print(("sets   a set made from the page in a window, a row grows %d to %d on the first one, four states drawn on one slot, and none of it on an inspect page")
+print(("sets   a set made from the page in a window, a row grows %d to %d on the first one, four states drawn on one slot, a right click cycling a circle through the last two and another taking the whole character into a set, an empty set refused with the way to fill it, and none of it on an inspect page")
 	:format(PLAIN, GROWN))

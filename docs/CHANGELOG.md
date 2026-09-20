@@ -2,6 +2,42 @@
 
 ## Unreleased
 
+### A set can take a piece off, and be taken again in one press
+
+Three things the gear sets shipped without, all of them found in an evening of
+using the feature rather than reading it.
+
+The circles are sixteen pixels and were ten. Ten with a two pixel rim is six
+pixels of item icon, which is a dot on a monitor and a picture only in the
+layout. The gear row grows with them, from forty-eight to fifty-four, and the
+page grows with the row: a hunter's eleven row column asks for sixty-six units
+more than it did, against a sheet clamped to 94 percent of the screen's height,
+so there is room on anything this page already fitted on.
+
+A right click on a circle cycles the slot. A piece goes to the barred ring, the
+barred ring goes back to a hollow one, and a hollow one goes to the barred ring
+again. The barred ring was drawn from the first commit and nothing could ask for
+it: a click captures, a drop names a piece and a drag off unsets, so three
+gestures all said which piece and none said none. That state is how a set takes
+the shield off. Without it a set only ever added, because wearing one moves the
+slots it names and leaves the rest exactly as it found them.
+
+A right click on a toggle saves everything you are wearing into that set. A set
+was a photograph that could be taken once. Replacing a piece meant editing the
+set a circle at a time, nineteen clicks, or typing `/wui set save` on a name
+that already existed, which nothing on the page said you could do.
+
+Wearing a set that names nothing used to report "0 changed, 0 already on". That
+is true, it is the same sentence a set you are already wearing gets, and it says
+nothing about which of the two happened. It is refused now, with a line that
+names the right click that fills it.
+
+The hovers say all of this. A circle's box says which state it is in and what
+each button does, and a toggle's says what it is worn for, that a click puts it
+on and that a right click takes your gear into it. Nothing on the page said what
+a click did before, and a gesture nobody can find is a gesture that is not
+there.
+
 ### The swing timer is about the weapon, and the Slam band is gone
 
 The green band on the main hand bar is deleted, along with `Swing/Slam.lua` and

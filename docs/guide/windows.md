@@ -85,11 +85,25 @@ your bags onto one to name something you are not wearing, so a set can hold the
 helmet sitting in your bank. Drag a circle off its row to clear it. None of it
 moves an item: a set is a list, and only wearing one touches your bags.
 
+Right click a circle for the fourth state. It cycles: a slot holding a piece
+goes to the barred ring, the barred ring goes back to a hollow one, and a hollow
+one goes to the barred ring again, so two presses put the slot back where you
+found it. The barred ring is how a set takes a piece off you. A hollow ring is
+a slot the set has no opinion about and will leave exactly as it is, which is
+what makes a five piece resist set five pieces rather than a change of clothes.
+Hover a circle and the box says which of the two it is and what each button
+does.
+
 The toggles are the stack at the top left, one per set, each wearing the icon of
 the spec it is worn for. Press one and the set goes on, and the line that comes
 back says what moved, what was already on and what it could not find. A set may
 name one of your two talent groups, and pressing that one switches your talents
 first and puts the gear on after.
+
+Right click a toggle to save everything you are wearing into that set. That is
+how a set is brought up to date after you replace a piece: one press instead of
+nineteen circles, and it says what it took. Wearing a set that names nothing at
+all is refused and the line points back at this.
 
 Under them sits one more toggle, a ring with a plus in it instead of a spec
 icon, and that one is drawn before you have saved anything. This is where the

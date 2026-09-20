@@ -34,7 +34,7 @@ local C, M = UI.Color, UI.Metric
 -- names a piece; the same icon at rest when that piece is what the disc above
 -- is already showing; a hollow ring for a slot the set has never been told
 -- about; and a ring with a bar through it for one deliberately left bare. The
--- last two are opposite intentions, so they are drawn as far apart as ten
+-- last two are opposite intentions, so they are drawn as far apart as sixteen
 -- pixels allows: nothing inside the ring against something inside it.
 --
 -- **Nothing here touches the secure square.** The circles sit under the note
@@ -46,7 +46,10 @@ local C, M = UI.Color, UI.Metric
 -- **The gestures are the ones a slot already has, and one that it must not
 -- have.** A click takes what you are wearing into the set, which is how a set
 -- gets built a piece at a time. A drop out of a bag fills the slot from the
--- cursor. A drag off empties it. Between two circles the thing being carried
+-- cursor. A drag off empties it. A right click cycles the slot through the
+-- fourth state and back, which is the only way to it and the reason it is not
+-- a fifth gesture: the three above can all say which piece, and none of them
+-- can say none. Between two circles the thing being carried
 -- goes through UI/Carry.lua rather than the client's cursor, because the
 -- client's cursor holding a piece of gear is one misplaced release away from
 -- equipping, unequipping or destroying it, and copying a name between two
@@ -60,21 +63,30 @@ local C, M = UI.Color, UI.Metric
 -- countdown and the cooldown arc are all missing from that page too.
 --------------------------------------------------------------------------
 
--- The circle, and how far apart two of them sit. Ten and not twelve, which is
--- what a socket disc is: the sockets are read across a row and these are read
--- down a column, and the column is twenty rows long.
-local DISC = 10
+-- The circle, and how far apart two of them sit. Sixteen, and it shipped at
+-- ten, which was wrong on a monitor in a way it was not wrong in the layout: a
+-- ten pixel disc with a two pixel rim is six pixels of picture, and six pixels
+-- of an item icon is a dot rather than a helmet. Sixteen is four larger than
+-- the socket disc and it earns the difference: a socket is read across one row
+-- and these are read down a column of eleven.
+--
+-- The row grows with it, because SetRow.Band below is LANE and
+-- Character/Paperdoll.lua takes every number it has off that. A hunter's left
+-- column is eleven rows, so the page is eleven times eighteen taller than the
+-- one that has no sets, which is well inside what this monitor gives a sheet
+-- clamped to 94 percent of its height.
+local DISC = 16
 local LANE = DISC + 2
 
--- How much of the circle the ring keeps for itself, which leaves six pixels of
--- picture. Small, and it is enough: what a circle is read for down a column is
--- whether there is a picture in it at all.
+-- How much of the circle the ring keeps for itself, which leaves twelve pixels
+-- of picture. Small, and it is enough: what a circle is read for down a column
+-- is whether there is a picture in it at all.
 local RIM = 2
 
--- How far past the circle the mouse still answers, which makes a sixteen pixel
--- target out of a ten pixel disc. A hit rect and not a bigger button, the way
--- the ammo row widens itself: the picture is the size it wants to be and the
--- target is the size a cursor needs.
+-- How far past the circle the mouse still answers, which makes a twenty-two
+-- pixel target out of a sixteen pixel disc. A hit rect and not a bigger button,
+-- the way the ammo row widens itself: the picture is the size it wants to be
+-- and the target is the size a cursor needs.
 local REACH = 3
 
 -- Circles a row. Three because three fits under the note without reaching the
@@ -91,7 +103,7 @@ local SLOTS = 19
 -- The toggle at the top of the page, which is deliberately the gear disc's own
 -- size. It is the largest thing on the left of the page and it is meant to be:
 -- a toggle is pressed and a circle is read, and the page already says which is
--- which by drawing one at thirty-six and the other at ten.
+-- which by drawing one at thirty-six and the other at sixteen.
 local TOGGLE = 36
 local AIR = 4
 
@@ -172,6 +184,28 @@ local function Put(circle, link)
 	return ns.Sets.Put(circle.set, circle.slot, link)
 end
 
+-- The two ways a slot holds nothing, one door each.
+--
+-- A door apiece and not one call with a flag, because the two are opposite
+-- intentions and a reader following a gesture down to the store should land on
+-- the name of the thing it did. They are also the reason this file has doors at
+-- all: scripts/trees.lua caps how many times the page may name ns.Sets, and a
+-- call site per gesture would spend that cap on saying the same sentence twice.
+local function Empty(circle)
+	return ns.Sets.Empty(circle.set, circle.slot)
+end
+
+local function Clear(circle)
+	return ns.Sets.Clear(circle.set, circle.slot)
+end
+
+-- What you have on, into a set. The slot is what separates the two gestures
+-- that call this and nothing else is: a slot is one circle taking the piece on
+-- the disc above it, and no slot is the whole character going in at once.
+local function Capture(name, slot)
+	return ns.Sets.Capture(name, slot)
+end
+
 -- A click, which is the gesture a set is actually built with: whatever is in
 -- that slot right now goes into that set. Holding something on the cursor
 -- makes it the drop instead, because that is what every square in the game
@@ -184,8 +218,30 @@ local function Clicked(circle)
 		ClearCursor()
 		return true
 	end
-	ns.Sets.Capture(circle.set, circle.slot)
+	Capture(circle.set, circle.slot)
 	return true
+end
+
+-- The right button on a circle, which is the only way to the fourth state.
+--
+-- Nothing else reaches it. A click captures, a drop names a piece and a drag
+-- off unsets, so three gestures all say which piece and none of them says none,
+-- and a set that cannot say none is a set that can never take a piece off you:
+-- wearing one moves the slots it names and leaves an unset slot exactly as it
+-- found it.
+--
+-- A cycle rather than a switch, so the gesture is its own undo. A slot holding
+-- a piece goes to the deliberate hole, the hole goes back to unset, and unset
+-- goes to the hole again, which means two presses from anywhere put the slot
+-- back where the right button found it and no drag is needed to get out.
+local function Cycled(circle)
+	if not circle.set then
+		return false
+	end
+	if circle.state == "empty" then
+		return Clear(circle)
+	end
+	return Empty(circle)
 end
 
 -- A piece dragged out of a bag and let go over the circle.
@@ -223,7 +279,7 @@ local function Released(circle)
 		return true
 	end
 	if circle.set and circle.state ~= "unset" then
-		ns.Sets.Clear(circle.set, circle.slot)
+		Clear(circle)
 	end
 	return false
 end
@@ -249,19 +305,43 @@ end
 -- away, and it still reads.
 --
 -- The set's name is the title, so the first line of the box says which of the
--- three circles under the cursor is being described, which at ten pixels apart
--- is not otherwise obvious.
+-- three circles under the cursor is being described, which at eighteen pixels
+-- apart is not otherwise obvious.
+--
+-- And what the buttons do, because nothing on the page says. The user's words
+-- for the state below and the gesture that reaches it were that there was no
+-- way to do either, and there was: a sixteen pixel disc has no room for a label
+-- and the hover is the only place on this page a sentence fits.
+local function Gestures(state)
+	local lines = { { "Click saves what you are wearing here.", color = C.dim } }
+	if state == "empty" then
+		lines[#lines + 1] = { "Right click unsets the slot, and the set leaves it alone.",
+			color = C.dim }
+	else
+		lines[#lines + 1] = { "Right click empties the slot, and the set takes the piece off.",
+			color = C.dim }
+	end
+	if state ~= "unset" then
+		lines[#lines + 1] = { "Drag it onto another circle to copy it, or off the row to unset it.",
+			color = C.dim }
+	end
+	return lines
+end
+
 local function Entered(circle)
 	if not circle.set then
 		return false
 	end
+	local lines = Gestures(circle.state)
 	local subject
 	if circle.link then
-		subject = { kind = "item", link = circle.link, title = circle.set }
+		subject = { kind = "item", link = circle.link, title = circle.set,
+			lines = lines }
 	else
-		subject = { kind = "note", title = circle.set, lines = { {
+		table.insert(lines, 1, {
 			circle.state == "empty" and "left empty on purpose" or "not saved",
-			color = C.dim } } }
+			color = C.dim })
+		subject = { kind = "note", title = circle.set, lines = lines }
 	end
 	-- Over the circle rather than beside it, which is what anything smaller
 	-- than the cursor has to ask for.
@@ -293,7 +373,11 @@ local function Circle(box, index)
 	-- under the model with the cursor going to the model rather than to it.
 	circle:SetFrameLevel(box:GetFrameLevel() + 1)
 	circle:SetHitRectInsets(-REACH, -REACH, -REACH, -REACH)
-	UI.Press.Clicks(circle, "up", "LeftButton")
+	-- Both buttons, named rather than left at "Any". The right one is the cycle
+	-- below and the two are all this circle answers: a thumb button registered
+	-- here would arrive at the same handler as a left click, because OnClick
+	-- tells them apart by name and every name it is not given is a capture.
+	UI.Press.Clicks(circle, "up", "LeftButton", "RightButton")
 
 	circle.ring = UI.Disc(circle, "OVERLAY")
 	circle.ring:SetAllPoints()
@@ -307,9 +391,12 @@ local function Circle(box, index)
 	circle.bar:SetPoint("CENTER")
 
 	circle.slot = entry.slot
-	circle:SetScript("OnClick", function(self)
+	circle:SetScript("OnClick", function(self, button)
 		UI.CloseDropdown()
-		Clicked(self)
+		if button == "RightButton" then
+			return Cycled(self)
+		end
+		return Clicked(self)
 	end)
 	circle:SetScript("OnReceiveDrag", function(self) Dropped(self) end)
 	circle:RegisterForDrag("LeftButton")
@@ -438,6 +525,56 @@ local function Pressed(toggle)
 	return ok and true or false
 end
 
+-- A toggle right clicked: everything you have on, into that set.
+--
+-- The gesture the feature shipped without. A set is a photograph and there was
+-- no way to take it again from the page: the circles edit one slot each, so
+-- bringing a nineteen slot set up to date with the gear you are standing in was
+-- nineteen clicks, and the only re-take anywhere was `/wui set save` typed on a
+-- name that already existed.
+--
+-- It says what it did, because a gesture that rewrites nineteen slots in
+-- silence is a gesture nobody presses twice. The circles under the rows say the
+-- same thing in pictures a moment later, and the line is what makes it
+-- deliberate rather than something that happened.
+local function Refilled(toggle)
+	local set = toggle.set
+	if not set then
+		return false
+	end
+	local ok, why = Capture(set.name)
+	if not ok then
+		ns.Print(why)
+		return false
+	end
+	ns.Print(("saved what you have on into %q."):format(set.name))
+	return true
+end
+
+-- What a toggle says to a hover.
+--
+-- The stack draws a picture, a name and an accent, and none of the three says
+-- that the right button does anything. Neither did anything else: the user went
+-- looking for a way to re-take a set and reported that there was none, which is
+-- what an undiscoverable gesture and a missing one look like from the outside.
+local function ToggleSays(toggle)
+	local set = toggle.set
+	if not set then
+		return { kind = "note", title = MAKE, lines = {
+			{ "Click asks for a name, and whether the set starts from what you are wearing.",
+				color = C.dim } } }
+	end
+	local lines = {}
+	if set.group then
+		lines[#lines + 1] = { ("Worn for talent group %d."):format(set.group),
+			color = C.dim }
+	end
+	lines[#lines + 1] = { "Click puts it on.", color = C.dim }
+	lines[#lines + 1] = { "Right click saves everything you are wearing into it.",
+		color = C.dim }
+	return { kind = "note", title = set.name, lines = lines }
+end
+
 -- One toggle, built on the first repaint that has a set for it. Grown and
 -- never shrunk, which is the same bargain a circle strikes: a player with two
 -- sets builds two of these forever and a third is built the day it is saved.
@@ -446,7 +583,7 @@ local function Toggle(stack, index)
 	toggle:SetHeight(TOGGLE)
 	toggle:SetPoint("TOPLEFT", stack, "TOPLEFT", 0, -(index - 1) * (TOGGLE + AIR))
 	toggle:SetPoint("RIGHT", stack, "RIGHT")
-	UI.Press.Clicks(toggle, "up", "LeftButton")
+	UI.Press.Clicks(toggle, "up", "LeftButton", "RightButton")
 
 	toggle.ring = UI.Disc(toggle, "BACKGROUND")
 	toggle.ring:SetSize(TOGGLE, TOGGLE)
@@ -478,10 +615,19 @@ local function Toggle(stack, index)
 	toggle.name:SetPoint("LEFT", toggle.ring, "RIGHT", M.gutter, 0)
 	toggle.name:SetPoint("RIGHT", toggle, "RIGHT")
 
-	toggle:SetScript("OnClick", function(self)
+	toggle:SetScript("OnClick", function(self, button)
 		UI.CloseDropdown()
-		Pressed(self)
+		if button == "RightButton" then
+			return Refilled(self)
+		end
+		return Pressed(self)
 	end)
+	-- Beside the stack rather than over it, unlike a circle: a toggle is
+	-- thirty-six pixels and the cursor is not standing on the whole of it.
+	toggle:SetScript("OnEnter", function(self)
+		ns.Tip.Open(self, ToggleSays(self), "worn")
+	end)
+	toggle:SetScript("OnLeave", function() ns.Tip.Close() end)
 	return toggle
 end
 
@@ -689,7 +835,7 @@ local function Accept()
 	end
 	local worn = namer.worn.on
 	if worn then
-		ns.Sets.Capture(record.name)
+		Capture(record.name)
 	end
 	namer.window:Hide()
 	ns.Print(worn and ("saved what you have on as %q."):format(record.name)

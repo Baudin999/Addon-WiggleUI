@@ -342,6 +342,23 @@ local function Touched(ops)
 	return count
 end
 
+-- How many of the nineteen the set has an opinion about, counting a deliberate
+-- hole as an opinion.
+--
+-- The one number that tells a set with nothing in it from a set you are already
+-- wearing. Both plan nought moves and both would report nought changed and
+-- nought already on, and only one of the two is a mistake the player can do
+-- something about.
+local function Named(record)
+	local named, slots = 0, Sets.Slots()
+	for index = 1, #slots do
+		if record.slots[slots[index]] ~= nil then
+			named = named + 1
+		end
+	end
+	return named
+end
+
 -- Everything a run would do, and nil for a name nobody saved.
 function Sets.Plan(name, world)
 	local record = Sets.Get(name)
@@ -350,7 +367,8 @@ function Sets.Plan(name, world)
 	end
 	world = world or Sets.World()
 
-	local plan = { name = record.name, ops = {}, gestures = 0, missing = {} }
+	local plan = { name = record.name, ops = {}, gestures = 0, missing = {},
+		named = Named(record) }
 	local done, from = {}, {}
 	plan.already = Standing(record, world, done)
 	Sourced(record, world, done, from, plan.missing)
@@ -537,6 +555,16 @@ function Sets.Wear(name)
 	end
 	if running then
 		return false, ("%s is still going on."):format(running.plan.name)
+	end
+	-- A set that names nothing at all, refused here rather than reported at the
+	-- end. Report below would say "0 changed, 0 already on", which is true and
+	-- is the same sentence a set you are already wearing gets: the run did
+	-- nothing, and the line does not say whether that is because there was
+	-- nothing to do or because there is nothing in the set. So the refusal is
+	-- what the player reads, and it names the gesture that fills one.
+	if plan.named == 0 then
+		return false, ("%s has nothing in it. right click its toggle on the character page to save what you have on into it, or click a circle to put one slot in.")
+			:format(plan.name)
 	end
 
 	local allowed, refused = Allowed(plan)
