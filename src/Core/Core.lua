@@ -2614,6 +2614,66 @@ function ns.LootSlotLink(slot)
 	return read(slot)
 end
 
+-- Which talent group you are standing in, how many you own, and the call that
+-- swaps them.
+--
+-- Dual specialisation is on this client. It is not the Wrath feature arriving
+-- early: the trainer sells a second talent group from level forty, the client's
+-- own TBC talent window drives it through C_SpecializationInfo, and the swap
+-- announces itself with ACTIVE_TALENT_GROUP_CHANGED.
+--
+-- Here rather than in the part that asks, because two of them ask and neither
+-- wants to know which flavour it is on. Class/Spec.lua re-reads which spec you
+-- are once the swap has landed, and a gear set names the group it belongs to,
+-- which is not always the one you are standing in.
+--
+-- One group and group one is the answer on a client that has none of this,
+-- which is the vanilla flavour and is a real answer rather than a refusal: a
+-- character with one set of talents is standing in it. Only the setter says
+-- false, because "I did not ask the client" is the only thing a caller can do
+-- anything with.
+--
+-- Talents/Read.lua asks the same three questions and is not written on these,
+-- deliberately. That file reads a group it was handed rather than the live one,
+-- falls back to the older GetActiveTalentGroup pair a public clone carries, and
+-- is the one place in the addon allowed to know the difference. What it holds
+-- is the talent window's whole conversation with the client; what these three
+-- hold is the one question everything else asks.
+function ns.ActiveSpecGroup()
+	local spec = _G.C_SpecializationInfo
+	if type(spec) ~= "table" or type(spec.GetActiveSpecGroup) ~= "function" then
+		return 1
+	end
+	local ok, group = pcall(spec.GetActiveSpecGroup, false, false)
+	return (ok and tonumber(group)) or 1
+end
+
+-- The two arguments are the inspect flag and the pet flag, in that order, and
+-- both are false for the same reason: this is your own count and the client
+-- answers somebody else's only while an inspect is open.
+function ns.NumSpecGroups()
+	if type(_G.GetNumTalentGroups) ~= "function" then
+		return 1
+	end
+	local ok, count = pcall(_G.GetNumTalentGroups, false, false)
+	count = ok and tonumber(count)
+	if not count or count < 1 then
+		return 1
+	end
+	return count
+end
+
+-- True where the client was asked, which is not the same as the swap landing.
+-- It is a spell with a cast on it, the client refuses it in a fight in its own
+-- way, and what says it happened is the event rather than this return.
+function ns.SetActiveSpecGroup(group)
+	local spec = _G.C_SpecializationInfo
+	if type(spec) ~= "table" or type(spec.SetActiveSpecGroup) ~= "function" then
+		return false
+	end
+	return (pcall(spec.SetActiveSpecGroup, group))
+end
+
 --------------------------------------------------------------------------
 -- The binding set moving under us
 --

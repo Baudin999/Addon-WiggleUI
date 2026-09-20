@@ -196,6 +196,22 @@ function Spec.Forget()
 	mine, asked = nil, nil
 end
 
+-- Which talent group you are standing in, and how many this character has.
+--
+-- Both through Core, which is where the probe lives, and both on this table
+-- rather than read off ns from the caller: a spec and a talent group are the
+-- same question asked at two levels, and the part that wants one usually wants
+-- the other in the next line. One and one on a client with no second group,
+-- which is not a refusal. A character with one set of talents is standing in
+-- it.
+function Spec.Group()
+	return ns.ActiveSpecGroup()
+end
+
+function Spec.Groups()
+	return ns.NumSpecGroups()
+end
+
 --------------------------------------------------------------------------
 -- A respec
 --
@@ -215,6 +231,15 @@ end
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_LOGIN")
 events:RegisterEvent("CHARACTER_POINTS_CHANGED")
+-- The other way the answer moves, and the one that used to be missed entirely.
+-- A point spent is a respec you paid a trainer for and CHARACTER_POINTS_CHANGED
+-- says so; a dual spec swap spends nothing and says this instead. Only the
+-- first was listened for, so a shaman clicking from restoration to enhancement
+-- kept the resto rotation squares, the resto cooldown row and the resto debuff
+-- list until a reload. Both events drop the held answer and there is nothing to
+-- tell between them here: what moved is the same thing, and Spec.Mine reads the
+-- live spellbook and the live trees either way.
+events:RegisterEvent("ACTIVE_TALENT_GROUP_CHANGED")
 events:SetScript("OnEvent", function(_, event)
 	if event == "PLAYER_LOGIN" then
 		live = true

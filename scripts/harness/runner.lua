@@ -452,6 +452,12 @@ local SECTIONS = {
 	-- after client/13-character.lua's four pieces have been put back by the
 	-- section above, and shuts both windows at the foot of the file.
 	"52-inspect",
+	-- Under it, and it is the one section above 58-spec that moves the spec
+	-- without asking the addon to forget it: the client swaps talent group and
+	-- the addon has to hear the event. It hands the trees, the signature
+	-- spells and both numbers on the talent model back at the foot of the file,
+	-- so the sections below read the character they were written against.
+	"52-spec-group",
 	-- Last, and it has to be: it puts every setting in the account file back
 	-- to what the addon ships with, twice over, which is the one thing in the
 	-- suite that would pull the scene out from under every section above it.
@@ -684,6 +690,7 @@ local CLASS_SECTIONS = {
 	["21-which-class"] = "the warrior-only parts are built or absent",
 	["26-swing-timer"] = "only a warrior is given a swing window and a Slam band",
 	["42-cooldown-row"] = "the row's entries and its refusal come off the spec",
+	["52-spec-group"] = "a dual spec swap moves the answer to the other spec",
 	["58-spec"] = "the spec resolver and what each spec swaps",
 	["78-standing-row"] = "the row is only built for a class with a plan",
 }
