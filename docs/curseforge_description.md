@@ -19,8 +19,8 @@ dozen readouts neither client has ever had.
 ## Shake the mouse and the screen changes
 
 That is the gesture it is named after. One theme keeps your chat, your quest
-tracker and your bars under the pointer; the other has all three up with the
-meters and the feeds beside them. Shake to swap, shake again to swap back.
+tracker, your bars and your meters under the pointer; the other has all four up
+with the feeds beside them. Shake to swap, shake again to swap back.
 
 A shake is six turns inside 1.2 seconds, each leg at least 60 units long, and
 nothing is sampled while you hold the right button to turn the camera, so it
@@ -178,6 +178,11 @@ having. It adds the turn-in pin on the map, the drop rate under a quest item, a
 party member's progress on a shared quest, and the quest a finished item
 belongs to when you clear your bags. Nothing here needs it, and every part that
 would ask says so in the panel when Questie is not answering.
+
+## The guide
+
+Every window and every command, one page per thing:
+https://github.com/Baudin999/Addon-WiggleUI/blob/master/docs/guide/README.md
 
 ## Bugs and requests
 

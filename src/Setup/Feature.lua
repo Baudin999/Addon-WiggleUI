@@ -46,7 +46,7 @@ ns.Register({
 	},
 
 	help = {
-		"setup, the four first questions again: mode, colours, unit frames and tooltips",
+		"setup, the five first questions again: size, mode, colours, unit frames and tooltips",
 	},
 
 	status = function()

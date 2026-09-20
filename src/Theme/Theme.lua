@@ -522,7 +522,7 @@ ns.Register({
 
 	help = {
 		"theme informational|immersive|exploration, how much of the addon is on the screen, from the next /reload",
-		"palette dark|forest|desert|arcane|parchment, the addon's colours, from the next /reload",
+		"palette dark|forest|desert|arcane|horde|alliance|fire|parchment, the addon's colours, from the next /reload",
 		"gauges flat|modern, how every health, power and cast bar is drawn, from the next /reload",
 		"wiggle none|<theme>, what the theme swaps to on a shake of the mouse",
 	},
