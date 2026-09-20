@@ -59,6 +59,8 @@ Windows, Feeds and meters, Chores, The screen, Under the hood. The group you are
 in stands open with its sections listed under it and the rest stay one line
 each.
 
+![The settings window: the rail of nine groups down the left, the search field in the title bar, and the Theme page open](../../assets/docs-screenshots/theme-002.png)
+
 The window opens on **On and off**, which is one switch per part of the addon
 and a sentence saying what turning it on puts on your screen. Nothing else is on
 that page: no numbers, no ranges. Turn things on, go and look at your screen,

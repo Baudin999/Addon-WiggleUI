@@ -22,7 +22,8 @@ all. The full mechanics are under [themes](#themes-palettes-and-the-wiggle),
 below.
 
 > **Screenshot wanted:** `theme-exploration.png` and `theme-immersive.png`,
-> the same fight under each, so the pair reads as one change.
+> the same spot and the same fight as `theme-informational.png`, so the three
+> read as one screen changing rather than three screens.
 
 ## Moving things, and how big they are
 
@@ -60,6 +61,8 @@ one of four answers:
     0.2      drawn at that fraction of itself, any number above 0 and below 1
 
 The three themes:
+
+![Informational, mid fight: quest tracker and chat down the left, bars along the bottom, the damage and threat meters on the right, enemy bars over the mob](../../assets/docs-screenshots/theme-informational.png)
 
 - **informational** draws everything, all of the time. This is the one for a new
   player and the one the wiggle target usually is.
