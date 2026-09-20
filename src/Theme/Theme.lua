@@ -204,10 +204,13 @@ local rest, target, drawnTarget
 local pinned = false
 
 -- The theme the creator page is editing, drawn over both of those for as long
--- as that page has it open, and whether the page is holding every element up
--- so you can point at one. See Theme.Try and Theme.Showcase below the wiggle,
--- which is the machinery both are built on.
-local trying, showcase = nil, false
+-- as that page has it open. See Theme.Try below the wiggle.
+--
+-- Holding every element up so you can point at one is not a second state here.
+-- It is the one the frames are already in while they are unlocked for
+-- dragging, and the creator unlocks them: see Theme/Creator.lua, which says
+-- why the two are the same state and not two that look alike.
+local trying = nil
 
 -- Whether a fight is on. Read off the two events at the foot of this file
 -- rather than from InCombatLockdown at each frame, because a pass walks every
@@ -260,10 +263,10 @@ local function Dress(frame, key)
 			return false
 		end
 	end
-	-- Held up: while the frames are unlocked for dragging, and while the
-	-- creator page is showing you what there is to point at. Both want every
-	-- element on the screen and whole whatever the theme says of it.
-	local placing = not ns.db.locked or showcase
+	-- Held up: the frames are unlocked, for dragging or for the creator page,
+	-- and either way every element is on the screen and whole whatever the
+	-- theme says of it.
+	local placing = not ns.db.locked
 	local shown = placing or not hidden
 	if veil:IsShown() ~= shown then
 		if blocked then
@@ -482,19 +485,6 @@ end
 
 function Theme.Trying()
 	return trying
-end
-
--- Every element up and whole, whatever the theme says of it, so the page can
--- draw a rim round each and you can point at the one you mean. The state the
--- frames are already in while they are unlocked for dragging, for its reason:
--- an element you cannot see is an element you cannot choose.
-function Theme.Showcase(on)
-	showcase = on and true or false
-	return Settle()
-end
-
-function Theme.Showcasing()
-	return showcase
 end
 
 -- A theme of yours was renamed, or dropped. Three kinds of setting name a

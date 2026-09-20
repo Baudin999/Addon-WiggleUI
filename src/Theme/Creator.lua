@@ -29,10 +29,18 @@ ns.ThemeEdit = ThemeEdit
 --
 -- Two rules hold the pair together.
 --
--- **Everything is up while you are picking.** An element the theme hides is an
--- element you cannot point at, so the rims go up over a screen where nothing
--- is hidden and nothing is faint. That is ns.Theme.Showcase, and it is the
--- state /wui unlock already puts the frames in for dragging.
+-- **Picking unlocks the frames.** It does not do something that looks like
+-- unlocking them; it is the same state, set the same way, `ns.db.locked` false
+-- and `ns.Each("lock")`. That matters because unlocking is not only the theme
+-- letting go: it is what makes six parts draw themselves when they have
+-- nothing to draw. The cast bar invents a cast, the buff nag shows a preview,
+-- the swing bars come up empty, because a rectangle you cannot see is a
+-- rectangle you cannot drag, which is the same sentence with "point at" in it.
+--
+-- The first cut of this page had a held-up state of its own, and the result
+-- was a screen where the cast bar was missing from a page that claimed to show
+-- you every element. Two states that mean the same thing are one state and a
+-- bug waiting for whichever of them somebody forgets.
 --
 -- **The theme is on the screen while you edit it.** ns.Theme.Try draws the
 -- record being edited over the drawn theme for as long as the page holds it,
@@ -40,14 +48,15 @@ ns.ThemeEdit = ThemeEdit
 -- window: it is the screen, now, with your theme on it. Closing the page puts
 -- back what was there before.
 --
--- Not everything can be pointed at, and that is the third piece. Four of the
--- twenty-three elements are only on the screen for a moment at a time: the
--- cast bar while you are casting, a drop and a message while they slide past,
--- the loadout bars while their key is held. A rim can only sit on a frame that
--- is drawn, so those got no rim and looked like elements the page had left
--- out. They are chips in a tray at the top of the screen instead, one per
--- element with nothing drawn, clicked the same way a rim is. The tray is the
--- page saying which elements it cannot show you rather than saying nothing.
+-- Four elements are still not there once the frames are unlocked, and that is
+-- the third piece. The drops and the messages sliding in are pooled rows that
+-- exist while one is sliding and not otherwise; the loadout ring is up while
+-- its key is held; the floating numbers are the same. None of those four reads
+-- the lock, so none of them previews itself, and a rim can only sit on a frame
+-- that is drawn. They are chips in a tray at the top of the screen instead,
+-- one per element with nothing drawn, clicked the same way a rim is. The tray
+-- is the page saying which elements it cannot show you rather than saying
+-- nothing, and it empties itself as each of those four learns to preview.
 --
 -- The one thing the page cannot do is a fight. Showing an element the theme
 -- had hidden is a protected write, so the client refuses it mid pull, and a
@@ -82,6 +91,11 @@ local CHIP_PAD = 6
 -- The theme whose tab is up, the element chosen, whether the rims are on the
 -- screen, and every rim made so far, one per worn frame.
 local shown, picked, editing = 1, nil, false
+
+-- Whether the rims are up, and whether the frames were locked before the page
+-- unlocked them. Put back on the way out: somebody who was already dragging
+-- frames when they opened this is not relocked by closing it.
+local picking, wasLocked = false, true
 local marks, order = {}, {}
 
 -- The tray and its chips, and the set of elements that have a frame on the
@@ -304,6 +318,20 @@ end
 -- Opening and closing the page
 --------------------------------------------------------------------------
 
+-- The frames unlocked, or put back to whatever the player had them at. The
+-- same two lines the button in the window's footer runs, because this is the
+-- same state and not one that looks like it: every part that previews itself
+-- while the frames are unlocked reads ns.db.locked, and ns.Each("lock") is
+-- what tells them to look again.
+local function Unlock(on)
+	local want = not on and wasLocked or false
+	if ns.db.locked == want then
+		return
+	end
+	ns.db.locked = want
+	ns.Each("lock")
+end
+
 -- The theme being edited put back on the screen, which is what a dial moving
 -- redraws through. Nothing happens unless the page has a theme open: the dials
 -- write into the saved record either way, and that record is drawn at the next
@@ -330,10 +358,11 @@ function ThemeEdit.Start()
 		return false
 	end
 	editing, picked = true, Chosen()
+	wasLocked = ns.db.locked ~= false
 	ns.Theme.Try(theme)
-	ns.Theme.Showcase(true)
-	Rims()
-	ShowRims(true)
+	-- Through the same call the button below runs, rather than a second copy
+	-- of its four lines here: one place decides what picking means.
+	ThemeEdit.Picking(true)
 	return true
 end
 
@@ -344,27 +373,28 @@ function ThemeEdit.Stop()
 	if not editing then
 		return
 	end
-	editing = false
+	editing, picking = false, false
 	ShowRims(false)
-	ns.Theme.Showcase(false)
+	Unlock(false)
 	ns.Theme.Try(nil)
 end
 
 -- The rims away and the theme drawn as it will be drawn, or back to picking.
 -- The same theme either way: this is not a preview window, it is the screen
 -- with the rims lifted off it.
-function ThemeEdit.Showcase(on)
+function ThemeEdit.Picking(on)
 	if not editing then
 		return
 	end
+	picking = on and true or false
 	-- The screen first, then the rims, because which elements have nothing on
 	-- the screen is read off the screen: laid out before everything came back
 	-- up, the tray would carry a chip for every element the theme hides.
-	ns.Theme.Showcase(on)
-	if on then
+	Unlock(picking)
+	if picking then
 		Rims()
 	end
-	ShowRims(on)
+	ShowRims(picking)
 end
 
 -- The chip standing in for an element, or nil where the element has a frame on
@@ -615,9 +645,9 @@ function ThemeEdit.Panel(ui)
 	ui.Hint("Editing draws your theme on the screen as you build it, with everything held up so you can point at it. The window closing stops it.")
 
 	ui.Action(function()
-		return ns.Theme.Showcasing() and "take the rims off and look at it" or "back to picking"
+		return picking and "take the rims off and look at it" or "back to picking"
 	end, function()
-		ThemeEdit.Showcase(not ns.Theme.Showcasing())
+		ThemeEdit.Picking(not picking)
 	end, function() return editing end)
 
 	ui.Picker("element", Chosen, ThemeEdit.Pick, Elements)

@@ -109,15 +109,18 @@ check(not UI.Veiled(feeds):IsShown(), "a cell drawn at nothing left its element 
 check(UI.Veiled(buffs):IsShown() and UI.Veiled(buffs):GetAlpha() == 0,
 	"a cell that differs in a fight is not drawn at nothing while there is no fight")
 
--- Everything up, so the creator's rims have something to sit on. The same
--- state the frames are in while they are unlocked for dragging.
-Theme.Showcase(true)
+-- Everything up, so the creator's rims have something to sit on. Not a state
+-- of the theme's own: the frames unlocked, which is what also makes the cast
+-- bar and the buff nag preview themselves.
+ns.db.locked = false
+ns.Each("lock")
 check(UI.Veiled(feeds):IsShown() and UI.Veiled(feeds):GetAlpha() == 1,
-	"showcasing left a hidden element off the screen, so it cannot be pointed at")
+	"unlocking left a hidden element off the screen, so it cannot be pointed at")
 check(not chat.wuiReveal:IsShown(),
-	"showcasing left a catcher over an element, so a click on it lands on the catcher")
-Theme.Showcase(false)
-check(not UI.Veiled(feeds):IsShown(), "the showcase coming off left a hidden element up")
+	"unlocking left a catcher over an element, so a click on it lands on the catcher")
+ns.db.locked = true
+ns.Each("lock")
+check(not UI.Veiled(feeds):IsShown(), "locking again left a hidden element up")
 
 --------------------------------------------------------------------------
 -- The fight
@@ -176,6 +179,7 @@ check(ns.ProgressRails.Describe():find("minimal", 1, true),
 -- of the elements that can be pointed at: a tray carrying every element would
 -- be a second copy of the dropdown.
 ns.ThemeEdit.Start()
+check(ns.db.locked == false, "the creator did not unlock the frames, so nothing previews itself")
 
 local visible = {}
 Theme.Worn(function(key, frame)
@@ -184,18 +188,18 @@ Theme.Worn(function(key, frame)
 	end
 end)
 
-local chipped = 0
+local chipped = {}
 for _, element in ipairs(Themes.ELEMENTS) do
 	local chip = ns.ThemeEdit.Chip(element.key)
 	if chip then
-		chipped = chipped + 1
+		chipped[#chipped + 1] = element.key
 	end
 	check((chip ~= nil) ~= (visible[element.key] == true),
 		("%s %s a chip and it %s on the screen to be pointed at")
 			:format(element.label, chip and "has" or "has no",
 				visible[element.key] and "is" or "is not"))
 end
-check(chipped > 0, "every element was on the screen, so the tray was never tested")
+check(#chipped > 0, "every element was on the screen, so the tray was never tested")
 
 local spare
 for _, element in ipairs(Themes.ELEMENTS) do
@@ -209,6 +213,7 @@ check(ns.ThemeEdit.Picked() == spare, "clicking a chip did not choose the elemen
 
 ns.ThemeEdit.Stop()
 check(ns.ThemeEdit.Chip(spare) == nil, "the page closing left the tray on the screen")
+check(ns.db.locked == true, "the page closing left the frames unlocked")
 mine.rail = nil
 Theme.Try(nil)
 check(ns.ProgressRails.Describe() == style, "putting the theme down did not put the rail's style back")
@@ -269,6 +274,11 @@ feeds:Hide()
 buffs:Hide()
 player:Hide()
 
-print("themes  one of your own copied from exploration cell for cell, its fight"
-	.. " fraction on the pull and off at the end, and a saved file of four"
-	.. " themes loaded as two that name every element")
+-- The list is named rather than counted, because it is a work list: an element
+-- on it is one no part draws while the frames are unlocked, and each one that
+-- learns to preview itself comes off this line.
+print(("themes  one of your own copied from exploration cell for cell, its fight"
+	.. " fraction on the pull and off at the end, a saved file of four themes"
+	.. " loaded as two that name every element, and %d of %d elements reached"
+	.. " by a chip rather than a rim: %s")
+	:format(#chipped, #Themes.ELEMENTS, table.concat(chipped, ", ")))
