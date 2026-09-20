@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2YWDQXBQMSAPTTGE3NRTVCS
 type: task
-status: doing
+status: done
 title: "WarriorKit becomes WiggleUI: package, internals, installs"
 ---
 
