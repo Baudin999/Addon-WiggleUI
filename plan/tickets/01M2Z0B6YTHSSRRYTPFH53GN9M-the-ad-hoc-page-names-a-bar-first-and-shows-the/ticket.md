@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2Z0B6YTHSSRRYTPFH53GN9M
 type: task
-status: doing
+status: done
 title: The ad hoc page names a bar first and shows the ring
 ---
 
