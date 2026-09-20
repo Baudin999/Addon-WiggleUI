@@ -207,13 +207,15 @@ local function Lay(frame)
 	local records = ns.AdHoc.Squares(Shown())
 	local count = records and #records or 0
 	local scale = EDGE / ns.AdHocBars.SIZE
-	local side = 2 * (ns.AdHocBars.Radius(math.max(count, 1)) * scale + EDGE)
+	local radius = ns.AdHocBars.Radius(math.max(count, 1)) * scale
+	local side = 2 * (radius + EDGE)
 	-- The place after the last one, which is where a drop lands, and none once
 	-- every place is taken.
 	local middle = count < ns.AdHoc.PER_BAR and count + 1 or nil
 
 	frame.ring:SetSize(side, side)
 	frame.ring:SetShown(records ~= nil)
+	ns.AdHocRing.Lay(frame.chrome, count, radius, EDGE)
 
 	for at = 1, #squares do
 		local w = squares[at]
@@ -340,9 +342,9 @@ function Panel.Build(ui)
 		-- to add half a row's height to it.
 		frame.ring = CreateFrame("Frame", nil, frame)
 		frame.ring:SetPoint("TOP")
-		frame.disc = UI.Disc(frame.ring, "BACKGROUND")
-		frame.disc:SetAllPoints()
-		frame.disc:SetVertexColor(C.window[1], C.window[2], C.window[3], 0.6)
+		-- The same pie the ring draws under your thumb, at the size of a
+		-- settings page. AdHoc/Ring.lua is the one drawing of it.
+		frame.chrome = ns.AdHocRing.Dress(frame.ring)
 		for at = 1, ns.AdHoc.PER_BAR do
 			squares[at] = Square(frame.ring)
 		end

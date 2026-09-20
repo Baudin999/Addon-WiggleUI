@@ -11,16 +11,23 @@ local C = ns.UI.Color
 -- The ring on the screen, and the key that opens it
 --
 -- A bar you made is an OPie ring. Hold its key and the squares come up on a
--- circle in the middle of the screen; push the mouse toward one and let the
--- key go, and that one fires. Nothing is clicked. The pick is a direction, so
--- every square owns a wedge of the whole screen rather than its own 27 units,
--- and a mouse that overshoots still lands on the right spell.
+-- circle round the cursor; push the mouse toward one and let the key go, and
+-- that one fires. Nothing is clicked. The pick is a direction, so every square
+-- owns a wedge of the whole screen rather than its own 27 units, and a mouse
+-- that overshoots still lands on the right spell.
 --
 -- The direction is measured from where the cursor stood when the key went
--- down, not from the ring. The ring sits in the middle and the cursor sits
--- wherever you left it, and the client has no call that moves the cursor, so
--- the ring is drawn where it reads best and the arithmetic behaves as though
--- the cursor had started under it. Let go without moving and nothing fires.
+-- down, and the ring opens round that point. The client has no call that moves
+-- the cursor, so the picture goes to the pointer rather than the pointer to
+-- the picture: the hole in the middle of the ring is the dead zone drawn where
+-- the cursor is standing, the slice the cursor is over is the slice that
+-- fires, and letting go without moving fires nothing.
+--
+-- It used to open in the middle of the screen with the direction still
+-- measured from the cursor, which is one gesture drawn as two. Every slice was
+-- out by however far the pointer happened to be from the middle of the screen,
+-- and a cursor parked on the ring's own middle was a push the length of that
+-- gap, which cast. Neither was visible until the ring drew its slices.
 --
 -- Why this works in a fight, link by link, because every link is a protected
 -- thing an addon is refused under lockdown:
@@ -225,6 +232,16 @@ local PICK = ([[
 		local x, y = screen:GetMousePosition()
 		owner:SetAttribute("wk-from-x", x)
 		owner:SetAttribute("wk-from-y", y)
+		if x then
+			-- The ring opens round the cursor. The offsets are in the ring's
+			-- own units and the screen frame's are UIParent's, and the one
+			-- number between them is what Arrange leaves on wk-scale: a
+			-- snippet cannot ask two frames for their scales and divide.
+			local scale = owner:GetAttribute("wk-scale") or 1
+			owner:ClearAllPoints()
+			owner:SetPoint("CENTER", screen, "BOTTOMLEFT",
+				x * screen:GetWidth() * scale, y * screen:GetHeight() * scale)
+		end
 		owner:Show()
 		return false
 	end
@@ -380,12 +397,17 @@ local function Aim(entry)
 		entry.buttons[entry.aimed].aim:Hide()
 	end
 	entry.aimed = at
+	ns.AdHocRing.Aim(entry.chrome, at)
 	local w = at and entry.buttons[at]
 	if w then
 		w.aim:Show()
 		entry.name:SetText(w.record.name)
+		entry.name:SetTextColor(C.heading[1], C.heading[2], C.heading[3])
 	else
-		entry.name:SetText("")
+		-- The bar's own name in the hole, which is the one thing worth saying
+		-- while the push has not reached a slice: which ring you are holding.
+		entry.name:SetText(entry.label or "")
+		entry.name:SetTextColor(C.dim[1], C.dim[2], C.dim[3])
 	end
 end
 
@@ -405,14 +427,14 @@ local function Build(index)
 	frame:SetFrameRef("screen", Screen())
 	frame:Hide()
 
-	-- The disc behind the ring, in the window colour and see-through, so the
-	-- squares read against the world without a slab of chrome round them.
-	frame.disc = UI.Disc(frame, "BACKGROUND")
-	frame.disc:SetAllPoints()
-	frame.disc:SetVertexColor(C.window[1], C.window[2], C.window[3], 0.6)
-
 	local entry = { index = index, frame = frame, buttons = {}, count = 0 }
 	entries[index] = entry
+
+	-- The pie behind the squares: the palette's paper, a seam on every slice
+	-- boundary and the hole in the middle a release fires nothing from.
+	-- AdHoc/Ring.lua draws it and the settings page draws the same picture at
+	-- the size of a settings page.
+	entry.chrome = ns.AdHocRing.Dress(frame)
 
 	-- The name of what the cursor points at, in the middle of the ring, and the
 	-- plain frame whose OnUpdate keeps it and the lit square current. Sized
@@ -468,6 +490,7 @@ end
 -- can say.
 local function Arm(entry, bar)
 	local buttons = bar.buttons
+	entry.label = bar.name
 	for at = 1, PER_BAR do
 		local w = entry.buttons[at]
 		local record = buttons[at]
@@ -518,6 +541,16 @@ local function Arrange(entry)
 	entry.reach = math.max(DEAD, UI.Convert(radius - SIZE / 2, entry.frame, UIParent))
 	entry.frame:SetAttribute("wk-reach", entry.reach)
 
+	-- One UIParent unit in this ring's units, which is what the snippet
+	-- multiplies the cursor by to open the ring round it. Written here for the
+	-- reason the reach is: both scales move on a rescale and on a zoom, and
+	-- Arrange is what runs on either.
+	entry.frame:SetAttribute("wk-scale", UI.Convert(1, UIParent, entry.frame))
+
+	-- The pie under the squares: the same count, the same circle, and the hole
+	-- at the same radius the reach was worked out from.
+	ns.AdHocRing.Lay(entry.chrome, count, radius, SIZE)
+
 	for at = 1, PER_BAR do
 		local w = entry.buttons[at]
 		w.aim:Hide()
@@ -533,7 +566,7 @@ local function Arrange(entry)
 		end
 	end
 	entry.aimed = nil
-	entry.name:SetText("")
+	entry.name:SetText(entry.label or "")
 end
 
 -- Everything protected in one function, so one ns.Lockdown.Held covers the

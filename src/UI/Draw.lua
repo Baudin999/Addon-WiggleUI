@@ -299,8 +299,12 @@ end
 
 -- The same disc as a texture. White in the file, so SetVertexColor is what
 -- gives it a colour and every caller of this is about to call that.
-function UI.Disc(parent, layer)
-	local texture = parent:CreateTexture(nil, layer or "BACKGROUND")
+--
+-- The sublevel is for a caller stacking several of these on one frame: the
+-- ring in AdHoc/Ring.lua is six discs and a handful of slices between them,
+-- and the order they overlap in is the whole of what it looks like.
+function UI.Disc(parent, layer, sublevel)
+	local texture = parent:CreateTexture(nil, layer or "BACKGROUND", nil, sublevel)
 	texture:SetTexture(ROUND)
 	return texture
 end
@@ -442,6 +446,77 @@ function UI.Sweep(arc, fraction)
 		arc.lit = lit
 		arc[1]:SetShown(lit)
 		arc[2]:SetShown(lit)
+	end
+	return true
+end
+
+--------------------------------------------------------------------------
+-- The slice
+--
+-- A sector of that same disc, pointed any way and up to half the circle wide.
+-- It is what a ring lights under the direction you are pushing, and, drawn a
+-- degree and a half wide, it is the seam between one slice of that ring and
+-- the next.
+--
+-- Two masks and no halves, which is the difference from the arc above. The
+-- arc's rectangle covers exactly the half of the disc it is turned toward, so
+-- a texture carrying two of them shows only what both keep, and what both keep
+-- is the sector between their two edges. A mask turned to `t` keeps everything
+-- within a quarter turn of `t`, measured anticlockwise from east: that is what
+-- UI.Sweep's pair says at its two ends, the right half at no turn and the left
+-- half at half a turn, and the sweep's first pixel goes clockwise from twelve.
+--
+-- Half the circle is the ceiling and it is the geometry's rather than a number
+-- somebody picked: two half planes never keep more than one between them. The
+-- only caller that would ask for more is a ring of one square, and that one
+-- draws a whole disc instead.
+--
+-- A client with no masks draws nothing here. A slice that cannot be cut is the
+-- whole disc, and a ring that lights every square at once says something worse
+-- than a ring that lights none.
+--------------------------------------------------------------------------
+
+local QUARTER = math.pi / 2
+
+-- Hidden at build, like the arc, because a ring is drawn long before anything
+-- points at one of its slices.
+function UI.Wedge(frame, layer, sublevel, color)
+	local wedge = { masks = {} }
+	local texture = frame:CreateTexture(nil, layer or "BACKGROUND", nil, sublevel)
+	texture:SetTexture(ROUND)
+	texture:SetAllPoints(frame)
+	texture:SetVertexColor(color[1], color[2], color[3], color[4] or 1)
+	texture:Hide()
+	wedge.texture = texture
+	for index = 1, 2 do
+		wedge.masks[index] = Cut(frame, texture)
+	end
+	if not (wedge.masks[1] and wedge.masks[2]) then
+		wedge.masks = nil
+	end
+	return wedge
+end
+
+-- Turn one to face `centre`, clockwise from twelve, and cut it `width` wide,
+-- both in radians. No centre puts it away.
+--
+-- Guarded on the pair, because the ring turns its lit slice from an OnUpdate
+-- and a rotation written again costs exactly what the first one cost. Answers
+-- whether it wrote, which is what the tick and the harness both want.
+function UI.Turn(wedge, centre, width)
+	if wedge.centre == centre and wedge.width == width then
+		return false
+	end
+	wedge.centre, wedge.width = centre, width
+	if centre and wedge.masks then
+		-- Anticlockwise from east is where the masks count from, and the ring
+		-- counts clockwise from twelve, which is the quarter turn taken off.
+		local facing = QUARTER - centre
+		wedge.masks[1]:SetRotation(facing - width / 2 + QUARTER, PIVOT)
+		wedge.masks[2]:SetRotation(facing + width / 2 - QUARTER, PIVOT)
+		wedge.texture:Show()
+	else
+		wedge.texture:Hide()
 	end
 	return true
 end

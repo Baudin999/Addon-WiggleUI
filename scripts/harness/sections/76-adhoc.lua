@@ -309,6 +309,26 @@ do
 	press("E", false)
 	check(#sent == 0 and f:IsShown() == false, "a release inside the dead zone cast something")
 
+	-- The ring opens round the cursor and not in the middle of the screen.
+	--
+	-- The two points have to be one, because one is the picture and the other
+	-- is the arithmetic. Drawn anywhere else, the slice the cursor is over and
+	-- the slice a release fires are two different slices, and a cursor sitting
+	-- in the drawn hole is a push as long as the gap between the ring and the
+	-- pointer. Both of those shipped, and neither could be seen until the ring
+	-- drew its slices.
+	sent = {}
+	push(90, -50)
+	press("E", true)
+	local wantX, wantY = centre()
+	local own = f:GetEffectiveScale()
+	local gotX, gotY = (f:GetLeft() + f:GetWidth() / 2) * own, (f:GetTop() - f:GetHeight() / 2) * own
+	check(math.abs(gotX - (wantX + 90)) < 1 and math.abs(gotY - (wantY - 50)) < 1,
+		("the ring opened at %.0f, %.0f with the cursor at %.0f, %.0f")
+			:format(gotX, gotY, wantX + 90, wantY - 50))
+	press("E", false)
+	check(#sent == 0, "a release that never left the middle of an off centre ring cast something")
+
 	--------------------------------------------------------------------------
 	-- The push has to reach the squares
 	--
@@ -590,6 +610,96 @@ do
 		"the general size was spent on the square's units rather than on the frame's scale")
 	ns.UI.SetGeneral(1)
 	check(math.abs(drawn() - before) < 1e-9, "putting the general size back did not put the ring back")
+end
+
+--------------------------------------------------------------------------
+-- The pie: the slices, the seams and the hole in the middle
+--
+-- A push picks the slice it points into, so the slice is the thing being
+-- aimed at and the square drawn in it is only a picture of what that slice
+-- holds. The ring draws the slices for that reason, and this holds the
+-- drawing to the arithmetic: the seam between two slices where the wedge
+-- puts it, the lit slice facing the square a push of that direction picks,
+-- and the hole in the middle exactly as wide as the push the release is
+-- measured against.
+--
+-- The lit slice is read back off the two masks the client cuts it with rather
+-- than off the numbers UI.Turn was handed. A rotation with the sign the wrong
+-- way round is a ring that lights the square opposite the one it fires, and
+-- the numbers going in cannot tell you that.
+--------------------------------------------------------------------------
+
+do
+	-- A mask turned to t keeps everything within a quarter turn of t,
+	-- anticlockwise from east, so two of them keep the arc between them. This
+	-- is that sum run backwards, into the ring's own clockwise from twelve.
+	local function slice(wedge)
+		local one, two = wedge.masks[1].rotation, wedge.masks[2].rotation
+		return (math.pi / 2 - (one + two) / 2) % (2 * math.pi), two - one + math.pi
+	end
+
+	local pie = AdHoc.Add("pie")
+	for _, name in ipairs({ "Rend", "Cleave", "Hamstring", "Overpower" }) do
+		AdHoc.Put(pie, 99, { kind = "spell", name = name, icon = "Interface\\Icons\\Ability" })
+	end
+
+	local entry = Bars.Entry(pie)
+	local chrome = entry and entry.chrome
+	local wedge = 2 * math.pi / 4
+	check(chrome ~= nil, "the ring was built with no pie behind it")
+	check(chrome ~= nil and chrome.count == 4, "the pie was not cut into one slice per square")
+
+	-- The hole is the reach, in the units the release is measured in.
+	local hole = ns.UI.Convert(ns.AdHocRing.Hole(chrome), entry.frame, _G.UIParent)
+	check(math.abs(hole - Bars.Reach(pie)) < 1e-6,
+		("the hole is %.1f across the middle and a push has to travel %.1f: the picture and the arithmetic disagree")
+			:format(hole, Bars.Reach(pie)))
+
+	-- A seam on the edge between every two slices, and none past the count.
+	local seams = 0
+	for at = 1, 4 do
+		local centre, width = slice(chrome.seams[at])
+		check(math.abs(centre - (at - 0.5) * wedge) < 1e-6,
+			("the seam after square %d faces %.3f rather than %.3f"):format(at, centre, (at - 0.5) * wedge))
+		check(width > 0 and width < wedge / 4, "a seam is a slice of its own rather than a line")
+		seams = seams + (chrome.seams[at].texture:IsShown() and 1 or 0)
+	end
+	check(seams == 4, "the ring drew fewer seams than it has slices")
+	check(chrome.seams[5] == nil or chrome.seams[5].texture:IsShown() == false,
+		"a seam was left over from a wider bar")
+
+	-- The lit slice faces the square a push that way picks, every square round
+	-- the circle, and it is the slice rather than the square: as wide as the
+	-- wedge, less the seam.
+	for at = 1, 4 do
+		local x, y = Bars.Where(at, 4)
+		local picked = Bars.Wedge(x, y, 4)
+		ns.AdHocRing.Aim(chrome, picked)
+		local centre, width = slice(chrome.lit)
+		check(picked == at, ("a push toward square %d picked %s"):format(at, tostring(picked)))
+		check(math.abs(centre - (at - 1) * wedge) < 1e-6,
+			("the ring lit a slice facing %.3f for the square at %.3f"):format(centre, (at - 1) * wedge))
+		check(math.abs(width - wedge) < wedge / 8 and width < wedge,
+			("the lit slice is %.3f wide where the wedge is %.3f"):format(width, wedge))
+		check(chrome.lit.texture:IsShown() == true, "the slice under the push is not lit")
+	end
+
+	ns.AdHocRing.Aim(chrome, nil)
+	check(chrome.lit.texture:IsShown() == false, "a push short of the ring left a slice lit")
+
+	-- A ring of one square is one slice of the whole circle, which is wider
+	-- than two masks can cut, so it lights as a disc.
+	while #AdHoc.Squares(pie) > 1 do
+		AdHoc.Take(pie, #AdHoc.Squares(pie))
+	end
+	check(chrome.count == 1, "taking the squares off did not cut the pie again")
+	ns.AdHocRing.Aim(chrome, 1)
+	check(chrome.whole:IsShown() == true and chrome.lit.texture:IsShown() == false,
+		"the one square's ring lit a wedge rather than the whole circle")
+	ns.AdHocRing.Aim(chrome, nil)
+	check(chrome.whole:IsShown() == false, "the one square's ring stayed lit with nothing aimed at")
+
+	AdHoc.Remove(pie)
 end
 
 --------------------------------------------------------------------------
