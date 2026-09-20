@@ -2146,7 +2146,7 @@ local function Attach(unit)
 	-- stripped and spaced the same, and nothing is drawn. Asked here rather than
 	-- worn, because a widget changes parent on every plate it goes to.
 	StartFade(widget, 0, 1)
-	if ns.Theme.Mode("enemies") ~= "hide" then
+	if not ns.Theme.Hidden("enemies") then
 		widget:Show()
 	end
 	attached[unit] = widget

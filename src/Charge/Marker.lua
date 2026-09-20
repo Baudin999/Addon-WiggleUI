@@ -192,7 +192,7 @@ function ChargeMarker.Update()
 			status, start, duration)
 		-- Asked rather than worn, because the marker changes parent to every
 		-- plate it lands on and a veil would be left behind on the first one.
-		if ns.Theme.Mode("charge") ~= "hide" then
+		if not ns.Theme.Hidden("charge") then
 			frame:Show()
 		end
 	end

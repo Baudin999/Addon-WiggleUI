@@ -164,12 +164,28 @@ end
 --
 -- Asked from a ticker by the Charge marker, so the miss is an if rather than
 -- an assert, which would build its message on every call.
-function Theme.Mode(key)
-	local mode = (chosen or Themes.informational)[key]
-	if mode == nil then
-		error(("%q is not an element in Themes.lua"):format(tostring(key)), 2)
+local function Chosen(key)
+	local theme = chosen or Themes.informational
+	if theme[key] == nil then
+		error(("%q is not an element in Themes.lua"):format(tostring(key)), 3)
 	end
-	return mode
+	return theme
+end
+
+function Theme.Mode(key)
+	return Chosen(key)[key]
+end
+
+-- Whether an element is off the screen in the theme showing this moment.
+--
+-- The question the three parts that ask anything actually ask, and until a
+-- theme of your own existed they asked it by comparing Theme.Mode against
+-- "hide", which was the whole vocabulary. It is not any more: a cell drawn at
+-- nothing with no pointer to bring it back is hidden by every measure a caller
+-- cares about, and a cell that says "hide" in a fight is not hidden now.
+function Theme.Hidden(key)
+	local _, _, hidden = Themes.Cell(Chosen(key), key)
+	return hidden
 end
 
 --------------------------------------------------------------------------
@@ -183,12 +199,35 @@ local worn = {} -- { key, frame } for every frame a part has handed over
 local rest, target, drawnTarget
 local pinned = false
 
--- Whether an element can leave its frame as drawn for the whole session: shown
--- at rest and shown in the target. Every other element is veiled when it is
--- worn, because a protected frame cannot take its veil in a fight and a wiggle
--- in the middle of a pull has to find the action bars already under one.
+-- The theme the creator page is editing, drawn over both of those for as long
+-- as that page has it open, and whether the page is holding every element up
+-- so you can point at one. See Theme.Try and Theme.Showcase below the wiggle,
+-- which is the machinery both are built on.
+local trying, showcase = nil, false
+
+-- Whether a fight is on. Read off the two events at the foot of this file
+-- rather than from InCombatLockdown at each frame, because a pass walks every
+-- worn frame and the answer is the same for all of them, and whether the pass
+-- has to happen at all is one comparison against the theme.
+local fighting, fights = false, false
+
+-- Every frame a part has handed over, in the order they were worn, for the
+-- page that draws a rim round each one so you can pick the element you mean.
+-- One element may be several frames: the action bars are, and so is the
+-- minimap, and each is a separate rim over the same key.
+function Theme.Worn(each)
+	for index = 1, #worn do
+		each(worn[index].key, worn[index].frame)
+	end
+end
+
+-- Whether an element can leave its frame as drawn for the whole session: as
+-- drawn at rest and as drawn in the target, at every moment of both. Every
+-- other element is veiled when it is worn, because a protected frame cannot
+-- take its veil in a fight, and a wiggle or a pull in the middle of one has to
+-- find the action bars already under theirs.
 local function Untouched(key)
-	return rest[key] == "show" and (not target or target[key] == "show")
+	return Themes.Plain(rest, key) and (not target or Themes.Plain(target, key))
 end
 
 -- Two writes a fight refuses on a protected frame: taking the veil, and
@@ -199,9 +238,12 @@ end
 -- middle of a pull: the bars go from under the pointer to shown and back on
 -- alpha alone. Anything more waits for the end of the fight.
 local function Dress(frame, key)
-	local mode = chosen[key]
+	local alpha, hover, hidden, combat = Themes.Cell(chosen, key)
+	if fighting and combat then
+		alpha = combat
+	end
 	local veil = UI.Veiled(frame)
-	if mode == "show" and not veil and Untouched(key) then
+	if alpha == 1 and not hover and not hidden and not veil and Untouched(key) then
 		return true
 	end
 	local blocked = ns.Blocked(frame)
@@ -214,8 +256,11 @@ local function Dress(frame, key)
 			return false
 		end
 	end
-	local placing = not ns.db.locked
-	local shown = placing or mode ~= "hide"
+	-- Held up: while the frames are unlocked for dragging, and while the
+	-- creator page is showing you what there is to point at. Both want every
+	-- element on the screen and whole whatever the theme says of it.
+	local placing = not ns.db.locked or showcase
+	local shown = placing or not hidden
 	if veil:IsShown() ~= shown then
 		if blocked then
 			return false
@@ -226,15 +271,19 @@ local function Dress(frame, key)
 		-- Being placed. Up and whole, so it can be found and dragged.
 		UI.Unreveal(frame)
 		veil:SetAlpha(1)
-	elseif mode == "hover" then
-		UI.Reveal(frame, 0)
+	elseif hover then
+		-- Resting at the cell's own fraction rather than at nothing, because a
+		-- theme of yours can ask for a tracker at a fifth that comes to full
+		-- under the pointer, which is two answers the shipped words have one
+		-- word between them for.
+		UI.Reveal(frame, alpha)
 	else
 		-- Off the reveal first: a wiggle can take a frame from under the
 		-- pointer to shown, and a catcher left standing over it would take
 		-- every press.
 		UI.Unreveal(frame)
 		if shown then
-			veil:SetAlpha(mode == "show" and 1 or mode)
+			veil:SetAlpha(alpha)
 		end
 	end
 	return true
@@ -293,16 +342,37 @@ end
 -- the mouse.
 --------------------------------------------------------------------------
 
--- The saved setting holding one theme's target, "none" or a theme's name.
+-- Where one theme's target is written down. The three that ship have a setting
+-- each, registered below like every other setting. A theme of yours keeps its
+-- target on its own record instead, because a setting per theme would be a
+-- saved key named after something the player can rename, and renaming it would
+-- leave the old key behind holding an answer nothing reads.
 local function TargetKey(name)
 	return "wiggle" .. name:gsub("^%l", string.upper)
 end
 
--- The target a theme is set to, nil for none or for anything the list does not
--- hold. A theme never wiggles to itself.
+local function AimedAt(name)
+	local _, own = Themes.Find(name)
+	if own then
+		return own.wiggle
+	end
+	return ns.db[TargetKey(name)]
+end
+
+local function AimAt(name, wanted)
+	local _, own = Themes.Find(name)
+	if own then
+		own.wiggle = wanted
+	else
+		ns.db[TargetKey(name)] = wanted
+	end
+end
+
+-- The target a theme is set to, nil for none or for anything no theme goes by.
+-- A theme never wiggles to itself.
 local function TargetOf(name)
-	local wanted = ns.db[TargetKey(name)]
-	if wanted ~= name and themed[wanted] then
+	local wanted = AimedAt(name)
+	if wanted ~= name and Themes.Named(wanted) then
 		return wanted
 	end
 	return nil
@@ -316,17 +386,33 @@ function Theme.OnPin(fn)
 	pinWatchers[#pinWatchers + 1] = fn
 end
 
--- cold: runs on a shake, which is a second apart at the closest, and not on the tick's own frames
-function Theme.Pin(on)
-	pinned = (on and target) and true or false
-	ns.db.wiggled = pinned
-	chosen = pinned and target or rest
-	showing = pinned and drawnTarget or drawnTheme
+-- Which theme is on the screen this moment, and every worn frame dressed for
+-- it. One path, because a wiggle, a theme being edited and the creator holding
+-- everything up are the same question asked again, and three paths answering
+-- it were three places to forget the pass.
+--
+-- cold: runs on a shake, which is a second apart at the closest, on a dial
+-- being moved on a page, and not on any tick's own frames
+local function Settle()
+	if trying then
+		chosen, showing = trying.elements, trying.name
+	elseif pinned then
+		chosen, showing = target, drawnTarget
+	else
+		chosen, showing = rest, drawnTheme
+	end
+	fights = Themes.Fights(chosen)
 	local complete = Pass()
 	for index = 1, #pinWatchers do
 		pinWatchers[index](pinned)
 	end
 	return complete
+end
+
+function Theme.Pin(on)
+	pinned = (on and target) and true or false
+	ns.db.wiggled = pinned
+	return Settle()
 end
 
 function Theme.Pinned()
@@ -362,7 +448,7 @@ end
 -- tick only if there is one. At load, and whenever the target is set.
 function Theme.Aim()
 	drawnTarget = TargetOf(drawnTheme)
-	target = drawnTarget and themed[drawnTarget]
+	target = drawnTarget and Themes.Named(drawnTarget)
 	if target and not shaking then
 		shaking = UI.Ticker(UI.Forever, 0.02, "wiggle", Shake)
 	elseif target and not shaking:Running() then
@@ -371,6 +457,65 @@ function Theme.Aim()
 		shaking:Stop()
 	end
 	return Theme.Pin(ns.db.wiggled)
+end
+
+--------------------------------------------------------------------------
+-- The theme being edited
+--
+-- A third thing over the drawn theme and its wiggle, lasting exactly as long
+-- as the creator page has a theme open. It is what makes that page an editor
+-- rather than a form: every dial redresses the screen as it moves, and closing
+-- the page puts back whatever was there before it opened.
+--
+-- The table handed over is the saved record itself and not a copy, so a cell
+-- written on the page is the cell the next pass reads.
+--------------------------------------------------------------------------
+
+function Theme.Try(theme)
+	trying = theme
+	return Settle()
+end
+
+function Theme.Trying()
+	return trying
+end
+
+-- Every element up and whole, whatever the theme says of it, so the page can
+-- draw a rim round each and you can point at the one you mean. The state the
+-- frames are already in while they are unlocked for dragging, for its reason:
+-- an element you cannot see is an element you cannot choose.
+function Theme.Showcase(on)
+	showcase = on and true or false
+	return Settle()
+end
+
+function Theme.Showcasing()
+	return showcase
+end
+
+-- A theme of yours was renamed, or dropped. Three kinds of setting name a
+-- theme by its name, and every one of them has to follow it or the next login
+-- falls back to informational with nothing said about why.
+--
+-- `now` is nil for a theme that was dropped, and then what named it falls back:
+-- the drawn theme to informational, a wiggle target to none. Called by
+-- Theme/Custom.lua, which owns the list and knows nothing about which theme is
+-- drawn or what wiggles to what.
+function Theme.Renamed(was, now)
+	if ns.db.theme == was then
+		ns.db.theme = now or "informational"
+	end
+	for _, name in ipairs(Themes.ORDER) do
+		if ns.db[TargetKey(name)] == was then
+			ns.db[TargetKey(name)] = now or "none"
+		end
+	end
+	for _, own in ipairs(Themes.Own()) do
+		if own.wiggle == was then
+			own.wiggle = now or "none"
+		end
+	end
+	Theme.Aim()
 end
 
 --------------------------------------------------------------------------
@@ -398,14 +543,30 @@ end
 
 -- After Core.lua's own ADDON_LOADED, which registered first and is what made
 -- ns.db, and before every part that builds a frame at login.
+--
+-- The two fight events are on the same frame. An element that is drawn
+-- differently in a fight is the one thing in a theme that changes without
+-- anybody touching anything, and the pass it needs is alpha on a veil that is
+-- already there and already on the screen, which the client allows in combat.
+-- That is why a cell with a fight fraction is never hidden: see Themes.Cell.
 local loader = CreateFrame("Frame")
 loader:RegisterEvent("ADDON_LOADED")
-loader:SetScript("OnEvent", function(self, _, name)
+loader:RegisterEvent("PLAYER_REGEN_DISABLED")
+loader:RegisterEvent("PLAYER_REGEN_ENABLED")
+loader:SetScript("OnEvent", function(self, event, name)
+	if event ~= "ADDON_LOADED" then
+		fighting = event == "PLAYER_REGEN_DISABLED"
+		if fights then
+			Pass()
+		end
+		return
+	end
 	if name ~= ADDON then
 		return
 	end
 	self:UnregisterEvent("ADDON_LOADED")
-	if not themed[ns.db.theme] then
+	Themes.Load()
+	if not Themes.Named(ns.db.theme) then
 		ns.db.theme = "informational"
 	end
 	if not listed[ns.db.palette] then
@@ -416,8 +577,9 @@ loader:SetScript("OnEvent", function(self, _, name)
 	end
 	drawnTheme, drawnPalette, drawnLook = ns.db.theme, ns.db.palette, ns.db.gaugeLook
 	drawnPortraits = ns.db.portraits ~= false
+	fighting = InCombatLockdown() and true or false
 	Paint(drawnPalette)
-	rest = themed[drawnTheme]
+	rest = Themes.Named(drawnTheme)
 	Theme.Aim()
 end)
 
@@ -425,15 +587,34 @@ end)
 -- The command and the page
 --------------------------------------------------------------------------
 
-local function Describe(mode)
-	if mode == "show" then
-		return "as drawn"
-	elseif mode == "hide" then
-		return "hidden"
-	elseif mode == "hover" then
-		return "under the pointer"
+local function Percent(fraction)
+	return math.floor(fraction * 100 + 0.5)
+end
+
+-- What one theme does with one element, in a phrase. Read on the page under
+-- the element's own name, so it is the predicate and never the whole sentence.
+--
+-- Public because the creator page says the same thing about the theme you are
+-- editing, and two files wording this differently is how a screen ends up
+-- calling the same cell two things on two pages.
+function Theme.Describe(theme, key)
+	local alpha, hover, hidden, combat = Themes.Cell(theme, key)
+	local said
+	if hidden then
+		said = "hidden"
+	elseif hover and alpha <= 0 then
+		said = "under the pointer"
+	elseif hover then
+		said = ("at %d%%, full under the pointer"):format(Percent(alpha))
+	elseif alpha >= 1 then
+		said = "as drawn"
+	else
+		said = ("at %d%%"):format(Percent(alpha))
 	end
-	return ("at %d%%"):format(math.floor(mode * 100 + 0.5))
+	if combat then
+		said = ("%s, %d%% in a fight"):format(said, Percent(combat))
+	end
+	return said
 end
 
 -- A list of names as the rows a picker drops down, each row showing its name.
@@ -445,10 +626,10 @@ local function Choices(names)
 	return options
 end
 
--- What a theme can wiggle to: nothing, or any other theme.
+-- What a theme can wiggle to: nothing, or any other theme, yours included.
 local function Targets(name)
 	local names = { "none" }
-	for _, other in ipairs(Themes.ORDER) do
+	for _, other in ipairs(Themes.Names()) do
 		if other ~= name then
 			names[#names + 1] = other
 		end
@@ -461,25 +642,44 @@ local function Pending()
 		or ns.db.gaugeLook ~= drawnLook or (ns.db.portraits ~= false) ~= drawnPortraits
 end
 
--- One word, the saved setting it writes, and the list it has to be on. Live is
--- a setting that takes effect when it is written rather than at the reload.
-local function Word(setting, names, arg, noun, live)
-	local wanted = arg:match("^(%S*)"):lower()
-	local valid = {}
+-- One word, where the answer is read and written, and the list it has to be
+-- on. Live is an answer that takes effect when it is written rather than at
+-- the reload.
+--
+-- The whole argument is the name rather than the first word of it, and the
+-- comparison ignores case, because a theme of yours is called what you called
+-- it: `/wui theme Raid nights` is one name with a space in it, and `raid
+-- nights` is the same theme typed in a hurry. The answer written down is the
+-- name off the list, so the settings hold one spelling however it was typed.
+local function Word(get, set, names, arg, noun, live)
+	local wanted = arg:gsub("^%s+", ""):gsub("%s+$", ""):lower()
+	local found
 	for _, candidate in ipairs(names) do
-		valid[candidate] = true
+		if candidate:lower() == wanted then
+			found = candidate
+		end
 	end
 	if wanted == "" then
-		ns.Print(("%s %s; choose from %s."):format(noun, ns.db[setting], table.concat(names, ", ")))
+		ns.Print(("%s %s; choose from %s."):format(noun, get(), table.concat(names, ", ")))
 		return
 	end
-	if not valid[wanted] then
+	if not found then
 		ns.Print(("there is no %s called %s; choose from %s.")
 			:format(noun, wanted, table.concat(names, ", ")))
 		return
 	end
-	ns.db[setting] = wanted
-	ns.Print(("%s %s%s."):format(noun, wanted, live and "" or " from the next /reload"))
+	set(found)
+	ns.Print(("%s %s%s."):format(noun, found, live and "" or " from the next /reload"))
+end
+
+-- The two halves of a setting, for the words above, so a word that reads and
+-- writes a plain setting says its name once.
+local function Getter(setting)
+	return function() return ns.db[setting] end
+end
+
+local function Setter(setting)
+	return function(value) ns.db[setting] = value end
 end
 
 ns.Register({
@@ -501,27 +701,35 @@ ns.Register({
 		wiggleExploration = "informational",
 		-- Whether the wiggle was up at logout, so it is up again at login.
 		wiggled = false,
+		-- The themes you have made yourself, each naming every element the way
+		-- the shipped three do. A record rather than a setting: Core keeps it
+		-- out of the reset, because a button about the screen's layout has no
+		-- business deleting a theme somebody spent an evening on.
+		themes = {},
 	},
 
 	words = {
 		theme = function(arg)
-			Word("theme", Themes.ORDER, arg, "theme")
+			Word(Getter("theme"), Setter("theme"), Themes.Names(), arg, "theme")
 		end,
 		palette = function(arg)
-			Word("palette", Theme.PALETTES, arg, "palette")
+			Word(Getter("palette"), Setter("palette"), Theme.PALETTES, arg, "palette")
 		end,
 		gauges = function(arg)
-			Word("gaugeLook", Theme.BAR_LOOKS, arg, "bar look")
+			Word(Getter("gaugeLook"), Setter("gaugeLook"), Theme.BAR_LOOKS, arg, "bar look")
 		end,
 		wiggle = function(arg)
-			Word(TargetKey(ns.db.theme), Targets(ns.db.theme), arg,
-				("wiggle target for %s:"):format(ns.db.theme), true)
+			local name = ns.db.theme
+			Word(function() return AimedAt(name) end,
+				function(value) AimAt(name, value) end,
+				Targets(name), arg,
+				("wiggle target for %s:"):format(name), true)
 			Theme.Aim()
 		end,
 	},
 
 	help = {
-		"theme informational|immersive|exploration, how much of the addon is on the screen, from the next /reload",
+		"theme informational|immersive|exploration|<yours>, how much of the addon is on the screen, from the next /reload",
 		"palette dark|forest|desert|arcane|horde|alliance|fire|parchment, the addon's colours, from the next /reload",
 		"gauges flat|modern, how every health, power and cast bar is drawn, from the next /reload",
 		"wiggle none|<theme>, what the theme swaps to on a shake of the mouse",
@@ -544,19 +752,21 @@ ns.Register({
 		ui.Section("Theme", "On and off")
 		ui.Lede("How much of the addon is on the screen, and what colour it is. Both are drawn at the next reload.")
 
-		local themes, palettes = Choices(Themes.ORDER), Choices(Theme.PALETTES)
-		local looks = Choices(Theme.BAR_LOOKS)
+		local palettes, looks = Choices(Theme.PALETTES), Choices(Theme.BAR_LOOKS)
 
 		ui.Picker("theme",
 			function() return ns.db.theme end,
 			function(value) ns.db.theme = value end,
-			function() return themes end)
-		ui.Hint(function() return Themes.LABEL[ns.db.theme] end)
+			function() return Choices(Themes.Names()) end)
+		ui.Hint(function()
+			return Themes.LABEL[ns.db.theme]
+				or "one of yours, made below and edited on the screen"
+		end)
 
 		ui.Picker("wiggle to",
-			function() return ns.db[TargetKey(ns.db.theme)] end,
+			function() return AimedAt(ns.db.theme) end,
 			function(value)
-				ns.db[TargetKey(ns.db.theme)] = value
+				AimAt(ns.db.theme, value)
 				Theme.Aim()
 			end,
 			function() return Choices(Targets(ns.db.theme)) end)
@@ -586,8 +796,25 @@ ns.Register({
 		ui.Lede("Each element, and what the chosen theme does with it. Unlocking the frames brings every one of them back up so you can drag it.")
 		for _, element in ipairs(Themes.ELEMENTS) do
 			ui.Reading(element.label, function()
-				return Describe(themed[ns.db.theme][element.key])
+				return Theme.Describe(Themes.Named(ns.db.theme) or Themes.informational,
+					element.key)
 			end)
+		end
+
+		-- The page that makes one of your own, which is its own file for the
+		-- room it takes and not because it is a part of its own: it writes the
+		-- same cells this file reads, into the same list.
+		ns.ThemeEdit.Panel(ui)
+	end,
+
+	-- The creator holds every element up and dims nothing while its page is
+	-- open, so the page going away has to put the screen back. There is no
+	-- other way out of that state: the window is closed with a cross, with
+	-- Escape or by opening something else, and none of those is a button this
+	-- addon owns.
+	showing = function(open)
+		if not open then
+			ns.ThemeEdit.Stop()
 		end
 	end,
 })

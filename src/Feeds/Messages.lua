@@ -235,7 +235,7 @@ function Messages.OnEvent(event, text, sender, _, _, _, _, _, _, _, _, _, guid)
 	if type(text) ~= "string" or text == "" then
 		return false
 	end
-	if ns.Theme.Mode("messages") == "hide" then
+	if ns.Theme.Hidden("messages") then
 		return false
 	end
 

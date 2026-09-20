@@ -323,7 +323,16 @@ UI\Wiggle.lua
 # before every part, because each part hands its frames to ns.Theme.Wear as it
 # builds them. Its ADDON_LOADED is after Core\Core.lua's, which made ns.db.
 Theme\Themes.lua
+# The themes you make yourself: the list, the names, and the one shape a cell
+# of your own is allowed to have. Before Theme\Theme.lua, whose ADDON_LOADED
+# reads the list before it reads which theme to draw, because the answer to
+# that can be one of these.
+Theme\Custom.lua
 Theme\Theme.lua
+# The page you make one on, and the rim it draws round every element so you
+# can point at the one you mean. After Theme\Theme.lua, which owns the list of
+# worn frames it draws those rims over.
+Theme\Creator.lua
 UI\Window.lua
 
 # The question a part puts up before it does something that cannot be undone.

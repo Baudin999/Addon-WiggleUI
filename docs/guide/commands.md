@@ -367,7 +367,7 @@ asks twice. Your groups, your mail favourites and your muted errors survive it.
 
 ## theme
 
-    /wui theme informational|immersive|exploration, how much of the addon is on the screen, from the next /reload
+    /wui theme informational|immersive|exploration|<yours>, how much of the addon is on the screen, from the next /reload
     /wui palette dark|forest|desert|arcane|horde|alliance|fire|parchment, the addon's colours, from the next /reload
     /wui gauges flat|modern, how every health, power and cast bar is drawn, from the next /reload
     /wui wiggle none|<theme>, what the theme swaps to on a shake of the mouse

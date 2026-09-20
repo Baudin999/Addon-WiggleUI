@@ -170,3 +170,72 @@ Themes.exploration = {
 	experience = "show",
 	keys       = "show",
 }
+
+--------------------------------------------------------------------------
+-- What a cell says, whoever wrote it
+--
+-- The three themes above write a word or a fraction per cell, which is the
+-- whole vocabulary a theme the addon ships needs. A theme you make yourself,
+-- in Theme/Custom.lua, writes a table of three dials instead, because the
+-- point of making one is to say something the four words cannot: a quest
+-- tracker at a fifth that comes to full under the pointer, a chat window that
+-- goes to nothing the moment a fight starts and comes back when it ends.
+--
+-- So a cell is read through here rather than compared against a word. Every
+-- reader gets the same four answers whichever shape the cell was written in.
+--
+--   alpha   the fraction it is drawn at, 0 to 1
+--   hover   whether the pointer on it brings it to full
+--   hidden  whether it is off the screen rather than drawn at nothing
+--   combat  the fraction it is drawn at while you are fighting, or nil
+--
+-- hidden and combat cannot both be true, and the cell does not get a say in
+-- it. A frame the client protects may not be shown or hidden in the middle of
+-- a fight, so an element that differs in a fight is dimmed to nothing rather
+-- than taken away: taken away, it would come back at the end of the pull
+-- instead of at the start of it, which is the opposite of what was asked for.
+-- Drawn at nothing still answers the mouse, and that is the price of the rule.
+--------------------------------------------------------------------------
+
+function Themes.Cell(theme, key)
+	local mode = theme[key]
+	if mode == "show" then
+		return 1, false, false, nil
+	elseif mode == "hide" then
+		return 0, false, true, nil
+	elseif mode == "hover" then
+		return 0, true, false, nil
+	elseif type(mode) == "number" then
+		return mode, false, false, nil
+	elseif type(mode) ~= "table" then
+		-- A theme that names no cell for an element. The three above cannot:
+		-- Theme/Theme.lua refuses to load one that leaves an element out. A
+		-- theme of yours is sanitised on the way in for the same reason, so
+		-- this is the answer for a table that has just been made and not yet
+		-- filled, and it is the one answer that touches no frame.
+		return 1, false, false, nil
+	end
+	local alpha = tonumber(mode.alpha) or 1
+	local hover = mode.hover and true or false
+	local combat = tonumber(mode.combat)
+	return alpha, hover, alpha <= 0 and not hover and not combat, combat
+end
+
+-- Whether an element is drawn exactly as its part draws it, at every moment.
+-- The one answer that means the theme never has to touch the frame at all.
+function Themes.Plain(theme, key)
+	local alpha, hover, hidden, combat = Themes.Cell(theme, key)
+	return alpha == 1 and not hover and not hidden and not combat
+end
+
+-- Whether any element in this theme is drawn differently in a fight, which is
+-- the only reason to listen for one.
+function Themes.Fights(theme)
+	for _, element in ipairs(Themes.ELEMENTS) do
+		local _, _, _, combat = Themes.Cell(theme, element.key)
+		if combat then
+			return true
+		end
+	end
+	return false
+end

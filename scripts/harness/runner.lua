@@ -638,6 +638,12 @@ local SECTIONS = {
 	-- other section left.
 	"88-theme-veil",
 	"88-theme-wiggle",
+	-- A theme of your own: the list, the cell, the fight, and what the load
+	-- makes of a saved file nobody wrote by hand. Builds four frames, puts the
+	-- drawn theme and the list back at the foot, and reads nothing any other
+	-- section left. After the wiggle, which leaves informational wiggling to
+	-- nothing, because this one aims it at a theme of its own and back.
+	"88-theme-custom",
 	-- The painted frame's tiling on a frame of its own, with a palette chosen
 	-- by hand and put back to none at the foot.
 	"88-theme-backdrop",

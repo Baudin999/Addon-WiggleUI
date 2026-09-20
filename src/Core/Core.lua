@@ -2905,6 +2905,13 @@ local KEPT = {
 	-- no business throwing away a season of loot.
 	dungeonSeen = true,
 
+	-- The themes you made yourself: what each one does to each element on the
+	-- screen. Not a setting anybody chose a value for, the only copy of it, and
+	-- an evening's work in each one. The three the addon ships with are code
+	-- and are never in here, so a reset still puts the chosen theme back to
+	-- informational; what it must not do is throw the list away.
+	themes = true,
+
 	-- The people you put in groups, and the counter their room keys come off.
 	-- The counter goes with the list rather than on its own, because resetting
 	-- it alone would hand a new group the key of a deleted one.
