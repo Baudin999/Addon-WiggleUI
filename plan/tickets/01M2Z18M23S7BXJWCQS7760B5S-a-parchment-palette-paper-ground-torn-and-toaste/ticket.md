@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2Z18M23S7BXJWCQS7760B5S
 type: task
-status: doing
+status: done
 title: "A parchment palette: paper ground, torn and toasted edge"
 ---
 
