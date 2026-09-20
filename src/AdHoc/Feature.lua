@@ -42,6 +42,13 @@ local Word = ns.Command.Word({
 
 	ns.Command.Zoom("adhocZoom", "ad hoc bars at %.1fx."),
 
+	{ "radius", key = "adhocRadius", apply = function() ns.AdHocBars.Apply() end,
+		number = function() return ns.AdHocBars.RadiusRange() end,
+		say = function(units)
+			return ("the squares sit %d units out, and a push shorter than that picks nothing.")
+				:format(units)
+		end },
+
 	{ "add", run = function(_, rawValue)
 		local index, why = ns.AdHoc.Add(rawValue:match("^%s*(.-)%s*$"))
 		ns.Print(index and ("added " .. ns.AdHoc.Get(index).name .. ".") or why)
@@ -98,6 +105,17 @@ ns.Register({
 		-- and is sharp, and this row is back to being what it says it is: the
 		-- number you turn when you want a ring bigger than the one it ships at.
 		adhocZoom = 1,
+		-- How far out the squares sit, in units at zoom one, and with it how
+		-- far you have to push before a release picks one.
+		--
+		-- 140 rather than the 86 this shipped at. 86 is `SIZE * 1.6`, which is
+		-- the tightest circle that keeps the name in the middle clear of the
+		-- squares, and a floor is not an answer: a bar of four at 86 is a
+		-- cluster in the middle of the screen, and the push that fires one of
+		-- them was twenty units whatever the circle was, so the ring you were
+		-- looking at had nothing to do with the gesture you were making. At 140
+		-- the four squares are a ring, and the push is out to them.
+		adhocRadius = 140,
 	},
 
 	-- A bar is the character's: a trade skill belongs to one character and a
@@ -119,6 +137,7 @@ ns.Register({
 		"adhoc add <name>, a new bar",
 		"adhoc <bar> <key|none>, the key you hold to open that ring",
 		"adhoc zoom 1.5, the bars' zoom, 0.5 to 3",
+		"adhoc radius 160, how far out the squares sit and how far you push",
 		"adhoc on|off",
 	},
 

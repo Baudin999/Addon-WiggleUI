@@ -1871,8 +1871,15 @@ fi
 #   docs/CHANGELOG.md      entries describe releases that shipped as WarriorKit.
 #   docs/POSTMORTEMS.md    the same, for a bug written up under the old name.
 #   scripts/check.sh       this file, which has to spell the name to forbid it.
+#
+# `.git` is excluded twice because it is not always a directory. In a worktree
+# it is a file holding the path back to the real repository, and that path runs
+# through the checkout's own folder, which on this machine is still called
+# WarriorKit. So gating in a worktree, which is how you get a clean run while
+# somebody else is mid-edit in the main tree, failed this rule on git's own
+# plumbing and on nothing else.
 old_name=$(grep -rIlE 'WarriorKit|WARRIORKIT|warriorkit|/wk\b|\bwk[A-Z]' .. \
-	--exclude-dir=.git --exclude-dir=dist --exclude-dir=.worktrees \
+	--exclude-dir=.git --exclude=.git --exclude-dir=dist --exclude-dir=.worktrees \
 	--exclude-dir=.claude --exclude-dir=plan \
 	--exclude=CHANGELOG.md --exclude=POSTMORTEMS.md --exclude=check.sh || true)
 if [ -n "$old_name" ]; then

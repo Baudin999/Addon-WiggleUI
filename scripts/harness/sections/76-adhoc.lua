@@ -58,6 +58,17 @@ local function centre()
 	return H.mouse.Point(_G.UIParent)
 end
 
+-- How far a push has to go on that ring, in the pixels push() moves by.
+--
+-- Bars.Reach answers in UIParent's own units, which is what the snippet and
+-- Bars.Wedge both measure a push in. The pointer here is placed in physical
+-- pixels, and the two differ by the UI scale on every client that is not at 1,
+-- which is every client. A test that forgot the conversion passed a push of 89
+-- against a reach of 93 and read that as the dead zone not working.
+local function reachOf(index)
+	return Bars.Reach(index) * _G.UIParent:GetEffectiveScale()
+end
+
 local function push(dx, dy)
 	local x, y = centre()
 	H.mouse.Place(x + dx, y + dy)
@@ -253,7 +264,12 @@ do
 	f:Hide()
 
 	local restore = spy()
-	local reach = 100
+
+	-- Far enough out to pick a square, read off the ring rather than written
+	-- here: how far that is is the circle's own business now, and a number
+	-- typed in this file is one that stops meaning what it says the first time
+	-- the ring opens wider.
+	local reach = reachOf(1) + 20
 
 	-- Hold E. The ring comes up and nothing is sent.
 	push(0, 0)
@@ -292,6 +308,52 @@ do
 	push(Bars.DEAD / 2, 0)
 	press("E", false)
 	check(#sent == 0 and f:IsShown() == false, "a release inside the dead zone cast something")
+
+	--------------------------------------------------------------------------
+	-- The push has to reach the squares
+	--
+	-- Both pushes are the ring's own reach either side of it rather than two
+	-- numbers written here, because the thing being asserted is that the
+	-- arithmetic and the picture are one: a ring drawn 140 units out that fires
+	-- on a push of 21 is what this replaced.
+	--------------------------------------------------------------------------
+
+	local out = reachOf(1)
+	check(Bars.Reach(1) > Bars.DEAD,
+		"the reach is the bare floor, so the circle is not what a push has to cross")
+
+	sent = {}
+	push(0, 0)
+	press("E", true)
+	push(0, out - 4)
+	Bars.Aim(Bars.Entry(1))
+	check(Bars.Entry(1).aimed == nil, "a push that stopped short of the squares lit one")
+	press("E", false)
+	check(#sent == 0, ("a push short of the squares sent %s"):format(tostring(sent[1])))
+
+	sent = {}
+	push(0, 0)
+	press("E", true)
+	push(0, out + 4)
+	press("E", false)
+	check(#sent == 1 and sent[1] == "cast Thunder Clap",
+		("a push out to the squares sent %s"):format(tostring(sent[1])))
+
+	-- And the reach is the circle, so moving the circle moves it.
+	sent = {}
+	local wasRadius = ns.db.adhocRadius
+	ns.db.adhocRadius = wasRadius + 100
+	Bars.Apply()
+	check(reachOf(1) > out, "opening the ring out did not lengthen the push")
+	push(0, 0)
+	press("E", true)
+	push(0, out + 4)
+	press("E", false)
+	check(#sent == 0, "the push that reached the old circle still cast on the wider one")
+
+	ns.db.adhocRadius = wasRadius
+	Bars.Apply()
+	check(math.abs(reachOf(1) - out) < 1e-9, "putting the radius back did not put the push back")
 
 	-- A click on a square while the ring is up casts that square and puts the
 	-- ring away, so the release after it finds nothing to do. The click is

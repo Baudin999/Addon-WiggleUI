@@ -25,6 +25,24 @@ The slash command is `/wui`, with `/wiggleui` and `/wiggle` as the long forms.
 `/wk` is gone. Every binding under WiggleUI in the key bindings screen is
 newly named, so the four of them need setting again.
 
+### The ring opens wider, and a push has to reach it
+
+The squares on an ad hoc ring sat 86 units out, which is the tightest circle
+that keeps the name in the middle clear of them. They sit 140 out now, and
+`radius` on the ad hoc page moves that anywhere from 80 to 320. A ring with
+more squares than fit on the circle you asked for is opened out until they fit,
+and the page says when that happened.
+
+The push that fires a square has to reach the squares. It used to be twenty
+units from wherever the key went down, so a ring drawn a hand's width out fired
+on a twitch, and the picture and the gesture had nothing to do with each other.
+A release that never left the middle of the ring now casts nothing, and nothing
+lights up under the pointer until the push is out at the squares. Twenty units
+is still the floor, because a thumb letting go of a key it pressed by mistake
+should not cast anything either.
+
+    /wui adhoc radius 160
+
 ### The ad hoc bars page draws the ring
 
 The plus on the tab strip asks what the bar is called. Nothing is made until

@@ -352,6 +352,28 @@ function Panel.Build(ui)
 	end, { height = M.control, label = "the ring this bar draws" })
 	ui.Hint("Drop a spell, an item or a macro in the middle to add it. Drag a square round the circle to move it, or off it to take it away. The first is at twelve and the rest go clockwise, the way you push.")
 
+	local low, high = ns.AdHocBars.RadiusRange()
+	ui.Size("radius", low, high, 10,
+		function() return ns.db.adhocRadius end,
+		function(value)
+			ns.db.adhocRadius = value
+			ns.AdHocBars.Apply()
+		end)
+	ui.Hint("How far out the squares sit, and with it how far you push. A release that never leaves the middle of the ring fires nothing.")
+
+	ui.Reading("this ring", function()
+		local bar = Current()
+		if not bar then
+			return "no bar"
+		end
+		local count = math.max(#bar.buttons, 1)
+		local drawn = math.floor(ns.AdHocBars.Radius(count) + 0.5)
+		if ns.AdHocBars.Packed(count) then
+			return ("%d units, opened out for %d squares"):format(drawn, count)
+		end
+		return ("%d units"):format(drawn)
+	end)
+
 	ui.Reading("on screen", function()
 		local index = Shown()
 		if index == 0 then

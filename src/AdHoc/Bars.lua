@@ -76,13 +76,25 @@ local PER_BAR = ns.AdHoc.PER_BAR
 -- it, and so does this ring's own row.
 local SIZE = 54
 
--- The circle the squares sit on, in units at zoom one. Never tighter than
--- RADIUS, so three squares are a ring and not a cluster, and otherwise wide
--- enough that every square has SIZE plus SPACE of the circumference to itself.
--- Both are a share of SIZE and not free numbers: RADIUS is far enough out that
--- the name in the middle is clear of the squares, and SPACE is the gap between
--- two neighbours at the widest a ring gets.
-local RADIUS, SPACE = math.floor(SIZE * 1.6), math.floor(SIZE * 0.37)
+-- The gap between two neighbours at the widest a ring gets, which is what the
+-- packing term below keeps: every square owns SIZE plus SPACE of the
+-- circumference, so a ring of sixteen is a circle of squares rather than a
+-- circle of overlapping squares.
+local SPACE = math.floor(SIZE * 0.37)
+
+-- What the player may set the circle to, in units at zoom one.
+--
+-- The low end is where the ring used to be, near enough. It was 86, which is
+-- `SIZE * 1.6` and the tightest circle that keeps the name in the middle clear
+-- of the squares; at four or five squares that is a cluster in the middle of
+-- the screen rather than a ring, so it is the floor now and not the answer. 80
+-- rather than 86 because the row steps in tens and a range that starts off the
+-- step lands on no number anybody would choose.
+--
+-- The high end is a push of 320 units, which on a screen of 768 is most of the
+-- way to the edge. Past that the ring stops being a gesture and becomes a menu
+-- you travel to.
+local RADIUS_LOW, RADIUS_HIGH = 80, 320
 
 -- The one line in the middle of the ring, naming what the cursor points at. A
 -- share of the square for the same reason the circle is: it was 12 against a
@@ -90,9 +102,14 @@ local RADIUS, SPACE = math.floor(SIZE * 1.6), math.floor(SIZE * 0.37)
 -- is the way this ring ended up unreadable the first time.
 local NAME_FONT = math.floor(SIZE * 0.44)
 
--- How far the cursor has to travel before a release picks anything, in units of
--- the screen frame. Twenty is a flick; less than that is a thumb letting go of a
--- key it pressed by mistake, and a cast nobody meant is worse than none.
+-- The least a push can be and still mean something, in units of the screen
+-- frame. Twenty is a flick; less than that is a thumb letting go of a key it
+-- pressed by mistake, and a cast nobody meant is worse than none.
+--
+-- It is the floor under the reach below rather than the reach itself. It was
+-- the whole of the test, and a ring drawn 140 units out that fires on a push of
+-- 21 is a picture and an arithmetic that disagree: you are shown squares to aim
+-- at and the thing you are actually doing is twitching in a direction.
 local DEAD = 20
 
 -- Over every window, because a ring is up for the second a key is held and has
@@ -123,16 +140,33 @@ Bars.DEAD = DEAD
 -- them sits on that circle: square one at twelve and the rest clockwise, which
 -- is the order Bars.Wedge and the snippet count in.
 --
--- Both are public and the size of a square is too, because the page you design
--- a bar on draws the same circle at the size of a square on a settings page.
--- The page multiplies all three by one number and lays nothing out itself, so
--- the picture on the page and the ring under your thumb cannot drift: an angle
--- written out a second time is a second rule, and this addon has already paid
--- for one of those in the snippet above.
+-- The radius is the player's `adhocRadius` with the packing term as a floor
+-- under it. A circle set tighter than the squares fit on is widened rather than
+-- obeyed, because two squares overlapping is not a setting anybody chose, and
+-- the page says when that happened rather than leaving the number on the row
+-- looking ignored.
+--
+-- All three are public, the size of a square included, because the page you
+-- design a bar on draws the same circle at the size of a square on a settings
+-- page. The page multiplies all three by one number and lays nothing out
+-- itself, so the picture on the page and the ring under your thumb cannot
+-- drift: an angle written out a second time is a second rule, and this addon
+-- has already paid for one of those in the snippet above.
 Bars.SIZE = SIZE
 
+function Bars.RadiusRange()
+	return RADIUS_LOW, RADIUS_HIGH
+end
+
 function Bars.Radius(count)
-	return math.max(RADIUS, count * (SIZE + SPACE) / (2 * math.pi))
+	local wanted = tonumber(ns.db.adhocRadius) or RADIUS_LOW
+	return math.max(wanted, count * (SIZE + SPACE) / (2 * math.pi))
+end
+
+-- Whether that ring is wider than the player asked for, and only because the
+-- squares would not fit on the circle they asked for.
+function Bars.Packed(count)
+	return Bars.Radius(count) > (tonumber(ns.db.adhocRadius) or RADIUS_LOW)
 end
 
 function Bars.Where(at, count)
@@ -141,17 +175,23 @@ function Bars.Where(at, count)
 	return radius * math.sin(angle), radius * math.cos(angle)
 end
 
--- Which square a push of dx, dy points at, on a ring of `count`, or nil inside
--- the dead zone. Square one is at twelve and the rest follow clockwise, and a
--- wedge is centred on its square, which is the half wedge added before the
--- floor. atan2 is handed x first so the angle is measured from straight up
--- toward the right, which is clockwise from twelve.
+-- Which square a push of dx, dy points at, on a ring of `count`, or nil for a
+-- push that has not reached the squares. Square one is at twelve and the rest
+-- follow clockwise, and a wedge is centred on its square, which is the half
+-- wedge added before the floor. atan2 is handed x first so the angle is
+-- measured from straight up toward the right, which is clockwise from twelve.
+--
+-- `reach` is how far the push has to go, in the same units as dx and dy, and it
+-- is the ring's own rather than this file's: Arrange works it out per ring and
+-- writes it where both readers of it can get at it. Left off, it is the bare
+-- floor, which is what a caller asking only about an angle wants.
 --
 -- The snippet below does the same sum in the restricted environment. The two
 -- are one rule written twice because a snippet cannot call Lua, and
 -- 76-adhoc.lua holds them to the same answer at every square.
-function Bars.Wedge(dx, dy, count)
-	if count < 1 or dx * dx + dy * dy < DEAD * DEAD then
+function Bars.Wedge(dx, dy, count, reach)
+	reach = reach or DEAD
+	if count < 1 or dx * dx + dy * dy < reach * reach then
 		return nil
 	end
 	local wedge = 360 / count
@@ -200,7 +240,8 @@ local PICK = ([[
 	end
 	local dx = (x - fromX) * screen:GetWidth()
 	local dy = (y - fromY) * screen:GetHeight()
-	if dx * dx + dy * dy < %d then
+	local reach = owner:GetAttribute("wk-reach") or %d
+	if dx * dx + dy * dy < reach * reach then
 		return false
 	end
 	local wedge = 360 / count
@@ -215,7 +256,7 @@ local PICK = ([[
 	self:SetAttribute("macro", square:GetAttribute("macro"))
 	self:SetAttribute("macrotext", square:GetAttribute("macrotext"))
 	return nil, at
-]]):format(DEAD * DEAD)
+]]):format(DEAD)
 
 -- After the cast. A key that kept the last action would fire it again for a
 -- stray /click, and a stray /click is how the hover macro reaches a button.
@@ -326,7 +367,8 @@ local function Aim(entry)
 	local fromX, fromY = entry.frame:GetAttribute("wk-from-x"), entry.frame:GetAttribute("wk-from-y")
 	local at
 	if fromX then
-		at = Bars.Wedge((x - fromX) * GetScreenWidth(), (y - fromY) * GetScreenHeight(), entry.count)
+		at = Bars.Wedge((x - fromX) * GetScreenWidth(), (y - fromY) * GetScreenHeight(),
+			entry.count, entry.reach)
 		if at and not entry.buttons[at].record then
 			at = nil
 		end
@@ -452,12 +494,29 @@ local function Arm(entry, bar)
 	entry.frame:SetAttribute("wk-count", #buttons)
 end
 
--- The squares on the circle Bars.Where draws.
+-- The squares on the circle Bars.Where draws, and how far a push has to travel
+-- before one of them is picked.
+--
+-- That is the inner edge of the squares: the push has to reach the ring you are
+-- looking at, and a release that never left the middle of it casts nothing. It
+-- is measured in the units the snippet measures the push in, which are the
+-- screen's and not the ring's, so it goes through UI.Convert rather than being
+-- compared across two scales. The ring sits on the pixel grid and UIParent does
+-- not, and the two have never been the same number on any screen.
+--
+-- Worked out here rather than in the snippet because a snippet cannot call Lua
+-- or read a saved variable, and written onto the ring as an attribute because
+-- that is the one thing both readers of it can get at. Arrange runs on every
+-- apply and on every rescale, which is every moment either scale can move.
 local function Arrange(entry)
 	UI.Adopt(entry.frame, ns.db.adhocZoom)
 	local count = entry.count
-	local side = 2 * (Bars.Radius(count) + SIZE)
+	local radius = Bars.Radius(count)
+	local side = 2 * (radius + SIZE)
 	entry.frame:SetSize(side, side)
+
+	entry.reach = math.max(DEAD, UI.Convert(radius - SIZE / 2, entry.frame, UIParent))
+	entry.frame:SetAttribute("wk-reach", entry.reach)
 
 	for at = 1, PER_BAR do
 		local w = entry.buttons[at]
@@ -567,6 +626,14 @@ function Bars.Visible(index)
 		return nil
 	end
 	return entry.frame:IsShown() and true or false
+end
+
+-- How far a push has to travel on that ring before it picks a square, in the
+-- units the snippet measures the push in. Nothing in the addon reads it; the
+-- page says it in words and the harness pushes by it.
+function Bars.Reach(index)
+	local entry = entries[index]
+	return entry and entry.reach or DEAD
 end
 
 -- Whether the client gave this ring the wrap that picks a square on the
