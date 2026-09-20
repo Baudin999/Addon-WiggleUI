@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2Z1ASEFJD2BAPT0Y8N69APC
 type: task
-status: todo
+status: doing
 title: "The ring opens wider, and a push has to reach it"
 ---
 
