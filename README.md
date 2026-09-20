@@ -20,9 +20,9 @@ Shake the mouse left and right and the whole screen changes.
 That is the gesture the addon is named after. A theme decides how much of the
 addon is drawn, and each theme can name a second theme it swaps to. One shake
 swaps; the next shake swaps back. Out of the box the exploration theme wiggles
-to the informational one, so a screen that keeps your chat, your quest tracker
-and your bars under the pointer is one shake away from a screen that has all
-three up and the meters and the feeds with them.
+to the informational one, so a screen that keeps your chat, your quest tracker,
+your bars and your meters under the pointer is one shake away from a screen that
+has all four up and the feeds with them.
 
 A shake is read off the horizontal position of the pointer and nothing else,
 because a hand shaking a mouse is a sideways thing and a pointer on its way to
@@ -156,9 +156,10 @@ The three themes:
   and nothing else. Bags, the map, the character sheet and every other window
   you open still open, because a theme is about what is on the screen while you
   are not asking for anything.
-- **exploration** is the middle. Chat, quests and the bars wait under the
-  pointer, drops and messages still slide in, and the meters and the feeds go,
-  because they report on a fight after it and exploring is not that.
+- **exploration** is the middle. Chat, quests, the bars and the meters wait
+  under the pointer, drops and messages still slide in, and the loot and combat
+  feeds go, because a feed is read as it arrives and one you have to find with
+  the mouse has already scrolled past.
 
 Each of the three, and the two other choices drawn at the same moment:
 

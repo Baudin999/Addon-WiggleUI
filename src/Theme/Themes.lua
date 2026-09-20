@@ -65,7 +65,7 @@ Themes.ORDER = { "informational", "immersive", "exploration" }
 Themes.LABEL = {
 	informational = "everything the addon draws, as it draws it",
 	immersive = "you and the game: your frame and your target's at a fifth, nothing else",
-	exploration = "chat, quests and bars wait under the pointer; drops and messages but no meters or feeds",
+	exploration = "chat, quests, bars and meters wait under the pointer; drops and messages but no feeds",
 }
 
 -- How the experience rail is drawn in a theme that decides it, over the style
@@ -132,16 +132,19 @@ Themes.immersive = {
 	keys       = "hide",
 }
 
--- The three things you read between fights wait under the pointer. Everything
+-- The four things you read between fights wait under the pointer. Everything
 -- a fight needs stays up, because a bar you have to find with the mouse in the
 -- middle of a pull is a bar you do not have. The loadout bars stay as drawn:
 -- they come up only while their key is held, and a bar that then waited for
--- the pointer as well would be a key that shows nothing. The meters and the
--- loot and combat feeds go: they report on a fight after it, and exploring is
--- not reading a report. The drops and messages sliding in stay, because they
--- say what you just picked up or were just told and then leave, and with chat
--- under the pointer a floated whisper is how you hear one at all. The report
--- is a wiggle away: exploration swaps to informational out of the box.
+-- the pointer as well would be a key that shows nothing. The meters wait under
+-- the pointer with the rest: the damage and threat panes report on a fight
+-- after it, and a report you asked for by putting the pointer on it is the
+-- asking this theme is built around. The loot and combat feeds go instead,
+-- because a feed is read as it arrives and one you have to find with the mouse
+-- has already scrolled past. The drops and messages sliding in stay, because
+-- they say what you just picked up or were just told and then leave, and with
+-- chat under the pointer a floated whisper is how you hear one at all. The
+-- feeds are a wiggle away: exploration swaps to informational out of the box.
 Themes.exploration = {
 	player     = "show",
 	target     = "show",
@@ -159,7 +162,7 @@ Themes.exploration = {
 	chat       = "hover",
 	quests     = "hover",
 	minimap    = "show",
-	meters     = "hide",
+	meters     = "hover",
 	feeds      = "hide",
 	drops      = "show",
 	messages   = "show",

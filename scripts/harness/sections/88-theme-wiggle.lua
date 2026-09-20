@@ -101,24 +101,33 @@ local function Worn(key)
 	Theme.Wear(key, frame)
 	return frame
 end
-local chat, meters, player = Worn("chat"), Worn("meters"), Worn("player")
+local chat, hidden, player = Worn("chat"), Worn("feeds"), Worn("player")
+-- The meters wait under the pointer in exploration too, and unlike the chat
+-- window they are a frame the theme is the only reason to look for: nothing
+-- draws them at rest, so a catcher that never came up would leave the panes
+-- unreachable rather than merely dim.
+local meters = Worn("meters")
 check(UI.Veiled(player) == nil, "an element shown in both themes took a veil")
 
 ns.db.wiggleInformational = "exploration"
 Theme.Aim()
 check(UI.Ticking("wiggle") ~= nil, "a theme with a target does not read the mouse")
-check(UI.Veiled(chat) and UI.Veiled(meters),
+check(UI.Veiled(chat) and UI.Veiled(hidden),
 	"aiming at a target that dresses differently left an element unveiled")
-check(UI.Veiled(chat):GetAlpha() == 1 and UI.Veiled(meters):IsShown(), "aiming alone changed the screen")
+check(UI.Veiled(chat):GetAlpha() == 1 and UI.Veiled(hidden):IsShown(), "aiming alone changed the screen")
 
 Theme.Pin(true)
 check(Theme.Pinned() and Theme.Showing() == "exploration" and ns.db.wiggled,
 	"the wiggle did not swap to its target, or did not save it")
 check(heard[#heard] == true, "the wiggle was not heard by its watcher")
-check(Theme.Mode("meters") == "hide", "a part asking for a mode still reads the theme at rest")
-check(not UI.Veiled(meters):IsShown(), "the wiggle to exploration left the meters up")
+check(Theme.Mode("feeds") == "hide", "a part asking for a mode still reads the theme at rest")
+check(not UI.Veiled(hidden):IsShown(), "the wiggle to exploration left the feeds up")
 check(UI.Veiled(chat):GetAlpha() == 0 and chat.wuiReveal and chat.wuiReveal:IsShown(),
 	"the wiggle to exploration did not put the chat under the pointer")
+check(Theme.Mode("meters") == "hover", "exploration stopped keeping the meters under the pointer")
+check(UI.Veiled(meters):IsShown() and UI.Veiled(meters):GetAlpha() == 0
+	and meters.wuiReveal and meters.wuiReveal:IsShown(),
+	"the wiggle to exploration did not put the meters under the pointer")
 check(ns.ProgressRails.Describe():find("minimal", 1, true),
 	"exploration on the screen did not draw the minimal rail")
 
@@ -126,7 +135,7 @@ Theme.Pin(false)
 check(not Theme.Pinned() and Theme.Showing() == "informational" and not ns.db.wiggled,
 	"the second wiggle did not swap back")
 check(heard[#heard] == false, "the swap back was not heard by its watcher")
-check(UI.Veiled(meters):IsShown() and UI.Veiled(chat):GetAlpha() == 1,
+check(UI.Veiled(hidden):IsShown() and UI.Veiled(chat):GetAlpha() == 1,
 	"the swap back left an element dressed for exploration")
 check(not chat.wuiReveal:IsShown(), "the swap back left a catcher over the chat window")
 check(ns.ProgressRails.Describe() == style, "the swap back did not put the rail's style back")
@@ -158,5 +167,6 @@ ns.db.wiggleInformational = "none"
 Theme.Aim()
 check(not UI.Ticking("wiggle"), "a theme aimed at nothing still reads the mouse")
 chat:Hide()
+hidden:Hide()
 meters:Hide()
 player:Hide()

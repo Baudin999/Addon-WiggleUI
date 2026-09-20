@@ -133,7 +133,7 @@ Setup.STEPS = {
 			{ value = "immersive", title = "Immersive",
 				blurb = "If you can play the game blind. Your frame and your target's, faint, and nothing else." },
 			{ value = "exploration", title = "Exploration",
-				blurb = "If you know what you are doing. Chat, quests and bars wait under the pointer." },
+				blurb = "If you know what you are doing. Chat, quests, bars and meters wait under the pointer." },
 			{ value = "informational", title = "Informational",
 				blurb = "For new players. Everything the addon draws, all of the time." },
 		},
