@@ -34,5 +34,5 @@ the map you can tick on and off, and the quest a finished item belongs to on a
 clutter card. Each of those says in the panel that Questie is not answering
 rather than showing you a blank.
 
-> **Screenshot wanted** for `images/install-addons-list.png`: the character
-> select addon list with WiggleUI ticked.
+> **Screenshot wanted:** `install-addons-list.png`, the character select addon
+> list with WiggleUI ticked.

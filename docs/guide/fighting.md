@@ -106,4 +106,4 @@ warrior, the swing bars included. The totem row is a shaman's and the same file
 draws a warrior's stances, because both are a plan in `Class/<yours>.lua` and one
 reader.
 
-> **Screenshot wanted** for `images/charge-marker.png`: the marker over a mob with the button lit.
+> **Screenshot wanted:** `charge-marker.png`, the marker over a mob with the button lit.

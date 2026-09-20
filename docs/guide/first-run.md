@@ -34,7 +34,7 @@ To answer them again, type `/wui setup`, or press Escape and take **WiggleUI
 Setup** from the game menu. It starts on your current answers rather than on the
 shipped ones.
 
-> **Screenshot wanted** for `images/setup-mode.png`: the mode card page, with the three previews drawn.
+> **Screenshot wanted:** `setup-mode.png`, the mode card page, with the three previews drawn.
 
 ## Getting around
 

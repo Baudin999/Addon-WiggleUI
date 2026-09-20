@@ -72,4 +72,4 @@ miss grey. A word appears above your head the moment an ability comes up, once.
     /wui hits on|off, hits size 30, fall 90, curve 44, time 1.3
     /wui hits merge on|off, calls on|off, quiet on|off
 
-> **Screenshot wanted** for `images/meters.png`: both meter panes mid fight, with a threat number close to a pull.
+> **Screenshot wanted:** `meters.png`, both meter panes mid fight, with a threat number close to a pull.

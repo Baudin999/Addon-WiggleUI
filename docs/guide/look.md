@@ -21,7 +21,8 @@ none` turns the gesture off, which also stops the addon reading the mouse at
 all. The full mechanics are under [themes](look.md#themes-palettes-and-the-wiggle),
 below.
 
-> **Screenshot wanted** for `images/theme-exploration.png`: the same fight under exploration, and `images/theme-immersive.png` for the same fight under immersive.
+> **Screenshot wanted:** `theme-exploration.png` and `theme-immersive.png`,
+> the same fight under each, so the pair reads as one change.
 
 ## Moving things, and how big they are
 
@@ -125,4 +126,4 @@ favourites, the errors you muted, the flasks you track and the gold ledger.
 update reaches you, since your saved answer wins until you ask for the shipped
 one.
 
-> **Screenshot wanted** for `images/palettes.png`: one window in four palettes, parchment among them so the torn edge shows.
+> **Screenshot wanted:** `palettes.png`, one window in four palettes, parchment among them so the torn edge shows.

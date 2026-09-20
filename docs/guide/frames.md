@@ -55,4 +55,4 @@ row under it and a row of debuff squares you choose by spell id.
 Blizzard's player, target, party and raid frames and its cast bar all go off the
 screen, and one tick box each puts them back.
 
-> **Screenshot wanted** for `images/frames-player-target.png`: player and target blocks with a heal slice and a few auras.
+> **Screenshot wanted:** `frames-player-target.png`, player and target blocks with a heal slice and a few auras.

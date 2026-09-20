@@ -46,4 +46,4 @@ play it once.
 
     /wui ding, ding on|off
 
-> **Screenshot wanted** for `images/bags-vendor.png`: the bag window at a vendor, with the sell row showing.
+> **Screenshot wanted:** `bags-vendor.png`, the bag window at a vendor, with the sell row showing.

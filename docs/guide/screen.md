@@ -61,4 +61,4 @@ same screen.
 installed that draws something this one already draws, which is the first thing
 to check when two frames are fighting over the same corner.
 
-> **Screenshot wanted** for `images/minimap.png`: the square minimap with the button corral open.
+> **Screenshot wanted:** `minimap.png`, the square minimap with the button corral open.

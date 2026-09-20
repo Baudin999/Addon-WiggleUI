@@ -156,4 +156,4 @@ client's parchment, with the addon's own button on it.
 
     /wui menu, menu on|off
 
-> **Screenshot wanted** for `images/character-stats.png`: the stats page with the miss rows.
+> **Screenshot wanted:** `character-stats.png`, the stats page with the miss rows.
