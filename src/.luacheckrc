@@ -375,6 +375,15 @@ read_globals = {
 	-- from it, and GetCursorInfo, which is already in this list, answers for
 	-- everything a slot will accept.
 	"GetInventorySlotInfo",
+	-- what somebody is and who they run with, for the head of the inspect sheet.
+	-- Details calls both unguarded on this client, UnitRace in three places and
+	-- GetGuildInfo on a unit rather than on the player, so they are entries here
+	-- rather than shims in Core.
+	"UnitRace", "GetGuildInfo",
+	-- shift over an item to put its link in whatever you are typing, which is
+	-- what the inspect sheet's gear squares answer a click with. Baganator calls
+	-- it unguarded on every one of its own item buttons.
+	"HandleModifiedItemClick",
 	"UnitExists", "UnitGUID", "UnitClass", "UnitAffectingCombat", "IsResting", "UnitCanAttack",
 	"UnitIsDead", "UnitIsGroupLeader", "UnitIsGroupAssistant", "IsInRaid",
 	"IsControlKeyDown", "IsShiftKeyDown",

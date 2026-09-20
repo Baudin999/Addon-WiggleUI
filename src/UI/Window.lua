@@ -710,6 +710,28 @@ function Window:Body(height)
 	return (height or self.height or 0) - self.chrome - self.foot
 end
 
+-- What the title bar says, changed after the window was made.
+--
+-- One window asks and it is the inspect sheet, whose subject is a person and a
+-- different one every time it is opened. Every other window in the addon is
+-- named after the one thing it draws and sets its title once at construction.
+--
+-- A method rather than the caller writing on window.title, because a window
+-- built bare or as a screen has no title string at all and a caller reaching in
+-- would have to know which. Answers false there, which is the honest nothing:
+-- there is no bar to write on.
+function Window:Retitle(text)
+	if not self.title then
+		return false
+	end
+	if self.titled == text then
+		return true
+	end
+	self.titled = text
+	self.title:SetText(text or "")
+	return true
+end
+
 -- A search field in the title bar.
 --
 -- Chrome rather than a widget, because it belongs to the window and not to any

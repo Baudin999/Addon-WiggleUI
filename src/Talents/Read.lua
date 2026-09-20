@@ -31,6 +31,13 @@ ns.TalentRead = Read
 -- harness a way to stand the addon on the other client for one section
 -- without reloading it.
 --
+-- **Two readers ask about somebody else, and the flag is the only difference.**
+-- The client keeps one set of inspect tables and fills them when an inspect is
+-- answered, and every call below takes the flag that says to read those rather
+-- than yours. Character/Theirs.lua passes it for the inspect sheet's talents
+-- tab; the window and the ledger never do, and they say so by leaving it off.
+-- Only the two readers take it: nothing spends a point in somebody else's tree.
+--
 -- **Groups are an argument everywhere, whether or not this client has them.**
 -- Dual specialisation is two talent groups, one active. A client with one
 -- group answers one to the count and ignores the argument on every other call,
@@ -70,9 +77,9 @@ function Read.Ready()
 	return type(_G.GetTalentInfo) == "function"
 end
 
-function Read.Tabs()
+function Read.Tabs(inspect)
 	if type(_G.GetNumTalentTabs) == "function" then
-		local count = tonumber(_G.GetNumTalentTabs(false, false))
+		local count = tonumber(_G.GetNumTalentTabs(inspect == true, false))
 		if count and count > 0 then
 			return count
 		end
@@ -85,11 +92,16 @@ end
 -- The three shapes are told apart in the order they were added to the client,
 -- newest first, and the legacy pair by the type of the first value, which is
 -- the discriminator Unit/Spec.lua already uses.
-function Read.Tree(tab, group)
+--
+-- `inspect` reads the tables the last answered inspect filled rather than your
+-- own trees. Absent means yours, which is what every caller but the inspect
+-- sheet passes.
+function Read.Tree(tab, group, inspect)
+	inspect = inspect == true
 	local spec = Spec()
 	if spec and type(spec.GetSpecializationInfo) == "function" then
 		local ok, _, name, _, icon, _, _, points = pcall(spec.GetSpecializationInfo,
-			tab, false, false, nil, nil, group)
+			tab, inspect, false, nil, nil, group)
 		if ok and type(name) == "string" then
 			return name, icon, tonumber(points) or 0
 		end
@@ -98,7 +110,7 @@ function Read.Tree(tab, group)
 	if type(fn) ~= "function" then
 		return nil
 	end
-	local first, second, third, fourth, fifth = fn(tab, false, false, group)
+	local first, second, third, fourth, fifth = fn(tab, inspect, false, group)
 	if type(first) == "number" then
 		return second, fourth, tonumber(fifth) or 0
 	end

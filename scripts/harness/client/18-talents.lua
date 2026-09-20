@@ -158,12 +158,20 @@ local function Met(group, tab, entry)
 end
 
 _G.C_SpecializationInfo = {
-	GetSpecializationInfo = function(tab, _, _, _, _, group)
-		local tree = talentTrees.player[tab]
+	-- The second argument is the inspect flag and it is honoured here for the
+	-- reason 06-log.lua honours it on GetTalentTabInfo: the client keeps one set
+	-- of inspect tables and answers about whoever was last inspected when it is
+	-- asked to, and the inspect sheet's talents tab is a reader whose whole
+	-- correctness is that it passes the flag. A stub that ignored it would
+	-- answer the player's own trees and let that reader pass.
+	GetSpecializationInfo = function(tab, inspect, _, _, _, group)
+		local trees = inspect and talentTrees.inspect or talentTrees.player
+		local tree = trees[tab]
 		if not tree then
 			return nil
 		end
-		return tab, tree.name, "", tree.icon, "DAMAGER", 1, Points(group, tab), "Background", 0, true
+		local points = inspect and tree.points or Points(group, tab)
+		return tab, tree.name, "", tree.icon, "DAMAGER", 1, points, "Background", 0, true
 	end,
 	GetTalentInfo = function(query)
 		local tab, index = query.specializationIndex, query.talentIndex

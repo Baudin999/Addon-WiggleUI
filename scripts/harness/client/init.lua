@@ -303,6 +303,12 @@ for _, part in ipairs({
 	-- Last, and it wraps CreateFrame the way 09-group.lua does for the group
 	-- header, so it has to sit over every file that replaces the call.
 	"25-aura-header",
+	-- Last, and it wants three files above it. It wraps the four inventory
+	-- calls 04-hands.lua and 13-character.lua install, so it has to be under
+	-- both; and it writes into the name, class and GUID tables 02-text.lua
+	-- keeps, because every module localises those globals as it loads and a
+	-- file that swapped one afterwards would swap nothing. It makes no frame.
+	"26-inspect",
 }) do
 	load("client/" .. part .. ".lua")(H)
 end

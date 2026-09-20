@@ -33,6 +33,30 @@ window itself does open in a fight.
 
 ![The character sheet: nineteen slots in two columns, the figure between them, and the standard tab open on a boss miss of 21.60 percent with the weapon skill at 179 of 200](../../assets/docs-screenshots/character-stats.png)
 
+**And the same sheet drawn for somebody else.** Inspect on a player's right
+click menu opens this page for them instead of Blizzard's three-tab window.
+Same twenty rows, same figure, same layout, in a window you can drag next to
+your own sheet and read the two side by side.
+
+Four things about it are different and all four are the client rather than a
+choice. Their durability, their weapon skills and their miss chance are numbers
+the server does not send about anybody but you, so the badges over their name
+are the two it does send and that nothing in the game will add up for you: how
+many of their slots carry an enchant, and how many of their sockets have a gem
+in. Both go red the moment one is missing, and the hover names the slot. The
+column beside them has two tabs rather than four, the pieces with something on
+them and their talent trees, because the other two are the same numbers the
+server withholds. Nothing on the page can be clicked to move an item, for the
+obvious reason; shift over a piece links it into chat. And it opens, closes and
+moves in the middle of a fight, which your own sheet needs a key press to do.
+
+An inspect needs them inside about twenty-eight yards and the server answers
+when it feels like it, so the page comes up empty and fills in. The line along
+the bottom says which of the two is happening.
+
+    /wui inspect, whoever you are targeting; /wui inspect <name> for somebody in your group
+    /wui inspect on|off, inspect hide on|off
+
 **A socketing window that knows what you are carrying.** Shift-click a piece on
 the gear page and it opens on that piece's holes with every gem in your bags
 underneath, the ones that go in the hole you are pointing at first. Click a

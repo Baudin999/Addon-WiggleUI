@@ -124,6 +124,37 @@ local C, M = UI.Color, UI.Metric
 -- three hands stay live mid pull. A stone is refused by the same rule: using
 -- what is in a slot is protected, the secure half is what runs it, and it does
 -- not run in a fight.
+--
+-- **This page is built twice and the second one is somebody else.** Inspect is
+-- the same twenty rows, the same figure and the same column, drawn for a unit
+-- that is not you, and Character/Inspect.lua is what points it at one. Nothing
+-- about the arrangement changed to allow it: every reader in Character/Worn.lua
+-- takes the unit now, this file asks the pane whose sheet it is, and the pane
+-- built with `inspect` differs from yours in exactly four ways.
+--
+-- It has no secure buttons on it at all. That is the important one and it is
+-- not a saving: `/use 5` on a square drawn for somebody else's chest would take
+-- your own chestpiece off, the attribute that carries it cannot be rewritten in
+-- a fight, and a page that could misfire like that once is a page that will.
+-- So the twenty squares are built without the button, the whole row is a hover,
+-- and shift over one links the piece into chat the way the client's own inspect
+-- frame does. Nothing on the page is protected, so the window over it is an
+-- ordinary window: it opens, moves and closes in combat with no snippet at all.
+--
+-- It draws no durability rule, no stone or oil countdown and no cooldown arc.
+-- All three are calls the client answers for you and for nobody else, and the
+-- honest version of an unanswerable number is no mark rather than yours drawn
+-- under their name.
+--
+-- Its four badges are four different readings. Yours are item level, wear,
+-- empty slots and your miss chance; none of the last three is knowable about
+-- anybody else, and two things that are knowable about them matter more in this
+-- expansion than any of yours: how many of their slots carry an enchant and how
+-- many of their sockets have a gem in them. Character/Theirs.lua holds those.
+--
+-- Its column has two tabs rather than four. Stats, skills and standings are all
+-- the same nil for a unit that is not you; what the server does send is their
+-- gear and their talents, so those are what the column says.
 --------------------------------------------------------------------------
 
 -- The client draws its slots at thirty-six and this draws them at thirty-six,
@@ -550,8 +581,13 @@ Pane.__index = Pane
 --
 -- Character/Window.lua builds exactly one of these and never takes it down,
 -- because the page holds twenty secure buttons and hiding one of those in a
--- fight is a protected act. A second page would be a second thing this pointed
--- at and the sheet has no way to grow one.
+-- fight is a protected act.
+--
+-- There is a second page now and this is deliberately not it. The inspect page
+-- has neither tick: a cooldown on a slot and the stone on a hand are both read
+-- off calls that answer for you and for nobody else, so an inspect pane sets
+-- neither the list this walks nor the hands the other one does. Paperdoll.New
+-- writes this only for the page that is yours.
 local page
 
 -- How much of a slot's wait is left, as a share of the whole of it, and nothing
@@ -608,10 +644,10 @@ end
 -- with no title had no box at all in that second. The name is read out of the
 -- link rather than looked up, the same way the row's own name is, because a
 -- link is text the client has already handed over and needs no cache behind it.
-local function Subject(entry)
-	local link = ns.Worn.Link(entry.slot)
+local function Subject(entry, unit)
+	local link = ns.Worn.Link(entry.slot, unit)
 	if link then
-		return ns.Tip.Worn("player", entry.slot, (ns.ItemInfo(link)) or entry.label)
+		return ns.Tip.Worn(unit, entry.slot, (ns.ItemInfo(link)) or entry.label)
 	end
 	return { kind = "note", title = entry.label,
 		lines = { { "empty", color = C.dim } } }
@@ -640,6 +676,10 @@ end
 -- having sockets at all, which Classic Era does not. And the piece having a
 -- hole in it, because SocketInventoryItem on a plain sword opens no session,
 -- fires no event and would read as a click that did nothing.
+-- Yours, and no unit is threaded through it. This is only ever reached off the
+-- secure square and the inspect page has none: a socketing session opens on a
+-- piece in your own inventory, and there is no call that opens one on anybody
+-- else's.
 local function Socketed(entry)
 	if not IsShiftKeyDown() or not ns.Sockets.Available() then
 		return false
@@ -876,9 +916,39 @@ local function Press(pane, entry, box)
 	return button
 end
 
+-- The thirty-six pixels of an inspect row, and the one thing they answer.
+--
+-- Not a secure button, which is the whole of why this exists beside Press: a
+-- secure square carries `/use <slot>` written at build, the slot number in it
+-- is yours whoever the page is drawn for, and the attribute cannot be taken
+-- off again in a fight. A right click on somebody else's chest would take your
+-- own off. So the inspect page never grows one.
+--
+-- What is left is the gesture the client's own inspect frame has: shift over a
+-- piece puts its link in whatever you are typing. HandleModifiedItemClick is
+-- the call FrameXML's InspectPaperDollItemSlotButton_OnClick makes and it is
+-- ordinary Lua, so the page may make it too.
+local function Peek(pane, entry, box)
+	local button = CreateFrame("Button", nil, pane.frame)
+	ns.UI.Press.Clicks(button, "up", "LeftButton")
+	button:SetAllPoints(box.face)
+	button:SetFrameLevel(box:GetFrameLevel() + 1)
+	button:SetScript("OnClick", function()
+		UI.CloseDropdown()
+		local link = ns.Worn.Link(entry.slot, pane:Unit())
+		if link then
+			HandleModifiedItemClick(link)
+		end
+	end)
+	return button
+end
+
 local function Square(pane, entry)
 	local box = CreateFrame("Frame", nil, pane.frame)
 	box:SetSize(SQUARE, SQUARE)
+	-- Asked by the repaint, which is handed a row and not a page, so the row
+	-- carries the way back to whose gear it is drawing.
+	box.pane = pane
 	box.face = Face(box)
 	box.face:SetPoint("TOP" .. (entry.side == "right" and "RIGHT" or "LEFT"))
 	Words(box, entry)
@@ -893,7 +963,7 @@ local function Square(pane, entry)
 		box.name, "BOTTOM" .. (entry.side == "right" and "RIGHT" or "LEFT"), 0, -1)
 	box.wear:Hide()
 
-	local button = Press(pane, entry, box)
+	local button = pane.inspect and Peek(pane, entry, box) or Press(pane, entry, box)
 
 	-- Two frames answer the mouse over one row, the row and the disc on it, and
 	-- a hover is the same hover on either. Anchored to the box rather than to
@@ -906,7 +976,7 @@ local function Square(pane, entry)
 	local function Enter()
 		box.lit = true
 		Ring(box, box.tone)
-		ns.Tip.Open(box, Subject(entry), "worn")
+		ns.Tip.Open(box, Subject(entry, pane:Unit()), "worn")
 	end
 
 	local function Leave()
@@ -931,8 +1001,13 @@ local function Square(pane, entry)
 
 	-- What the trace needs and cannot ask for: this client has no call that
 	-- answers which edges a button registered, so the file that registered them
-	-- says so here.
-	ns.CharTrace.Watch(button, entry, "LeftButtonUp", "RightButtonUp")
+	-- says so here. An inspect square registers one of the two, because the
+	-- right button on it is the camera's rather than a use.
+	if pane.inspect then
+		ns.CharTrace.Watch(button, entry, "LeftButtonUp")
+	else
+		ns.CharTrace.Watch(button, entry, "LeftButtonUp", "RightButtonUp")
+	end
 
 	box.button = button
 	box.entry = entry
@@ -1058,7 +1133,7 @@ end
 -- Minutes alone would spend the last minute saying 1 through the part of it
 -- anybody is watching, and seconds alone are four digits nobody reads.
 local function Lapsed(box)
-	local left = ns.Worn.Oil(box.entry.slot)
+	local left = ns.Worn.Oil(box.entry.slot, box.pane:Unit())
 	local count, unit
 	if left then
 		if left < 60 then
@@ -1161,6 +1236,13 @@ end
 -- ceiling and these are three more decisions about a subject it does not
 -- otherwise have.
 local function PaintWait(box, link)
+	-- Nothing at all on an inspect row. ns.InventoryCooldown reads a slot of
+	-- yours whatever unit the page is about, so an arc here would be your own
+	-- trinket's wait drawn round theirs.
+	if box.pane.inspect then
+		box.use = false
+		return false
+	end
 	local use = link and ns.ItemSpell(link) and true or false
 	box.use = use
 	if use and not box.arc then
@@ -1185,9 +1267,9 @@ end
 -- one arrow and the slot is every one of them in your bags. An empty slot has
 -- no link, draws its label and asks for no number at all, the same as every
 -- other empty row on the page.
-local function Number(entry, link)
+local function Number(entry, link, unit)
 	if entry.ammo then
-		local count = link and ns.Worn.Count(entry.slot) or nil
+		local count = link and ns.Worn.Count(entry.slot, unit) or nil
 		return count and ("%d"):format(count) or nil
 	end
 	local level = link and ns.ItemLevel(link)
@@ -1196,7 +1278,8 @@ end
 
 local function PaintSquare(box)
 	local entry = box.entry
-	local icon = ns.Worn.Icon(entry.slot)
+	local unit = box.pane:Unit()
+	local icon = ns.Worn.Icon(entry.slot, unit)
 	box.icon:SetTexture(icon)
 	box.icon:SetShown(icon and true or false)
 
@@ -1204,7 +1287,7 @@ local function PaintSquare(box)
 	box.empty:SetTexture(empty)
 	box.empty:SetShown(empty and true or false)
 
-	local link = icon and ns.Worn.Link(entry.slot) or nil
+	local link = icon and ns.Worn.Link(entry.slot, unit) or nil
 	local quality = link and ns.ItemValue(link) or nil
 	Ring(box, quality and UI.Quality[quality] or nil)
 
@@ -1214,7 +1297,7 @@ local function PaintSquare(box)
 	local tone = quality and UI.Quality[quality] or C.dim
 	box.name:SetText(link and (ns.ItemInfo(link)) or entry.label)
 	box.name:SetTextColor(tone[1], tone[2], tone[3])
-	box.level = Number(entry, link)
+	box.level = Number(entry, link, unit)
 
 	-- And the enchant, on the repaint that found the link changed and on no
 	-- other.
@@ -1244,7 +1327,7 @@ local function PaintSquare(box)
 	-- below, because the wash wants the same number.
 	local letters = Drawn(box.name)
 
-	local has, of = ns.Worn.Durability(entry.slot)
+	local has, of = ns.Worn.Durability(entry.slot, unit)
 	if has then
 		local fraction = has / of
 		box.wear:SetWidth(math.max(UI.Round(box, letters * fraction), 1))
@@ -1273,6 +1356,7 @@ local function Readings()
 	local wear, worst, fraction = ns.Worn.Wear()
 	local read = {}
 
+
 	read[1] = {
 		value = level and ("%.1f"):format(level) or "none",
 		note = "Averaged over what you are wearing. Shirt, tabard and ammo are left out, because none of the three carries a level worth counting.",
@@ -1300,6 +1384,31 @@ local function Readings()
 	return read
 end
 
+-- Which four a page draws, and where they come from.
+--
+-- Two sets of four and not one set with two of them blank. Three of yours are
+-- unanswerable about anybody else: the client hands out durability by slot with
+-- no unit on the call, weapon skill the same way, and a miss chance is computed
+-- from both. A badge drawn with "none" in it three times is a page apologising,
+-- and the two facts that replace them are the two anybody actually opens an
+-- inspect for in this expansion.
+--
+-- The labels are read at build, because a badge's word is set once when the
+-- frame is made: a pane is built in one mode and stays in it.
+local function Labels(inspect)
+	if inspect then
+		return ns.Theirs.Labels()
+	end
+	return LABELS
+end
+
+local function Read(pane)
+	if pane.inspect then
+		return ns.Theirs.Readings(pane:Unit())
+	end
+	return Readings()
+end
+
 --------------------------------------------------------------------------
 -- The head of the stats column
 --
@@ -1316,7 +1425,7 @@ end
 -- Discs rather than the cells this was, for the same reason a gear slot is a
 -- disc: the page has one shape on it and a rectangle in the middle of twenty
 -- circles is the one thing on it that looks borrowed.
-local function Badge(head, index)
+local function Badge(head, word)
 	local badge = CreateFrame("Frame", nil, head)
 
 	-- The mouse for the hover and every button back to the world. A reading
@@ -1347,10 +1456,10 @@ local function Badge(head, index)
 	UI.Wrap(badge.label, false)
 	badge.label:SetPoint("TOPLEFT", 0, -(BADGE + 2))
 	badge.label:SetPoint("TOPRIGHT", 0, -(BADGE + 2))
-	badge.label:SetText(LABELS[index])
+	badge.label:SetText(word)
 
 	badge:SetScript("OnEnter", function(self)
-		ns.Tip.Open(self, { kind = "note", title = LABELS[index],
+		ns.Tip.Open(self, { kind = "note", title = word,
 			lines = { { self.note or "", color = C.dim } } }, "control", true)
 	end)
 	badge:SetScript("OnLeave", function()
@@ -1363,7 +1472,7 @@ end
 -- The level is handed in and set before anything is put on the head, because a
 -- frame takes its parent's level at the moment it is created and the badges
 -- have to come out over the figure rather than under it.
-local function Head(parent, level)
+local function Head(pane, parent, level)
 	local head = CreateFrame("Frame", nil, parent)
 	head:SetFrameLevel(level)
 
@@ -1377,9 +1486,10 @@ local function Head(parent, level)
 	head.level:SetPoint("TOPLEFT", head.name, "BOTTOMLEFT", 0, -2)
 	head.level:SetPoint("TOPRIGHT", head.name, "BOTTOMRIGHT", 0, -2)
 
+	local words = Labels(pane.inspect)
 	head.badges = {}
-	for index = 1, #LABELS do
-		head.badges[index] = Badge(head, index)
+	for index = 1, #words do
+		head.badges[index] = Badge(head, words[index])
 	end
 	return head
 end
@@ -1518,7 +1628,7 @@ end
 -- stopped being a window: a panel behind a model standing on the world is a
 -- rectangle of paint cut out of the scenery, and a band of shadow across the
 -- figure is a smear on the one thing the page is built around.
-local function Portrait(parent)
+local function Portrait(pane, parent)
 	local panel = CreateFrame("Frame", nil, parent)
 
 	-- PlayerModel is a frame type rather than a template, so it costs nothing
@@ -1527,9 +1637,13 @@ local function Portrait(parent)
 	-- still works, which is the honest degradation.
 	local model = CreateFrame("PlayerModel", nil, panel)
 	model:SetAllPoints()
+	-- Whoever the page is about, asked at the moment the figure is loaded rather
+	-- than written down when the panel was made: an inspect page is pointed at a
+	-- second person without being rebuilt, and Character/Inspect.lua is what
+	-- moves the answer.
 	local function Dress()
 		if model.SetUnit then
-			pcall(model.SetUnit, model, "player")
+			pcall(model.SetUnit, model, pane:Unit())
 		end
 		Pose(model)
 	end
@@ -1629,27 +1743,122 @@ local TABS = {
 	},
 }
 
--- Which tab is up, held to the four that exist. The saved value is per
+-- And two for an inspect page, because two is what the server sends.
+--
+-- Everything the four above read is yours alone. UnitStat, UnitArmor,
+-- UnitAttackPower and UnitDamage answer for the player and nil for everybody
+-- else on this client; weapon skill has no unit on its call at all; and a
+-- faction standing is not something one character can read off another. Four
+-- tabs of empty rows would be a column saying nothing four ways.
+--
+-- What the server does send with an inspect is their gear and their talents, so
+-- those are the two. The gear tab is not the twenty squares again: it is the
+-- two questions the squares cannot answer at a glance across a whole character,
+-- which slots are missing an enchant and which sockets are missing a gem.
+local INSPECT_TABS = {
+	{
+		label = "gear",
+		fill = function(unit) return ns.Theirs.Gear(unit) end,
+	},
+	{
+		label = "talents",
+		fill = function(unit) return ns.Theirs.Talents(unit) end,
+	},
+}
+
+-- Which tab is up, held to the ones that exist. The saved value is per
 -- character and comes back as whatever was in the file, so it is clamped here
 -- rather than trusted: a sheet that opened on tab seven would draw an empty
 -- column and no way to say what was wrong with it.
-local function Chosen()
-	local at = ns.dbc.characterTab
-	if type(at) ~= "number" or at < 1 or at > #TABS or at ~= math.floor(at) then
+--
+-- Two keys and not one. Which list you leave your own sheet on and which list
+-- you leave an inspect on are different habits: a tank keeps his own on
+-- extended and every inspect he opens is for a missing enchant.
+local function Chosen(pane)
+	local tabs = pane.inspect and INSPECT_TABS or TABS
+	local at = pane.inspect and ns.dbc.inspectTab or ns.dbc.characterTab
+	if type(at) ~= "number" or at < 1 or at > #tabs or at ~= math.floor(at) then
 		return 1
 	end
 	return at
 end
 
-local function Column()
-	return TABS[Chosen()].fill()
+local function Column(pane)
+	local tabs = pane.inspect and INSPECT_TABS or TABS
+	return tabs[Chosen(pane)].fill(pane:Unit())
 end
 
 --------------------------------------------------------------------------
 
-function Paperdoll.New(parent)
+-- A gear page, yours or somebody else's.
+--
+--   inspect  the page is about a unit that is not you: no secure squares, no
+--            durability, no cooldown arcs, two tabs and four different badges.
+--            The head of this file says why each of those is not a choice
+--   unit     a getter for whose gear to draw, asked on every repaint rather
+--            than held, because an inspect page is pointed at a second person
+--            without being rebuilt. Absent means you
+-- The twenty rows, sorted into the two columns and the three hands as they are
+-- made.
+--
+-- Its own function rather than a block in the constructor, and it is the seam
+-- Press already argues for: which column a slot is in and which slots can carry
+-- a stone are both facts about the slot rather than about the page, so the loop
+-- that reads them off Character/Worn.lua's table is one idea with one name.
+local function Rows(pane)
+	for _, entry in ipairs(ns.Worn.Slots()) do
+		local box = Square(pane, entry)
+		pane.squares[#pane.squares + 1] = box
+		local group = pane[entry.side]
+		group[#group + 1] = box
+		if entry.hand then
+			pane.hands[#pane.hands + 1] = box
+		end
+	end
+	return pane.squares
+end
+
+-- The strip that says which of the lists is under it. Bare, which is
+-- UI/Window.lua's word for a strip with no fill behind a tab and no line under
+-- the row: this page is a backdrop the size of the screen rather than a window,
+-- and four filled buttons over the world are the one thing on it that still
+-- looks like a dialog. The level is handed in and set before the tabs are added
+-- to it, because a frame takes its parent's level at the moment it is made and
+-- these have to come out over the figure the same way the badges do.
+--
+-- Selecting a tab writes it down and repaints. It does not touch the gear, the
+-- figure or the badges: the whole of what a tab changes is which list is in the
+-- column under it, which is why these are a strip here and were four pages of
+-- the window once.
+--
+-- Which list it is written down under is the pane's own: an inspect page keeps
+-- its tab apart from the sheet's, for the reason Chosen gives.
+local function Strip(pane, level)
+	local tabs = pane.inspect and INSPECT_TABS or TABS
+	local strip = UI.TabStrip(pane.frame, {
+		bare = true,
+		onSelect = function(index)
+			if pane.inspect then
+				ns.dbc.inspectTab = index
+			else
+				ns.dbc.characterTab = index
+			end
+			pane.stats:Set(Column(pane))
+		end,
+	})
+	strip.frame:SetFrameLevel(level)
+	for index = 1, #tabs do
+		strip:Add(tabs[index].label)
+	end
+	return strip
+end
+
+function Paperdoll.New(parent, opts)
+	opts = opts or {}
 	local pane = setmetatable({ squares = {}, left = {}, right = {},
 		hands = {}, worn = {}, cooling = {} }, Pane)
+	pane.inspect = opts.inspect == true
+	pane.subject = opts.unit
 	pane.frame = CreateFrame("Frame", nil, parent)
 
 	-- Nothing draws outside the page. The two columns arrive from a hundred and
@@ -1662,24 +1871,9 @@ function Paperdoll.New(parent)
 		pane.frame:SetClipsChildren(true)
 	end
 
-	-- Sorted into the two columns once, because which column a slot is in is a
-	-- fact about the slot and not about the width the page came out at.
-	--
-	-- And the three that can carry a stone into a third list, so the tick that
-	-- counts one down walks three rows rather than twenty. Which three is
-	-- Character/Worn.lua's word, marked on the slot beside the column it is in,
-	-- because both are facts about the slot.
-	for _, entry in ipairs(ns.Worn.Slots()) do
-		local box = Square(pane, entry)
-		pane.squares[#pane.squares + 1] = box
-		local group = pane[entry.side]
-		group[#group + 1] = box
-		if entry.hand then
-			pane.hands[#pane.hands + 1] = box
-		end
-	end
+	Rows(pane)
 
-	pane.panel = Portrait(pane.frame)
+	pane.panel = Portrait(pane, pane.frame)
 
 	-- Everything on the page sits over the figure, and that is what putting the
 	-- model behind the page costs. A model is drawn over every texture layer of
@@ -1696,31 +1890,9 @@ function Paperdoll.New(parent)
 	-- column. Over the figure by the same rule as the rows: the model is wider
 	-- than the gap it stands in on a narrow screen, and a name drawn under it
 	-- would be a name that vanishes when the sheet is opened on a laptop.
-	pane.head = Head(pane.frame, level)
+	pane.head = Head(pane, pane.frame, level)
 
-	-- The strip that says which of the four lists is under it. Bare, which is
-	-- UI/Window.lua's word for a strip with no fill behind a tab and no line
-	-- under the row: this page is a backdrop the size of the screen rather than
-	-- a window, and four filled buttons over the world are the one thing on it
-	-- that still looks like a dialog. The level is set before the tabs are added
-	-- to it, because a frame takes its parent's level at the moment it is made
-	-- and these have to come out over the figure the same way the badges do.
-	--
-	-- Selecting a tab writes it down and repaints. It does not touch the gear,
-	-- the figure or the badges: the whole of what a tab changes is which list is
-	-- in the column under it, which is why the four of them are a strip here and
-	-- were four pages of the window once.
-	pane.tabs = UI.TabStrip(pane.frame, {
-		bare = true,
-		onSelect = function(index)
-			ns.dbc.characterTab = index
-			pane.stats:Set(Column())
-		end,
-	})
-	pane.tabs.frame:SetFrameLevel(level)
-	for index = 1, #TABS do
-		pane.tabs:Add(TABS[index].label)
-	end
+	pane.tabs = Strip(pane, level)
 
 	-- The same readout the stats tab was, hosted here instead and drawn compact:
 	-- a line a row, with the sentence under it moved into the hover. It keeps
@@ -1731,14 +1903,27 @@ function Paperdoll.New(parent)
 	-- Armed and stopped, the same way the turn on the figure is: a ticker starts
 	-- running and this one has nothing to do until the sheet is open with
 	-- something on it you can press.
-	pane.sweep = UI.Ticker(UI.Forever, SWEEP, "trinket", Sweep)
-	pane.sweep:Stop()
+	--
+	-- Yours alone, and the refusal is the client's rather than a saving. There
+	-- is one tick of this name on ns.UI.Forever and UI/Ticker.lua raises on a
+	-- second, which is the right refusal: the arc it drives is read off a slot
+	-- of yours whatever page asked, so a second one would be the wrong answer
+	-- drawn twice.
+	if not pane.inspect then
+		pane.sweep = UI.Ticker(UI.Forever, SWEEP, "trinket", Sweep)
+		pane.sweep:Stop()
+	end
 
 	-- After the readout, because selecting a tab fills it. Nothing is drawn by
 	-- it: the pane refuses to paint while it has no width and no page up, which
 	-- is exactly the state this runs in.
-	pane.tabs:Select(Chosen())
-	page = pane
+	pane.tabs:Select(Chosen(pane))
+	-- The two ticks above find their page through this and both are yours
+	-- alone, so an inspect page is not what they point at. See the note on the
+	-- declaration.
+	if not pane.inspect then
+		page = pane
+	end
 	return pane
 end
 
@@ -1957,13 +2142,43 @@ end
 -- well as on the number, because a durability badge that has gone amber is a
 -- thing you want to catch out of the corner of an eye while you are reading
 -- something else, and eleven pixels of coloured text is not that.
+-- Whose sheet this is. "player" for yours, and for an inspect page whatever
+-- Character/Inspect.lua is pointed at, which is nil in the moment between the
+-- window being built and somebody being picked: a page about nobody draws
+-- twenty empty slots, which is the honest picture and not a branch.
+function Pane:Unit()
+	return (self.subject and self.subject()) or "player"
+end
+
+-- The page told it is about somebody else now.
+--
+-- Two things have to be forgotten and neither is the frames. The twenty links
+-- are what Redress compares against to decide whether the figure is reloaded
+-- and whether an enchant is scanned again, and every one of them belongs to the
+-- last person: left in place, a new character wearing the same helmet would
+-- keep the old one's enchant under it. And the flag that says the page has
+-- drawn once, because twenty rows dipping is how this page says one piece
+-- moved, and twenty pieces moving at once is a different person rather than a
+-- swap: the page arrives instead, which is what it does on its first open.
+function Pane:Look()
+	for slot in pairs(self.worn) do
+		self.worn[slot] = nil
+	end
+	self.drew = false
+	-- The figure is not reloaded here. The repaint below runs Redress first, it
+	-- finds every one of the twenty links changed because this just emptied the
+	-- table, and reloading the model is what it does about that.
+	return self:Paint()
+end
+
 function Pane:PaintHead()
 	local head = self.head
-	head.name:SetText(UnitName("player") or "You")
-	head.level:SetText(("level %d %s")
-		:format(UnitLevel("player") or 0, ns.Class.Label()))
+	local unit = self:Unit()
+	head.name:SetText(UnitName(unit) or (self.inspect and "nobody" or "You"))
+	head.level:SetText(self.inspect and ns.Theirs.Line(unit)
+		or ("level %d %s"):format(UnitLevel("player") or 0, ns.Class.Label()))
 
-	local read = Readings()
+	local read = Read(self)
 	for index = 1, #head.badges do
 		local badge = head.badges[index]
 		local tone = read[index].tone or C.accent
@@ -1995,10 +2210,11 @@ end
 -- something moved and none at all on the eight a minute that did not.
 function Pane:Redress()
 	local changed = false
+	local unit = self:Unit()
 	for index = 1, #self.squares do
 		local box = self.squares[index]
 		local slot = box.entry.slot
-		local link = ns.Worn.Link(slot)
+		local link = ns.Worn.Link(slot, unit)
 		if self.worn[slot] ~= link then
 			self.worn[slot] = link
 			box.fresh = true
@@ -2066,17 +2282,22 @@ function Pane:Paint()
 	-- old. Lapsed is asked directly rather than through Lapse, because Lapse
 	-- refuses to run on a page nobody can see and this is the paint that puts one
 	-- up.
-	for index = 1, #self.hands do
-		Lapsed(self.hands[index])
+	-- Both of these read a call that answers for you and for nobody else, so an
+	-- inspect page skips the pair rather than drawing your stone's countdown and
+	-- your trinket's arc on somebody else's weapons.
+	if not self.inspect then
+		for index = 1, #self.hands do
+			Lapsed(self.hands[index])
+		end
+		self:Cooling()
 	end
-	self:Cooling()
 	self:PaintHead()
 	-- Only while the page is up, and that is a measurement rule rather than a
 	-- saving: a sentence under a row is measured against the width it wraps to,
 	-- and a font string on a page nobody has shown yet is not obliged to answer
 	-- honestly. Character/Readout.lua keeps the other half of the same rule.
 	if self.frame:IsShown() then
-		self.stats:Set(Column())
+		self.stats:Set(Column(self))
 	end
 	return true
 end

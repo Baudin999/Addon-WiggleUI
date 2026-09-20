@@ -4,6 +4,13 @@ local ADDON, ns = ...
 -- Worn.lua, Stats.lua, Skills.lua, Reputation.lua, Readout.lua, Paperdoll.lua,
 -- Window.lua, RepWindow.lua and Blizzard.lua hold the behaviour, and this is
 -- the only file in the folder that names anything outside it.
+--
+-- Three windows are registered here and not one, because all three are the same
+-- page: the sheet, your standings, and the same gear page drawn for somebody
+-- else. Inspect.lua, Theirs.lua, InspectWindow.lua and InspectBlizzard.lua hold
+-- that third one, and it is a switch of its own rather than a corner of the
+-- sheet's, because a player who wants his own sheet and Blizzard's inspect
+-- window is a player with a reasonable arrangement.
 
 local function SetDim(value)
 	ns.db.characterDim = value
@@ -13,6 +20,15 @@ end
 local function SetQuiet(value)
 	ns.db.characterQuiet = value
 	ns.CharWindow.Quiet()
+end
+
+local function SetInspect(value)
+	ns.db.inspect = value
+	if not value then
+		ns.InspectWindow.Hide()
+		ns.Inspect.Drop()
+	end
+	ns.InspectBlizzard.Apply()
 end
 
 local function SetCharacter(value)
@@ -65,6 +81,55 @@ local function CharacterWord(arg, rawArg)
 	-- rawArg is the untouched line, which this word has no use for: every
 	-- sub-word above takes a switch rather than a name. Named so the signature
 	-- matches every other word in the addon.
+	return rawArg
+end
+
+-- Somebody else's sheet, on the same word the client's own menu entry reaches.
+--
+-- With no name it means your target, which is what every player means when they
+-- type it. With one it means whoever that is, so `/wui inspect Bob` works from
+-- the raid frames without targeting anybody; the unit token is what the client
+-- takes, and a name is resolved through it only where the client already has a
+-- unit for that name.
+local function InspectWord(arg, rawArg)
+	local word, rest = arg:match("^(%S*)%s*(.-)$")
+	-- The whole line is the name, and it is taken off the untouched one: a
+	-- character's name is capitalised and the line the player typed is what
+	-- should come back in the refusal. The switches below are read off the
+	-- folded copy, because "Off" and "off" are the same switch.
+	local who = (rawArg or ""):match("^%s*(.-)%s*$")
+
+	if word == "hide" then
+		ns.db.hideBlizzInspect = ns.Command.Toggle(rest)
+		ns.BlizzHide.Apply()
+		ns.Print("Blizzard's inspect window is " .. ns.InspectBlizzard.Describe() .. ".")
+		return rawArg
+	end
+	if word == "on" or word == "off" then
+		SetInspect(word == "on")
+		ns.Print("inspecting is " .. (ns.db.inspect and "on" or "off") .. ".")
+		return rawArg
+	end
+	if not ns.db.inspect then
+		ns.Print("inspecting is off. Type /wui inspect on.")
+		return rawArg
+	end
+	if word == "" then
+		-- Nothing named and a window already up is the way out, so the word is
+		-- the whole gesture rather than half of one.
+		if ns.InspectWindow.Shown() then
+			ns.InspectWindow.Close()
+			return rawArg
+		end
+		ns.Inspect.Look("target")
+		return rawArg
+	end
+	local unit = ns.Inspect.Find(who)
+	if not unit then
+		ns.Print(("nobody called %s is your target or in your group."):format(who))
+		return rawArg
+	end
+	ns.Inspect.Look(unit)
 	return rawArg
 end
 
@@ -158,6 +223,22 @@ ns.Register({
 		-- client's is switched off. The default lives here because a default
 		-- belongs to the part that owns the frame replacing it.
 		hideBlizzCharacter = true,
+
+		-- On, and it is a setting on this page rather than a part of its own,
+		-- because it is this page drawn for somebody else. Everything about it
+		-- is the sheet's: the same layout, the same zoom slider, the same twenty
+		-- rows, the same figure.
+		--
+		-- Off hands the Inspect entry on a unit's menu back to the client, which
+		-- draws its own three-tab window instead. That is the one thing this
+		-- does not replace outright: the client's has an honour tab and this
+		-- does not, for the same reason the sheet does not draw yours.
+		inspect = true,
+
+		-- Blizzard's own inspect window never loads at all, because the only
+		-- thing that loads it is the global this takes. Same argument as the
+		-- sheet's own line above, and the switch is on the same page.
+		hideBlizzInspect = true,
 	},
 
 	-- How the figure on the gear page is standing when you open the sheet.
@@ -178,6 +259,13 @@ ns.Register({
 		-- Weapons away, which is how he stands in the world.
 		figureSheathed = true,
 
+		-- Which of the two tabs on an inspect is up, and it is a second key
+		-- rather than the sheet's own. Which list you leave your own sheet on
+		-- and which list you leave an inspect on are different habits: a tank
+		-- keeps his own on extended, and every inspect he opens is to find a
+		-- missing enchant.
+		inspectTab = 1,
+
 		-- Which of the four tabs down the side of the sheet is up. The first,
 		-- which is your hit, your attributes and your trades, and it is per
 		-- character because what you keep open is: a tank leaves the sheet on
@@ -188,10 +276,15 @@ ns.Register({
 	words = {
 		character = CharacterWord,
 		reputation = ReputationWord,
+		inspect = InspectWord,
 	},
 
 	help = {
 		"character, open the character sheet",
+		"inspect, the same sheet drawn for whoever you are targeting",
+		"inspect <name>, for somebody in your group without targeting them",
+		"inspect on|off, this addon's inspect sheet instead of the client's",
+		"inspect hide on|off, keep Blizzard's inspect window from ever loading",
 		"reputation, open your standings in a window of their own",
 		"reputation list, how many factions you know and how many are exalted",
 		"character on|off, the addon's character sheet instead of the client's",
@@ -203,8 +296,9 @@ ns.Register({
 	},
 
 	status = function()
-		return ("%s; %s; Blizzard's %s"):format(
-			ns.CharWindow.Describe(), ns.Worn.Describe(), ns.CharBlizzard.Describe())
+		return ("%s; %s; inspecting %s; Blizzard's %s"):format(
+			ns.CharWindow.Describe(), ns.Worn.Describe(),
+			ns.Inspect.Describe(), ns.CharBlizzard.Describe())
 	end,
 
 	panel = function(ui)
@@ -216,7 +310,12 @@ ns.Register({
 		ui.Check("move the addon's own HUD out from under the sheet",
 			function() return ns.db.characterQuiet end,
 			SetQuiet)
+		ui.Check("inspect other players on this sheet",
+			function() return ns.db.inspect end,
+			SetInspect)
+		ui.Hint("Inspect on somebody's right click menu opens this page for them, with their enchants and gems counted at the top. Untick to hand that entry back to Blizzard's window and its honour tab.")
 		ui.Reading("what you are wearing", ns.Worn.Describe)
+		ui.Reading("who you are inspecting", ns.Inspect.Describe)
 		ui.Reading("hit and miss", ns.CharStats.Describe)
 		ui.Reading("weapon skills", ns.CharSkills.Describe)
 		ui.Reading("standings", ns.CharRep.Describe)

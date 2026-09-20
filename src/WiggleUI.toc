@@ -999,25 +999,40 @@ Need\Need.lua
 # shift held over a piece of gear anywhere in the addon, Stats.lua works
 # out what the client will not say, which is how often you miss, Skills.lua and
 # Reputation.lua read the two lists the client's own sheet keeps behind tabs,
-# Readout.lua is the column of headed rows those three are drawn in, Paperdoll.lua
-# is the gear page and hosts the stats column down the right of it, Window.lua is
-# the three tabs over one window, Blizzard.lua puts the client's own sheet in the
-# attic and takes the C key, and Feature.lua last, as everywhere else.
+# Theirs.lua is the same question asked about somebody else and answers only
+# what the server actually sends, Readout.lua is the column of headed rows those
+# four are drawn in, Paperdoll.lua is the gear page and hosts the stats column
+# down the right of it, Window.lua is the three tabs over one window,
+# Inspect.lua is who the second window is about and the conversation with the
+# server behind it, InspectWindow.lua hosts the same gear page drawn for them,
+# Blizzard.lua puts the client's own sheet in the attic and takes the C key,
+# InspectBlizzard.lua does the same to the client's inspect window and takes the
+# menu entry, and Feature.lua last, as everywhere else.
 #
-# After Core\BlizzHide.lua, which owns the switch list Blizzard.lua signs
+# Theirs.lua is above Paperdoll.lua because the page asks it for its four badge
+# words while it is being built, which is the one call between the two that is
+# not made from a repaint.
+#
+# After Core\BlizzHide.lua, which owns the switch list both Blizzard files sign
 # into and which is above this line. Core\Attic.lua, where the client's sheet
-# goes, is far above it.
+# goes, is far above it. Talents\Read.lua, which Theirs.lua reads an inspected
+# character's trees through, is below it: nothing here calls it before a window
+# is open.
 Character\Worn.lua
 Character\Compare.lua
 Character\Stats.lua
 Character\Skills.lua
 Character\Reputation.lua
+Character\Theirs.lua
 Character\Readout.lua
 Character\Trace.lua
 Character\Paperdoll.lua
 Character\Window.lua
 Character\RepWindow.lua
+Character\Inspect.lua
+Character\InspectWindow.lua
 Character\Blizzard.lua
+Character\InspectBlizzard.lua
 Character\Feature.lua
 
 # The talent window. All three trees side by side, every talent on the screen

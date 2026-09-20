@@ -4,11 +4,25 @@ local Worn = {}
 ns.Worn = Worn
 
 --------------------------------------------------------------------------
--- What you are wearing
+-- What somebody is wearing
 --
 -- Twenty slots, what is in each of them, how worn it is, and the two calls
 -- that put something in or take it off. Every question the gear page asks is
 -- answered here, and nothing here draws anything.
+--
+-- **Every reader takes a unit and it defaults to you.** It said "player" in
+-- nine places and answered one question, which was the right shape while the
+-- only sheet this addon drew was your own. Character/Inspect.lua draws the same
+-- page for somebody else, so the unit is the argument and the default is what
+-- every caller that only ever meant you goes on passing: nothing.
+--
+-- Three of the answers are yours alone and they say so rather than lying. The
+-- client hands out durability by slot with no unit on the call at all, the
+-- temporary enchant on a hand the same way, and neither has ever been readable
+-- for anybody else on any client in this expansion. A unit that is not you gets
+-- nil from both, which is what the page already draws for a piece that does not
+-- wear out, so an inspected character comes out with no wear rule under any of
+-- his names rather than with yours.
 --
 -- **This is not Core/Gear.lua and the two do not overlap.** Gear answers "what
 -- in your bags will the client let into a hand", which is a question about
@@ -68,6 +82,12 @@ ns.Worn = Worn
 --          one the client answers by id instead of by link. Both are facts
 --          about the slot, so both are read off this flag rather than off a
 --          slot number written into the page
+--   craft  a slot an enchanter can put something permanent on, which is what
+--          the inspect page's second badge counts. Eleven of the twenty, and
+--          the two rings are deliberately not among them: a ring enchant is
+--          open to enchanters and to nobody else in this expansion, so counting
+--          them would read every other class as two enchants short forever.
+--          Character/Theirs.lua says that in the badge's own hover
 --
 -- There were three groups and the third was the weapons, drawn as three bare
 -- discs centred under the figure with no words on them at all. That was the one
@@ -95,21 +115,21 @@ ns.Worn = Worn
 -- only one whose number is a count. Both are answered below rather than by the
 -- page.
 local SLOTS = {
-	{ slot = 1,  key = "HeadSlot",          label = "head",      side = "left" },
+	{ slot = 1,  key = "HeadSlot",          label = "head",      side = "left", craft = true },
 	{ slot = 2,  key = "NeckSlot",          label = "neck",      side = "left" },
-	{ slot = 3,  key = "ShoulderSlot",      label = "shoulder",  side = "left" },
-	{ slot = 15, key = "BackSlot",          label = "back",      side = "left" },
-	{ slot = 5,  key = "ChestSlot",         label = "chest",     side = "left" },
-	{ slot = 9,  key = "WristSlot",         label = "wrist",     side = "left" },
-	{ slot = 16, key = "MainHandSlot",      label = "main hand", side = "left", hand = true },
-	{ slot = 17, key = "SecondaryHandSlot", label = "off hand",  side = "left", hand = true },
-	{ slot = 18, key = "RangedSlot",        label = "ranged",    side = "left", hand = true },
+	{ slot = 3,  key = "ShoulderSlot",      label = "shoulder",  side = "left", craft = true },
+	{ slot = 15, key = "BackSlot",          label = "back",      side = "left", craft = true },
+	{ slot = 5,  key = "ChestSlot",         label = "chest",     side = "left", craft = true },
+	{ slot = 9,  key = "WristSlot",         label = "wrist",     side = "left", craft = true },
+	{ slot = 16, key = "MainHandSlot",      label = "main hand", side = "left", hand = true, craft = true },
+	{ slot = 17, key = "SecondaryHandSlot", label = "off hand",  side = "left", hand = true, craft = true },
+	{ slot = 18, key = "RangedSlot",        label = "ranged",    side = "left", hand = true, craft = true },
 	{ slot = 0,  key = "AmmoSlot",          label = "ammo",      side = "left", ammo = true, trim = true },
 
-	{ slot = 10, key = "HandsSlot",         label = "hands",     side = "right" },
+	{ slot = 10, key = "HandsSlot",         label = "hands",     side = "right", craft = true },
 	{ slot = 6,  key = "WaistSlot",         label = "waist",     side = "right" },
-	{ slot = 7,  key = "LegsSlot",          label = "legs",      side = "right" },
-	{ slot = 8,  key = "FeetSlot",          label = "feet",      side = "right" },
+	{ slot = 7,  key = "LegsSlot",          label = "legs",      side = "right", craft = true },
+	{ slot = 8,  key = "FeetSlot",          label = "feet",      side = "right", craft = true },
 	{ slot = 11, key = "Finger0Slot",       label = "ring",      side = "right" },
 	{ slot = 12, key = "Finger1Slot",       label = "ring",      side = "right" },
 	{ slot = 13, key = "Trinket0Slot",      label = "trinket",   side = "right" },
@@ -185,16 +205,24 @@ end
 -- lookup here, because the newer client moved the item calls behind C_Item and
 -- took the globals away: that pair is resolved in one file on purpose, and
 -- src/.luacheckrc says so in as many words.
-local function AmmoLink()
-	local id = Ask("GetInventoryItemID", "player", AMMO)
+local function AmmoLink(unit)
+	local id = Ask("GetInventoryItemID", unit, AMMO)
 	return id and ns.ItemLink(id) or nil
 end
 
-function Worn.Link(slot)
+-- Whoever this reader is about. Every function below takes the unit last and
+-- every caller that only ever meant you leaves it off, which is all of them
+-- except Character/Inspect.lua's page.
+local function Who(unit)
+	return unit or "player"
+end
+
+function Worn.Link(slot, unit)
+	unit = Who(unit)
 	if slot == AMMO then
-		return AmmoLink()
+		return AmmoLink(unit)
 	end
-	return Ask("GetInventoryItemLink", "player", slot)
+	return Ask("GetInventoryItemLink", unit, slot)
 end
 
 -- How many of what is in the slot, which is a question one slot has an answer
@@ -204,8 +232,8 @@ end
 -- Nil rather than zero where the client has no such call, so the page draws no
 -- number at all rather than a row saying you are out of arrows because the
 -- addon could not ask.
-function Worn.Count(slot)
-	local count = Ask("GetInventoryItemCount", "player", slot)
+function Worn.Count(slot, unit)
+	local count = Ask("GetInventoryItemCount", Who(unit), slot)
 	return type(count) == "number" and count or nil
 end
 
@@ -215,15 +243,23 @@ end
 -- is filled, so this is the call that decides whether anything is drawn at all.
 -- It also answers for an item the client has not cached, which a link lookup
 -- does not.
-function Worn.Icon(slot)
-	return Ask("GetInventoryItemTexture", "player", slot)
+function Worn.Icon(slot, unit)
+	return Ask("GetInventoryItemTexture", Who(unit), slot)
 end
 
 -- Current and maximum, or nothing at all for a slot that does not wear out.
 -- Nil is not zero and the caller has to keep them apart: a ring answers nothing
 -- and drawing it as a piece at zero percent is how a summary reads as broken
 -- gear when it is a ring.
-function Worn.Durability(slot)
+--
+-- Yours and nobody else's. The client's call takes a slot and no unit at all,
+-- so an inspect page that passed this through would draw your helmet's wear
+-- under the name of theirs. A unit that is not you answers nil, which is the
+-- same nil a ring answers and the same nothing the page already draws for it.
+function Worn.Durability(slot, unit)
+	if Who(unit) ~= "player" then
+		return nil
+	end
 	local current, maximum = Ask("GetInventoryItemDurability", slot)
 	if type(current) ~= "number" or type(maximum) ~= "number" or maximum <= 0 then
 		return nil
@@ -302,7 +338,10 @@ end
 -- The ranged slot answers nothing and that is the client rather than a gap
 -- here. The call has covered a ranged hand since Cataclysm and this is 2.5.6;
 -- there is no stone, oil or poison in this expansion that goes on a bow.
-function Worn.Oil(slot)
+function Worn.Oil(slot, unit)
+	if Who(unit) ~= "player" then
+		return nil
+	end
 	if slot ~= 16 and slot ~= 17 then
 		return nil
 	end
@@ -329,12 +368,12 @@ end
 --
 -- Nil where nothing in the list answered, which is a character wearing nothing
 -- and a client with no such call, and both draw the same line.
-function Worn.Wear()
+function Worn.Wear(unit)
 	local current, maximum = 0, 0
 	local worst, worstAt
 	for index = 1, #SLOTS do
 		local entry = SLOTS[index]
-		local has, of = Worn.Durability(entry.slot)
+		local has, of = Worn.Durability(entry.slot, unit)
 		if has then
 			current, maximum = current + has, maximum + of
 			local fraction = has / of
@@ -357,10 +396,10 @@ end
 -- arrow carries an item level of its own and averaging it in would move the
 -- number every time a hunter changed ammo, which is a reading that says your
 -- gear got worse when what changed was your arrows.
-function Worn.Level()
+function Worn.Level(unit)
 	local total, pieces, empty = 0, 0, 0
 	local twoHanded = false
-	local main = Worn.Link(16)
+	local main = Worn.Link(16, unit)
 	if main then
 		local _, _, equip = ns.ItemInfo(main)
 		twoHanded = equip == "INVTYPE_2HWEAPON"
@@ -370,7 +409,7 @@ function Worn.Level()
 		local entry = SLOTS[index]
 		local skip = entry.trim or (entry.slot == 17 and twoHanded)
 		if not skip then
-			local link = Worn.Link(entry.slot)
+			local link = Worn.Link(entry.slot, unit)
 			local level = link and ns.ItemLevel(link)
 			if level and level > 0 then
 				total, pieces = total + level, pieces + 1
@@ -524,9 +563,9 @@ end
 
 --------------------------------------------------------------------------
 
-function Worn.Describe()
-	local level, empty = Worn.Level()
-	local wear = Worn.Wear()
+function Worn.Describe(unit)
+	local level, empty = Worn.Level(unit)
+	local wear = Worn.Wear(unit)
 	if not level then
 		return "nothing on"
 	end

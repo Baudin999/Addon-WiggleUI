@@ -129,6 +129,13 @@ local SWITCHES = {
 	{ key = "hideBlizzSpellbook", word = "spellbook",
 		label = "Blizzard's spell book",
 		hint = "P opens this addon's instead. Your pet's book is a page of the same frame and this addon does not draw one, so untick this if you want it." },
+	-- The fifth, and the one whose frames usually do not exist. Blizzard's
+	-- inspect window loads on demand and the only thing that loads it is the
+	-- global Character/InspectBlizzard.lua replaces, so with this ticked the
+	-- client never builds it at all.
+	{ key = "hideBlizzInspect", word = "inspect",
+		label = "Blizzard's inspect window",
+		hint = "Inspect on a unit's right click menu opens this addon's sheet drawn for them instead. Their honour tab is the page it does not draw, so untick this if you want it." },
 }
 
 -- What each switch takes down, and what it takes to take it down.

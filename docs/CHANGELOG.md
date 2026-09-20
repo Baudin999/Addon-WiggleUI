@@ -2,6 +2,35 @@
 
 ## Unreleased
 
+### Inspect draws the character sheet, not Blizzard's window
+
+Inspect on a player's right click menu now opens this addon's own sheet with
+their gear on it. Twenty rows, their figure between the columns, the same
+layout your own sheet has, in a window you can drag next to yours.
+
+The two badges over their name are the reason to use it. Blizzard's inspect
+window will show you their gear and make you hover every piece to find the one
+that is missing an enchant; this counts them. One says how many of the eleven
+enchantable slots they have done, the other how many of their sockets have a
+gem in, and both go red the moment one is short with the slot named in the
+hover. That is a raid gear check in two numbers.
+
+The column beside their gear has two tabs, the pieces with something on them
+and their talent trees with the points in each. It has two rather than four
+because your attributes, your weapon skills and your miss chance are numbers
+the server sends about you and about nobody else, and a badge reading "none"
+three times is a page apologising.
+
+It opens, closes and moves in a fight, which your own sheet cannot do without
+the C key: an inspect page carries no secure buttons, because a square drawn
+for somebody else's chest that could still run `/use 5` would take your own
+chestpiece off. Shift over a piece links it into chat instead.
+
+Turn it off on the character page to hand the menu entry back to Blizzard's
+window, which is the only way to somebody's honour tab.
+
+    /wui inspect, /wui inspect <name>, /wui inspect on|off, /wui inspect hide on|off
+
 ### WarriorKit is WiggleUI now
 
 The addon stopped being a warrior addon a long time before it stopped being

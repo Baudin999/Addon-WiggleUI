@@ -446,6 +446,12 @@ local SECTIONS = {
 	-- a character wearing what client/13-character.lua put on, so a scene that
 	-- changes what is in four slots goes below all of them and puts it back.
 	"52-gear-enchant",
+	-- Under it, because it reads the enchant machinery that file exercises and
+	-- because it is about the other sheet: the same gear page drawn for a unit
+	-- that is not the player. It opens the player's own sheet once at the end,
+	-- after client/13-character.lua's four pieces have been put back by the
+	-- section above, and shuts both windows at the foot of the file.
+	"52-inspect",
 	-- Last, and it has to be: it puts every setting in the account file back
 	-- to what the addon ships with, twice over, which is the one thing in the
 	-- suite that would pull the scene out from under every section above it.

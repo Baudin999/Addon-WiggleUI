@@ -264,6 +264,10 @@ asks twice. Your groups, your mail favourites and your muted errors survive it.
 ## character
 
     /wui character, open the character sheet
+    /wui inspect, the same sheet drawn for whoever you are targeting
+    /wui inspect <name>, for somebody in your group without targeting them
+    /wui inspect on|off, this addon's inspect sheet instead of the client's
+    /wui inspect hide on|off, keep Blizzard's inspect window from ever loading
     /wui reputation, open your standings in a window of their own
     /wui reputation list, how many factions you know and how many are exalted
     /wui character on|off, the addon's character sheet instead of the client's

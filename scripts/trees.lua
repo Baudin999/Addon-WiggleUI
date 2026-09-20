@@ -169,6 +169,8 @@ local ALLOWED = {
 	  why = "an enemy bar says what the mob on it drops for a quest you are on" },
 	{ from = "Character", sym = "Upkeep", uses = 1,
 	  why = "the sheet reads which weapon enchant the buff watcher is tracking" },
+	{ from = "Character", sym = "TalentRead", uses = 2,
+	  why = "the inspect sheet's talents tab reads the trees through the one door the addon has to the talent API" },
 	{ from = "UnitFrames", sym = "Upkeep", uses = 1,
 	  why = "an aura row reads the same weapon enchant" },
 	{ from = "Charge", sym = "EnemyBars", uses = 3,
