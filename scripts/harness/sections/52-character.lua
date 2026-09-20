@@ -137,10 +137,10 @@ end
 
 -- One pane, and it is the gear page. Pane took a tab number and takes none, so
 -- a sheet that grew a second page would have to grow a second way of asking for
--- it, and what it hands back is the paperdoll: nineteen squares and a figure are
+-- it, and what it hands back is the paperdoll: twenty squares and a figure are
 -- on nothing else in the addon.
 check(Window.Pane() ~= nil, "the character window has no page in it")
-check(#Window.Pane().squares == 19 and Window.Pane().panel ~= nil,
+check(#Window.Pane().squares == 20 and Window.Pane().panel ~= nil,
 	("the page the window handed over drew %d squares")
 		:format(#Window.Pane().squares))
 
@@ -209,7 +209,7 @@ do
 	-- comes back with no text at all. A subject with nothing in any band is
 	-- refused rather than drawn empty, so pointing at your own helmet in that
 	-- second drew no box whatever, and this is the page where that shows first
-	-- because there are nineteen of them.
+	-- because there are twenty of them.
 	--
 	-- Two things answer it. The row's subject carries the name out of the link,
 	-- which is text the client has already handed over and needs no cache behind
@@ -339,7 +339,7 @@ do
 		"a gear square does not take a left drag, so nothing can be pulled out of it")
 
 	-- Grabbed at a point on the square and let go of over nothing, which is what
-	-- pulling a weapon out of a slot is. The square is one of nineteen on a page
+	-- pulling a weapon out of a slot is. The square is one of twenty on a page
 	-- half the monitor wide, so which frame takes the press is a real question.
 	local function pull(box)
 		local took, dragging = H.mouse.Grab(H.mouse.Point(box.button))
@@ -410,7 +410,7 @@ do
 
 	Trace.Set(true)
 	local describe = Trace.Describe()
-	check(describe:find("19 squares", 1, true) ~= nil
+	check(describe:find("20 squares", 1, true) ~= nil
 		and describe:find("acts on up", 1, true) ~= nil,
 		("the trace describes itself as %q, and it has to name the squares and the edge")
 			:format(describe))
@@ -517,7 +517,7 @@ end
 ----------------------------------------------------------------------
 -- The window in a fight
 --
--- The gear page is nineteen secure buttons, and the client refuses an addon
+-- The gear page is twenty secure buttons, and the client refuses an addon
 -- every protected thing while it is in combat: showing this window, hiding it,
 -- sizing it. That is what shut the sheet mid pull, which is when the durability
 -- line is worth the most.
@@ -718,7 +718,7 @@ do
 	_G.InCombatLockdown = function() return true end
 
 	-- The page is never taken down, which used to be a tab rule and is now a fight
-	-- rule with nothing left to qualify it: the frame nineteen secure buttons hang
+	-- rule with nothing left to qualify it: the frame twenty secure buttons hang
 	-- off may not be hidden by an addon in combat.
 	local gear = Window.Pane().frame
 	check(Window.Paint() and gear:IsShown(),

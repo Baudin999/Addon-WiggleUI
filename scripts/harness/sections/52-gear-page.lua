@@ -21,7 +21,9 @@
 -- asserted is that each of them was made and landed on the right object.
 
 local H = ...
-local ns, check = H.ns, H.check
+local ns, check, fire = H.ns, H.check, H.fire
+local shots, moved, mouse = H.shots, H.moved, H.mouse
+local ITEMS, itemLink = H.ITEMS, H.itemLink
 
 local Window, Worn = ns.CharWindow, ns.Worn
 
@@ -49,14 +51,17 @@ local function Find(groups, title, label)
 end
 
 ----------------------------------------------------------------------
--- The nineteen slots
+-- The twenty slots
 ----------------------------------------------------------------------
 
 do
 	Window.Show()
 	local pane = Window.Pane()
-	check(#pane.squares == 19,
-		("%d slots were drawn and the client has nineteen"):format(#pane.squares))
+	check(#pane.squares == 20,
+		("%d slots were drawn and the client has twenty"):format(#pane.squares))
+	check(#pane.left == #pane.right,
+		("the columns came out %d rows and %d, and the page is as tall as the longer")
+			:format(#pane.left, #pane.right))
 
 	local head, neck
 	for _, box in ipairs(pane.squares) do
@@ -209,6 +214,151 @@ do
 end
 
 ----------------------------------------------------------------------
+-- The ammo row
+--
+-- The twentieth slot, and the one the client answers differently from the
+-- other nineteen: it hands back no link at all, so the row reads the slot's id
+-- and turns that into one, and the number under the name is how many shots are
+-- left rather than an item level. Neither could be read off this page before
+-- the row landed, which is what a hunter opens a character sheet to see.
+--
+-- What this cannot prove is that the client hands no link for slot 0. That is
+-- read off Narcissus and TitanAmmo on this client, and the fixture answers what
+-- they read: an id and a count, and no link.
+----------------------------------------------------------------------
+
+do
+	local pane = Window.Pane()
+	local ammo
+	for _, box in ipairs(pane.squares) do
+		if box.entry.slot == 0 then
+			ammo = box
+		end
+	end
+	check(ammo ~= nil, "the page draws no ammo slot, so nothing on it says what you are shooting")
+
+	if ammo then
+		-- Under the bow. What is in this slot is decided by what is in that one,
+		-- and an arrow in a gun is the mistake the pair is read together to
+		-- catch.
+		check(ammo.entry.side == "left" and pane.left[#pane.left] == ammo,
+			"the ammo row is not at the foot of the column the bow is in")
+		check(ammo.empty:IsShown() and not ammo.icon:IsShown(),
+			"an empty ammo slot drew an icon")
+		check(ammo.name:GetText() == ammo.entry.label,
+			("an empty ammo slot says %s rather than what the slot is for")
+				:format(tostring(ammo.name:GetText())))
+
+		shots.ammo, shots.ammoCount = "Sharp Arrow", 1200
+		fire("UNIT_INVENTORY_CHANGED", "player")
+		check(ammo.name:GetText() == "Sharp Arrow",
+			("the slot holds arrows and the row says %s")
+				:format(tostring(ammo.name:GetText())))
+		check(ammo.icon:IsShown() and ammo.icon:GetTexture() == "ammo",
+			"the ammo row drew no picture of what is in it")
+		check(ammo.note:GetText() == "1200",
+			("the row's line reads %s and the slot holds twelve hundred")
+				:format(tostring(ammo.note:GetText())))
+
+		-- A shot spends an arrow out of a bag rather than out of the slot, so
+		-- this count is the one number on the page that moves while nothing you
+		-- are wearing changes.
+		shots.ammoCount = 40
+		fire("BAG_UPDATE", 3)
+		check(ammo.note:GetText() == "40",
+			("forty arrows are left and the row still reads %s")
+				:format(tostring(ammo.note:GetText())))
+
+		-- And no secure half. `/use 0` names no slot the client will run,
+		-- nothing that goes in this slot has a use on it, and a sharpening stone
+		-- has nowhere to land on a stack of arrows.
+		check(ammo.button:GetAttribute("type2") == nil,
+			"the ammo square carries a macro, and there is nothing in it to use")
+		check(ammo.button:GetAttribute("target-slot") == nil,
+			"the ammo square offers itself to a waiting spell, and no stone goes on an arrow")
+
+		-- The drop, and it is driven through the pointer rather than by naming
+		-- the handler: where a drop lands is the whole of the question here, and
+		-- a section that calls OnReceiveDrag by hand has answered it for itself.
+		--
+		-- And it lands at the ranged slot rather than at the ammo one. The two
+		-- halves of this slot are at two numbers on this client: everything the
+		-- page reads it reads at zero, and a stack of arrows put on goes to
+		-- eighteen, which is where Narcissus puts one in both places it equips
+		-- any. Character/Worn.lua's Load carries the whole of why.
+		local picked = #moved.picked
+		H.hold({ id = ITEMS["Sharp Arrow"].id, link = itemLink("Sharp Arrow") })
+		mouse.Give(ammo.button)
+		check(#moved.picked == picked + 1 and moved.picked[#moved.picked] == 18,
+			("a stack of arrows dropped on the ammo disc went to slot %s")
+				:format(tostring(moved.picked[#moved.picked])))
+		check(GetCursorInfo() == nil,
+			"the arrows that came off are still on the cursor after the swap")
+
+		-- And beside the disc, over the name. Ammo is the one slot you fill by
+		-- dragging, and a thirty-six pixel disc is a target a drop misses; the
+		-- row behind it takes no clicks at all, so a miss is silent. Give stops
+		-- the run if the point lands on anything but the square, which is the
+		-- assertion: that strip belongs to the ammo slot now.
+		picked = #moved.picked
+		H.hold({ id = ITEMS["Sharp Arrow"].id, link = itemLink("Sharp Arrow") })
+		mouse.Give(ammo.button, 56, -18)
+		check(#moved.picked == picked + 1 and moved.picked[#moved.picked] == 18,
+			"a stack of arrows dropped on the ammo row's name did not reach the slot")
+
+		-- Ammo and nothing else takes that road. A helmet dropped on this square
+		-- goes where it was aimed and is refused there by the client, because a
+		-- page that quietly sent it to the ranged slot would be equipping
+		-- something the player aimed somewhere else.
+		picked = #moved.picked
+		H.hold({ id = ITEMS["Lionheart Helm"].id, link = itemLink("Lionheart Helm") })
+		mouse.Give(ammo.button)
+		check(#moved.picked == picked + 1 and moved.picked[#moved.picked] == 0,
+			("a helmet dropped on the ammo square went to slot %s")
+				:format(tostring(moved.picked[#moved.picked])))
+		H.hold(nil)
+
+		-- And taking the quiver off is the ordinary call at the ordinary number:
+		-- an empty cursor on this square is a click that picks the arrows up,
+		-- and the client answers that at the slot it answers every read at.
+		picked = #moved.picked
+		ammo.button:Click("LeftButton")
+		check(#moved.picked == picked + 1 and moved.picked[#moved.picked] == 0,
+			("a click on the ammo square with an empty cursor went to slot %s")
+				:format(tostring(moved.picked[#moved.picked])))
+
+		-- And no other row reaches out like that. The rest of every row is the
+		-- camera's: a square that covered its own name would take the right drag
+		-- that turns the figure with it.
+		local head
+		for _, box in ipairs(pane.squares) do
+			if box.entry.slot == 1 then
+				head = box
+			end
+		end
+		local x, y = mouse.Point(head.button, 56, -18)
+		check(mouse.At(x, y, "LeftButton") ~= head.button,
+			"the helmet square answers the mouse over its own name, and that strip turns the camera")
+
+		-- Left out of both summaries. An arrow carries an item level like
+		-- everything else, and averaging it in would move the reading every time
+		-- a hunter changed ammo.
+		local level, empty = ns.Worn.Level()
+		shots.ammo, shots.ammoCount = nil, 0
+		fire("UNIT_INVENTORY_CHANGED", "player")
+		local after, emptyAfter = ns.Worn.Level()
+		check(after == level,
+			("the item level read %s with arrows in the slot and %s with none")
+				:format(tostring(level), tostring(after)))
+		check(emptyAfter == empty,
+			("the empty count read %s with arrows in the slot and %s with none")
+				:format(tostring(empty), tostring(emptyAfter)))
+		check(ammo.name:GetText() == ammo.entry.label,
+			"the row kept the arrows' name after the slot emptied")
+	end
+end
+
+----------------------------------------------------------------------
 -- A row, and what is written along it
 ----------------------------------------------------------------------
 
@@ -242,7 +392,7 @@ do
 			:format(tostring(head.note:GetText())))
 
 	-- The weapons are rows in the left column now rather than three bare discs
-	-- centred under the figure, so every one of the nineteen says what is in it.
+	-- centred under the figure, so every one of the twenty says what is in it.
 	-- That was the last place on the page you could not read what you were
 	-- holding, and it is the arrangement both of the sheets this page is drawn
 	-- against have.
@@ -342,7 +492,7 @@ do
 			:format(head.wash:GetWidth()))
 
 	-- Nothing in the slot, nothing under it. The row still says what the slot is
-	-- for, dimmed, and eight of the nineteen are empty on most characters.
+	-- for, dimmed, and nine of the twenty are empty on most characters.
 	check(not shirt.wash:IsShown(),
 		"an empty slot drew a shadow under the word it puts there instead of a name")
 

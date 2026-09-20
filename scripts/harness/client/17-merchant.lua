@@ -22,7 +22,13 @@ local carrying, unitName, state = H.carrying, H.unitName, H.state
 -- does.
 ITEMS["Refreshing Spring Water"] = { id = 5001, classId = 0, quality = 1,
 	price = 0, icon = "Interface\\Icons\\Water" }
-ITEMS["Sharp Arrow"] = { id = 5002, classId = 6, quality = 1,
+-- 9103 rather than a number in the rack's own run, because the arrow is the
+-- one fixture here that is also looked up by id: it is what goes in the ammo
+-- slot, and the client hands no link for that slot. The rack's other ids are
+-- shared with the clutter gear in 03-player.lua, which nothing minds while
+-- every lookup is by name. This one is in the ranged weapons' range with the
+-- bow and the gun it is fired out of.
+ITEMS["Sharp Arrow"] = { id = 9103, classId = 6, quality = 1,
 	price = 0, icon = "Interface\\Icons\\Arrow" }
 ITEMS["Flask of Petrification"] = { id = 5003, classId = 0, quality = 3,
 	price = 4500, icon = "Interface\\Icons\\Flask" }

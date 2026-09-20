@@ -6,7 +6,7 @@ ns.Worn = Worn
 --------------------------------------------------------------------------
 -- What you are wearing
 --
--- Nineteen slots, what is in each of them, how worn it is, and the two calls
+-- Twenty slots, what is in each of them, how worn it is, and the two calls
 -- that put something in or take it off. Every question the gear page asks is
 -- answered here, and nothing here draws anything.
 --
@@ -17,7 +17,7 @@ ns.Worn = Worn
 -- This answers "what is on you right now", which is a question about the
 -- eighteen slots that have nothing to do with a macro. They meet at slots 16
 -- and 17 and disagree about nothing: Gear names the two by number and this file
--- names all nineteen by number, out of the same client constants.
+-- names all twenty by number, out of the same client constants.
 --
 -- **Equipping goes through the cursor, the way the client's own sheet does.**
 -- There is a call that equips an item by name and it is the wrong one here.
@@ -52,8 +52,8 @@ ns.Worn = Worn
 -- the same way for the life of the session.
 --------------------------------------------------------------------------
 
--- The nineteen, in the order the page draws them: ten down the left and nine
--- down the right, with the figure standing in the gap between the two.
+-- The twenty, in the order the page draws them: ten down each column, with the
+-- figure standing in the gap between the two.
 --
 --   slot   the inventory number, which is what every call below takes
 --   key    the client's own name for the slot, which is how the empty art is
@@ -64,6 +64,10 @@ ns.Worn = Worn
 --          nothing else. Marked here rather than counted at the call site,
 --          because "which rows are weapons" is a fact about the slots and the
 --          page already reads its rows out of this table
+--   ammo   the one slot whose number is a count rather than a level, and the
+--          one the client answers by id instead of by link. Both are facts
+--          about the slot, so both are read off this flag rather than off a
+--          slot number written into the page
 --
 -- There were three groups and the third was the weapons, drawn as three bare
 -- discs centred under the figure with no words on them at all. That was the one
@@ -74,11 +78,22 @@ ns.Worn = Worn
 -- nameless circles and a durability chord that had to be drawn a special way
 -- because there was no name to underline.
 --
--- Shirt and tabard are last in their columns and are left out of the two
--- summaries the page draws on purpose: neither has an item level, neither wears
--- out, and counting them would drag both numbers down for wearing a guild
--- tabard. Last rather than sixth and seventh, which is where they were, because
--- a piece that counts for nothing belongs under the pieces that do.
+-- Shirt and tabard are last and are left out of the two summaries the page
+-- draws on purpose: neither has an item level, neither wears out, and counting
+-- them would drag both numbers down for wearing a guild tabard. Last rather
+-- than sixth and seventh, which is where they were, because a piece that counts
+-- for nothing belongs under the pieces that do. Both are in the right hand
+-- column now, which is the one thing the ammo slot cost the layout: the columns
+-- are placed against each other and the page is as tall as the longer of the
+-- two, so a twentieth row under the bow with nothing opposite it would be a
+-- taller page with a hole in the bottom of one side.
+--
+-- Ammo is under the bow rather than anywhere else, because it is the bow's:
+-- what is in it is decided by what you are shooting with, an arrow in a gun is
+-- the mistake this row exists to make visible, and the two are read together or
+-- not at all. It is the only slot the client will not hand a link for, and the
+-- only one whose number is a count. Both are answered below rather than by the
+-- page.
 local SLOTS = {
 	{ slot = 1,  key = "HeadSlot",          label = "head",      side = "left" },
 	{ slot = 2,  key = "NeckSlot",          label = "neck",      side = "left" },
@@ -89,7 +104,7 @@ local SLOTS = {
 	{ slot = 16, key = "MainHandSlot",      label = "main hand", side = "left", hand = true },
 	{ slot = 17, key = "SecondaryHandSlot", label = "off hand",  side = "left", hand = true },
 	{ slot = 18, key = "RangedSlot",        label = "ranged",    side = "left", hand = true },
-	{ slot = 4,  key = "ShirtSlot",         label = "shirt",     side = "left", trim = true },
+	{ slot = 0,  key = "AmmoSlot",          label = "ammo",      side = "left", ammo = true, trim = true },
 
 	{ slot = 10, key = "HandsSlot",         label = "hands",     side = "right" },
 	{ slot = 6,  key = "WaistSlot",         label = "waist",     side = "right" },
@@ -100,7 +115,23 @@ local SLOTS = {
 	{ slot = 13, key = "Trinket0Slot",      label = "trinket",   side = "right" },
 	{ slot = 14, key = "Trinket1Slot",      label = "trinket",   side = "right" },
 	{ slot = 19, key = "TabardSlot",        label = "tabard",    side = "right", trim = true },
+	{ slot = 4,  key = "ShirtSlot",         label = "shirt",     side = "right", trim = true },
 }
+
+-- The ammo slot's number. Zero is a real inventory slot, and it is the one
+-- number in this file that reads as "no slot" everywhere it is written down, so
+-- it is named once here and compared against by name below.
+local AMMO = 0
+
+-- The ranged slot, which is where ammo is put on rather than where it is read.
+-- See Worn.Swap: the two halves of the ammo slot are answered at two different
+-- numbers on this client.
+local RANGED = 18
+
+-- The class the client files arrows and bullets under. Read for one question
+-- only, which is whether what the cursor is carrying onto the ammo square is
+-- ammo at all.
+local PROJECTILE = 6
 
 -- The empty-slot pictures, asked for once each. A client that has no such call
 -- draws an empty box, which is the honest degradation: the box is still where
@@ -135,8 +166,47 @@ end
 -- What is in a slot
 --------------------------------------------------------------------------
 
+-- The link for what is in the ammo slot, which the client answers by id.
+--
+-- Every other slot answers GetInventoryItemLink. The ammo slot answers it with
+-- nothing, on both clients, and that is the client rather than a gap here:
+-- ammo is a stack the bow eats out of rather than a piece with an enchant and a
+-- durability, so what the client keeps for it is an id. Narcissus reads the slot
+-- that way on this client, and so does ns.Ammo, which draws the same count on
+-- your own portrait.
+--
+-- The link is asked for by id, which is the call that turns one into the other,
+-- and it comes back nil for an item the client has not cached yet. That is the
+-- honest answer rather than a gap: the row draws its label for a second and the
+-- next repaint has the name, which is the same second every other item lookup
+-- in the addon spends on something the client has never seen.
+--
+-- The turn from one to the other is ns.ItemLink in Core/Core.lua rather than a
+-- lookup here, because the newer client moved the item calls behind C_Item and
+-- took the globals away: that pair is resolved in one file on purpose, and
+-- src/.luacheckrc says so in as many words.
+local function AmmoLink()
+	local id = Ask("GetInventoryItemID", "player", AMMO)
+	return id and ns.ItemLink(id) or nil
+end
+
 function Worn.Link(slot)
+	if slot == AMMO then
+		return AmmoLink()
+	end
 	return Ask("GetInventoryItemLink", "player", slot)
+end
+
+-- How many of what is in the slot, which is a question one slot has an answer
+-- to. A bow counts every arrow in your bags through the ammo slot; everything
+-- else you wear is one of itself and answers one.
+--
+-- Nil rather than zero where the client has no such call, so the page draws no
+-- number at all rather than a row saying you are out of arrows because the
+-- addon could not ask.
+function Worn.Count(slot)
+	local count = Ask("GetInventoryItemCount", "player", slot)
+	return type(count) == "number" and count or nil
 end
 
 -- The picture, asked for separately rather than read off the link.
@@ -202,8 +272,8 @@ end
 -- carries the enchant as a number in its second field and carries no name at
 -- all, so a name costs a tooltip scan; but the number is free, and a piece with
 -- nothing on it says so in the link before anything is asked of a tooltip. On a
--- character wearing eleven enchanted pieces out of nineteen that is eight scans
--- that never happen, and on a fresh one it is all nineteen.
+-- character wearing eleven enchanted pieces out of twenty that is nine scans
+-- that never happen, and on a fresh one it is all twenty.
 function Worn.Enchant(link)
 	if type(link) ~= "string" or not ENCHANT_LINE then
 		return nil
@@ -281,9 +351,12 @@ end
 
 -- The average item level of what you have on, and how many slots are empty.
 --
--- Shirt and tabard are skipped, and so is an off hand you cannot fill because
--- your main hand is a two hander: counting an empty slot nobody may fill is
--- counting a decision the game made for you as a gap in your gear.
+-- Shirt, tabard and ammo are skipped, and so is an off hand you cannot fill
+-- because your main hand is a two hander: counting an empty slot nobody may
+-- fill is counting a decision the game made for you as a gap in your gear. An
+-- arrow carries an item level of its own and averaging it in would move the
+-- number every time a hunter changed ammo, which is a reading that says your
+-- gear got worse when what changed was your arrows.
 function Worn.Level()
 	local total, pieces, empty = 0, 0, 0
 	local twoHanded = false
@@ -318,16 +391,26 @@ end
 --
 -- One call and two questions. The call is the swap; the questions are whether
 -- the client will take it and whether the click meant something else entirely.
+--
+-- And ammo, which is a third question, because the slot it is read at is not
+-- the slot it is put on at. Worn.Swap carries the whole of that.
 --------------------------------------------------------------------------
 
 -- The three the client will let you change in a fight. A weapon swap mid pull
 -- is a thing the game allows and a thing warriors do, and it is the whole of
 -- what combat allows: everything else is refused by the server with its own
 -- message, which is the rule Blizzard's own sheet plays by.
+--
+-- Ammo is the fourth, and it is on the list by the same rule read the other
+-- way: a hunter who runs dry mid pull reloads mid pull, and this page refusing
+-- that with a sentence about armour would be this file inventing a restriction
+-- the game does not have. Where the server disagrees it says so in its own
+-- words, which is the arrangement every slot off this list already relies on.
 local IN_COMBAT = {
 	[16] = true, -- main hand
 	[17] = true, -- off hand
 	[18] = true, -- ranged
+	[AMMO] = true, -- arrows and bullets
 }
 
 -- Whether a slot can be touched at all right now, and why not where it cannot.
@@ -335,7 +418,7 @@ local IN_COMBAT = {
 -- click that quietly does nothing.
 --
 -- The fight is asked about the slot rather than about the fight. This used to
--- refuse all nineteen in combat, which was one rule too broad: it also refused
+-- refuse every slot in combat, which was one rule too broad: it also refused
 -- the hands, and putting a weapon in your hand mid pull is the one gear change
 -- the game is happy about.
 function Worn.Free(slot)
@@ -348,6 +431,52 @@ function Worn.Free(slot)
 	return true
 end
 
+-- Whether what the cursor is carrying is ammo.
+--
+-- GetCursorInfo answers the word "item" and the item's own link, and the class
+-- behind the link is what tells a stack of arrows from a bow. Asked because the
+-- ammo square is the one place in this file where what the cursor holds decides
+-- which call is made, and a bow dropped on the arrows must not be sent
+-- somewhere the player did not aim it.
+local function CarryingAmmo()
+	local kind, _, link = Ask("GetCursorInfo")
+	if kind ~= "item" or type(link) ~= "string" then
+		return false
+	end
+	local _, classId = ns.ItemKind(link)
+	return classId == PROJECTILE
+end
+
+-- Arrows from the cursor into the quiver, which is a call at the ranged slot
+-- and not at the ammo one.
+--
+-- **The ammo slot is read at zero and written at eighteen on this client, and
+-- that is the correction this function exists for.** Everything this page asks
+-- about your ammo it asks at slot zero: the id, the count, the picture, the
+-- empty art. Dropping a stack onto the square went to the same number, which is
+-- what Blizzard's own sheet does, because CharacterAmmoSlot carries no id
+-- attribute at all and its drop runs PaperDollItemSlotButton_OnClick with
+-- GetID answering zero. On this client that call leaves the arrows sitting on
+-- the cursor and the quiver as it was.
+--
+-- Narcissus puts ammo on at the ranged slot, twice: the flyout under its own
+-- ammo square, and the pass that corrects an arrow loaded into a gun. It is the
+-- only code on this machine that equips ammo at all and it names eighteen in
+-- both places.
+--
+-- The cursor is cleared afterwards, which is its second line and belongs to the
+-- same gesture: what comes off is a stack of arrows, and arrows left hanging on
+-- the cursor are one more click for the player before they can do anything
+-- else. Cleared rather than put anywhere by name, so the client puts them back
+-- where it found room, which is what it does for every other refused pickup.
+local function Load()
+	if not pcall(_G.PickupInventoryItem, RANGED) then
+		return false, "the client refused the arrows."
+	end
+	Ask("ClearCursor")
+	return true
+end
+
 -- Whatever is on the cursor into this slot, and whatever was in the slot onto
 -- the cursor. With an empty cursor it is the second half alone, which is how a
 -- click takes something off.
@@ -355,10 +484,17 @@ end
 -- Not while a spell is waiting for an item, which the page asks about first: in
 -- that state the click is pointing the spell at this piece and the swap would
 -- be both the wrong thing and a forbidden one.
+--
+-- Ammo arriving is the one case that goes somewhere else, and only when it is
+-- ammo arriving: an empty cursor on the ammo square is a click that takes the
+-- quiver off, which is the ordinary call at the ordinary number.
 function Worn.Swap(slot)
 	local free, why = Worn.Free(slot)
 	if not free then
 		return false, why
+	end
+	if slot == AMMO and CarryingAmmo() then
+		return Load()
 	end
 	if not pcall(_G.PickupInventoryItem, slot) then
 		return false, "the client refused the swap."

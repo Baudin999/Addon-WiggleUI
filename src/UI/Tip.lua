@@ -491,7 +491,7 @@ end
 --
 -- An `item` carries one. An `inventory` is a worn slot and carries none, so it
 -- is asked for: a trinket you press has a Use line the same as a book does, and
--- the character sheet is nineteen hovers that all read a slot.
+-- the character sheet is twenty hovers that all read a slot.
 local function Carried(subject)
 	if type(subject.link) == "string" then
 		return subject.link

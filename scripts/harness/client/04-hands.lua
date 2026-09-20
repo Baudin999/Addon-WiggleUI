@@ -230,21 +230,47 @@ end
 -- the clutter window measured a level said. An item that carries its own pair
 -- is one written to be behind or in front of the player, and nothing else in
 -- the suite moves when they are the same number.
-local function itemInfo(link)
-	local name = type(link) == "string" and link:match("%\[(.-)%\]")
+--
+-- Both lookups take an id as well as a link, because the client does and one
+-- slot needs it: the ammo slot hands no link at all, so the gear row reads its
+-- id and asks these for the rest. The table is walked rather than indexed by
+-- id, because sections put fixtures in and take them out again while the suite
+-- runs and an index built at load would answer for an item that is no longer
+-- there. Two fixtures carrying one id is refused out loud: the answer would be
+-- whichever `pairs` reached first, which is a test that passes on one run and
+-- not the next.
+local function fixture(subject)
+	if type(subject) == "number" then
+		local found
+		for name, item in pairs(ITEMS) do
+			if item.id == subject then
+				assert(found == nil,
+					("two item fixtures carry id %d, %s and %s, and one of them is looked up by id")
+						:format(subject, tostring(found), name))
+				found = name
+			end
+		end
+		return found
+	end
+	return type(subject) == "string" and subject:match("%\[(.-)%\]") or nil
+end
+
+local function itemInfo(subject)
+	local name = fixture(subject)
 	local item = name and ITEMS[name]
 	if not item then
 		return nil
 	end
-	return name, link, item.quality, item.rating or 60, item.needs or 60,
+	return name, type(subject) == "string" and subject or itemLink(name),
+		item.quality, item.rating or 60, item.needs or 60,
 		nil, nil, item.stack or 1, item.equip, item.icon, item.price
 end
 -- The fourth and fifth returns are the two ns.ItemInfo reads, the equip
 -- location and the icon. The sixth and seventh are the class and the subclass,
 -- which is what tells a mining pick from a green somebody outgrew: both are a
 -- level four white one hander and only the subclass separates them.
-local function itemInfoInstant(link)
-	local name = type(link) == "string" and link:match("%\[(.-)%\]")
+local function itemInfoInstant(subject)
+	local name = fixture(subject)
 	local item = name and ITEMS[name]
 	if not item then
 		return nil

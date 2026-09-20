@@ -390,9 +390,14 @@ local function give(frame, atX, atY)
 	place(x, y)
 	local under = at(x, y, "LeftButton")
 	if under ~= frame then
+		-- tostring on both. A frame this harness built answers its own name and
+		-- an unnamed one answers its type, and both of those are strings; a
+		-- region standing in for one of the client's own answers whatever the
+		-- fixture put in the field, and a table there turned the message about a
+		-- missed drop into an error about string.format.
 		error(("a drop aimed at %s landed on %s"):format(
-			frame:GetName() or frame:GetObjectType(),
-			under and (under:GetName() or under:GetObjectType()) or "nothing"), 2)
+			tostring(frame:GetName() or frame:GetObjectType()),
+			under and tostring(under:GetName() or under:GetObjectType()) or "nothing"), 2)
 	end
 	if _G.GetCursorInfo() == nil then
 		error("a drop was made with nothing on the cursor", 2)

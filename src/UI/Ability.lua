@@ -545,7 +545,18 @@ end
 -- and is not, because ceil(119/60) and ceil(61/60) are both 2 and the label
 -- would go from 2m straight to 59 without ever saying 1m, which looks like a
 -- square that skipped a number.
+-- Expired is one tick, and it has to be its own number rather than a negative
+-- one. The tenths arm negates, so a remaining of -2 seconds comes back as 20,
+-- which is the key the 20 second reading sits on: a cooldown the client has not
+-- cleared yet would draw a plausible 20 where it used to draw an obviously
+-- broken -2.0. EXPIRED is outside all three ranges, so it reads as no label and
+-- the square draws blank.
+local EXPIRED = 1
+
 local function Quantum(remaining)
+	if remaining < 0 then
+		return EXPIRED
+	end
 	if remaining >= 60 then
 		return 10000 + math.floor(remaining / 60)
 	end
@@ -555,18 +566,61 @@ local function Quantum(remaining)
 	return -math.floor(remaining * 10)
 end
 
--- The three scales written out, on the ticks where Quantum says the number has
--- moved. Its own function rather than four more lines inside Ability.Draw,
--- which is at the shape gate's hundred line ceiling: what a countdown reads is
--- a different job from what a square draws, and this is the only part of the
--- tick that builds a string.
-local function Countdown(text, remaining)
-	if remaining >= 60 then
-		text:SetText(("%dm"):format(math.floor(remaining / 60)))
-	elseif remaining >= 10 then
-		text:SetText(("%d"):format(remaining))
+-- The longest wait the minute scale is written out for. An hour is the longest
+-- cooldown 2.5.6 puts on a bar: the hearthstone and the engineering trinkets
+-- are sixty minutes and nothing a warrior presses is longer. Three hours is the
+-- headroom, which costs 180 strings held for the session.
+local MAX_MINUTES = 180
+
+-- Every reading a countdown can show, built once at load and looked up by the
+-- number Quantum hands back.
+--
+-- This is what the 4 MB a minute was. Countdown used to build its label with
+-- :format on every tick it was called, and below ten seconds Quantum says the
+-- number moved on every one of them, so a square sweeping through the last ten
+-- seconds of a cooldown made ten throwaway strings a second. The gate did not
+-- see it because the three branches were an if chain and the chain read as a
+-- guard, which is the hole the sister card closed in scripts/check.sh.
+--
+-- A countdown has a countable number of readings, so they are all here:
+-- 100 tenths below ten seconds, 50 whole seconds up to a minute, and one per
+-- minute above that. The tick is the key rather than the remaining time,
+-- because Quantum has already decided which scale the reading is on and
+-- offsets the three out of each other's range, so one table answers all three
+-- and there is one definition of which reading a number is worth.
+local LABEL = {}
+do
+	-- Quantum returns the tenths negated, so 9.9 seconds is -99 and 0.0 is 0.
+	for tenths = 0, 99 do
+		LABEL[-tenths] = ("%.1f"):format(tenths / 10)
+	end
+	for seconds = 10, 59 do
+		LABEL[seconds] = ("%d"):format(seconds)
+	end
+	for minutes = 1, MAX_MINUTES do
+		LABEL[10000 + minutes] = ("%dm"):format(minutes)
+	end
+end
+
+-- The reading written out, on the ticks where Quantum says the number has
+-- moved. Takes the tick rather than the seconds behind it, so what decides the
+-- scale and what draws it cannot disagree, and so that the whole of this is a
+-- table lookup and a write.
+--
+-- Its own function rather than four more lines inside Ability.Draw, which is at
+-- the shape gate's hundred line ceiling: what a countdown reads is a different
+-- job from what a square draws.
+--
+-- No reading is the blank. A tick off the end of the table is a cooldown past
+-- three hours, which nothing on a 2.5.6 bar has, or a remaining time that has
+-- gone negative in the tenth of a second between the client clearing the
+-- cooldown and the next tick reading it. The old code drew "-0.0" there.
+local function Countdown(text, tick)
+	local label = LABEL[tick]
+	if label then
+		text:SetText(label)
 	else
-		text:SetText(("%.1f"):format(remaining))
+		text:SetText("")
 	end
 end
 
@@ -642,14 +696,14 @@ function Ability.Draw(w, texture, status, start, duration, count, active, equipp
 	-- The number over it, which only a real cooldown gets. A global is one and
 	-- a half seconds and the swipe has already said so.
 	if status == "cooldown" then
-		-- The string is built only when the number it would show has moved,
-		-- which at a tenth of a second between ticks is most ticks skipped
-		-- once the countdown is above ten seconds.
-		local remaining = start + duration - GetTime()
-		local tick = Quantum(remaining)
+		-- The label is written only when the number it shows has moved, which at
+		-- a tenth of a second between ticks is most ticks skipped once the
+		-- countdown is above ten seconds. Nothing is built either way: the
+		-- readings are a table made at load and the tick is the key into it.
+		local tick = Quantum(start + duration - GetTime())
 		if tick ~= w.shownTick then
 			w.shownTick = tick
-			Countdown(w.timer, remaining)
+			Countdown(w.timer, tick)
 		end
 	elseif w.shownTick ~= nil then
 		w.shownTick = nil

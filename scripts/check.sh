@@ -285,6 +285,42 @@ fi
 # string against what the bar was drawing, so the guard read as a guard and let
 # every tick through. The rule is: compare the numbers, format after.
 #
+# An if is a guard when it decides whether work happens. An if/elseif/else
+# chain does not do that: it decides which work happens, and if every arm of it
+# allocates then the tick allocates on every pass through it. That was the
+# second hole and it cost 4 MB a minute. UI/Ability.lua:Countdown wrote a
+# cooldown label three ways, one per arm, all three with :format, and the scan
+# saw an enclosing if and called all three guarded. Below ten seconds that is
+# ten strings a second per sweeping square, and the minute log named the action
+# slot as the biggest allocator in the addon while this file said no ticker
+# path allocated at all.
+#
+# So the chain is walked rather than counted. Each arm is marked as allocating
+# or free, and the chain is refused only when no arm is free. Three things
+# follow from that and all three are deliberate:
+#
+#   A chain with no else is never refused. Its free branch is the tick that
+#   matches no condition and falls out of the bottom, which is a real branch
+#   and is usually the common one.
+#
+#   An else that returns, or writes a constant, or does nothing at all, is a
+#   free arm and keeps the chain green. The addon has those and none of them is
+#   a defect.
+#
+#   A chain whose every arm allocates is itself an allocation, so a chain
+#   nested inside an arm hands its verdict up to that arm. Two chains one
+#   inside the other read the same as one, and a chain that a real guard does
+#   stop being reached is not refused. Chat/Feed.lua:Feed.Handle is the live
+#   example: its inner chain builds a line either way and its outer chain has
+#   an arm that builds nothing, so the allocation is not on every call.
+#
+# What the rule still cannot see, written down here rather than left to be
+# rediscovered. A guard on a constant, and a guard on a field the same tick has
+# just written, both read as guards. So does an allocation inside a for loop
+# inside an arm, because an arm is judged on the statements at its own depth.
+# Those are the next three holes and none of them is what the minute log is
+# pointing at today.
+#
 # Reading `..` off a line takes a small lexer rather than a match, because the
 # scan skips a whole-line comment and nothing else. A trailing `-- two dots ..`
 # on a line of code, and a `..` inside a string literal, are both text and
@@ -593,12 +629,51 @@ function code_of(s,   out, i, n, c, q) {
 	return out
 }
 
+# Whether an `if` at this depth has one above it, which is the same test the
+# guard check at the foot of this program makes of an ordinary line. One reader
+# of it, so the chain walk and the guard cannot disagree about what "reached on
+# every call" means.
+function shielded(depth,   k) {
+	for (k = 2; k <= depth; k++) if (opener[k] == "if") return 1
+	return 0
+}
+
+# One arm of a chain closed. The verdict only survives an arm that allocated.
+function arm_shut(depth) {
+	chainEvery[depth] = chainEvery[depth] && chainArm[depth]
+	chainArm[depth] = 0
+}
+
+# A chain closed, and what it is worth to whatever encloses it.
+#
+# A chain every one of whose arms allocates is itself an allocation: the tick
+# goes in and comes out having built something, whichever way it went. So it is
+# refused where an allocation would be refused. Where an `if` above it does stop
+# it being reached, it is not refused; it is handed up as the allocation of the
+# arm that encloses it, which is what makes two chains one inside the other read
+# the same as one.
+function chain_shut(depth,   fires) {
+	if (!chainAt[depth]) return
+	arm_shut(depth)
+	fires = chainElse[depth] && chainEvery[depth]
+	if (fires) {
+		if (chainGuard[depth]) {
+			if (chainAt[depth - 1]) chainArm[depth - 1] = 1
+		} else {
+			printf "%s:%d: %s allocates in every arm of this chain, which picks which allocation happens rather than whether one does: %s\n", \
+				FILENAME, chainAt[depth], target, chainHead[depth]
+		}
+	}
+	delete chainAt[depth]
+}
+
 {
 	line = $0
 	if (!inside) {
 		if (line ~ ("^(local[ ]+)?function[ ]+" target "[ ]*\\(")) {
 			inside = 1
 			for (k in opener) delete opener[k]
+			for (k in chainAt) delete chainAt[k]
 		}
 		next
 	}
@@ -608,14 +683,51 @@ function code_of(s,   out, i, n, c, q) {
 	while (substr(line, indent + 1, 1) == "\t") indent++
 	body = substr(line, indent + 1)
 
-	for (k in opener) if (k + 0 > indent + 1) delete opener[k]
+	# A blank line and a whole-line comment are read before the depth
+	# bookkeeping rather than after it. A blank line carries no tabs, so its
+	# indent is zero, and letting it through the loops below closed every block
+	# open in the function: a guard stopped at the first empty line under it,
+	# and the chain walk would lose an arm to the blank line between two of them.
 	if (body ~ /^--/ || body == "") next
+
+	for (k in opener) if (k + 0 > indent + 1) delete opener[k]
+
+	# Every chain deeper than this line is over, whether or not its `end` was
+	# seen. Shut from the deepest inwards, so an inner chain hands its verdict
+	# to the arm it sits in before that arm is judged.
+	for (k in chainAt) if (k + 0 > indent) deep[k + 0] = 1
+	for (k = 64; k > indent; k--) if (deep[k]) { chain_shut(k); delete deep[k] }
 
 	if (body ~ /^if[ (]/ || body ~ /^elseif[ (]/ || body == "else") opener[indent + 1] = "if"
 	else if (body ~ /^for[ (]/ || body ~ /^while[ (]/ || body == "do" || body == "repeat") opener[indent + 1] = "loop"
 	else if (body ~ /function[ ]*\(/) opener[indent + 1] = "loop"
 	else if (body ~ / then$/) opener[indent + 1] = "if"
 	else if (body ~ / do$/) opener[indent + 1] = "loop"
+
+	# Whether this line opens a block rather than being a statement in one. A
+	# header is never what an arm allocates for: a `for ... do` and the last
+	# line of an `if` condition spread over two both sit at the depth the
+	# statements of an arm sit at, and neither is one.
+	opens = (body ~ /^if[ (]/ || body ~ /^elseif[ (]/ || body == "else" \
+		|| body ~ /^for[ (]/ || body ~ /^while[ (]/ || body == "do" || body == "repeat" \
+		|| body ~ /function[ ]*\(/ || body ~ / then$/ || body ~ / do$/)
+
+	if (body ~ /^if[ (]/) {
+		chain_shut(indent)
+		chainAt[indent] = NR
+		chainHead[indent] = body
+		chainGuard[indent] = shielded(indent)
+		chainEvery[indent] = 1
+		chainArm[indent] = 0
+		chainElse[indent] = 0
+	} else if (chainAt[indent] && body ~ /^elseif[ (]/) {
+		arm_shut(indent)
+	} else if (chainAt[indent] && body == "else") {
+		arm_shut(indent)
+		chainElse[indent] = 1
+	} else if (body ~ /^end([^A-Za-z0-9_]|$)/) {
+		chain_shut(indent)
+	}
 
 	code = code_of(body)
 	joins = code
@@ -635,11 +747,160 @@ function code_of(s,   out, i, n, c, q) {
 		next
 	}
 
+	# Read after the exemptions, so a line already excused by name does not mark
+	# its arm and cannot be what condemns the chain around it.
+	if (allocates && !opens && indent >= 2 && chainAt[indent - 1]) chainArm[indent - 1] = 1
+
 	guarded = 0
 	for (k = 2; k <= indent; k++) if (opener[k] == "if") guarded = 1
 	if (!guarded) printf "%s:%d: %s %s without a guard: %s\n", FILENAME, NR, target, kind, body
 }
 '
+
+# The scan proved against a fixture rather than against the addon.
+#
+# The chain rule was written to refuse UI/Ability.lua:Countdown as it stood on
+# 20 September and it did. Held to that alone, the test goes vacuous the moment
+# somebody rewrites that function, which is exactly what the next commit did.
+# So the shapes live here instead, one function per case, and the live source is
+# what they are aimed at rather than what they are measured against.
+#
+# Every case is a function the scan is run over on its own, and the list below
+# says whether it must come back with something. The fixture is deliberately
+# not Lua the addon loads: it is text for awk, it never reaches a TOC, and the
+# exemption allow-lists above only ever read files under src/.
+hot_fixture=$(mktemp)
+cat > "$hot_fixture" <<'HOTFIXEOF'
+-- Every arm builds a string. The shape this rule exists to refuse, and the
+-- shape UI/Ability.lua:Countdown had.
+local function EveryArm(text, remaining)
+	if remaining >= 60 then
+		text:SetText(("%dm"):format(math.floor(remaining / 60)))
+	elseif remaining >= 10 then
+		text:SetText(("%d"):format(remaining))
+	else
+		text:SetText(("%.1f"):format(remaining))
+	end
+end
+
+-- Every arm allocates and none of it is a widget write.
+local function EveryArmTable(w, n)
+	if n > 1 then
+		w.held = { n }
+	else
+		w.held = { 0 }
+	end
+end
+
+-- The else returns and writes nothing, so there is a way through that builds
+-- nothing. The addon has these and they are not defects.
+local function ElseReturns(w, name)
+	if name then
+		w.label:SetText("a " .. name)
+	else
+		return
+	end
+end
+
+-- The else writes a constant. Same answer, and this is UI/Ability.lua:Draw
+-- clearing a stack count.
+local function ElseConstant(w, name)
+	if name then
+		w.label:SetText("a " .. name)
+	else
+		w.label:SetText("")
+	end
+end
+
+-- No else at all. The free branch is the tick that matches neither condition.
+local function NoElse(w, name)
+	if name then
+		w.label:SetText("a " .. name)
+	elseif w.other then
+		w.label:SetText("b " .. name)
+	end
+end
+
+-- Every arm allocates and every one of them carries a written reason, which is
+-- what the exemption is for.
+local function EveryArmExempt(w, n)
+	if n > 1 then
+		w.held = { n } -- allocates: a fixture, exempt on purpose
+	else
+		w.held = { 0 } -- allocates: a fixture, exempt on purpose
+	end
+end
+
+-- The inner chain has no free arm, so it is an allocation, and the outer chain
+-- allocates in its other arm too. Refused at the outer chain.
+local function NestedChain(w, n, m)
+	if n > 1 then
+		if m then
+			w.held = { n }
+		else
+			w.held = { m }
+		end
+	else
+		w.held = { 0 }
+	end
+end
+
+-- The inner chain has a free arm, so the outer one has a way through that
+-- builds nothing. This is Chat/Feed.lua:Feed.Handle in miniature.
+local function NestedFree(w, n, m)
+	if n > 1 then
+		if m then
+			w.held = { n }
+		end
+	else
+		w.held = { 0 }
+	end
+end
+
+-- An arm with a blank line in it is still one arm, and the blank line does not
+-- close the blocks above it.
+local function Spaced(w, n)
+	if n > 1 then
+		w.held = n
+
+		w.built = { n }
+	else
+		return
+	end
+end
+
+-- An allocation with nothing above it at all, which is the older half of this
+-- rule and has to keep failing.
+local function Bare(w, n)
+	w.held = { n }
+end
+HOTFIXEOF
+
+while IFS=: read -r fixture_fn fixture_want; do
+	[ -n "$fixture_fn" ] || continue
+	fixture_said=$(awk -v target="$fixture_fn" "$hot_scan" "$hot_fixture")
+	if [ "$fixture_want" = refused ] && [ -z "$fixture_said" ]; then
+		echo "the hot path scan passes $fixture_fn and the fixture in check.sh says it must refuse it"
+		status=1
+	fi
+	if [ "$fixture_want" = passed ] && [ -n "$fixture_said" ]; then
+		echo "the hot path scan refuses $fixture_fn and the fixture in check.sh says it must pass it: $fixture_said"
+		status=1
+	fi
+done <<HOTFIXLIST
+EveryArm:refused
+EveryArmTable:refused
+NestedChain:refused
+Bare:refused
+ElseReturns:passed
+ElseConstant:passed
+NoElse:passed
+EveryArmExempt:passed
+NestedFree:passed
+Spaced:passed
+HOTFIXLIST
+
+rm -f "$hot_fixture"
 
 # Nothing checks that the list names a file that exists or a function that is
 # there, the way it did while a person typed it. hot.lua only ever prints a

@@ -1,6 +1,6 @@
 local ADDON, ns = ...
 
-ns.version = "1.13"
+ns.version = "1.14"
 
 -- Core knows nothing about any feature. It holds the saved variables, the API
 -- shims, the two drawing helpers every part uses, and the one registry every
@@ -1834,6 +1834,36 @@ function ns.ItemLevel(link)
 		return nil
 	end
 	return level
+end
+
+-- The link for an item id, which is the one direction the three lookups above
+-- do not cover.
+--
+-- One slot in the game needs it. The ammo slot is the only one the client hands
+-- no link for: it answers an id and nothing else, so the gear row asks here and
+-- gets back the text every other item in the addon starts from. Narcissus reads
+-- that slot the same way on this client.
+--
+-- Here rather than in the file that asks, because this is where the pair of
+-- namespaces is already resolved: the newer client moved the item lookups into
+-- C_Item and took the globals away, and src/.luacheckrc says in as many words
+-- that C_Item is reached through _G in this file and named in no other.
+--
+-- Nil for an id the client has not cached yet, which is the answer ns.ItemValue
+-- and ns.ItemLevel give for the same reason and is treated the same way: the
+-- row draws what it has and asks again on the next repaint.
+function ns.ItemLink(id)
+	if type(id) ~= "number" then
+		return nil
+	end
+
+	local lookup = (C_Item and C_Item.GetItemInfo) or _G.GetItemInfo
+	if type(lookup) ~= "function" then
+		return nil
+	end
+
+	local _, link = lookup(id)
+	return type(link) == "string" and link or nil
 end
 
 -- What is in a piece's sockets, and how many are still open.

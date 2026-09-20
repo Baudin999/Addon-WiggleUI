@@ -128,7 +128,7 @@ ns.Register({
 		character = true,
 
 		-- On, and the sheet is barely a sheet without it. It has no ground by
-		-- design, so what nineteen item names and a column of numbers are read
+		-- design, so what twenty item names and a column of numbers are read
 		-- against is whatever the player happens to be standing on, and a page
 		-- with no edge and no ground reads as text scattered over scenery rather
 		-- than as one thing. The wash is what makes it a page.

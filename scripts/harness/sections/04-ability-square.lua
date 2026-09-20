@@ -749,6 +749,136 @@ collectgarbage("restart")
 check(churned < 0.05,
 	("redrawing an unchanged square 50 times allocated %.2f KB"):format(churned))
 
+-- The same figure over a square whose number is moving, which the check above
+-- cannot see and which is why 4 MB a minute of garbage hid behind it for five
+-- sessions.
+--
+-- An unchanged redraw never enters the countdown at all: Ability.Draw only
+-- calls it on the tick where Quantum says the reading moved, so the 0.00 KB
+-- above is the cost of everything on this path except the one function that
+-- used to build a string. The live minute log had the action slot allocating
+-- 4.2 to 5.2 MB a minute while this section said the square allocated nothing,
+-- and both were true.
+--
+-- So the sweep walks a cooldown down through all three of the scales the
+-- countdown writes: minutes above a minute, whole seconds above ten, tenths
+-- below it, one draw per reading the square would actually show. 330 of them,
+-- and a small Lua string is about 40 bytes, so any arm of the countdown that
+-- builds one puts more than 10 KB on this figure.
+--
+-- Walked twice, and the order of the two passes is the whole trick. The first
+-- weighs the heap with nothing recording, because a set of strings is itself
+-- an allocation and would be the only one in the reading. The second keeps
+-- every label, because a zero is worth nothing unless the countdown was
+-- reached.
+--
+-- Weighing first and keeping second, and not the other way round. Lua 5.1
+-- interns every string it makes, so a :format whose answer is already on the
+-- heap and still referenced costs nothing at all. Recording first held all 330
+-- readings alive, the weighed pass rebuilt the same ones, the string table
+-- handed each of them straight back, and the check read 0.00 KB against the
+-- unfixed countdown. That is also why this is garbage in the game and not
+-- here: SetText copies the text into the client, nothing in Lua holds it, and
+-- the next tenth of a second builds it again from nothing.
+local sweptChurn
+local sweptWrites = 0
+do
+	local SWEEP = 3 * 60 * 60
+
+	-- Landed just above the reading rather than on it. Every scale the countdown
+	-- writes rounds down, and the clock here is a double at about twenty thousand
+	-- seconds, so aiming at exactly 9.9 lands a few picoseconds under it half the
+	-- time and the square draws 9.8. A microsecond of headroom is four orders
+	-- under the smallest step the sweep takes and puts every reading on its own
+	-- side of the boundary, which is what makes the counts below a fixed number
+	-- rather than a floor with a story attached.
+	local NUDGE = 1e-6
+
+	local function sweepTo(swept, remaining)
+		-- The clock moves rather than the cooldown, so start and duration never
+		-- change and the swipe's own guard stays shut. What moves is the number.
+		advance(swept + SWEEP - (remaining + NUDGE) - _G.GetTime())
+		Ability.Draw(w, ART, "cooldown", swept, SWEEP)
+	end
+
+	local function sweepOnce()
+		local swept = _G.GetTime()
+		-- The first draw carries the status change with it and is the one reading
+		-- the loops below do not repeat.
+		sweepTo(swept, SWEEP)
+		for minutes = SWEEP / 60, 1, -1 do
+			sweepTo(swept, minutes * 60)
+		end
+		for seconds = 59, 10, -1 do
+			sweepTo(swept, seconds)
+		end
+		for tenths = 99, 0, -1 do
+			sweepTo(swept, tenths / 10)
+		end
+	end
+
+	w.timer.SetText = function() end
+	collectgarbage()
+	collectgarbage("stop")
+	local beforeSweep = collectgarbage("count")
+	sweepOnce()
+	sweptChurn = collectgarbage("count") - beforeSweep
+	collectgarbage("restart")
+	collectgarbage("restart")
+
+	local shown = {}
+	w.timer.SetText = function(_, text)
+		sweptWrites = sweptWrites + 1
+		shown[text or ""] = true
+	end
+	sweepOnce()
+	countWrites(w.timer, "SetText")
+
+	check(sweptChurn < 0.05,
+		("sweeping a cooldown through its three scales allocated %.2f KB"):format(sweptChurn))
+
+	-- And that the sweep is not flat because it never reached the countdown. Every
+	-- reading is counted by the shape of what it wrote, and the three numbers are
+	-- exact: 180 minutes, the 50 whole seconds from 59 down to 10, and the 100
+	-- tenths below that. A guard that stopped letting the countdown run would make
+	-- the figure above flat for the wrong reason, and this is what says it did not.
+	local onMinutes, onSeconds, onTenths = 0, 0, 0
+	for text in pairs(shown) do
+		if text:match("^%d+m$") then onMinutes = onMinutes + 1
+		elseif text:match("^%d%d$") then onSeconds = onSeconds + 1
+		elseif text:match("^%d%.%d$") then onTenths = onTenths + 1
+		end
+	end
+	check(onMinutes == 180,
+		("the sweep wrote %d readings on the minute scale, expected 180"):format(onMinutes))
+	check(onSeconds == 50,
+		("the sweep wrote %d readings in whole seconds, expected 50"):format(onSeconds))
+	check(onTenths == 100,
+		("the sweep wrote %d readings in tenths, expected 100"):format(onTenths))
+	check(sweptWrites == 330,
+		("the sweep wrote the timer %d times, expected one per reading"):format(sweptWrites))
+
+	-- The blank is what the countdown writes for a reading it has no string for,
+	-- so one here is the label table being shorter than the ladder that indexes
+	-- it. Nothing in this sweep is out of its range.
+	check(not shown[""], "a reading in the sweep fell off the end of the label table")
+
+	-- The three scales read back off a square nobody has shadowed, so a reading
+	-- that fell off the end of the table would show as a blank rather than as a
+	-- number nobody looked at. Ten minutes of cooldown, read at three depths.
+	local function readingAt(remaining)
+		local at = _G.GetTime()
+		Ability.Draw(feel, ART, "cooldown", at - (600 - remaining), 600)
+		return feel.timer:GetText()
+	end
+	check(readingAt(90) == "1m",
+		("a minute and a half of cooldown reads %q"):format(readingAt(90)))
+	check(readingAt(30) == "30",
+		("thirty seconds of cooldown reads %q"):format(readingAt(30)))
+	check(readingAt(5) == "5.0",
+		("five seconds of cooldown reads %q"):format(readingAt(5)))
+end
+
 --------------------------------------------------------------------------
 -- What a frame hands the camera
 --------------------------------------------------------------------------
@@ -794,4 +924,5 @@ slots[SLOT] = nil
 guids.target = nil
 
 print(("ability %d statuses over 2 palettes, the ladder walked to every rung,"
-	.. " 0 writes on 50 unchanged redraws, %.2f KB"):format(named, churned))
+	.. " 0 writes on 50 unchanged redraws, %.2f KB, %.2f KB over %d swept"
+	.. " readings"):format(named, churned, sweptChurn, sweptWrites))

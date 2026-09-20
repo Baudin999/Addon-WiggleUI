@@ -41,7 +41,7 @@ local C, M = UI.Color, UI.Metric
 --
 -- **This window opens in a fight, and everything below that says `secure` or
 -- `InCombatLockdown` is there for that one sentence.** The gear page carries
--- nineteen secure buttons because using what is in a slot is protected, a frame
+-- twenty secure buttons because using what is in a slot is protected, a frame
 -- built from a secure template is protected, and every protected thing an addon
 -- does in combat is refused: showing this window, hiding it, moving it, sizing
 -- it. Blizzard's own sheet does all of that in a fight because Blizzard's code
@@ -106,7 +106,7 @@ local function Chrome()
 	footer:SetPoint("LEFT")
 end
 
--- Held to the end of a fight. Sizing the gear page sizes the frame nineteen
+-- Held to the end of a fight. Sizing the gear page sizes the frame twenty
 -- secure buttons hang off, which is the same protected act as showing it, and
 -- a sheet laid out for the old screen only has a wide margin until then.
 --
@@ -219,7 +219,7 @@ function Window.Build()
 	-- one nobody moves twice.
 	--
 	-- The anchor comes back through the snippet rather than through a SetPoint,
-	-- because every one of the nineteen gear squares is protected and so is the
+	-- because every one of the twenty gear squares is protected and so is the
 	-- window holding them. UI/Placeable.lua carries which of the two paths a
 	-- frame takes and why; what it means here is that the sheet can be put back
 	-- where you left it while you are being hit.
@@ -258,7 +258,7 @@ end
 
 -- The page and the line along the bottom.
 --
--- And nothing at all while the window is shut. This is nineteen slots, every
+-- And nothing at all while the window is shut. This is twenty slots, every
 -- stat and every skill, and it ran twice at login on a window nobody had
 -- opened: once out of the fit and once out of the tab strip choosing its first
 -- tab. The window's own OnShow is what pays for it now, so the sheet is painted
@@ -408,7 +408,7 @@ function Window.Pane()
 end
 
 -- Repainted only while it is up. Every event below fires whether or not
--- anybody is looking, and walking nineteen slots and sixty skills to update a
+-- anybody is looking, and walking twenty slots and sixty skills to update a
 -- window nobody has open is the waste this addon has a gate for.
 function Window.Refresh()
 	if Window.Shown() then
@@ -437,9 +437,17 @@ end
 -- a login error is what a plain register would cost there.
 --------------------------------------------------------------------------
 
+--
+-- BAG_UPDATE is the ammo row's and nothing else's. A shot spends an arrow out
+-- of a bag rather than out of the slot, so the count under the bow is the one
+-- number on this page that moves without a single slot changing, and
+-- UnitFrames/Skin.lua watches the same event for the same count on your own
+-- portrait. It costs a repaint of a page nobody has open while they are
+-- shooting, which is the cheapest version of being right.
 local WATCHED = {
 	"UNIT_INVENTORY_CHANGED",
 	"PLAYER_EQUIPMENT_CHANGED",
+	"BAG_UPDATE",
 	"UPDATE_INVENTORY_DURABILITY",
 	"UNIT_STATS",
 	"UNIT_ATTACK_POWER",

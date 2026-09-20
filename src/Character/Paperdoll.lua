@@ -9,7 +9,7 @@ local C, M = UI.Color, UI.Metric
 --------------------------------------------------------------------------
 -- The gear page
 --
--- Nineteen slots in two columns, the player standing full height in the gap
+-- Twenty slots in two columns, the player standing full height in the gap
 -- between them, and against the right edge who you are, what your gear adds up
 -- to and every number the client knows about you.
 --
@@ -109,7 +109,7 @@ local C, M = UI.Color, UI.Metric
 -- rather than the item's name beside it. That is what every other item in the
 -- game already wants.
 --
--- **Nineteen secure buttons are what closed this window in a fight, and the key
+-- **Twenty secure buttons are what closed this window in a fight, and the key
 -- is what opened it again.** A secure button is a protected frame, showing a
 -- window that has a protected frame inside it is itself protected, and an addon
 -- may not do a protected thing in combat. So the sheet would not come up mid
@@ -131,6 +131,21 @@ local C, M = UI.Color, UI.Metric
 -- drag a helmet into should be the size of the square the helmet came out of.
 local SQUARE = 36
 local WEAR = 2
+
+-- How far past the disc the ammo square answers the mouse.
+--
+-- It is the one slot you fill by dragging. A weapon is a click, a stone is a
+-- right click, and arrows come out of a bag and go onto the square, so the
+-- ammo row is the only one on the page whose whole job is to be a target. A
+-- thirty-six pixel disc at the end of a row two hundred and eighty wide is a
+-- target most drops miss, and a drop that misses lands on the row, which takes
+-- no clicks at all and swallows it without a word.
+--
+-- A hit rect and not a wider button, and this slot and no other: the rest of
+-- every row is the camera's, and a button that covered the name would take the
+-- right drag that turns the figure with it. Narcissus widens its own ammo slot
+-- by the same order of pixels on this client, for this slot and no other.
+local REACH = 48
 
 -- How far inside the ring the icon sits, which is also how wide the band of
 -- quality colour showing round it is.
@@ -438,7 +453,7 @@ local SWEEP = 0.25
 
 -- The shortest wait that belongs to the item. A slot answers the global
 -- cooldown as well as its own, so a trinket you have just pressed an ability
--- over reads a second and a half, and nineteen rings blinking on every
+-- over reads a second and a half, and twenty rings blinking on every
 -- Bloodthirst says nothing about any trinket. Cooldowns/Cooldowns.lua draws the
 -- line in the same place.
 local OWN = 1.5
@@ -448,7 +463,7 @@ local OWN = 1.5
 --
 -- Nothing on this page moved. Put a ring on and the word under the disc is a
 -- different word between two frames, which you see only if you happened to be
--- looking at that row; open the sheet and nineteen rows and a figure are all
+-- looking at that row; open the sheet and twenty rows and a figure are all
 -- there at once, with nowhere for the eye to start.
 --
 -- Narcissus answers both and answers them apart, which is the half worth
@@ -460,8 +475,8 @@ local OWN = 1.5
 --
 -- So two motions on the two channels of Ck/Animations.lua and no third. That
 -- file's header says why the client's own animation groups were refused and
--- every reason holds here: nineteen rows would be nineteen groups built rather
--- than nineteen tweens armed, each carrying a closure for its own finish, and
+-- every reason holds here: twenty rows would be twenty groups built rather
+-- than twenty tweens armed, each carrying a closure for its own finish, and
 -- a group gives nothing back that says where the frame it moved has got to.
 --
 -- **The fade is a dip and not two runs.** Narcissus can write the new string
@@ -481,8 +496,8 @@ local OWN = 1.5
 --
 -- **Both are refused in a fight, and nothing here is protected.** The sheet is
 -- opened mid pull to be read: what is left on the weapon, what is about to
--- break, what the badges at the head of the column say. Nineteen rows sliding
--- in over six tenths of a second is nineteen rows you cannot read while they
+-- break, what the badges at the head of the column say. Twenty rows sliding
+-- in over six tenths of a second is twenty rows you cannot read while they
 -- do it, and a row dipping to nothing is the one you were reading going away.
 --------------------------------------------------------------------------
 
@@ -513,7 +528,7 @@ local FADE = 0.4
 -- outside the sheet and comes in from under its edge, which is what "in from its
 -- own side" means and what the eye reads as a slide. Twenty units of travel is a
 -- twitch. It only works because Paperdoll.New clips the page, and the day that
--- clip is dropped this number is what draws nineteen squares over the world.
+-- clip is dropped this number is what draws twenty squares over the world.
 local SLIDE = 120
 local ARRIVE = 0.6
 local STAGGER = 0.03
@@ -534,7 +549,7 @@ Pane.__index = Pane
 -- tick.
 --
 -- Character/Window.lua builds exactly one of these and never takes it down,
--- because the page holds nineteen secure buttons and hiding one of those in a
+-- because the page holds twenty secure buttons and hiding one of those in a
 -- fight is a protected act. A second page would be a second thing this pointed
 -- at and the sheet has no way to grow one.
 local page
@@ -558,7 +573,7 @@ end
 -- there for the reason its comment gives.
 --
 -- The list is what the repaint left, so the tick walks two squares on most
--- characters rather than nineteen, and it never asks what is in a slot: that is
+-- characters rather than twenty, and it never asks what is in a slot: that is
 -- the dirty bit's job and the answer only moves when your gear does. Pane's own
 -- Cooling switches this off outright for a character wearing nothing with a use
 -- on it, which is a question about gear rather than about the window and is why
@@ -688,7 +703,7 @@ end
 --
 -- Everything is anchored here rather than in Resize, off the face at one end and
 -- the row's own far edge at the other, so a row that changes width takes its
--- text with it and Resize places nineteen frames and nothing inside one.
+-- text with it and Resize places twenty frames and nothing inside one.
 --
 -- The dots run in from the far edge and the item level sits at the near one, so
 -- the two never collide on a name long enough to clip: what gets cut is the
@@ -734,7 +749,7 @@ local function Words(box, entry)
 	-- the disc, which is the ring, and the gem's own icon laid over it inset by
 	-- BAND so that a band of the disc shows all the way round. Both are made at
 	-- build and shown by the repaint, because a texture made on a repaint is a
-	-- texture made nineteen times every time anything you are wearing moves.
+	-- texture made twenty times every time anything you are wearing moves.
 	--
 	-- The icon is clipped to the same circle. A gem icon is a square picture and
 	-- the file has corners in it, and a square in a row of discs is the one that
@@ -772,11 +787,6 @@ end
 -- below is written twice, so the split cost nothing; what it bought is a row
 -- builder you can see the ends of at once.
 local function Press(pane, entry, box)
-	-- The line the client already knows. `/use 16` is what every sharpening
-	-- stone macro in the game carries, and it is the same line for all nineteen
-	-- slots with the number changed.
-	local use = ("/use %d"):format(entry.slot)
-
 	-- The disc and not the row. See the note at the head of the file: the row is
 	-- the camera's and the button is the thirty-six pixels of icon in it.
 	--
@@ -785,16 +795,36 @@ local function Press(pane, entry, box)
 	button:SetAllPoints(box.face)
 	button:SetFrameLevel(box:GetFrameLevel() + 1)
 
-	button:SetAttribute("type2", "macro")
-	button:SetAttribute("macrotext2", use)
+	-- And the ammo square reaches out over the start of its own name. See REACH:
+	-- the disc is where the picture is and the row is where the cursor goes.
+	-- Away from the disc, which is whichever side of the row the name is on.
+	if entry.ammo then
+		local near = entry.side == "right" and -REACH or 0
+		local far = entry.side == "right" and 0 or -REACH
+		button:SetHitRectInsets(near, far, 0, 0)
+	end
 
-	-- Where a spell that is waiting for an item lands. The secure template looks
-	-- this up itself after every click and uses the slot, which is the one path
-	-- a sharpening stone, an oil, an enchanting scroll or a poison can take from
-	-- a button an addon built. Written once at build, so there is nothing to arm
-	-- on the way past and it holds in a fight, where an attribute cannot be
-	-- written at all.
-	button:SetAttribute("target-slot", entry.slot)
+	-- The line the client already knows. `/use 16` is what every sharpening
+	-- stone macro in the game carries, and it is the same line for all nineteen
+	-- slots with the number changed.
+	--
+	-- And the slot where a spell that is waiting for an item lands. The secure
+	-- template looks this up itself after every click and uses the slot, which
+	-- is the one path a sharpening stone, an oil, an enchanting scroll or a
+	-- poison can take from a button an addon built. Written once at build, so
+	-- there is nothing to arm on the way past and it holds in a fight, where an
+	-- attribute cannot be written at all.
+	--
+	-- Both are every slot but the ammo one. `/use 0` names nothing the client
+	-- will run, nothing that goes in that slot has a use on it, and a stone has
+	-- nowhere to land on a stack of arrows: the ammo row is the one square with
+	-- no secure half at all. Its left click is the ordinary swap below, which is
+	-- how you reload from it, and its right click answers nothing.
+	if not entry.ammo then
+		button:SetAttribute("type2", "macro")
+		button:SetAttribute("macrotext2", ("/use %d"):format(entry.slot))
+		button:SetAttribute("target-slot", entry.slot)
+	end
 
 	-- Before the secure half of the click, because the secure half is what
 	-- consumes the waiting spell: asked afterwards the client says nothing is
@@ -893,7 +923,7 @@ local function Square(pane, entry)
 	--
 	-- UI.HoverOnly and not EnableMouse with the camera's buttons handed back:
 	-- this client has no SetPassThroughButtons, so that pair was a row two hundred
-	-- and eighty pixels wide swallowing the drag, nineteen times, on a sheet the
+	-- and eighty pixels wide swallowing the drag, twenty times, on a sheet the
 	-- size of the monitor. UI/Press.lua carries which call the client actually has.
 	UI.HoverOnly(box)
 	box:SetScript("OnEnter", Enter)
@@ -984,7 +1014,7 @@ end
 --
 -- Every join sits behind the test for the piece it joins. That is the rule
 -- every function a tick can reach is held to, and here it costs nothing to
--- keep: sixteen of the nineteen rows have a level and nothing else, and on
+-- keep: sixteen of the twenty rows have a level and nothing else, and on
 -- those this allocates the level's own string and stops.
 local function Note(box)
 	local named
@@ -1098,9 +1128,9 @@ end
 -- name, and one narrower is a name half on the shadow and half on the grass.
 --
 -- Not drawn at all on an empty slot. The row still says what the slot is for,
--- dimmed, and a shadow under the word trinket is a shadow under nothing; eight
--- of the nineteen rows are empty on most characters and nineteen of them would
--- be a second page laid over the first.
+-- dimmed, and a shadow under the word trinket is a shadow under nothing; nine
+-- of the twenty rows are empty on most characters and twenty of them would be a
+-- second page laid over the first.
 --
 -- The name's width is handed in rather than measured again, because the rule
 -- under the name wants the same number and two readings of one measurement are
@@ -1120,8 +1150,8 @@ end
 --
 -- The arc is built on the first repaint that finds something pressable in the
 -- slot and never again, rather than at build with the rest of the square. An
--- arc is four objects, most of nineteen slots never hold anything with a use on
--- it, and seventy-six textures on a page that draws two arcs is the whole of
+-- arc is four objects, most of twenty slots never hold anything with a use on
+-- it, and eighty textures on a page that draws two arcs is the whole of
 -- what building them up front would buy. Once is once: the branch is on the arc
 -- and not on the item, so a trinket swapped for another trinket reuses the one
 -- the slot already has.
@@ -1140,6 +1170,28 @@ local function PaintWait(box, link)
 		UI.Sweep(box.arc, use and Waiting(box.entry) or 0)
 	end
 	return use
+end
+
+-- The number on a row's second line, which is the item's level on every row
+-- but one.
+--
+-- Ammo is counted rather than levelled. An arrow carries an item level like
+-- everything else you wear, and it is the one number about a stack of arrows
+-- nobody has ever wanted: what the slot is read for is how many shots are left
+-- in it, which is the number the pill on your own portrait already draws and
+-- the one thing this page could not tell you until the row landed.
+--
+-- The count is taken off the slot rather than off the link, because the link is
+-- one arrow and the slot is every one of them in your bags. An empty slot has
+-- no link, draws its label and asks for no number at all, the same as every
+-- other empty row on the page.
+local function Number(entry, link)
+	if entry.ammo then
+		local count = link and ns.Worn.Count(entry.slot) or nil
+		return count and ("%d"):format(count) or nil
+	end
+	local level = link and ns.ItemLevel(link)
+	return level and level > 0 and ("%d"):format(level) or nil
 end
 
 local function PaintSquare(box)
@@ -1162,21 +1214,20 @@ local function PaintSquare(box)
 	local tone = quality and UI.Quality[quality] or C.dim
 	box.name:SetText(link and (ns.ItemInfo(link)) or entry.label)
 	box.name:SetTextColor(tone[1], tone[2], tone[3])
-	local level = link and ns.ItemLevel(link)
-	box.level = level and level > 0 and ("%d"):format(level) or nil
+	box.level = Number(entry, link)
 
 	-- And the enchant, on the repaint that found the link changed and on no
 	-- other.
 	--
 	-- A name for an enchant costs a tooltip scan, because the link carries the
-	-- id and no client call turns one into a word. Nineteen of those on every
-	-- repaint is nineteen tooltips filled and read back every time you loot a
+	-- id and no client call turns one into a word. Twenty of those on every
+	-- repaint is twenty tooltips filled and read back every time you loot a
 	-- grey, and UI/Scan.lua does not cache on purpose: an item's text is the
 	-- client's and a cache between the two is one more thing that can be stale
 	-- while the page says otherwise.
 	--
 	-- So the question is asked where the answer can have changed, and Redress
-	-- above already knows where that is. It compares the nineteen links against
+	-- above already knows where that is. It compares the twenty links against
 	-- what the page drew last, for the figure, and the same comparison answers
 	-- this: an enchant is part of the link, so a link that did not move carries
 	-- the enchant it carried before.
@@ -1224,7 +1275,7 @@ local function Readings()
 
 	read[1] = {
 		value = level and ("%.1f"):format(level) or "none",
-		note = "Averaged over what you are wearing. Shirt and tabard are left out, because neither carries a level worth counting.",
+		note = "Averaged over what you are wearing. Shirt, tabard and ammo are left out, because none of the three carries a level worth counting.",
 	}
 
 	read[2] = {
@@ -1238,7 +1289,7 @@ local function Readings()
 
 	read[3] = {
 		value = ("%d"):format(empty or 0),
-		note = "Shirt and tabard are not counted, and neither is an off hand your two hander already fills.",
+		note = "Shirt, tabard and ammo are not counted, and neither is an off hand your two hander already fills.",
 	}
 
 	read[4] = {
@@ -1263,7 +1314,7 @@ end
 -- the word under it, and the sentence in the hover.
 --
 -- Discs rather than the cells this was, for the same reason a gear slot is a
--- disc: the page has one shape on it and a rectangle in the middle of nineteen
+-- disc: the page has one shape on it and a rectangle in the middle of twenty
 -- circles is the one thing on it that looks borrowed.
 local function Badge(head, index)
 	local badge = CreateFrame("Frame", nil, head)
@@ -1490,8 +1541,8 @@ local function Portrait(parent)
 	-- And not once here, which is what it did. Loading a figure into a panel on a
 	-- window nobody has opened is the most expensive call this file makes and the
 	-- one nobody can see the result of. The first paint of the page dresses it,
-	-- because Redress compares nineteen links against a table that is empty until
-	-- then and finds all nineteen changed.
+	-- because Redress compares twenty links against a table that is empty until
+	-- then and finds all twenty changed.
 	--
 	-- The pose goes on after the unit and on every reload, not once at login.
 	-- SetUnit builds the figure again from nothing, so an angle applied when the
@@ -1603,7 +1654,7 @@ function Paperdoll.New(parent)
 
 	-- Nothing draws outside the page. The two columns arrive from a hundred and
 	-- twenty units off their own edge and the page has eight units of margin, so
-	-- without this a sheet opening throws nineteen gear squares across whatever
+	-- without this a sheet opening throws twenty gear squares across whatever
 	-- the player is standing in front of for six tenths of a second. Guarded the
 	-- way UI/Scroll.lua guards it, and the same fallback: a client without the
 	-- method draws the arrival and nothing else on the page is out of bounds.
@@ -1615,7 +1666,7 @@ function Paperdoll.New(parent)
 	-- fact about the slot and not about the width the page came out at.
 	--
 	-- And the three that can carry a stone into a third list, so the tick that
-	-- counts one down walks three rows rather than nineteen. Which three is
+	-- counts one down walks three rows rather than twenty. Which three is
 	-- Character/Worn.lua's word, marked on the slot beside the column it is in,
 	-- because both are facts about the slot.
 	for _, entry in ipairs(ns.Worn.Slots()) do
@@ -1877,7 +1928,7 @@ function Pane:Resize(width, height)
 		math.max(height - HEAD - M.gutter - strip - M.rowGap, 1))
 
 	-- Sized, not painted. This runs at login on a window nobody has opened, and
-	-- the paint behind it walked nineteen slots, every stat and the durability of
+	-- the paint behind it walked twenty slots, every stat and the durability of
 	-- each piece for a page nothing could show. Character/Window.lua paints the
 	-- tab that is up when the window comes up, and every other caller of Fit
 	-- refreshes straight after it.
@@ -1932,15 +1983,15 @@ end
 -- more, because taking it down in a fight is a protected act, so the accident
 -- is gone and this is the deliberate version.
 --
--- The nineteen links are compared rather than a count or an event trusted:
+-- The twenty links are compared rather than a count or an event trusted:
 -- UNIT_INVENTORY_CHANGED fires on a bag moving as well, and a model that
 -- reloaded on every looted grey would flicker all evening. Comparing costs
--- nineteen table lookups and allocates nothing.
+-- twenty table lookups and allocates nothing.
 -- The row is told as well as the model, because the same comparison answers a
 -- second question. PaintSquare has to scan a tooltip to name what is enchanted
 -- on a piece, and an enchant is part of the link: a row whose link did not move
 -- is a row whose enchant did not either. The flag is set here and cleared by
--- the repaint that reads it, so nineteen scans happen on the paint that found
+-- the repaint that reads it, so twenty scans happen on the paint that found
 -- something moved and none at all on the eight a minute that did not.
 function Pane:Redress()
 	local changed = false
@@ -1964,7 +2015,7 @@ end
 --
 -- Taken off the repaint rather than worked out on the tick, because what is in
 -- a slot changes when your gear does and a tick that asked would be walking
--- nineteen links four times a second to be told the same thing.
+-- twenty links four times a second to be told the same thing.
 --
 -- Stopped where nothing on the page can be pressed, which is most characters:
 -- the tick is not gated on something actually being on cooldown, because a
@@ -1995,7 +2046,7 @@ function Pane:Paint()
 		-- because a row is dipped to say that what it is showing is new and it is
 		-- only new once PaintSquare has written it.
 		--
-		-- And not on the first paint of the session. Redress compares nineteen
+		-- And not on the first paint of the session. Redress compares twenty
 		-- links against what it drew last time and the first time it has drawn
 		-- nothing, so every slot with a piece in it comes back changed. Fifteen
 		-- rows dipping on the first open is the page announcing itself rather
