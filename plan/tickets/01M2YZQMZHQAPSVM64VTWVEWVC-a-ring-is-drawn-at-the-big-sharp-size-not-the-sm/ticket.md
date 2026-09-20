@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2YZQMZHQAPSVM64VTWVEWVC
 type: task
-status: todo
+status: done
 title: "A ring is drawn at the big sharp size, not the small one"
 ---
 
