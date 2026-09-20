@@ -402,6 +402,13 @@ read_globals = {
 	-- because the probe is the shim and it lives beside the caller.
 	"UnitInRange", "UnitIsGhost", "UnitIsDeadOrGhost",
 	"UnitGroupRolesAssigned", "GetPartyAssignment",
+	-- The right button's menu on every unit frame this addon draws. Named and
+	-- not probed, because it is not a flavour question: Blizzard_UnitFrame ships
+	-- it on both clients this addon has a TOC for, and it is the same function
+	-- the client hands its own party, raid and compact frames through
+	-- SecureUnitButton_OnLoad. It is handed over as the `menu-function`
+	-- attribute and called by the client, never by us.
+	"CompactUnitFrame_OpenMenu",
 	-- Whether the thing under the cursor is one you could help, for the
 	-- mouseover debug log. It is the reading beside `[help]`, which is the half
 	-- of the filter UnitCanAttack above cannot answer, and a heal bound under

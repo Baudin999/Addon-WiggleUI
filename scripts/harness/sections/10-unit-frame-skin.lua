@@ -59,11 +59,21 @@ for _, block in ipairs(blocks) do
 				:format(key, tostring(button:GetAttribute("unit")), unit))
 		check(button:GetAttribute("*type1") == "target",
 			key .. ": the left button does not target")
-		check(button:GetAttribute("*type2") == "togglemenu",
+		check(button:GetAttribute("*type2") == "menu",
 			key .. ": the right button does not open the menu")
 		local clicks = button:GetRegisteredClicks()
 		check(clicks ~= nil and clicks.AnyUp == true,
 			key .. ": the button registered for no clicks, so nothing reaches the attributes")
+
+		-- And the button pressed, because the word above passed for four releases
+		-- while nothing opened. `togglemenu` is in the client's table under
+		-- "Unused by Blizzard code", so reading the attribute back could not tell
+		-- a word the client acts on from one it only stores.
+		H.unitMenu.Clear()
+		button:Click("RightButton")
+		local menu = H.unitMenu.Last()
+		check(menu ~= nil and menu.unit == unit,
+			key .. ": a right click opened no unit menu")
 		check(button.scripts.OnEnter ~= nil and button.scripts.OnLeave ~= nil,
 			key .. ": hovering the button shows no tooltip")
 	end

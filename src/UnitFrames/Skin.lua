@@ -290,11 +290,19 @@ local function Build(spec)
 
 	-- The click and the menu, which are the two things a unit frame does that
 	-- this addon cannot write. Left targets, right opens the client's own
-	-- dropdown for whatever the unit turns out to be, and both are the
+	-- dropdown for whatever the unit turns out to be, and all three are the
 	-- attributes UnitFrames/Group.lua's tiles carry.
+	--
+	-- `menu` with a function under `menu-function`, which is what
+	-- SecureUnitButton_OnLoad writes on every unit frame the client builds. The
+	-- word here used to be `togglemenu`, which the client's own
+	-- SecureTemplates.lua carries under "Unused by Blizzard code but retained
+	-- because the type attribute can be set from addons": nothing in the live UI
+	-- takes that branch, and a right click on these frames opened nothing.
 	button:SetAttribute("unit", spec.unit)
 	button:SetAttribute("*type1", "target")
-	button:SetAttribute("*type2", "togglemenu")
+	button:SetAttribute("*type2", "menu")
+	button:SetAttribute("menu-function", CompactUnitFrame_OpenMenu)
 	ns.UI.Press.Clicks(button, "up")
 	button:Hide()
 

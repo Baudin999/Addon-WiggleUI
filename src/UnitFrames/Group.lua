@@ -132,11 +132,20 @@ local PARTY_SLOTS = 5
 -- sized one frame later is a column that overlapped for one frame. Everything
 -- else about the button is done out of combat by Adopt below, which is the
 -- half that can call into this addon at all.
+--
+-- `menu` and not `togglemenu`, and the difference is a right click that opened
+-- nothing for as long as these tiles have existed. Both words are in the
+-- client's SECURE_ACTIONS table and only one of them is a path the client
+-- walks: SecureTemplates.lua carries `togglemenu` under the comment "Unused by
+-- Blizzard code but retained because the type attribute can be set from
+-- addons". `menu` is what SecureUnitButton_OnLoad writes on every unit frame
+-- the client builds, and it runs the function under the `menu-function`
+-- attribute, which Take below hands over.
 local CONFIG = [[
 	self:SetWidth(%d)
 	self:SetHeight(%d)
 	self:SetAttribute("*type1", "target")
-	self:SetAttribute("*type2", "togglemenu")
+	self:SetAttribute("*type2", "menu")
 ]]
 
 --------------------------------------------------------------------------
@@ -391,10 +400,19 @@ end
 -- one call of the four that is not obviously on the restricted whitelist, and
 -- it does not have to be in there: a button the header made in combat has
 -- nothing to lay out until combat drops anyway.
+--
+-- The menu is out here for a harder reason: it is a function, and a snippet
+-- cannot hold one. The client's own group tiles are given the same function by
+-- the same attribute, through SecureUnitButton_OnLoad, and it answers the
+-- whole ladder a list of ours can hold -- yourself, a pet, somebody in the
+-- raid, somebody in the party, an NPC -- off the unit the header last pointed
+-- the button at. Ours rather than the client's would be that ladder written a
+-- second time and drifting from the first.
 local function Take(list, button)
 	list.adopted[button] = true
 	list.members[#list.members + 1] = button
 	ns.UI.Press.Clicks(button, "up")
+	button:SetAttribute("menu-function", CompactUnitFrame_OpenMenu)
 	Member.Build(button)
 	for index = 1, #watchers do
 		watchers[index](button)

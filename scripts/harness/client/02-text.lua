@@ -661,6 +661,14 @@ function _G.CreateFrame(kind, name, parent, template)
 	f.origin = loading.file
 	f.template = template
 	f.secure = template ~= nil and template:find("SecureActionButton", 1, true) ~= nil
+	-- And the unit button, which is the other half the client writes and a
+	-- different half: SecureUnitButton_OnClick reads the same type attributes and
+	-- does not ask useOnKeyDown at all, so it acts on the edge the button
+	-- registered. Kept apart from `secure` rather than folded into it, because
+	-- folding them would have this client refuse an up click on every unit frame
+	-- in the addon, which is the opposite of what the game does.
+	f.unitSecure = template ~= nil
+		and template:find("SecureUnitButton", 1, true) ~= nil
 	-- What the client gives a button nobody registered: the left button on the
 	-- release, and nothing else. It used to be nil here, which Region:Click read
 	-- as "every edge of every button", so a right click on a button that never

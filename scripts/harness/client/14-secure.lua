@@ -27,12 +27,103 @@ local input = H.input
 -- Which attribute a mouse button reads, at the client's own numbers.
 local SUFFIX = { LeftButton = "1", RightButton = "2", MiddleButton = "3" }
 
+-- One attribute, looked up the way the client looks one up: the name with the
+-- pressed button's number on it, then the name under a star, then the two of
+-- them again with no number. The star is the half that was missing, and it is
+-- the half every unit frame in the addon writes: a button carrying `*type2`
+-- and nothing called `type2` answered nil here, so the client's own half of a
+-- right click could not be modelled at all and the party tiles were certified
+-- by reading their attributes back instead.
+local function Attribute(self, name, button)
+	local suffix = SUFFIX[button] or ""
+	local value = self:GetAttribute(name .. suffix)
+	if value == nil then
+		value = self:GetAttribute("*" .. name .. suffix)
+	end
+	if value == nil then
+		value = self:GetAttribute(name)
+	end
+	if value == nil then
+		value = self:GetAttribute("*" .. name)
+	end
+	return value
+end
+
+--------------------------------------------------------------------------
+-- A press on a unit frame
+--
+-- The client's own menu opener, which is the function every unit frame it
+-- builds is handed through SecureUnitButton_OnLoad and which this addon's
+-- frames are handed too. Here rather than with the unit calls in 09-group.lua
+-- because it is not a question about a unit: it is the far end of a right
+-- click, and the click is what this file is for.
+--
+-- What it records is what a section can ask about: which frame was clicked and
+-- who it was pointed at. Which of the client's twenty menus that unit deserves
+-- is the client's ladder and not the addon's, so no section may assert on it
+-- and this stub does not model it.
+--------------------------------------------------------------------------
+
+local opened = {}
+
+_G.CompactUnitFrame_OpenMenu = function(frame, unit, button)
+	if not unit then
+		return
+	end
+	opened[#opened + 1] = { frame = frame, unit = unit, button = button }
+end
+
+-- What the client does on a secure unit button, which is not the half below.
+--
+-- SecureUnitButton_OnClick asks no useOnKeyDown: it reads the type for the
+-- button that was pressed and acts on whatever edge the button registered for.
+-- Blizzard's own party frames register "AnyUp" and nothing else, so a model
+-- that gated them the way it gates an action button would refuse a click the
+-- game delivers.
+--
+-- Two words in the client's table reach this addon. `target` is the left
+-- button, and it is a protected call no stub carries, so a section that wants
+-- to see one puts a spy on TargetUnit the way 09-cast-row.lua spies on a cast.
+-- `menu` is the right button, and it runs the function under `menu-function`
+-- with the frame, the unit, the button and whether a key sent it. `togglemenu`
+-- is deliberately not modelled: the client's own SecureTemplates.lua carries it
+-- under "Unused by Blizzard code", and the addon shipped it on every unit frame
+-- for four releases with nothing on either side able to say it opened nothing.
+local function unitSecure(self, button)
+	local token = Attribute(self, "unit", button)
+	local kind = Attribute(self, "type", button)
+	if kind == "target" then
+		if token and _G.TargetUnit then
+			_G.TargetUnit(token)
+		end
+	elseif kind == "menu" then
+		-- A plain read and not a modified one, because SECURE_ACTIONS.menu
+		-- reaches it through ExecuteAttribute, which takes the name as it is.
+		local open = self:GetAttribute("menu-function")
+		if type(open) == "function" then
+			open(self, token, button, false)
+		end
+	end
+end
+
+H.unitMenu = {
+	opened = opened,
+	Clear = function()
+		for index = #opened, 1, -1 do
+			opened[index] = nil
+		end
+	end,
+	Last = function()
+		return opened[#opened]
+	end,
+}
+
 -- What the client does between PreClick and OnClick on a secure button.
 --
 -- The macro first, then the slot a spell that is waiting for an item lands on,
 -- in the client's own order, because the first can be what makes something wait.
--- An attribute is looked up per button and then plain, which is the tail of the
--- client's own lookup and the only part of it this addon writes.
+-- An attribute is looked up through Attribute above, which is the client's own
+-- ladder: the button's number, then the star, then neither.
 local function secure(self, button, down)
 	local keyDown = self:GetAttribute("useOnKeyDown")
 	if keyDown == nil then
@@ -42,13 +133,8 @@ local function secure(self, button, down)
 		return
 	end
 
-	local suffix = SUFFIX[button] or ""
 	local function attribute(name)
-		local value = self:GetAttribute(name .. suffix)
-		if value == nil then
-			value = self:GetAttribute(name)
-		end
-		return value
+		return Attribute(self, name, button)
 	end
 
 	if attribute("type") == "macro" and _G.RunMacroText then
@@ -166,6 +252,9 @@ function Region:Press(button, down)
 	if not stopped then
 		if self.secure then
 			secure(self, button, down)
+		end
+		if self.unitSecure then
+			unitSecure(self, button)
 		end
 		H.snippet.Click(self, button, edgeDown)
 		if scripts and scripts.OnClick then

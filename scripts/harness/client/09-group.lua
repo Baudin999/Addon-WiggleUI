@@ -32,7 +32,6 @@
 local H = ...
 local guids, unitClass, unitName = H.guids, H.unitClass, H.unitName
 local realPlayers, chat, unitAlias = H.realPlayers, H.chat, H.unitAlias
-local child = H.child
 
 -- token -> the member's record. Every field is optional except name and class:
 --
@@ -362,7 +361,17 @@ local function Update(header)
 	for index = 1, #shown do
 		local button = header.buttons[index]
 		if not button then
-			button = child("button", header, nil)
+			-- Through CreateFrame with the header's own template, which is how
+			-- SecureGroupHeaders makes one and is not a detail: the template is
+			-- what tells 02-text.lua a button's click has a client half, and a
+			-- tile built past it was a plain frame wearing secure attributes.
+			-- Every assertion about what the right button does could only read
+			-- those attributes back, and the addon spent four releases with a
+			-- menu word the client does not act on.
+			local name = header:GetName()
+			button = _G.CreateFrame(header:GetAttribute("templateType") or "Button",
+				name and (name .. "UnitButton" .. index) or nil, header,
+				header:GetAttribute("template"))
 			header.buttons[index] = button
 			Configure(header, button)
 		end

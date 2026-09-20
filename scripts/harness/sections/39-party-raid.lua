@@ -175,11 +175,26 @@ do
 			("a tile is %dx%d and the settings say %dx%d"):format(button:GetWidth(),
 				button:GetHeight(), ns.db.partyWidth, ns.db.partyHeight))
 		check(button:GetAttribute("*type1") == "target"
-			and button:GetAttribute("*type2") == "togglemenu",
+			and button:GetAttribute("*type2") == "menu",
 			"a block does not target on the left button and open the menu on the right")
 		check(button.scripts.OnMouseDown ~= nil,
 			"nothing hooked a block's mouse, so ctrl-click marking went off the screen"
 				.. " with Blizzard's party frames")
+
+		-- And the right button pressed, rather than the attributes read back.
+		--
+		-- The attributes above passed for four releases while a right click on a
+		-- tile opened nothing: the word was `togglemenu`, which the client's own
+		-- SecureTemplates.lua keeps under "Unused by Blizzard code but retained
+		-- because the type attribute can be set from addons". Reading an attribute
+		-- back cannot tell a word the client acts on from one it only stores, so
+		-- this presses the button and asks the client's own menu opener whether it
+		-- was reached and who it was handed.
+		H.unitMenu.Clear()
+		button:Click("RightButton")
+		local menu = H.unitMenu.Last()
+		check(menu ~= nil and menu.unit == button:GetAttribute("unit"),
+			("a right click on %s's block opened no unit menu"):format("Ironhide"))
 	end
 end
 
