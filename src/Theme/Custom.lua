@@ -41,6 +41,16 @@ local MAX_NAME = 24
 -- theme may take: a theme called `none` could never be wiggled to.
 local RESERVED = { none = true }
 
+-- Whether a word is one of the two ways the experience rail is drawn.
+local function Rail(style)
+	for _, known in ipairs(Themes.RAILS) do
+		if style == known then
+			return true
+		end
+	end
+	return false
+end
+
 local function Clamp(value)
 	if value < 0 then
 		return 0
@@ -89,6 +99,19 @@ function Themes.Named(name)
 	end
 	local _, theme = Themes.Find(name)
 	return theme and theme.elements or nil
+end
+
+-- How a theme draws the experience rail, or nil where it leaves it to the
+-- setting. The one element with a second question after how visible it is: the
+-- minimal rail is a different drawing rather than a fainter one, so a theme
+-- that only said an alpha could not ask for the hairline along the bottom
+-- edge. The shipped three answer it in Themes.RAIL and yours on its record.
+function Themes.RailOf(name)
+	if Themes.LABEL[name] then
+		return Themes.RAIL[name]
+	end
+	local _, own = Themes.Find(name)
+	return own and own.rail or nil
 end
 
 -- Every theme's name, the shipped three first and yours in the order you made
@@ -248,6 +271,12 @@ function Themes.Load()
 			table.remove(list, index)
 		else
 			theme.elements = Sane(theme.elements)
+			if theme.rail ~= nil and not Rail(theme.rail) then
+				theme.rail = nil
+			end
+			if type(theme.wiggle) ~= "string" then
+				theme.wiggle = "none"
+			end
 		end
 	end
 	-- Two themes that arrived under the same name are one theme as far as

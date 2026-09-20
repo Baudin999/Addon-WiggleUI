@@ -148,6 +148,72 @@ check(UI.Veiled(chat):GetAlpha() == 1 and UI.Veiled(feeds):IsShown(),
 	"the theme being put down left an element dressed for it")
 
 --------------------------------------------------------------------------
+-- The rail, and the elements that cannot be pointed at
+--
+-- The experience rail is the one element with a second question after how
+-- visible it is, because minimal is a different drawing rather than a fainter
+-- one. A theme of yours answers it on its record; the shipped three answer it
+-- in Themes.RAIL.
+--
+-- And four elements are only drawn for a moment at a time, so a rim cannot sit
+-- on them. Those are chips in the tray, and a chip is the only way to choose
+-- one by pointing.
+--------------------------------------------------------------------------
+
+check(Themes.RailOf("exploration") == "minimal", "exploration stopped drawing the minimal rail")
+check(Themes.RailOf("informational") == nil, "informational decides the rail and should not")
+check(Themes.RailOf("Raid nights") == nil, "a theme of yours decides the rail before it was asked to")
+
+local style = ns.ProgressRails.Describe()
+mine.rail = "minimal"
+Theme.Try(mine)
+check(Theme.RailStyle() == "minimal", "a theme of yours cannot ask for the minimal rail")
+check(ns.ProgressRails.Describe():find("minimal", 1, true),
+	"a theme of yours asking for the minimal rail did not draw it")
+
+-- An element nothing is drawing wears no rim, because a rim is a child of the
+-- frame it sits on. The tray stands a chip in for each of those, and for none
+-- of the elements that can be pointed at: a tray carrying every element would
+-- be a second copy of the dropdown.
+ns.ThemeEdit.Start()
+
+local visible = {}
+Theme.Worn(function(key, frame)
+	if frame:IsVisible() then
+		visible[key] = true
+	end
+end)
+
+local chipped = 0
+for _, element in ipairs(Themes.ELEMENTS) do
+	local chip = ns.ThemeEdit.Chip(element.key)
+	if chip then
+		chipped = chipped + 1
+	end
+	check((chip ~= nil) ~= (visible[element.key] == true),
+		("%s %s a chip and it %s on the screen to be pointed at")
+			:format(element.label, chip and "has" or "has no",
+				visible[element.key] and "is" or "is not"))
+end
+check(chipped > 0, "every element was on the screen, so the tray was never tested")
+
+local spare
+for _, element in ipairs(Themes.ELEMENTS) do
+	if not spare and ns.ThemeEdit.Chip(element.key) then
+		spare = element.key
+	end
+end
+ns.ThemeEdit.Pick("chat")
+H.mouse.Deliver(ns.ThemeEdit.Chip(spare), "OnClick")
+check(ns.ThemeEdit.Picked() == spare, "clicking a chip did not choose the element it stands for")
+
+ns.ThemeEdit.Stop()
+check(ns.ThemeEdit.Chip(spare) == nil, "the page closing left the tray on the screen")
+mine.rail = nil
+Theme.Try(nil)
+check(ns.ProgressRails.Describe() == style, "putting the theme down did not put the rail's style back")
+
+--------------------------------------------------------------------------
 -- Renaming and dropping
 --------------------------------------------------------------------------
 
@@ -173,7 +239,8 @@ check(ns.db.wiggleInformational == "none", "a wiggle target was left naming a th
 --------------------------------------------------------------------------
 
 ns.db.themes = {
-	{ name = "Bad cells", elements = { chat = "hover", nosuch = { alpha = 0.5 } } },
+	{ name = "Bad cells", rail = "sideways",
+	  elements = { chat = "hover", nosuch = { alpha = 0.5 } } },
 	{ name = "Bad cells" },
 	{ name = "   " },
 	"not a theme at all",
@@ -191,6 +258,7 @@ for _, element in ipairs(Themes.ELEMENTS) do
 end
 check(repaired.elements.chat.alpha == 1 and not repaired.elements.chat.hover,
 	"a cell written as a word came back as something other than as drawn")
+check(repaired.rail == nil, "the load kept a rail style that is not one of the two")
 check(Themes.Own()[2].name ~= repaired.name,
 	"two themes came out of the load under one name, so one of them cannot be reached")
 

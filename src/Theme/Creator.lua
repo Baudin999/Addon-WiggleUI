@@ -1,7 +1,7 @@
 local ADDON, ns = ...
 
 local UI = ns.UI
-local C = UI.Color
+local C, M = UI.Color, UI.Metric
 local Themes = ns.Themes
 
 local ThemeEdit = {}
@@ -40,6 +40,15 @@ ns.ThemeEdit = ThemeEdit
 -- window: it is the screen, now, with your theme on it. Closing the page puts
 -- back what was there before.
 --
+-- Not everything can be pointed at, and that is the third piece. Four of the
+-- twenty-three elements are only on the screen for a moment at a time: the
+-- cast bar while you are casting, a drop and a message while they slide past,
+-- the loadout bars while their key is held. A rim can only sit on a frame that
+-- is drawn, so those got no rim and looked like elements the page had left
+-- out. They are chips in a tray at the top of the screen instead, one per
+-- element with nothing drawn, clicked the same way a rim is. The tray is the
+-- page saying which elements it cannot show you rather than saying nothing.
+--
 -- The one thing the page cannot do is a fight. Showing an element the theme
 -- had hidden is a protected write, so the client refuses it mid pull, and a
 -- creator that opened anyway would draw rims round half a screen.
@@ -59,6 +68,13 @@ local TITLE_GAP = 2
 local PICKED_WASH = 0.22
 local WASH = 0.06
 
+-- The tray of elements that are not on the screen to be pointed at. Under the
+-- top edge rather than over the middle, because the middle is where the
+-- elements you can point at are.
+local TRAY_TOP = -120
+local TRAY_WIDTH = 560
+local CHIP_PAD = 6
+
 --------------------------------------------------------------------------
 -- What the page is looking at
 --------------------------------------------------------------------------
@@ -67,6 +83,10 @@ local WASH = 0.06
 -- screen, and every rim made so far, one per worn frame.
 local shown, picked, editing = 1, nil, false
 local marks, order = {}, {}
+
+-- The tray and its chips, and the set of elements that have a frame on the
+-- screen this moment, filled by NoteDrawn below and read by the tray's layout.
+local tray, chips, drawn = nil, {}, {}
 
 local function Current()
 	return Themes.Own()[shown]
@@ -107,17 +127,34 @@ end
 -- The rims
 --------------------------------------------------------------------------
 
-local function Paint(mark)
-	local on = mark.wuiElement == picked
-	mark.wash:SetAlpha(on and PICKED_WASH or WASH)
-	ns.Recolor(mark.edges, on and C.accent or C.edge)
+-- The half a rim and a chip paint the same way: the edge and the name say
+-- which one you have chosen. They differ only in their surface, because a rim
+-- lies over something you are looking at and a chip stands for something you
+-- cannot see.
+local function Marked(target)
+	local on = target.wuiElement == picked
+	ns.Recolor(target.edges, on and C.accent or C.edge)
 	local text = on and C.heading or C.dim
-	mark.text:SetTextColor(text[1], text[2], text[3])
+	target.text:SetTextColor(text[1], text[2], text[3])
+	return on
+end
+
+local function Paint(mark)
+	mark.wash:SetAlpha(Marked(mark) and PICKED_WASH or WASH)
+end
+
+local function PaintChip(chip)
+	UI.Tint(chip.wash, Marked(chip) and C.selected or C.chrome)
 end
 
 local function Repaint()
 	for index = 1, #order do
 		Paint(order[index])
+	end
+	for index = 1, #chips do
+		if chips[index]:IsShown() then
+			PaintChip(chips[index])
+		end
 	end
 end
 
@@ -159,17 +196,107 @@ local function Rim(key, frame)
 	Paint(mark)
 end
 
--- A rim for every frame worn so far, made once each. Run whenever the page is
--- refreshed as well as when it opens, because a part builds its frame the
--- first time it is needed: the map and the character sheet are not on the
--- screen at login and are worn when they first open.
+--------------------------------------------------------------------------
+-- The tray
+--------------------------------------------------------------------------
+
+local function Tray()
+	if tray then
+		return tray
+	end
+	tray = CreateFrame("Frame", nil, UIParent)
+	tray:SetFrameStrata(MARK_STRATA)
+	tray:SetFrameLevel(MARK_LEVEL)
+	tray:SetPoint("TOP", UIParent, "TOP", 0, TRAY_TOP)
+	tray.title = UI.Label(tray, UI.OutlineFloor(), C.quiet, "CENTER", UI.OUTLINE)
+	tray.title:SetPoint("BOTTOM", tray, "TOP", 0, TITLE_GAP * UI.Unit(tray))
+	tray.title:SetText("not on the screen just now")
+	tray:Hide()
+	return tray
+end
+
+local function Chip(index)
+	local chip = chips[index]
+	if chip then
+		return chip
+	end
+	chip = CreateFrame("Button", nil, Tray())
+	chip.wash = ns.Fill(chip, "BACKGROUND", C.chrome[1], C.chrome[2], C.chrome[3], 1)
+	chip.wash:SetAllPoints()
+	chip.edges = ns.Outline(chip, C.edge[1], C.edge[2], C.edge[3], 1)
+	ns.EdgeSize(chip.edges, ns.Pixel(chip))
+	chip.text = UI.Label(chip, UI.OutlineFloor(), C.dim, "CENTER", UI.OUTLINE)
+	chip.text:SetPoint("CENTER")
+	UI.Wrap(chip.text, false)
+	UI.Press.Clicks(chip, "up")
+	chip:SetScript("OnClick", Picked)
+	chips[index] = chip
+	return chip
+end
+
+-- Which elements have a frame the pointer could land on. A frame the theme
+-- has taken down is visible here, because the tray is only ever read while
+-- everything is held up; a frame its own part has not drawn is not, which is
+-- exactly the four this tray exists for.
+local function NoteDrawn(key, frame)
+	if frame:IsVisible() then
+		drawn[key] = true
+	end
+end
+
+-- One chip per element with nothing on the screen, laid left to right and
+-- wrapped, and the tray away entirely when every element can be pointed at.
+local function LayTray()
+	for key in pairs(drawn) do
+		drawn[key] = nil
+	end
+	ns.Theme.Worn(NoteDrawn)
+
+	Tray()
+	local at, x, y = 0, 0, 0
+	for _, element in ipairs(Themes.ELEMENTS) do
+		if not drawn[element.key] then
+			at = at + 1
+			local chip = Chip(at)
+			chip.wuiElement = element.key
+			chip.text:SetText(element.label)
+			local width = (chip.text:GetStringWidth() or 0) + CHIP_PAD * 2
+			if x > 0 and x + width > TRAY_WIDTH then
+				x, y = 0, y + M.row + M.rowGap
+			end
+			chip:SetSize(math.max(width, 1), M.row)
+			chip:ClearAllPoints()
+			chip:SetPoint("TOPLEFT", tray, "TOPLEFT", x, -y)
+			chip:Show()
+			PaintChip(chip)
+			x = x + width + M.rowGap
+		end
+	end
+	for index = at + 1, #chips do
+		chips[index]:Hide()
+	end
+	tray:SetSize(TRAY_WIDTH, y + M.row)
+	tray.wuiFull = at > 0
+end
+
+--------------------------------------------------------------------------
+
+-- A rim for every frame worn so far, made once each, and a chip for every
+-- element none of them draws. Run whenever the page is refreshed as well as
+-- when it opens, because a part builds its frame the first time it is needed:
+-- the map and the character sheet are not on the screen at login and are worn
+-- when they first open, and a cast bar comes and goes while you are editing.
 local function Rims()
 	ns.Theme.Worn(Rim)
+	LayTray()
 end
 
 local function ShowRims(on)
 	for index = 1, #order do
 		order[index]:SetShown(on)
+	end
+	if tray then
+		tray:SetShown(on and tray.wuiFull or false)
 	end
 end
 
@@ -230,14 +357,40 @@ function ThemeEdit.Showcase(on)
 	if not editing then
 		return
 	end
-	ShowRims(on)
+	-- The screen first, then the rims, because which elements have nothing on
+	-- the screen is read off the screen: laid out before everything came back
+	-- up, the tray would carry a chip for every element the theme hides.
 	ns.Theme.Showcase(on)
+	if on then
+		Rims()
+	end
+	ShowRims(on)
+end
+
+-- The chip standing in for an element, or nil where the element has a frame on
+-- the screen and wears a rim instead. Public for the reason UI.Asking is: the
+-- page has to be answerable from outside, and it is the only way a test can
+-- see a chip without this file handing out its own tables.
+function ThemeEdit.Chip(key)
+	for index = 1, #chips do
+		local chip = chips[index]
+		-- Visible rather than shown: a chip keeps its own flag when the tray
+		-- goes, and a chip nobody can see is not standing in for anything.
+		if chip:IsVisible() and chip.wuiElement == key then
+			return chip
+		end
+	end
+	return nil
 end
 
 function ThemeEdit.Pick(key)
 	picked = key
 	Repaint()
 	ns.Options.Refresh()
+end
+
+function ThemeEdit.Picked()
+	return Chosen()
 end
 
 --------------------------------------------------------------------------
@@ -330,8 +483,8 @@ end
 -- theme is on it. Every control below is one of these, which is why none of
 -- them says anything about drawing.
 local function Wrote()
-	Rims()
 	ThemeEdit.Redraw()
+	Rims()
 end
 
 local function Alpha()
@@ -387,6 +540,36 @@ local function SetCombatAlpha(value)
 	local cell = Cell()
 	if cell then
 		cell.combat = value / 100
+		Wrote()
+	end
+end
+
+--------------------------------------------------------------------------
+-- The rail, which is the one element with a second question
+--------------------------------------------------------------------------
+
+-- The row for "whatever the setting outside this theme says", which is what a
+-- theme that does not decide the rail means. A word rather than nil, because a
+-- dropdown row has to carry a value and nil is not one.
+local SETTING = "as the setting says"
+
+local function Rails()
+	local options = { { value = SETTING, text = SETTING } }
+	for _, style in ipairs(Themes.RAILS) do
+		options[#options + 1] = { value = style, text = style }
+	end
+	return options
+end
+
+local function Rail()
+	local theme = Current()
+	return theme and theme.rail or SETTING
+end
+
+local function SetRail(value)
+	local theme = Current()
+	if theme then
+		theme.rail = value ~= SETTING and value or nil
 		Wrote()
 	end
 end
@@ -447,6 +630,9 @@ function ThemeEdit.Panel(ui)
 	ui.Check("different while you are fighting", Fights, SetFights)
 	ui.Opacity("drawn at, in a fight", CombatAlpha, SetCombatAlpha)
 	ui.Hint("An element that differs in a fight is dimmed rather than taken away: the client will not put a protected frame back up mid pull. At nought it is invisible and still takes the mouse.")
+
+	ui.Picker("the experience rail", Rail, SetRail, Rails)
+	ui.Hint("The one element with a second question: minimal is a hairline along the bottom edge rather than a fainter version of the placed rail with its reading on it.")
 
 	ui.Gap()
 	ui.Heading("What this theme does")

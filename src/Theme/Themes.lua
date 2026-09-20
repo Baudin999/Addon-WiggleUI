@@ -71,7 +71,17 @@ Themes.LABEL = {
 -- How the experience rail is drawn in a theme that decides it, over the style
 -- setting. Exploration keeps the thin line along the bottom edge, and a wiggle
 -- to informational brings the placed rail with its reading back with the rest.
+--
+-- The rail is the one element with a second question after how visible it is,
+-- because minimal is not a fainter expressive: it is a different drawing, a
+-- hairline along the bottom edge instead of a placed bar with a reading on it.
+-- A theme of yours answers it on its own record rather than here, and
+-- Themes.RailOf is what both answers come out of.
 Themes.RAIL = { exploration = "minimal" }
+
+-- The two ways it can be drawn, for the page that offers them and the load
+-- check that refuses anything else.
+Themes.RAILS = { "minimal", "expressive" }
 
 -- Where your frame and your target's rest in the immersive theme. Enough to
 -- read a health bar in the corner of your eye and not enough to be furniture.

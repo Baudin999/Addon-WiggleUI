@@ -88,9 +88,13 @@ for _, name in ipairs(Theme.PALETTES) do
 	Match(name, palette.unit, Palettes.dark.unit, "unit")
 	listed[name] = true
 end
+local rails = {}
+for _, style in ipairs(Themes.RAILS) do
+	rails[style] = true
+end
 for name, style in pairs(Themes.RAIL) do
 	assert(themed[name], ("Themes.RAIL names %q, which is not a theme"):format(name))
-	assert(style == "minimal" or style == "expressive",
+	assert(rails[style],
 		("Themes.RAIL draws %s as %s, which is not a rail style"):format(name, tostring(style)))
 end
 
@@ -427,7 +431,7 @@ end
 -- How the experience rail is drawn in the theme on the screen, or nil where
 -- the theme leaves it to the setting.
 function Theme.RailStyle()
-	return showing and Themes.RAIL[showing]
+	return showing and Themes.RailOf(showing)
 end
 
 local shake = UI.Wiggle()
