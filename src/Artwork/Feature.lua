@@ -26,6 +26,26 @@ ns.Register({
 	name = "artwork",
 	order = 17,
 
+	-- Signed into Core/Handback.lua. Two entries rather than one because they
+	-- are two things a player can name: a gryphon is art and the micro menu is a
+	-- row of buttons, and the reading on that control prints whichever of them
+	-- is still ours.
+	handback = {
+		{ what = "the gryphons, the metal strip and the page arrows",
+			ours = function() return not ns.db.blizzArt end,
+			hand = function(back)
+				Set(back and true or false)
+				return not ns.Artwork.Deferred()
+			end },
+
+		{ what = "the micro menu",
+			ours = function() return ns.db.hideBlizzMicroMenu and true or false end,
+			hand = function(back)
+				ns.db.hideBlizzMicroMenu = not back
+				return ns.BlizzHide.Apply()
+			end },
+	},
+
 	defaults = {
 		-- False means the gryphons and the metal strip are gone, which is the
 		-- point of the part and so the state it starts in.

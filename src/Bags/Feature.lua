@@ -167,6 +167,20 @@ ns.Register({
 		apply = function(value) SetBags(value) end,
 	},
 
+	-- Signed into Core/Handback.lua. The six buttons on the bottom bar and
+	-- nothing else: `bagsHideBlizz` is the other half of this part's claim on
+	-- the client's bags and stays where it is, for the reason its own default
+	-- gives. A backpack button that opens this addon's window is a bar that
+	-- works; a bar that is not on the screen is the thing being handed back.
+	handback = {
+		{ what = "the bag bar",
+			ours = function() return ns.db.hideBlizzBagBar and true or false end,
+			hand = function(back)
+				ns.db.hideBlizzBagBar = not back
+				return ns.BlizzHide.Apply()
+			end },
+	},
+
 	zooms = {
 		{ key = "bagsZoom", label = "Bags", window = true },
 	},

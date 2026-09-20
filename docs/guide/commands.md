@@ -49,7 +49,7 @@ asks twice. Your groups, your mail favourites and your muted errors survive it.
 ## buttons
 
     /wui buttons apply, buttons restore, buttons status
-    /wui actionbars on|off, our own bars over Blizzard's, same slots and same keys
+    /wui actionbars on|off, our bars over the client's, or the client's bottom bar back, art and all
     /wui actionbars match, back to cloning whichever bars you have on
     /wui actionbars where, actionbars reset, after dragging them with /wui unlock
     /wui actionbars rows|square|colour|background|combat|key <bar> <value>, one bar's shape, ground and hours

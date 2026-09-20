@@ -82,6 +82,24 @@ ns.Register({
 		apply = function() Rails.Apply() end,
 	},
 
+	-- Signed into Core/Handback.lua. Both settings move together, and that is
+	-- the whole reason this part has an entry: MainMenuExpBar sits inside the
+	-- metal strip being handed back, so unticking `hideBlizzXP` alone would put
+	-- the client's bar back under two rails of ours still drawing the same
+	-- number. Two experience bars is the state this control exists to refuse.
+	handback = {
+		{ what = "the experience and reputation bars",
+			ours = function()
+				return (ns.db.hideBlizzXP or ns.db.progress) and true or false
+			end,
+			hand = function(back)
+				ns.db.hideBlizzXP = not back
+				ns.db.progress = not back
+				Rails.Apply()
+				return ns.BlizzHide.Apply()
+			end },
+	},
+
 	zooms = {
 		{ key = "progressZoom", label = "Experience rail", apply = function() ns.ProgressRails.Apply() end },
 	},

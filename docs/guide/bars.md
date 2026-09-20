@@ -4,8 +4,17 @@
 have up, stands one of ours up for each on the same action slots, moves your
 keys onto it, and hides Blizzard's behind it. Bar 1 still pages by stance. Every
 icon is drawn at the one size this client can draw sharp, and the border says
-whether a press would land. Your keybindings are read and never written, so
-`off` gives everything back with no reload.
+whether a press would land. Your keybindings are read and never written.
+
+**One flag, and off is the interface the client shipped.** `use WiggleUI's bars`
+is the switch at the top of the page, and `off` puts the whole bottom bar back:
+the twelve-button rows and their keys, the gryphons, the metal strip, the page
+arrows, the micro menu, the bag bar and the experience bar. No reload, and what
+is in your action slots is untouched either way. If you want one piece rather
+than the lot, each of those still has its own tick box: the art on this page,
+the micro menu, the bag bar and the experience bars on Frames. Untick the five
+bars one at a time in the strip below to hand back the buttons and keep the art
+stripped.
 
 Then every bar is yours to shape. Fold its twelve into 1, 2, 3, 4, 6 or 12 rows,
 so a bar is a row along the bottom or a column down the side. Pick the colour of

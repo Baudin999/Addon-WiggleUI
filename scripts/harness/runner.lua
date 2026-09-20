@@ -380,6 +380,12 @@ local SECTIONS = {
 	-- section leaves registered is a source that answers only a subject
 	-- carrying its own probe field, and nothing here carries one.
 	"50-experience-rails",
+	-- Straight under it, because the rails are one of the five things the
+	-- handback switches off and this is the section that just proved they draw.
+	-- It takes the whole bottom bar away twice and puts every setting back, so
+	-- it sits below 43-blizzard-hide and above the placing walk, which reads the
+	-- bars it restores.
+	"50-handback",
 	-- It moves the addon's lock and puts it back, so it wants everything above
 	-- it built and nothing above it disturbed. Second to last for that reason.
 	"51-placing",

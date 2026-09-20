@@ -55,16 +55,43 @@ end
 -- The clone, which is the other half of this part: Layout writes the slots and
 -- Bars draws them. One feature rather than two, because they are one job seen
 -- from two ends and a panel that split them would ask the same question twice.
-local function SetBars(value)
-	ns.db.actionBars = value and true or false
+--
+-- Our two frames and nothing said out loud about it. Split out because the
+-- handback entry below flips the same setting and runs the same two calls, and
+-- a composite that prints a line per part it touched would say five things
+-- where one is wanted.
+local function ApplyBars()
 	local complete = ns.Bars.Apply()
 	-- The pet bar follows the same switch. Buttons/Pet.lua says why it is not
 	-- a sixth bar in the plan.
 	if not ns.PetBar.Apply() then
 		complete = false
 	end
-	ns.Print("action bars " .. (ns.db.actionBars and "cloned" or "handed back")
-		.. ": " .. ns.Bars.Describe() .. ".")
+	return complete
+end
+
+-- The whole of it: our bars over the client's bottom bar, or the client's
+-- bottom bar as it shipped.
+--
+-- This is the part's switch and there is no second one, which took two goes to
+-- get right. The first version of this control cloned the bars and left the
+-- gryphons, the metal strip, the micro menu, the bag bar and the experience bar
+-- to four switches on two other pages, so turning it off gave you twelve
+-- Blizzard buttons standing on nothing. The second version kept that switch and
+-- put a second one under it for the rest, which is two rows saying nearly the
+-- same thing and is worse: the page then asks you to work out which of them you
+-- meant. One flag, and off is the interface the client shipped.
+--
+-- Core/Handback.lua holds the list of parts and each part owns its own entry.
+-- The five separate switches are all still on their own pages for anyone who
+-- wants one piece rather than the lot.
+--
+-- One line printed rather than one per part, and it is the reading rather than
+-- a confirmation: after a pass a fight refused, "ours: the bag bar" is the only
+-- sentence worth having.
+local function HandBack(back)
+	local complete = ns.Handback.Set(back)
+	ns.Print("the client's bottom bar: " .. ns.Handback.Describe() .. ".")
 	if not complete then
 		ns.Print("part of that needs combat to end first, and will run then.")
 	end
@@ -72,7 +99,10 @@ local function SetBars(value)
 end
 
 -- One bar, ticked or unticked. Which.lua holds the decision and Bars.Apply is
--- what makes the screen agree with it, the same shape SetBars has.
+-- what makes the screen agree with it, the same shape HandBack has. This is the
+-- narrow control the switch above stopped being: untick all five and the
+-- client's twelve are back with the art still stripped, which is a thing some
+-- people want and is not what "use WiggleUI's bars" means.
 local function SetBar(def, value)
 	ns.WhichBars.Want(def.key, value)
 	local complete = ns.Bars.Apply()
@@ -351,6 +381,12 @@ local function BarsPage(ui)
 			ns.Options.Refresh()
 		end)
 	ui.Hint("Locked, a bar moves only while /wui unlock has every frame loose. Unlocked, hold shift to drag one, and a shift-click over a bar belongs to the bar while you hold it.")
+
+	-- What the switch at the top of the page is actually holding, piece by
+	-- piece. Worth a row of its own because the switch moves five settings four
+	-- parts own and a fight can refuse any one of them: "ours: the bag bar" is
+	-- the difference between a pass that half ran and a pass that did nothing.
+	ui.Reading("the bottom bar", ns.Handback.Describe)
 end
 
 -- The words that set one bar's look
@@ -485,8 +521,24 @@ ns.Register({
 
 	switch = {
 		key = "actionBars",
-		label = "our own action bars",
-		apply = function(value) SetBars(value) end,
+		label = "use WiggleUI's bars",
+		says = "Off puts the client's bottom bar back as it came: the rows and their keys, the gryphons, the metal strip, the micro menu, the bag bar and the experience bar. Your slots are untouched.",
+		-- The whole bottom bar rather than the clone alone. HandBack's own
+		-- comment says why this is one switch and not two.
+		apply = function(value) HandBack(not value) end,
+	},
+
+	-- Signed into Core/Handback.lua, which is the one control that puts the
+	-- client's whole bottom bar back. One entry for both frames because it is
+	-- one switch: Buttons/Pet.lua says why the pet bar is not a sixth bar in the
+	-- plan, and it follows actionBars either way.
+	handback = {
+		{ what = "the action bars, their keys and the pet bar",
+			ours = function() return ns.db.actionBars and true or false end,
+			hand = function(back)
+				ns.db.actionBars = not back
+				return ApplyBars()
+			end },
 	},
 
 	defaults = {
@@ -572,7 +624,10 @@ ns.Register({
 				return
 			end
 			if arg == "on" or arg == "off" then
-				SetBars(ns.Command.Toggle(arg))
+				-- The same one flag the panel draws, and it has to be: a word
+				-- that switched less than the tick box does is a second answer
+				-- to the question that control exists to have one answer to.
+				HandBack(not ns.Command.Toggle(arg))
 			elseif arg == "where" then
 				Where()
 			elseif arg == "match" then
@@ -594,7 +649,11 @@ ns.Register({
 			else
 				ns.Print("action bars: " .. ns.Bars.Describe() .. ".")
 				ns.Print("pet bar: " .. ns.PetBar.Describe() .. ".")
-				ns.Print("actionbars on clones every bar you have, with its keys, and hides Blizzard's. actionbars off gives them back.")
+				ns.Print("the client's bottom bar: " .. ns.Handback.Describe() .. ".")
+				for _, row in ipairs(ns.Handback.Rows()) do
+					ns.Print(row)
+				end
+				ns.Print("actionbars on clones every bar you have, with its keys, and takes the client's bottom bar off. actionbars off puts the whole of it back, art and all.")
 				ns.Print("tick bars one at a time in the panel, or actionbars match to follow your own again.")
 				ns.Print("/wui unlock to drag them, actionbars where to print what you dragged, actionbars reset to undo it.")
 				ns.Print("actionbars rows|square|colour|background|combat|key <bar> <value> shapes one bar. actionbars plain drops the lot.")
@@ -630,7 +689,7 @@ ns.Register({
 
 	help = {
 		"buttons apply, buttons restore, buttons status",
-		"actionbars on|off, our own bars over Blizzard's, same slots and same keys",
+		"actionbars on|off, our bars over the client's, or the client's bottom bar back, art and all",
 		"actionbars match, back to cloning whichever bars you have on",
 		"actionbars where, actionbars reset, after dragging them with /wui unlock",
 		"actionbars rows|square|colour|background|combat|key <bar> <value>, one bar's shape, ground and hours",

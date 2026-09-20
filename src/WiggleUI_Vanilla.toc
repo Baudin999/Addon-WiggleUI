@@ -364,6 +364,15 @@ Core\BlizzHide.lua
 # every descriptor signs into.
 Core\BlizzAdapter.lua
 
+# Everything the addon takes off the client's bottom bar, handed back in one
+# press. Five switches already did the job and that was the bug: they sit on
+# two pages under four labels, and the person who wanted the gryphons back
+# found one of them and stopped. It holds no setting of its own, walks the
+# registry for the parts that signed in, and writes the same five booleans
+# those five switches write. After Core\BlizzHide.lua, three of whose switches
+# it moves, and before every part that registers a handback entry.
+Core\Handback.lua
+
 Core\Command.lua
 Core\Panel.lua
 
