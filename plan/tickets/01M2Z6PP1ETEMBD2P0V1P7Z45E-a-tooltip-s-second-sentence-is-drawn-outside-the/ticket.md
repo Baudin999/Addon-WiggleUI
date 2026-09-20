@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2Z6PP1ETEMBD2P0V1P7Z45E
 type: bug
-status: todo
+status: done
 title: A tooltip's second sentence is drawn outside the box
 ---
 
