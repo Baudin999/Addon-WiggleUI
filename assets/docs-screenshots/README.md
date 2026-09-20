@@ -21,6 +21,10 @@ Every outstanding request is a blockquote beginning **Screenshot wanted**:
 | `theme-immersive.png` | [Look](../../docs/guide/look.md), the immersive theme. |
 | `theme-exploration-02.png` | [Look](../../docs/guide/look.md), exploration mid fight. |
 | `theme-exploration-01.png` | [Look](../../docs/guide/look.md), exploration a moment after the kill. |
+| `character-stats.png` | [Windows](../../docs/guide/windows.md), the character sheet. |
+| `bags.png` | [Windows](../../docs/guide/windows.md), the bag window. |
+| `meters-01.png` | [Feeds and meters](../../docs/guide/feeds.md), the two meter panes. |
+| `meters-02.png` | [Feeds and meters](../../docs/guide/feeds.md), the breakdown window. |
 
 ## Still wanted
 
@@ -29,10 +33,8 @@ Every outstanding request is a blockquote beginning **Screenshot wanted**:
 | `charge-marker.png` | The marker over the mob the charge would hit, button lit. | [fighting](../../docs/guide/fighting.md) |
 | `actionbars.png` | Two bars at different row counts and backgrounds, one hidden behind shift. | [action bars](../../docs/guide/bars.md) |
 | `frames-player-target.png` | Player and target blocks, a heal slice on the gauge, a few auras. | [frames](../../docs/guide/frames.md) |
-| `character-stats.png` | The character sheet stats page with the miss rows. | [windows](../../docs/guide/windows.md) |
-| `meters.png` | Both meter panes mid fight, threat close to a pull. | [feeds and meters](../../docs/guide/feeds.md) |
 | `minimap.png` | The square minimap with the button corral open. | [the screen](../../docs/guide/screen.md) |
-| `bags-vendor.png` | The bag window at a vendor, sell and repair row showing. | [chores](../../docs/guide/chores.md) |
+| `bags-vendor.png` | The same bag window with a vendor open, so the sell and repair row is on it. | [chores](../../docs/guide/chores.md) |
 | `install-addons-list.png` | Character select addon list, WiggleUI ticked. | [install](../../docs/guide/install.md) |
 
 ## Shooting them

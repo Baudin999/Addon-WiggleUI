@@ -45,6 +45,8 @@ nothing behind a row.
     /wui meter on|off, meter dps|hps, meter threat on|off
     /wui meter rows 3 to 10, width 120 to 400, zoom 1 to 3, alpha 15
 
+![The two panes: DPS on the left with the fight's seconds beside the number, Threat on the right with the pet at 100 percent and the player at 56](../../assets/docs-screenshots/meters-01.png)
+
 **A breakdown of what this character actually does.** One row per ability, kept
 between sessions: how much of your damage it is, how often it lands, how often
 it crits, what it averages, and what stopped it when it did not land. The miss
@@ -65,11 +67,11 @@ two unrelated things.
     /wui breakdown on|off, breakdown top 20, breakdown band all|<band>
     /wui breakdown reset yes
 
+![The breakdown window: 1.13m damage over 70 abilities, Auto Shot at 87 percent with its hits, crit rate, average and what stopped it](../../assets/docs-screenshots/meters-02.png)
+
 **Numbers floating off your character.** What you land falls left, what lands on
 you falls right, healing rises. Damage is white, healing green, a big hit gold, a
 miss grey. A word appears above your head the moment an ability comes up, once.
 
     /wui hits on|off, hits size 30, fall 90, curve 44, time 1.3
     /wui hits merge on|off, calls on|off, quiet on|off
-
-> **Screenshot wanted:** `meters.png`, both meter panes mid fight, with a threat number close to a pull.

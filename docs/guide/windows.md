@@ -31,6 +31,8 @@ window itself does open in a fight.
     /wui reputation, your standings in a window of their own; reputation list
     /wui character trace on|off, what each click on a gear square did
 
+![The character sheet: nineteen slots in two columns, the figure between them, and the standard tab open on a boss miss of 21.60 percent with the weapon skill at 179 of 200](../../assets/docs-screenshots/character-stats.png)
+
 **A socketing window that knows what you are carrying.** Shift-click a piece on
 the gear page and it opens on that piece's holes with every gem in your bags
 underneath, the ones that go in the hole you are pointing at first. Click a
@@ -106,6 +108,8 @@ your mending, marks what the sale will take and dims what it will not.
     /wui bags count, bags stack, bags clear
     /wui bags session [name], bags session clear
 
+![The bag window: consumables, quest items, trade goods, projectiles and junk each in their own pile, 15 free of 68 along the bottom](../../assets/docs-screenshots/bags.png)
+
 **A merchant window with the whole rack in it.** Everything the vendor has at
 once, in the same piles and the same squares as your bags. The client shows ten
 at a time behind an arrow.
@@ -155,5 +159,3 @@ voice chat has no channels you can name, so what there is to pick is short, and
 client's parchment, with the addon's own button on it.
 
     /wui menu, menu on|off
-
-> **Screenshot wanted:** `character-stats.png`, the stats page with the miss rows.

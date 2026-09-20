@@ -46,4 +46,6 @@ play it once.
 
     /wui ding, ding on|off
 
-> **Screenshot wanted:** `bags-vendor.png`, the bag window at a vendor, with the sell row showing.
+> **Screenshot wanted:** `bags-vendor.png`, the same bag window as on
+> [windows](windows.md), but with a vendor open so the row that sells your greys
+> and pays your mending is on it.
