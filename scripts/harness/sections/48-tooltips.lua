@@ -85,6 +85,63 @@ do
 		"the hint band is gone and something was still drawn for it: " .. tostring(said[1]))
 
 	------------------------------------------------------------------
+	-- A list of lines is a list of lines
+	--
+	-- Two sentences in a subject's `lines` are two lines. They were one line
+	-- for a long time, and the box it drew is what this section is really
+	-- about. The registry reads a list whose first entry is not a table as a
+	-- single spec, which is the shorthand a source is allowed to use, and a
+	-- spec of two strings is a label and a value. So the second sentence
+	-- landed in the value column, the first was squeezed behind it and drawn
+	-- as nothing, and six call sites in the addon were written that way.
+	------------------------------------------------------------------
+
+	Tip.Open(owner, { kind = "note", title = "Two sentences",
+		lines = { "The first one.", "The second one." } }, "control")
+	said = drawn()
+	check(#said == 3, ("two sentences and a title drew %d lines"):format(#said))
+	check(select(2, Box.Text(2)) == nil,
+		"the first sentence took the second as its value column: "
+			.. tostring(select(2, Box.Text(2))))
+	check(said[3] == "The second one.",
+		"the second sentence is not a line of its own: " .. tostring(said[3]))
+
+	-- And a pair is still a pair. It is written with its own brackets on,
+	-- which is the whole of the difference and is why this one is not a
+	-- judgement call any more.
+	Tip.Open(owner, { kind = "note", title = "A pair",
+		lines = { { "Vendor", "12g" } } }, "control")
+	check(select(2, Box.Text(2)) == "12g",
+		"a spec with its own brackets stopped being a label and a value")
+
+	------------------------------------------------------------------
+	-- Nothing is drawn outside the box
+	--
+	-- The value column is the one thing in a tooltip with no width and no
+	-- wrapping, because a `12g` that folded in half would read as two values.
+	-- A value longer than the box therefore had nowhere to go but out through
+	-- the side of it and over the world, which is what the bug above looked
+	-- like on screen rather than in the table.
+	--
+	-- So the claim is asserted rather than the mechanism. A pair too wide to
+	-- fit is stacked onto two lines now; if that is ever traded for clipping
+	-- or for a wider box this check should still pass, and if the overhang
+	-- comes back under any other cause it fails.
+	------------------------------------------------------------------
+
+	Tip.Open(owner, { kind = "note", title = "A long value", lines = {
+		{ "Label", "a value far longer than any box this addon draws,"
+			.. " and then a good deal more of it after that" },
+		{ "Vendor", "12g" },
+	} }, "control")
+	check(Box.Spill() == 0,
+		("a line was drawn %.1f units outside the box"):format(Box.Spill()))
+	check(Box.Text(2) == "Label" and select(2, Box.Text(2)) ~= nil,
+		"the stacked pair stopped being a pair")
+	check(select(2, Box.Text(3)) == "12g",
+		"stacking the wide pair moved the one that fits")
+
+	------------------------------------------------------------------
 	-- Nothing to say draws nothing
 	--
 	-- The answer to a row whose entry has gone and to a nag square with

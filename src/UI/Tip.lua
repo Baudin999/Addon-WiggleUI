@@ -48,7 +48,8 @@ local UI = ns.UI
 -- reason this file exists rather than a Build function inside the box.
 --
 -- **A source may not draw and may not decide the shape.** It answers an array
--- of line specs or nothing at all, the same value a caller's own `lines` is.
+-- of line specs, one spec, or nothing at all. See Pour and Lines below, which
+-- are two doors and not one: a caller's own `lines` is always a list.
 -- Nothing registered here can title a tooltip, open one, reorder a band or
 -- suppress another source. The extension point is deliberately narrow: a part
 -- that could rewrite the whole box is a part that can put the addon back where
@@ -235,12 +236,67 @@ end
 -- Building
 --------------------------------------------------------------------------
 
--- Every line spec a caller or a source handed over, onto the end of a band.
+-- One line, however the caller wrote it.
+--
+-- A bare string is a line. The list a subject carries is a list of lines, so
+-- `"a sentence"` and `{ "a sentence" }` say the same thing and the shorter one
+-- is what a call site full of sentences reads best as.
+local function Spec(line)
+	if type(line) == "string" then
+		return { line }
+	end
+	if type(line) == "table" then
+		return line
+	end
+	return nil
+end
+
+-- Every line a subject named, onto the end of a band.
+--
+-- **A subject's `lines` is a list of lines and nothing else.** That sentence is
+-- load bearing and it cost a bug to write down. Pour below takes a single spec
+-- where an array was expected, because a source answering one line should not
+-- have to type the outer brackets, and the test it uses is whether the first
+-- entry is a table. A subject went through the same door, so
+--
+--   lines = { "Drag a spell here.", "It goes on the end of the ring." }
+--
+-- was read as one line whose label was the first sentence and whose value was
+-- the second. A value is a number or a word held against the right edge with
+-- no wrapping, so the second sentence was drawn out through the side of the box
+-- and over the game, and the first was squeezed to a single unit of width and
+-- drawn as nothing. Six call sites were written that way and every one of them
+-- read as obviously correct.
+--
+-- A caller is not a source. It names a subject in full, it writes its lines out
+-- one per entry, and it has no bracket to save. So this door is shut: an entry
+-- is one line, a string is one line, and a pair is the entry `{ "Vendor", "12g" }`
+-- with its own brackets on. There is no shape a subject can hand over that
+-- means something other than what it looks like.
+local function Lines(band, lines)
+	if type(lines) ~= "table" then
+		return band
+	end
+	for index = 1, #lines do
+		local spec = Spec(lines[index])
+		if spec then
+			band[#band + 1] = spec
+		end
+	end
+	return band
+end
+
+-- Every line spec a source handed over, onto the end of a band.
 --
 -- A source that answers a single spec rather than an array is taken as meaning
 -- one line, because `{ "Vendor", "12g" }` is a line and `{ { "Vendor", "12g" } }`
 -- is a list holding one, and the two are one bracket apart at every call site.
 -- The test is whether the first entry is itself a table.
+--
+-- This is the narrow extension point and it is where the shorthand belongs. A
+-- source is written once, by somebody reading this file, and answers about one
+-- kind of thing. Lines above is what a subject goes through, and it has no
+-- shorthand at all.
 local function Pour(band, lines)
 	if type(lines) ~= "table" then
 		return band
@@ -256,7 +312,10 @@ local function Pour(band, lines)
 		return band
 	end
 	for index = 1, #lines do
-		band[#band + 1] = lines[index]
+		local spec = Spec(lines[index])
+		if spec then
+			band[#band + 1] = spec
+		end
 	end
 	return band
 end
@@ -321,7 +380,7 @@ function Tip.Build(subject)
 	local data = { scan = Head(subject), title = subject.title, color = subject.color }
 
 	local filled = {
-		body = FromSources(subject, "body", Pour({}, subject.lines)),
+		body = FromSources(subject, "body", Lines({}, subject.lines)),
 		extra = FromSources(subject, "extra", {}),
 	}
 

@@ -372,13 +372,19 @@ local function Add(box, size, left, lr, lg, lb, right, rr, rg, rb)
 	row.size = size
 	row.paired = right ~= nil
 	row.spacer = false
-	row.bar = nil
+	row.bar, row.stacked = nil, false
 	-- What the line wants if nothing stops it. Measured before any width is
 	-- written, because a font string that has been given a width answers that
 	-- width rather than its own.
 	row.natural = row.left:GetStringWidth() or 0
+	-- The value's own width, kept rather than asked for again in Layout. A
+	-- stacked line is given a width to wrap inside, and a font string that has
+	-- one answers that width for ever after, so the second open of a pooled row
+	-- would measure the box instead of the text.
+	row.value = 0
 	if right then
-		row.natural = row.natural + COLUMN + (row.right:GetStringWidth() or 0)
+		row.value = row.right:GetStringWidth() or 0
+		row.natural = row.natural + COLUMN + row.value
 	end
 	if row.natural > box.widest then
 		box.widest = row.natural
@@ -401,7 +407,7 @@ local function Spacer(box)
 	row.right:SetText("")
 	row.right:Hide()
 	row.size, row.paired, row.natural, row.spacer = BODY, false, 0, true
-	row.bar = nil
+	row.bar, row.stacked = nil, false
 	return row
 end
 
@@ -441,9 +447,10 @@ end
 --          title where there are any, and the title stands where there are
 --          none.
 --
--- The array part is the body, in order, one table per line:
+-- The array part is the body, in order, one entry per line:
 --
---   { "a sentence" }                 a plain line
+--   "a sentence"                     a plain line, written as itself
+--   { "a sentence" }                 the same
 --   { "a sentence", color = C.dim }  the same, in a colour of its own
 --   { "Label", "value" }             the two pushed to opposite edges
 --   { "Label", "value", tone = X }   the same, with the value in its own colour
@@ -475,6 +482,15 @@ end
 -- more. A tooltip says what the thing under the cursor is. Where the settings
 -- are is what the settings window is for.
 local function Line(box, spec)
+	-- A bare string is a plain line. UI/Tip.lua settles the shape of what a
+	-- subject hands over before it gets here, so this is for Show's own
+	-- callers: a caller with no subject at all, which is the harness.
+	if type(spec) == "string" then
+		return Add(box, BODY, spec, C.text[1], C.text[2], C.text[3])
+	end
+	if type(spec) ~= "table" then
+		return nil
+	end
 	if spec.blank then
 		return Spacer(box)
 	end
@@ -936,6 +952,106 @@ local function Alongside(box, previous, far)
 	end
 end
 
+-- The gauge behind one line, and the two strings moved onto it.
+--
+-- Its own function rather than four more levels inside the loop below, because
+-- a bar is a different question from a line: the line has already been sized
+-- and measured by the time this runs, and all this decides is where the paint
+-- goes and where the text sits on top of it.
+local function Gauge(frame, row, content, height, y, inset)
+	-- The line's own height and no more, so the GAP between two gauges in a
+	-- row is the seam that keeps them two.
+	row.track:ClearAllPoints()
+	row.track:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -y)
+	row.track:SetSize(content, height)
+	row.track:Show()
+
+	row.left:ClearAllPoints()
+	row.right:ClearAllPoints()
+	if row.stacked then
+		-- Two lines on one gauge, each held to its own corner of it. The
+		-- middle is where a single line goes and there is no middle to share.
+		row.left:SetPoint("TOPLEFT", row.track, "TOPLEFT", inset, 0)
+		row.right:SetPoint("BOTTOMRIGHT", row.track, "BOTTOMRIGHT", -inset, 0)
+	else
+		-- The text on its middle rather than its top. A line is at least two
+		-- units taller than its glyphs, and top-anchored the spare lands under
+		-- the text, where a bar shows it.
+		row.left:SetPoint("LEFT", row.track, "LEFT", inset, 0)
+		row.right:SetPoint("RIGHT", row.track, "RIGHT", -inset, 0)
+	end
+
+	local filled = UI.Round(frame, content * row.bar)
+	if filled > 0 then
+		row.fill:ClearAllPoints()
+		row.fill:SetPoint("TOPLEFT", row.track, "TOPLEFT", 0, 0)
+		row.fill:SetSize(filled, height)
+		row.fill:Show()
+	end
+end
+
+-- One line given the width the box turned out to have, and how tall it came
+-- out once it had wrapped inside it.
+local function Place(frame, row, content, y)
+	-- A line on a gauge gives up INSET at either end, so the text starts
+	-- inside the bar rather than on its edge.
+	local inset = row.bar and INSET or 0
+	local room = content - inset * 2
+
+	-- A pair wider than the widest box there is goes on two lines.
+	--
+	-- The value column is the one thing here that is not wrapped: a number or
+	-- a word pushed to the right edge, and a `12g` that folded in half would
+	-- read as two values. So it is measured and not constrained, and for as
+	-- long as nothing checked the measurement a value too long for the box
+	-- simply grew leftwards out through the side of it, over the game, with
+	-- the label squeezed to a single unit of width behind it and drawn as
+	-- nothing. That is what a caller handing over two sentences where the
+	-- shape wants a label and a value looked like on screen.
+	--
+	-- Tested against MAX rather than against `content`, because `content` has
+	-- been rounded to the pixel grid and a pair that is the widest thing in
+	-- the box can land half a pixel over its own box. Half a pixel is not a
+	-- reason to break a line in two.
+	row.stacked = row.paired and row.natural > MAX
+	if row.paired then
+		-- Wrapped only while stacked: on one line the value keeps the
+		-- no-width, no-wrap measurement the column is made of.
+		UI.Wrap(row.right, row.stacked)
+		row.right:SetWidth(row.stacked and room or 0)
+	end
+
+	-- A paired line on one line never wraps its label either. Its right hand
+	-- side is a number or a word and its left is a label, and a label that
+	-- folded onto a second line would put the value beside the wrong half.
+	if row.paired and not row.stacked then
+		row.left:SetWidth(math.max(room - COLUMN - row.value, 1))
+	else
+		row.left:SetWidth(room)
+	end
+
+	local height = UI.Round(frame, UI.TextHeight(row.left, row.size + 2))
+	row.left:ClearAllPoints()
+	row.left:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD + inset, -y)
+
+	if row.paired then
+		row.right:ClearAllPoints()
+		if row.stacked then
+			-- Under the label and still on its own edge: the pair is two lines
+			-- now, and it is still a label and a value.
+			row.right:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(PAD + inset), -(y + height))
+			height = height + UI.Round(frame, UI.TextHeight(row.right, row.size + 2))
+		else
+			row.right:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(PAD + inset), -y)
+		end
+	end
+
+	if row.bar then
+		Gauge(frame, row, content, height, y, inset)
+	end
+	return height
+end
+
 -- Two passes over the lines, because the width of the box and the height of a
 -- wrapped line each depend on the other. The first pass has already run: every
 -- Add recorded what its line wants and kept the widest. This decides the box
@@ -952,50 +1068,9 @@ local function Layout(box)
 	local y = PAD
 	for index = 1, box.count do
 		local row = box.rows[index]
-		local height
-		if row.spacer then
-			height = SPACER
-		else
-			-- A line on a gauge gives up INSET at either end, so the text
-			-- starts inside the bar rather than on its edge.
-			local inset = row.bar and INSET or 0
-			-- A paired line never wraps. Its right hand side is a number or a
-			-- word and its left is a label, and a label that folded onto a
-			-- second line would put the value beside the wrong half of it.
-			if row.paired then
-				row.left:SetWidth(math.max(content - inset * 2 - COLUMN - (row.right:GetStringWidth() or 0), 1))
-			else
-				row.left:SetWidth(content - inset * 2)
-			end
-			height = UI.Round(frame, UI.TextHeight(row.left, row.size + 2))
-			row.left:ClearAllPoints()
-			row.left:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD + inset, -y)
-			if row.paired then
-				row.right:ClearAllPoints()
-				row.right:SetPoint("TOPRIGHT", frame, "TOPRIGHT", -(PAD + inset), -y)
-			end
-			if row.bar then
-				-- The line's own height and no more, so the GAP between two
-				-- gauges in a row is the seam that keeps them two.
-				row.track:ClearAllPoints()
-				row.track:SetPoint("TOPLEFT", frame, "TOPLEFT", PAD, -y)
-				row.track:SetSize(content, height)
-				row.track:Show()
-				-- The text on its middle rather than its top. A line is at
-				-- least two units taller than its glyphs, and top-anchored
-				-- the spare lands under the text, where a bar shows it.
-				row.left:ClearAllPoints()
-				row.left:SetPoint("LEFT", row.track, "LEFT", inset, 0)
-				row.right:ClearAllPoints()
-				row.right:SetPoint("RIGHT", row.track, "RIGHT", -inset, 0)
-				local filled = UI.Round(frame, content * row.bar)
-				if filled > 0 then
-					row.fill:ClearAllPoints()
-					row.fill:SetPoint("TOPLEFT", row.track, "TOPLEFT", 0, 0)
-					row.fill:SetSize(filled, height)
-					row.fill:Show()
-				end
-			end
+		local height = SPACER
+		if not row.spacer then
+			height = Place(frame, row, content, y)
 		end
 
 		y = y + height
@@ -1527,6 +1602,51 @@ function Tooltip.Size(index, which)
 	end
 	local _, size = row.left:GetFont()
 	return size
+end
+
+-- How far past its own edges the last open drew, in units, or nought.
+--
+-- Handed out for the one claim this file makes that none of the rest can carry:
+-- everything it draws is inside the box it drew. A tooltip follows the cursor
+-- round the world with nothing behind it, so a line that overhangs is white
+-- text over whatever the camera is pointing at, and the value column is what
+-- overhangs, because it is the one thing here with no width and no wrapping.
+--
+-- Measured off the widths the strings were measured at rather than off the
+-- font strings themselves, which is the second choice and worth saying why.
+-- A font string that has been given no width answers no width, on the client
+-- and in the stub both, and an unconstrained value column is exactly the case
+-- in question: asking the widget where its right edge is gets the anchor back,
+-- not the end of the text. So the extent is rebuilt from `natural` and `value`,
+-- which were taken before any width was imposed.
+--
+-- It is not Layout's rule written twice. Layout decides which lines to stack;
+-- this asks how far what it left on one line actually reaches. Stacking turned
+-- off, loosened, or applied to the wrong rows all come back here as a number.
+function Tooltip.Spill(which)
+	local box = Which(which)
+	if not box then
+		return 0
+	end
+	local content = box.widest
+	if content > MAX then
+		content = MAX
+	end
+
+	local worst = 0
+	for index = 1, box.count do
+		local row = box.rows[index]
+		-- A stacked value is given the width of the box to wrap inside, and a
+		-- label is given one on every line there is, so the only string that
+		-- can reach past an edge is a value still sharing its line.
+		if row.paired and not row.stacked and not row.spacer then
+			local over = row.value - (content - (row.bar and INSET * 2 or 0))
+			if over > worst then
+				worst = over
+			end
+		end
+	end
+	return worst
 end
 
 -- The grid moved under the frame: a resolution change, or combat letting go of
