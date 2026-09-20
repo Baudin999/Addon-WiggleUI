@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2Z3WH7WKZ2GQJ55MMSFJAPZ
 type: task
-status: todo
+status: doing
 title: "The ring wears the theme, and the slice you are over is the one fired"
 ---
 
