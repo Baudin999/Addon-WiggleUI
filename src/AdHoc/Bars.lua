@@ -119,9 +119,26 @@ Bars.KeyName = KeyName
 Bars.ButtonName = ButtonName
 Bars.DEAD = DEAD
 
--- The radius a ring of `count` squares is drawn at.
-local function Radius(count)
+-- The radius a ring of `count` squares is drawn at, and where the `at`th of
+-- them sits on that circle: square one at twelve and the rest clockwise, which
+-- is the order Bars.Wedge and the snippet count in.
+--
+-- Both are public and the size of a square is too, because the page you design
+-- a bar on draws the same circle at the size of a square on a settings page.
+-- The page multiplies all three by one number and lays nothing out itself, so
+-- the picture on the page and the ring under your thumb cannot drift: an angle
+-- written out a second time is a second rule, and this addon has already paid
+-- for one of those in the snippet above.
+Bars.SIZE = SIZE
+
+function Bars.Radius(count)
 	return math.max(RADIUS, count * (SIZE + SPACE) / (2 * math.pi))
+end
+
+function Bars.Where(at, count)
+	local angle = (at - 1) * 2 * math.pi / count
+	local radius = Bars.Radius(count)
+	return radius * math.sin(angle), radius * math.cos(angle)
 end
 
 -- Which square a push of dx, dy points at, on a ring of `count`, or nil inside
@@ -435,25 +452,22 @@ local function Arm(entry, bar)
 	entry.frame:SetAttribute("wk-count", #buttons)
 end
 
--- The squares on the circle, square one at twelve and the rest clockwise, which
--- is the order Bars.Wedge and the snippet count in.
+-- The squares on the circle Bars.Where draws.
 local function Arrange(entry)
 	UI.Adopt(entry.frame, ns.db.adhocZoom)
 	local count = entry.count
-	local radius = Radius(count)
-	local side = 2 * (radius + SIZE)
+	local side = 2 * (Bars.Radius(count) + SIZE)
 	entry.frame:SetSize(side, side)
 
 	for at = 1, PER_BAR do
 		local w = entry.buttons[at]
 		w.aim:Hide()
 		if at <= count then
-			local angle = (at - 1) * 2 * math.pi / count
+			local x, y = Bars.Where(at, count)
 			Ability.Size(w, SIZE)
 			w:ClearAllPoints()
 			w:SetPoint("CENTER", entry.frame, "CENTER",
-				UI.Round(entry.frame, radius * math.sin(angle)),
-				UI.Round(entry.frame, radius * math.cos(angle)))
+				UI.Round(entry.frame, x), UI.Round(entry.frame, y))
 			w:Show()
 		else
 			w:Hide()

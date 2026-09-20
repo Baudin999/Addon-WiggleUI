@@ -335,6 +335,12 @@ UI\Ask.lua
 # thing being counted on that file's square.
 UI\Amount.lua
 
+# The name a part asks for before it makes a thing you will have to pick out of
+# a list later. One window for all of them, after UI\Window.lua because it is
+# one of those and after UI\Widgets.lua because its field and its two buttons
+# are that file's.
+UI\Name.lua
+
 # Which of the client's own frames are on the screen: one switch each, the list
 # every part signs into, and the once-a-second pass that puts back anything
 # that moved. In Core because it is asked by nine trees and is a fact about none

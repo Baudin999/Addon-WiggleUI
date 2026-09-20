@@ -25,6 +25,20 @@ The slash command is `/wui`, with `/wiggleui` and `/wiggle` as the long forms.
 `/wk` is gone. Every binding under WiggleUI in the key bindings screen is
 newly named, so the four of them need setting again.
 
+### The ad hoc bars page draws the ring
+
+The plus on the tab strip asks what the bar is called. Nothing is made until
+you answer it, so a bar on the strip is a bar you named, rather than a `Bar 3`
+you then have to find the name field and type over.
+
+Under it, the squares now sit on the circle the ring draws them on: first at
+twelve, the rest clockwise, the radius growing as the count does, exactly as
+the ring under your thumb grows. The empty square you drop onto is in the
+middle. Drop a spell, an item or a macro on it and the circle opens up and
+takes it. Drag a square round the circle to move it, into the middle to put it
+last, or off the circle to take it off the bar; a right click still takes one
+off too. Those three drags all worked before and nothing on the page said so.
+
 ### A delete list on the loot feed
 
 A row in the loot feed now has a trash can beside its cross. Press it and every

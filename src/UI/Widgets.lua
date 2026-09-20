@@ -590,6 +590,88 @@ function UI.KeyBox(parent, opts)
 	return field
 end
 
+----------------------------------------------------------------------------
+-- The box a line is typed into
+--
+-- A sunken box with an EditBox inside it, the six scripts every one of them
+-- needs, and nothing about what the line is for. The caller says how wide, how
+-- many letters, and what to do with the text when it is committed.
+--
+-- Committed means the field gave the keyboard up, which is Enter, Escape, a
+-- click elsewhere or the page closing. Never per keystroke: the setter behind
+-- one of these is usually a saved variable, and half a typed name is not one.
+-- A caller that has to see every keystroke, because something downstream of it
+-- is a readout, passes opts.onType as well.
+--
+-- opts.onEnter takes the Enter press instead of committing, for a field inside
+-- a window where Enter means the window's own accept.
+--
+-- There are seven more of these in the addon and they are the same seven
+-- scripts each time, two of them missing the UI.Typing and UI.StopCapture that
+-- stop a key capture eating what you type. They come through here on
+-- 01M2Z0BMX0R0Y7FZS8YRK4CQAR, which also carries the gate that keeps the count
+-- at one.
+--------------------------------------------------------------------------
+
+function UI.Field(parent, opts)
+	opts = opts or {}
+	local box = UI.Box(parent, C.sunken, C.edge)
+	box:SetSize(opts.width or 168, opts.height or M.control)
+
+	local edit = CreateFrame("EditBox", nil, box)
+	edit:SetPoint("TOPLEFT", 4, 0)
+	edit:SetPoint("BOTTOMRIGHT", -4, 0)
+	edit:SetFontObject(UI.Font(opts.font or M.font, UI.FLAT))
+	edit:SetTextColor(C.text[1], C.text[2], C.text[3])
+	edit:SetAutoFocus(false)
+	edit:SetMaxLetters(opts.max or 24)
+
+	edit:SetScript("OnEnterPressed", function(self)
+		if opts.onEnter then
+			opts.onEnter(self:GetText())
+			return
+		end
+		-- Clearing the focus is the commit. A commit here as well ran every
+		-- setter twice on one Enter, which is what item 44 was.
+		self:ClearFocus()
+	end)
+	edit:SetScript("OnEscapePressed", function(self)
+		self:ClearFocus()
+	end)
+	edit:SetScript("OnEditFocusGained", function(self)
+		UI.CloseDropdown()
+		UI.StopCapture()
+		UI.Typing(self)
+		UI.Tint(box.bg, C.selected)
+	end)
+	edit:SetScript("OnEditFocusLost", function(self)
+		UI.StopTyping()
+		UI.Tint(box.bg, C.sunken)
+		if opts.onCommit then
+			opts.onCommit(self:GetText())
+		end
+	end)
+	edit:SetScript("OnHide", function(self)
+		self:ClearFocus()
+	end)
+	if opts.onType then
+		edit:SetScript("OnTextChanged", function(self)
+			opts.onType(self:GetText())
+		end)
+	end
+
+	-- The whole rectangle answers the click and not only the letters inside it.
+	-- Four pixels either side is four pixels of a field that looks like it takes
+	-- the cursor and does not.
+	box:EnableMouse(true)
+	box:SetScript("OnMouseDown", function()
+		edit:SetFocus()
+	end)
+
+	box.edit = edit
+	return box
+end
+
 ------------------------------------------------------------------------
 -- Slots
 --
@@ -1872,53 +1954,24 @@ function UI.Kit(host)
 
 	-- A line of text you type
 	--
-	-- An EditBox with no template, the way everything else here is a frame with
-	-- no template. It commits on enter and on losing focus rather than on every
-	-- keystroke, because the setter is a saved variable and a half typed name is
-	-- not one.
+	-- The box is UI.Field above, which is where the scripts and the reason they
+	-- are those scripts live. This is the row around it: the label on the left,
+	-- the field on the right, and the page put back in step after a commit.
 	function kit.TextField(label, get, set)
 		local fieldWidth = 168
 		local row, text, right = Paired(ctx, fieldWidth, M.control)
 		text:SetText(label)
 
-		local box = UI.Box(row, C.sunken, C.edge)
-		box:SetSize(fieldWidth, M.control)
+		local box = UI.Field(row, {
+			width = fieldWidth,
+			max = 24,
+			onCommit = function(typed)
+				set(typed)
+				Changed()
+			end,
+		})
 		box:SetPoint("TOPRIGHT", right, "TOPRIGHT")
-
-		local edit = CreateFrame("EditBox", nil, box)
-		edit:SetPoint("TOPLEFT", 4, 0)
-		edit:SetPoint("BOTTOMRIGHT", -4, 0)
-		edit:SetFontObject(UI.Font(M.font, UI.FLAT))
-		edit:SetTextColor(C.text[1], C.text[2], C.text[3])
-		edit:SetAutoFocus(false)
-		edit:SetMaxLetters(24)
-
-		local function Commit(self)
-			set(self:GetText())
-			Changed()
-		end
-		-- Clearing focus is the commit. ClearFocus fires OnEditFocusLost below,
-		-- and a Commit here as well ran every setter twice on one Enter.
-		edit:SetScript("OnEnterPressed", function(self)
-			self:ClearFocus()
-		end)
-		edit:SetScript("OnEscapePressed", function(self)
-			self:ClearFocus()
-			Changed()
-		end)
-		edit:SetScript("OnEditFocusLost", function(self)
-			UI.StopTyping()
-			Commit(self)
-		end)
-		edit:SetScript("OnEditFocusGained", function(self)
-			UI.CloseDropdown()
-			UI.StopCapture()
-			UI.Typing(self)
-			UI.Tint(box.bg, C.selected)
-		end)
-		edit:SetScript("OnHide", function(self)
-			self:ClearFocus()
-		end)
+		local edit = box.edit
 
 		Index(row, label)
 		return Remember(row, function()

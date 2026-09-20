@@ -409,6 +409,67 @@ do
 		"the page does not draw the empty square a drop lands on")
 	check(ns.AdHocPanel.Square(3) ~= nil and ns.AdHocPanel.Square(3):IsShown() == false,
 		"the page draws squares past the empty one")
+
+	-- The circle on the page is the ring's own circle, smaller.
+	--
+	-- Where a square sits is AdHocBars.Where's answer for a ring of that many,
+	-- times the size of a square here over the size of one there. Asserted
+	-- against that call rather than against numbers typed out a second time,
+	-- because the failure this is here for is the two pictures drifting: a page
+	-- carrying its own copy of the angle passes a test carrying the same copy.
+	local shown = AdHoc.Shown()
+	for _, spell in ipairs({ "Hamstring", "Cleave", "Overpower" }) do
+		AdHoc.Put(shown, 99, { kind = "spell", name = spell, icon = "Interface\\Icons\\Ability" })
+	end
+	ns.Options.Refresh()
+	local count = #AdHoc.Squares(shown)
+	check(count == 4, "the page did not get the bar of four it lays out")
+
+	local drift = 0
+	for at = 1, count do
+		local w = ns.AdHocPanel.Square(at)
+		local _, _, _, x, y = w:GetPoint(1)
+		local scale = w:GetWidth() / Bars.SIZE
+		local wantX, wantY = Bars.Where(at, count)
+		drift = math.max(drift, math.abs(x - wantX * scale), math.abs(y - wantY * scale))
+	end
+	check(drift <= 1,
+		("a square on the page is %.1f units off the circle the ring draws it on"):format(drift))
+
+	local middle = ns.AdHocPanel.Square(count + 1)
+	local _, _, _, middleX, middleY = middle:GetPoint(1)
+	check(middle:IsShown() == true and middle.record == nil and middleX == 0 and middleY == 0,
+		"the square a drop lands on is not empty in the middle of the circle")
+	check(middle.at == count + 1,
+		"the middle square is not the place after the last one, so a drop would replace rather than add")
+
+	while #AdHoc.Squares(shown) > 1 do
+		AdHoc.Take(shown, #AdHoc.Squares(shown))
+	end
+	ns.Options.Refresh()
+
+	--------------------------------------------------------------------------
+	-- The plus asks what the bar is called
+	--------------------------------------------------------------------------
+
+	local before = AdHoc.Count()
+	check(ns.AdHocPanel.Add() == true, "the plus refused to ask for a name")
+	check(ns.UI.Naming() ~= nil, "the plus did not ask what the bar is called")
+	check(AdHoc.Count() == before, "a bar was made before the window was answered")
+	check(ns.UI.Called("") == false and ns.UI.Naming() ~= nil,
+		"an empty name was taken rather than refused")
+	check(ns.UI.Called(nil) == true and ns.UI.Naming() == nil,
+		"the window would not close on a cancel")
+	check(AdHoc.Count() == before, "closing the window without a name made a bar")
+
+	ns.AdHocPanel.Add()
+	check(ns.UI.Called("  totems and such  ") == true, "a name was refused")
+	check(AdHoc.Count() == before + 1, "an answered window made no bar")
+	check(AdHoc.Get(before + 1).name == "totems and such",
+		"the bar was not called what the window was told, or the spaces came with it")
+	check(AdHoc.Shown() == before + 1, "the page did not turn to the bar it just made")
+	check(AdHoc.Remove(before + 1) == true, "the bar the page section made would not go")
+	ns.Options.Refresh()
 	ns.Options.Hide()
 
 end

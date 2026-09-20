@@ -81,10 +81,21 @@ local function Apply()
 	end
 end
 
+-- Whether another bar fits, and why not when it does not. The page asks before
+-- it opens a window to name one: a name typed into a window that then refuses
+-- it is a question that should not have been asked.
+function AdHoc.Room()
+	if #AdHoc.All() >= AdHoc.MAX then
+		return false, ("%d bars is the cap."):format(AdHoc.MAX)
+	end
+	return true
+end
+
 function AdHoc.Add(name)
 	local list = AdHoc.All()
-	if #list >= AdHoc.MAX then
-		return nil, ("%d bars is the cap."):format(AdHoc.MAX)
+	local room, why = AdHoc.Room()
+	if not room then
+		return nil, why
 	end
 	list[#list + 1] = {
 		name = name and name ~= "" and name or ("Bar %d"):format(#list + 1),

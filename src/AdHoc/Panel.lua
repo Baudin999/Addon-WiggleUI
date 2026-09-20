@@ -6,31 +6,52 @@ ns.AdHocPanel = Panel
 --------------------------------------------------------------------------
 -- Designing a bar, on the page
 --
--- One bar at a time, picked off a strip of tabs with a plus on the end. Under
--- the strip: the name, the key,
--- and the bar itself drawn as a line of squares you drop things onto, with an
--- empty square on the end for the next one. Drag a spell out of the book or an
--- item out of a bag onto the empty square to add it, onto a full one to
--- replace it, from one square to another to reorder, and off the line to take
--- it away. A right click takes it away too.
+-- One bar at a time, picked off a strip of tabs with a plus on the end. The
+-- plus asks what the bar is called and makes nothing until you answer, so a
+-- bar on the strip is a bar somebody named. Under the strip: the name, the
+-- key, and the ring itself.
 --
--- The line here and the bar on the screen are two pictures of one list.
+-- **The page draws the ring, not a row.** The squares sit on the same circle
+-- the ring draws them on, at the same angles, at a radius that grows with the
+-- count exactly as the ring's does. It was a line of squares that wrapped at
+-- the page's width, and a line teaches an order the gesture does not use: the
+-- thing you have to know to use one of these bars is which way to push, and a
+-- line cannot say. Drop something on it and the circle opens up and takes it,
+-- which is what it will look like under your thumb.
+--
+-- **The empty square is in the middle.** That is where the ring writes the
+-- name of what you are pointing at, and it is the one thing on this page the
+-- ring does not have. On the circle it would be a position the ring has not
+-- got, every square would shuffle round as you dropped onto it, and the circle
+-- you were looking at would never be the circle you got.
+--
+-- Drag a spell out of the book, an item out of a bag or a macro onto the
+-- middle to add it, onto a square to replace what is there, from one square to
+-- another to move it round the circle, and off the ring to take it away. A
+-- right click takes it away too.
+--
+-- The circle here and the ring on the screen are two pictures of one list.
 -- Nothing on this page draws a cooldown or a colour, because this is where you
--- decide what is on the bar and the bar is where you read what it is doing.
+-- decide what is on the bar and the ring is where you read what it is doing.
 --
 -- Nothing here names a setting. AdHoc.lua owns the list and Bars.lua owns the
--- keys; this file asks which record is where and tells them where a drop
--- landed.
+-- keys and the geometry; this file asks which record is where and tells them
+-- where a drop landed.
 --------------------------------------------------------------------------
 
-local M = ns.UI.Metric
+local UI = ns.UI
+local C, M = ns.UI.Color, ns.UI.Metric
 
--- A square on the page, and the air between two. The size of a square on the
--- bar itself at zoom one, so the page shows the bar the size it is.
-local EDGE, GAP = 27, 4
+-- A square on the page. Half the square the ring draws, which is the small
+-- sharp size in UI.IconSizes and is what everything else on a settings page is
+-- drawn at. Every other number on this page comes off it: the circle is the
+-- ring's own circle times this over the ring's square.
+local EDGE = 27
 
--- The pool, built once at the width of a bar plus the empty square on the end,
--- because a frame cannot be destroyed on these clients.
+-- The pool, one square per place on a bar, because a frame cannot be destroyed
+-- on these clients. The empty one in the middle is the next place along and so
+-- comes out of the same pool; a bar with every place taken has no middle square
+-- and nothing to draw there.
 local squares = {}
 
 -- Which square a button belongs to, for the drag the cursor does not carry.
@@ -87,9 +108,10 @@ local function Lift(w)
 	end
 end
 
--- Where the button came up. On another square of the line, the record moves
--- there. On the square it came from, nothing happened. Anywhere else, it comes
--- off the bar.
+-- Where the button came up. On another square, the record moves there, and the
+-- middle square is the place after the last one, so a drag into the middle puts
+-- it at the end. On the square it came from, nothing happened. Anywhere off the
+-- ring, it comes off the bar.
 local function Landed()
 	local from = lifted
 	lifted = nil
@@ -127,12 +149,13 @@ end
 local function Says(w)
 	local record = w.record
 	if not record then
-		return { kind = "note", title = "the next square",
-			lines = { "Drag a spell out of your book, an item out of a bag or a macro onto it." } }
+		return { kind = "note", title = "the middle",
+			lines = { "Drag a spell out of your book, an item out of a bag or a macro here.",
+				"It goes on the end of the ring and the circle opens up to take it." } }
 	end
 	return { kind = "note", title = record.name,
-		lines = { "Drag it onto another square to move it, or off the line to take it away.",
-			"Right click takes it away too." } }
+		lines = { "Drag it round the circle to move it, or into the middle to put it last.",
+			"Drag it off the ring to take it away. A right click does that too." } }
 end
 
 local function Square(frame)
@@ -148,48 +171,104 @@ local function Square(frame)
 		landed = Landed,
 		describe = function() return Says(w) end,
 	})
+	-- The mark on the empty one. A square with nothing in it is a hole in the
+	-- middle of the circle until something says what it is for, and the plus is
+	-- the same mark the strip above puts on the tab that makes a bar.
+	w.plus = UI.Glyph(w, M.glyph, C.dim, "CENTER")
+	w.plus:SetPoint("CENTER")
+	w.plus:SetText("+")
 	owner[w.button] = w
 	return w
 end
 
 --------------------------------------------------------------------------
--- The line
+-- The circle
 --------------------------------------------------------------------------
 
--- The squares of the shown bar and one empty after them, wrapped to the
--- page's width, and how tall that came out.
-local function Lay(width)
+-- One square at one place on the circle, measured from the middle of it.
+local function Place(w, at, record, x, y)
+	w.at, w.record = at, record
+	w:SetSize(EDGE, EDGE)
+	w:ClearAllPoints()
+	w:SetPoint("CENTER", w:GetParent(), "CENTER", UI.Whole(x), UI.Whole(y))
+	w:Show()
+	w.Refresh()
+	w.plus:SetShown(record == nil)
+end
+
+-- The shown bar's squares on the ring's own circle, the empty one in the
+-- middle, and how tall that came out.
+--
+-- Nothing here works out where a square goes. AdHocBars.Where answers that for
+-- the ring, and this multiplies its answer by the size of a square here over
+-- the size of a square there. One rule, two pictures: a change to the ring's
+-- radius moves this circle without anybody coming back to this file.
+local function Lay(frame)
 	local records = ns.AdHoc.Squares(Shown())
-	local count = records and math.min(#records + 1, ns.AdHoc.PER_BAR) or 0
-	local across = math.max(1, math.floor((width + GAP) / (EDGE + GAP)))
-	local rows = 0
+	local count = records and #records or 0
+	local scale = EDGE / ns.AdHocBars.SIZE
+	local side = 2 * (ns.AdHocBars.Radius(math.max(count, 1)) * scale + EDGE)
+	-- The place after the last one, which is where a drop lands, and none once
+	-- every place is taken.
+	local middle = count < ns.AdHoc.PER_BAR and count + 1 or nil
+
+	frame.ring:SetSize(side, side)
+	frame.ring:SetShown(records ~= nil)
 
 	for at = 1, #squares do
 		local w = squares[at]
-		if at <= count then
-			local column, row = (at - 1) % across, math.floor((at - 1) / across)
-			rows = row + 1
-			w.at = at
-			w.record = records[at]
-			w:SetSize(EDGE, EDGE)
-			w:ClearAllPoints()
-			w:SetPoint("TOPLEFT", column * (EDGE + GAP), -(row * (EDGE + GAP)))
-			w:Show()
-			w.Refresh()
+		if records and at <= count then
+			local x, y = ns.AdHocBars.Where(at, count)
+			Place(w, at, records[at], x * scale, y * scale)
+		elseif records and at == middle then
+			Place(w, at, nil, 0, 0)
 		else
 			w.at, w.record = nil, nil
 			w:Hide()
 		end
 	end
 
-	if rows == 0 then
+	if not records then
 		return 0
 	end
-	return rows * (EDGE + GAP) - GAP
+	return side
 end
 
 function Panel.Square(at)
 	return squares[at]
+end
+
+--------------------------------------------------------------------------
+-- Making one
+--------------------------------------------------------------------------
+
+-- The plus on the strip. It asks what the bar is called and makes nothing
+-- until that is answered, so the first thing a bar has is a name rather than
+-- the first thing you have to correct: the plus used to make `Bar 3` and leave
+-- you to find the name field further down the page and type over it.
+--
+-- The cap is asked about before the window opens rather than after it is
+-- answered, because a name typed into a window that then refuses it is a
+-- question that should not have been asked.
+function Panel.Add()
+	local room, full = ns.AdHoc.Room()
+	if not room then
+		ns.Print(full)
+		return false
+	end
+	ns.UI.Name({
+		title = "A bar of your own",
+		note = "Name it for what goes on it: totems, trade skills, the things you only press in town.",
+		accept = "make it",
+		onAccept = function(name)
+			local index, why = ns.AdHoc.Add(name)
+			if not index then
+				ns.Print(why)
+			end
+			ns.Options.Refresh()
+		end,
+	})
+	return true
 end
 
 --------------------------------------------------------------------------
@@ -208,19 +287,12 @@ function Panel.Build(ui)
 		end,
 		Shown,
 		function(index) ns.AdHoc.Show(index) end,
-		{
-			onAdd = function()
-				local index, why = ns.AdHoc.Add()
-				if not index then
-					ns.Print(why)
-				end
-			end,
-		})
+		{ onAdd = Panel.Add })
 
 	ui.Reading("bars", function()
 		local count = ns.AdHoc.Count()
 		if count == 0 then
-			return "none yet, press +"
+			return "none yet, press + and name one"
 		end
 		return ("%d of %d"):format(count, ns.AdHoc.MAX)
 	end)
@@ -263,14 +335,22 @@ function Panel.Build(ui)
 	ui.Gap()
 
 	ui.Custom(function(frame)
+		-- A frame of its own for the circle, centred on the row, so a square
+		-- sits at the offset AdHocBars.Where gives and nothing on this page has
+		-- to add half a row's height to it.
+		frame.ring = CreateFrame("Frame", nil, frame)
+		frame.ring:SetPoint("TOP")
+		frame.disc = UI.Disc(frame.ring, "BACKGROUND")
+		frame.disc:SetAllPoints()
+		frame.disc:SetVertexColor(C.window[1], C.window[2], C.window[3], 0.6)
 		for at = 1, ns.AdHoc.PER_BAR do
-			squares[at] = Square(frame)
+			squares[at] = Square(frame.ring)
 		end
 		return function()
-			return Lay(frame:GetWidth())
+			return Lay(frame)
 		end
-	end, { height = M.control, label = "the squares on this bar" })
-	ui.Hint("Drop a spell, an item or a macro on the empty square. The first sits at twelve on the ring and the rest go round clockwise.")
+	end, { height = M.control, label = "the ring this bar draws" })
+	ui.Hint("Drop a spell, an item or a macro in the middle to add it. Drag a square round the circle to move it, or off it to take it away. The first is at twelve and the rest go clockwise, the way you push.")
 
 	ui.Reading("on screen", function()
 		local index = Shown()
