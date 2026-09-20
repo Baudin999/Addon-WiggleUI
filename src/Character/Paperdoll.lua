@@ -160,6 +160,11 @@ local C, M = UI.Color, UI.Metric
 -- The client draws its slots at thirty-six and this draws them at thirty-six,
 -- for the reason UI/Widgets.lua borrows the client's slot ring: a square you
 -- drag a helmet into should be the size of the square the helmet came out of.
+--
+-- The disc and no longer the row. A row carrying a line of set circles is
+-- taller than the disc on it, so everything that used to read this number as
+-- the height of a row asks Pane:Tall instead, and what is left here is the
+-- picture: the face, and the narrowest a column is ever squeezed to.
 local SQUARE = 36
 local WEAR = 2
 
@@ -945,7 +950,7 @@ end
 
 local function Square(pane, entry)
 	local box = CreateFrame("Frame", nil, pane.frame)
-	box:SetSize(SQUARE, SQUARE)
+	box:SetSize(SQUARE, pane:Tall())
 	-- Asked by the repaint, which is handed a row and not a page, so the row
 	-- carries the way back to whose gear it is drawing.
 	box.pane = pane
@@ -1321,6 +1326,11 @@ local function PaintSquare(box)
 
 	box.note:SetText(Note(box))
 	PaintDots(box, link)
+	-- And the sets, under the line the dots are on. The worn link is handed
+	-- over rather than read again there, because the one comparison a circle
+	-- makes is against exactly this: the same link means the set's piece is the
+	-- piece already on the disc.
+	ns.SetRow.Paint(box, link)
 
 	-- The rule under the name is an underscore, so it is as wide as the letters
 	-- and never as wide as the row. Read once here rather than inside the branch
@@ -1892,6 +1902,12 @@ function Paperdoll.New(parent, opts)
 	-- would be a name that vanishes when the sheet is opened on a laptop.
 	pane.head = Head(pane, pane.frame, level)
 
+	-- And your sets at the top of the left hand column, which is the same rule
+	-- read the other way round: identity on the right, what you are dressed for
+	-- on the left. Nil on an inspect page, and every line that places it says
+	-- so rather than asking the page a second time.
+	pane.sets = ns.SetRow.Stack(pane, pane.frame, level)
+
 	pane.tabs = Strip(pane, level)
 
 	-- The same readout the stats tab was, hosted here instead and drawn compact:
@@ -2004,15 +2020,32 @@ end
 -- Character/Window.lua hands these two numbers to the window and UI/Window.lua
 -- clamps them to what the screen can hold, so this is a request rather than an
 -- answer. Resize below is written to be given less.
+-- How tall one row is, which is the disc and whatever the sets ask for under
+-- it.
+--
+-- A question the pane answers rather than a number in this file, because the
+-- answer changes while the sheet is open: saving a second set grows every row
+-- by a line and shrinking back to one takes it away again. Everything that
+-- places a row, spaces two of them or stands the figure on the block reads
+-- this, so there is one place the growth happens and twenty rows follow it.
+function Pane:Tall()
+	return SQUARE + ns.SetRow.Band(self)
+end
+
 function Pane:Natural()
 	local rows = math.max(#self.left, #self.right)
-	local band = math.max(rows * SQUARE + (rows - 1) * GAP, 1)
+	local band = math.max(rows * self:Tall() + (rows - 1) * GAP, 1)
 	-- The band and not the page. The figure stands in the same air the rows do,
 	-- so what BUILD is asked about is how tall he is rather than how tall the
 	-- page around him came out, and asking the page would reserve width for a
 	-- figure sixty units taller than the one that gets drawn.
 	local stage = math.max(math.floor(band * BUILD), STAGE_MIN)
-	return READING_MAX + M.gutter + COLUMN_MAX * 2 + stage + EDGE * 2, band + CROWN * 2
+	-- And the toggles on top of that. They are drawn over the left column's own
+	-- air, so the page asks for the room rather than taking it off the rows: a
+	-- stack laid across the first two rows of that column is a stack sitting on
+	-- two secure squares.
+	return READING_MAX + M.gutter + COLUMN_MAX * 2 + stage + EDGE * 2,
+		band + CROWN * 2 + ns.SetRow.Crown(self)
 end
 
 -- Ten rows down the left, nine down the right, the figure standing between
@@ -2054,9 +2087,15 @@ function Pane:Resize(width, height)
 	-- CROWN, on a page that did not get the height it asked for it comes out at
 	-- less, and on one shorter than its own rows it comes out at nothing and the
 	-- bottom of the column is what goes.
+	--
+	-- The toggles come off the top before any of that, so what gets centred is
+	-- the height left under them and the rows and the figure move down together.
 	local rows = math.max(#self.left, #self.right)
-	local top = math.max(UI.Round(self.frame,
-		(height - (rows * SQUARE + (rows - 1) * GAP)) / 2), 0)
+	local deep = self:Tall()
+	local crown = ns.SetRow.Crown(self)
+	local air = math.max(UI.Round(self.frame,
+		(height - crown - (rows * deep + (rows - 1) * GAP)) / 2), 0)
+	local top = crown + air
 
 	-- How much room the figure has, which is what the rows have: he stands beside
 	-- them and he stands on the same two lines. Taking it off the rows' own air
@@ -2067,23 +2106,26 @@ function Pane:Resize(width, height)
 	-- to the frame it is in, so a frame as wide as the gear area is a figure whose
 	-- head and feet are off the top and bottom of it, and BUILD is what keeps the
 	-- frame narrow enough that they are not.
-	local tall = math.max(height - top * 2, 1)
+	local high = math.max(height - top - air, 1)
 	local stage = math.max(
-		math.min(UI.Round(self.frame, tall * BUILD), gear - column * 2), STAGE_MIN)
+		math.min(UI.Round(self.frame, high * BUILD), gear - column * 2), STAGE_MIN)
 	local block = column * 2 + stage
 	local edge = math.max(UI.Round(self.frame, (gear - block) / 2), 0)
 	self.width = gear
 
 	for index = 1, #self.left do
-		self.left[index]:SetSize(column, SQUARE)
+		self.left[index]:SetSize(column, deep)
 		Rest(self.left[index], self.frame, "TOPLEFT",
-			edge, -(top + (index - 1) * (SQUARE + GAP)))
+			edge, -(top + (index - 1) * (deep + GAP)))
 	end
 	for index = 1, #self.right do
-		self.right[index]:SetSize(column, SQUARE)
+		self.right[index]:SetSize(column, deep)
 		Rest(self.right[index], self.frame, "TOPRIGHT",
-			edge + block, -(top + (index - 1) * (SQUARE + GAP)))
+			edge + block, -(top + (index - 1) * (deep + GAP)))
 	end
+
+	-- The toggles, over the left column and in the air kept for them above it.
+	ns.SetRow.Place(self.sets, edge, air, column)
 
 	-- The figure in the gap the two columns leave, standing on the same two lines
 	-- the rows do. The offset is the rows' own, so a page squeezed under the
@@ -2091,7 +2133,7 @@ function Pane:Resize(width, height)
 	-- together rather than off one of them.
 	self.panel:ClearAllPoints()
 	self.panel:SetPoint("TOPLEFT", edge + column, -top)
-	self.panel:SetSize(stage, tall)
+	self.panel:SetSize(stage, high)
 
 	self.head:ClearAllPoints()
 	self.head:SetPoint("TOPRIGHT")
@@ -2292,6 +2334,7 @@ function Pane:Paint()
 		self:Cooling()
 	end
 	self:PaintHead()
+	ns.SetRow.PaintStack(self.sets)
 	-- Only while the page is up, and that is a measurement rule rather than a
 	-- saving: a sentence under a row is measured against the width it wraps to,
 	-- and a font string on a page nobody has shown yet is not obliged to answer

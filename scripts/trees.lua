@@ -169,6 +169,8 @@ local ALLOWED = {
 	  why = "an enemy bar says what the mob on it drops for a quest you are on" },
 	{ from = "Character", sym = "Upkeep", uses = 1,
 	  why = "the sheet reads which weapon enchant the buff watcher is tracking" },
+	{ from = "Character", sym = "Sets", uses = 13,
+	  why = "the gear page is where a set is read and edited: a circle per set on every row, and the toggles that put one on" },
 	{ from = "Character", sym = "TalentRead", uses = 2,
 	  why = "the inspect sheet's talents tab reads the trees through the one door the addon has to the talent API" },
 	{ from = "UnitFrames", sym = "Upkeep", uses = 1,
