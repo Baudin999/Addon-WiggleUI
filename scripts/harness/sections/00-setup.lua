@@ -34,6 +34,37 @@ for _, entry in ipairs(Setup.STEPS[2].cards) do
 		:format(tostring(entry.value)))
 end
 
+-- Every page fits inside the window it is drawn in.
+--
+-- The colours page is what asked for this. Seven palettes in three columns is
+-- three rows of cards, the window was a fixed four hundred units tall, and the
+-- last row was drawn through the footer and off the bottom edge of the window.
+-- Palettes get added, so the window is sized off its tallest page now, and
+-- this is what holds it there when the eighth one lands.
+local frame = _G.WiggleUISetup
+check(frame ~= nil, "the setup's window has no name, so nothing can measure it")
+
+local function Lowest(region, floor)
+	for _, child in ipairs(region.children or {}) do
+		if child:IsShown() then
+			floor = math.min(floor, child:GetBottom() or floor, Lowest(child, floor))
+		end
+	end
+	return floor
+end
+
+-- Half a unit of slack, because the scale a window is drawn at divides into
+-- every edge and the last bit of it comes back as 1e-13 of a pixel. A card off
+-- the bottom of the page is forty units out, not a fraction of one.
+for index, page in ipairs(Setup.STEPS) do
+	Setup.Go(index)
+	local over = frame:GetBottom() - Lowest(frame, frame:GetTop())
+	check(over < 0.5,
+		("the setup's %s page hangs %.0f units below the bottom of its own window")
+			:format(page.rail, over))
+end
+Setup.Go(1)
+
 -- The unit frame card paints your class and your power, and a colour that is
 -- not three numbers raises in the client where the stub here takes it.
 local health, power = ns.SetupPreviews.Colours()

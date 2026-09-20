@@ -37,7 +37,6 @@ local Setup = {}
 ns.Setup = Setup
 
 local WIDTH = 660
-local HEIGHT = 400
 local GAP = 10
 local INNER = WIDTH - M.pad * 2
 
@@ -51,6 +50,36 @@ local BLURB = 44
 -- How far down the page the cards start: the step rail, the question and a
 -- sentence under it.
 local HEADER = 84
+
+-- How tall one card is, how tall the page holding them all is, and how tall
+-- that makes the window.
+--
+-- **The window is as tall as its tallest page and not a number.** It was 400,
+-- which is the mode page's one row of cards and nothing to spare, and the
+-- colours page is seven palettes in three columns: three rows, a hundred and
+-- fifty units more, drawn straight through the footer and out of the bottom of
+-- the window. A card count is the sort of thing that grows, and the palettes
+-- have an epic of their own, so the page says how much room it needs and the
+-- window takes the largest answer.
+local function CardHeight(step)
+	local tall = step.swatch and SWATCH or PREVIEW
+	return M.gutter * 2 + CARD_TITLE + tall + (step.swatch and 0 or BLURB)
+end
+
+local function PageHeight(step)
+	local rows = math.ceil(#step.cards / step.columns)
+	return HEADER + rows * CardHeight(step) + (rows - 1) * GAP
+end
+
+-- Every page's room, plus the title bar, the footer and the pad above and
+-- below the page. Window:Body takes the first two off again.
+local function Height()
+	local tallest = 0
+	for _, step in ipairs(Setup.STEPS) do
+		tallest = math.max(tallest, PageHeight(step))
+	end
+	return M.title + M.footer + M.pad * 2 + tallest
+end
 
 --------------------------------------------------------------------------
 -- The questions
@@ -265,7 +294,7 @@ local function Card(page, step, entry, width)
 	local tall = step.swatch and SWATCH or PREVIEW
 	local card = UI.Button(page, {
 		width = width,
-		height = M.gutter * 2 + CARD_TITLE + tall + (step.swatch and 0 or BLURB),
+		height = CardHeight(step),
 		onClick = function() Setup.Pick(step.key, entry.value) end,
 	})
 	card.value = entry.value
@@ -311,7 +340,7 @@ end
 local function Page(step)
 	local page = CreateFrame("Frame", nil, window.content)
 	page:SetPoint("TOPLEFT", M.pad, -M.pad)
-	page:SetSize(INNER, HEIGHT)
+	page:SetSize(INNER, PageHeight(step))
 
 	local question = UI.Label(page, M.tally, C.heading, "LEFT", UI.FLAT)
 	question:SetPoint("TOPLEFT", 0, -(M.row + M.gutter))
@@ -377,7 +406,7 @@ local function Build()
 		name = "WiggleUISetup",
 		title = "WiggleUI Setup",
 		width = WIDTH,
-		height = HEIGHT,
+		height = Height(),
 	})
 	rail = Rail()
 	pages = {}
