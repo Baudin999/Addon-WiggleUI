@@ -79,8 +79,24 @@ function Breakdown.Bands()
 	return BANDS
 end
 
+-- The same four bands in the words an axis can hold. A column on the graph is
+-- eighty pixels wide and "three or more over" is not, so there are two
+-- spellings; they are both here rather than one of them being typed into the
+-- window, for the reason the sentence above gives about the panel and the
+-- slash word.
+local BAND_AXIS = {
+	[UNDER] = "at or under",
+	[NEAR] = "one or two",
+	[HIGH] = "three or more",
+	[UNKNOWN] = "not seen",
+}
+
 function Breakdown.BandWord(band)
 	return BAND_WORDS[band] or "?"
+end
+
+function Breakdown.BandAxis(band)
+	return BAND_AXIS[band] or "?"
 end
 
 -- Which band the pane is reading, as Rank wants it: a band, or nil for all four
@@ -472,6 +488,69 @@ local function Fold(row, slot)
 		row.miss[kind] = (row.miss[kind] or 0) + count
 		row.misses = row.misses + count
 	end
+end
+
+-- The four bands side by side, for one ability or for the whole character.
+--
+-- Rank answers "what am I doing" and reads one band at a time. This answers the
+-- other question the bands were filed for, which is what changes as the target
+-- gets harder, and it can only be answered by holding all four at once.
+--
+-- It returns rows of the shape Rank hands out, not the rates a graph draws, so
+-- CritRate, MissRate and MissRateOf below read one of these unchanged. A second
+-- copy of the crit division here would be a second place for it to be wrong.
+--
+-- The second return is the same counters with the bands added back together,
+-- including the one whose level was never seen. The graph cannot draw that
+-- band and the figures beside it must not drop it: a lifetime crit rate that
+-- silently left out every mob nobody targeted would be a different number from
+-- the one the row in the list is showing, on the same screen.
+--
+-- name is nil for every ability added together, or an ability's name as the
+-- ranking spells it, which folds its ranks the way Rank does.
+--
+-- Casts land on the pooled row and nowhere else. A record counts them once for
+-- the ability and not once per band, because a cast is a key you pressed and
+-- what you pressed it on is only known when something lands. Adding them to
+-- each band would put the same presses in all four columns and read as four
+-- times as many.
+local curve = {}
+local whole = { name = "", miss = {} }
+
+-- One ability's counters into both readings at once: the band it happened in,
+-- and the total. Its own function because the walk is four deep with it inlined
+-- and scripts/shape.lua allows three, which is the right number: the reader of
+-- Split should be able to see that it picks records and not how a record comes
+-- apart.
+local function Scatter(record)
+	for band, slot in pairs(record.at) do
+		if curve[band] then
+			Fold(curve[band], slot)
+			Fold(whole, slot)
+		end
+	end
+end
+
+function Breakdown.Split(name)
+	for _, band in ipairs(BANDS) do
+		if not curve[band] then
+			curve[band] = { name = BAND_WORDS[band], miss = {} }
+		end
+		Blank(curve[band])
+	end
+	Blank(whole)
+	whole.name = name or ""
+
+	local store = Store()
+	if store then
+		for _, record in pairs(store) do
+			if not name or record.name == name then
+				whole.casts = whole.casts + (record.casts or 0)
+				Scatter(record)
+			end
+		end
+	end
+	return curve, whole
 end
 
 -- Damage, always, and the name to break a tie so that two rows that have done

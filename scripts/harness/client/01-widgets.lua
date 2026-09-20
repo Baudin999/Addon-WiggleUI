@@ -164,6 +164,34 @@ function Region:SetDrawLayer(layer, sublevel)
 end
 function Region:GetDrawLayer() return self.layer, self.sublevel end
 
+-- A line, which is a texture with two anchors instead of a rectangle. Real here
+-- rather than left to the PascalCase no-op above for the reason the mask below
+-- is: the no-op hands back nil, Breakdown/Graph.lua probes for the call, gets a
+-- function, and then indexes what it returns. A stub that let that stay nil
+-- could not tell a client with lines from a client without them, which is the
+-- one difference the probe exists to find.
+--
+-- Its two ends are data, because that is the whole of what a line says: the
+-- graph's claim is that a band with nothing counted in it leaves a hole rather
+-- than a segment down to the floor, and the only way to assert that is to read
+-- back where the ends went.
+function Region:CreateLine(name, layer)
+	local line = child("texture", self, name)
+	line.layer, line.sublevel = layer or "ARTWORK", 0
+	line.isLine = true
+	function line:SetThickness(px) self.thickness = px end
+	function line:GetThickness() return self.thickness end
+	function line:SetStartPoint(point, relative, x, y)
+		self.startPoint = { point, relative, x, y }
+	end
+	function line:SetEndPoint(point, relative, x, y)
+		self.endPoint = { point, relative, x, y }
+	end
+	function line:GetStartPoint() return unpack(self.startPoint or {}) end
+	function line:GetEndPoint() return unpack(self.endPoint or {}) end
+	return line
+end
+
 -- A mask, which is a real object here for one reason: the PascalCase no-op above
 -- answers every unwritten method with a function returning nil, so a probe for
 -- CreateMaskTexture passes and the call hands back nothing. UI.Clip indexes what

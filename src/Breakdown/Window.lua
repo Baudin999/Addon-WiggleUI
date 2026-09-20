@@ -29,6 +29,20 @@ local C, M = UI.Color, UI.Metric
 -- whether the sample is worth anything yet; the miss breakdown is the line a
 -- warrior actually acts on, because dodge is about where you were standing.
 --
+-- **A row is a button and clicking it means something.** It was a Button with a
+-- hover glow on it and nothing on the click, which promises an answer that is
+-- not there and is worse than a row that looks inert. Clicking one puts that
+-- ability in the pane on the right with its own graph; clicking it again, or
+-- clicking the row that is already picked, goes back to the whole character.
+--
+-- **The pane is where the level bands stopped being a chip.** Every counter has
+-- been filed under four bands since the first version of this and the only way
+-- to read the split was a control that showed one at a time. Breakdown/Graph.lua
+-- draws all of them at once, which is what the split was for. The chip survives
+-- and is demoted: it filters the ranking and the damage column, which is what a
+-- filter should do, and it no longer stands between you and the one question the
+-- bands answer.
+--
 -- The bar behind a row is that ability's share of your damage, drawn the way
 -- Meter/Window.lua draws its share bars and for the same reason: a column of
 -- percentages is a column you have to read, and a bar is one you can rank at a
@@ -46,7 +60,13 @@ local MAX_ROWS = 40
 -- different shape.
 local ROWS_DRAWN = 10
 
-local WIDTH = 560
+-- The list keeps the width it was measured for: three lines of dense text per
+-- row, and narrowing it to find room for the pane would have cost the miss
+-- line, which is the line a warrior acts on. So the pane is added beside it and
+-- the window gets wider.
+local LIST = 560
+local PANE = 300
+local WIDTH = LIST + PANE + M.gutter
 
 -- The row. 27 for the icon because that is the second entry in ns.UI.IconSizes
 -- and the only size near this one where a stored texel lands on a whole pixel;
@@ -95,8 +115,28 @@ local rows = {}
 local view
 local head, note, blank
 local bandChip
+local pane
+local wipe
 local shown = 0
 local width = 1
+
+-- Which ability the pane is showing, by the name the ranking spells it under,
+-- or nil for the whole character added up. A name rather than an index, because
+-- the ranking reorders itself the moment a fight ends and an index would follow
+-- the sort rather than the ability you picked.
+local selected
+
+-- The spell id behind that name, kept so the pane can draw its picture. The
+-- name is what a selection is, because the ranking folds an ability's ranks
+-- together under one; the key is whichever rank the fold happened to keep, and
+-- every rank of an ability wears the same icon.
+local selectedKey
+
+-- Whether the footer's reset is one press from doing it. Not saved and not
+-- cleared when the window closes, which is the rule Breakdown/Feature.lua's own
+-- reset follows and for its reason: it is a fact about the last thing you
+-- clicked, not about the window.
+local armed = false
 
 --------------------------------------------------------------------------
 
@@ -322,6 +362,13 @@ local function BuildRow(parent, index)
 	row.glow:SetAllPoints()
 	row.glow:Hide()
 
+	-- The row the pane is showing. Under the glow rather than over it, so a
+	-- picked row you are also pointing at looks like both and not like a third
+	-- state nobody chose.
+	row.pick = ns.Fill(row, "BACKGROUND", C.selected[1], C.selected[2], C.selected[3], 1)
+	row.pick:SetAllPoints()
+	row.pick:Hide()
+
 	row.icon = UI.Icon(row, "ARTWORK")
 	row.icon:SetSize(ICON, ICON)
 	row.icon:SetPoint("TOPLEFT", row, "TOPLEFT", INSET, -ICON_TOP)
@@ -357,6 +404,15 @@ local function BuildRow(parent, index)
 		self.glow:Hide()
 	end)
 
+	-- Through UI.Press like every other button in the addon rather than left on
+	-- the widget's default, which registers something the camera pass cannot
+	-- read. UI/Widgets.lua gives the whole argument.
+	UI.Press.Clicks(row, "up", "LeftButton")
+	row:SetScript("OnClick", function(self)
+		selected = (selected ~= self.ability) and self.ability or nil
+		Window.Paint()
+	end)
+
 	row:Hide()
 	return row
 end
@@ -365,18 +421,75 @@ end
 -- The window
 --------------------------------------------------------------------------
 
-local function Build()
-	window = UI.Window({
-		name = "WiggleUIBreakdown",
-		title = "Breakdown",
-		width = WIDTH,
-		height = HEIGHT,
-		zoom = function() return ns.Zoom("breakdownZoom") end,
-	})
-	ns.Remember(window)
+--------------------------------------------------------------------------
+-- The pane
+--
+-- One ability, or the whole character when no row is picked. The figures at
+-- the top are the same four divisions the row under the cursor is showing, at a
+-- size you can read without leaning in; the graph under them is the answer the
+-- band chip could only spell one letter of at a time.
+--
+-- The figures are over every band, the fourth one included, and the graph is
+-- over three. That is a difference on one screen and it is the honest one: a
+-- lifetime crit rate that quietly dropped every mob nobody targeted would not
+-- be the number in the list beside it.
+--------------------------------------------------------------------------
 
-	local body = window.content
+local PANE_NAME_Y = 1
+local PANE_SHARE_Y = 16
+local PANE_RULE_Y = ICON + M.rowGap
+local PANE_FIG_Y = PANE_RULE_Y + M.rowGap + 2
+local PANE_FIG = 13
+local PANE_FIGS = 3
+local PANE_PLOT_Y = PANE_FIG_Y + PANE_FIGS * PANE_FIG + M.rowGap
 
+local function BuildPane(body)
+	pane = {}
+	pane.frame = CreateFrame("Frame", nil, body)
+	pane.frame:SetSize(PANE, ROWS_DRAWN * ROW)
+	pane.frame:SetPoint("TOPLEFT", body, "TOPLEFT", LIST + M.gutter, -CHIP_Y)
+
+	pane.icon = UI.Icon(pane.frame, "ARTWORK")
+	pane.icon:SetSize(ICON, ICON)
+	pane.icon:SetPoint("TOPLEFT")
+
+	pane.name = UI.Label(pane.frame, M.heading, C.heading, "LEFT", UI.FLAT)
+	pane.name:SetPoint("TOPLEFT", pane.frame, "TOPLEFT", ICON + M.gutter, -PANE_NAME_Y)
+	pane.name:SetPoint("RIGHT", pane.frame, "RIGHT", -M.pad, 0)
+
+	pane.share = UI.Label(pane.frame, M.small, C.dim, "LEFT", UI.FLAT)
+	pane.share:SetPoint("TOPLEFT", pane.frame, "TOPLEFT", ICON + M.gutter, -PANE_SHARE_Y)
+	pane.share:SetPoint("RIGHT", pane.frame, "RIGHT", -M.pad, 0)
+
+	local rule = UI.Rule(pane.frame, C.hairline)
+	rule:SetPoint("TOPLEFT", 0, -PANE_RULE_Y)
+	rule:SetPoint("TOPRIGHT", -M.pad, -PANE_RULE_Y)
+
+	pane.figures = {}
+	for index = 1, PANE_FIGS do
+		local line = UI.Label(pane.frame, M.small, C.text, "LEFT", UI.FLAT)
+		line:SetPoint("TOPLEFT", 0, -(PANE_FIG_Y + (index - 1) * PANE_FIG))
+		line:SetPoint("RIGHT", pane.frame, "RIGHT", -M.pad, 0)
+		pane.figures[index] = line
+	end
+
+	pane.plot = ns.BreakdownGraph.New(pane.frame, PANE - M.pad)
+	pane.plot.frame:SetPoint("TOPLEFT", 0, -PANE_PLOT_Y)
+
+	-- The band the graph cannot draw, said in words under it. It is the one
+	-- honest thing the store does that nobody would guess from the picture.
+	pane.unseen = UI.Label(pane.frame, M.small, C.quiet, "LEFT", UI.FLAT)
+	pane.unseen:SetWidth(PANE - M.pad)
+	pane.unseen:SetPoint("TOPLEFT", 0,
+		-(PANE_PLOT_Y + ns.BreakdownGraph.Height() + M.rowGap))
+	pane.unseen:SetWordWrap(true)
+end
+
+--------------------------------------------------------------------------
+-- The window
+--------------------------------------------------------------------------
+
+local function BuildHead(body)
 	-- What the whole table adds up to, which is the one number the rows do not
 	-- carry between them.
 	head = UI.Label(body, BIG, C.text, "LEFT", UI.FLAT)
@@ -385,9 +498,11 @@ local function Build()
 	-- Bounded on the left by the total rather than left to grow across it. The
 	-- sentence gets a clause on the end when the store has started refusing
 	-- abilities, and a right anchored string with nothing to its left would run
-	-- under the number instead of clipping.
+	-- under the number instead of clipping. Its right edge is the list's, not
+	-- the window's: the pane starts where the list stops.
 	note = UI.Label(body, M.small, C.dim, "RIGHT", UI.FLAT)
-	note:SetPoint("TOPRIGHT", -M.pad, -(HEAD_Y + math.floor((BIG - M.small) / 2)))
+	note:SetPoint("TOPRIGHT", body, "TOPLEFT", LIST - M.pad,
+		-(HEAD_Y + math.floor((BIG - M.small) / 2)))
 	note:SetPoint("LEFT", head, "RIGHT", M.gutter, 0)
 
 	-- The one control on the row, at the left margin where the ranking chips
@@ -409,13 +524,15 @@ local function Build()
 
 	local rule = UI.Rule(body, C.hairline)
 	rule:SetPoint("TOPLEFT", M.pad, -RULE_Y)
-	rule:SetPoint("TOPRIGHT", -M.pad, -RULE_Y)
+	rule:SetPoint("TOPRIGHT", body, "TOPLEFT", LIST - M.pad, -RULE_Y)
+end
 
+local function BuildList(body)
 	-- The list. Forty rows in the pool and ten on screen, so a character with
 	-- more abilities than fit scrolls rather than losing the tail.
 	view = UI.ScrollView(body)
 	view.frame:SetPoint("TOPLEFT", M.pad, -LIST_Y)
-	width = view:Resize(WIDTH - M.pad * 2, ROWS_DRAWN * ROW)
+	width = view:Resize(LIST - M.pad * 2, ROWS_DRAWN * ROW)
 
 	for index = 1, MAX_ROWS do
 		rows[index] = BuildRow(view.canvas, index)
@@ -426,14 +543,153 @@ local function Build()
 	blank:SetPoint("TOPLEFT", INSET, -LINE1)
 	blank:SetPoint("RIGHT", view.canvas, "RIGHT", -INSET, 0)
 
+	-- The seam. A window with two columns and nothing between them reads as one
+	-- column that ran out of things to say.
+	local seam = UI.Rule(body, C.hairline, true)
+	seam:SetPoint("TOPLEFT", body, "TOPLEFT", LIST + math.floor(M.gutter / 2), -CHIP_Y)
+	seam:SetPoint("BOTTOMLEFT", body, "TOPLEFT", LIST + math.floor(M.gutter / 2),
+		-(LIST_Y + ROWS_DRAWN * ROW))
+end
+
+-- What the footer's reset says, which is the whole of the guard in front of it.
+-- Throwing away a month of counting is not something one press should do, so
+-- the first press only says what the second would, which is the question
+-- Breakdown/Feature.lua's own reset asks the same way.
+local function ResetWord()
+	if armed then
+		return "press again to throw it away"
+	end
+	return ("start again, %d abilities"):format(ns.Breakdown.Count())
+end
+
+local function BuildFoot()
 	local hint = UI.Label(window.footer, M.small, C.quiet, "LEFT", UI.FLAT)
 	hint:SetPoint("LEFT")
-	hint:SetText("Escape closes this. /wui breakdown prints the same table to chat.")
+	hint:SetText("Escape closes this. Click a row for that ability on its own.")
 
 	local close = UI.Button(window.footer, { label = "close", width = 90, height = M.row,
 		onClick = function() Window.Close() end })
 	close:SetPoint("RIGHT")
 
+	-- Here as well as on the settings page, because this is where you are
+	-- standing when you decide the record is polluted: a month of counting with
+	-- a week of levelling through grey mobs in it is not the table you wanted,
+	-- and six clicks into a settings tree is not where that thought happens.
+	wipe = UI.Button(window.footer, { label = ResetWord(), width = 180, height = M.row,
+		tone = C.danger,
+		onClick = function()
+			if not armed then
+				armed = true
+				wipe.text:SetText(ResetWord())
+				return
+			end
+			armed = false
+			ns.Breakdown.Reset()
+			selected = nil
+			Window.Paint()
+			ns.Options.Refresh()
+		end })
+	wipe:SetPoint("RIGHT", close, "LEFT", -M.gutter, 0)
+end
+
+local function Build()
+	window = UI.Window({
+		name = "WiggleUIBreakdown",
+		title = "Breakdown",
+		width = WIDTH,
+		height = HEIGHT,
+		zoom = function() return ns.Zoom("breakdownZoom") end,
+	})
+	ns.Remember(window)
+
+	BuildHead(window.content)
+	BuildList(window.content)
+	BuildPane(window.content)
+	BuildFoot()
+end
+
+--------------------------------------------------------------------------
+-- The pane, filled
+--------------------------------------------------------------------------
+
+-- The three lines under the name. The same four divisions the row in the list
+-- is showing, read out of Breakdown.lua rather than divided again here, which
+-- is the rule the row's own two lines follow.
+local function Figures(row)
+	local first = ("%d attempts, %d landed"):format(ns.Breakdown.Attempts(row), row.landed)
+	local crit = ns.Breakdown.CritRate(row)
+	if crit then
+		first = first .. ", " .. Percent(crit) .. " crit"
+	end
+
+	local second = "nothing has landed yet"
+	local average = ns.Breakdown.AverageHit(row)
+	if average then
+		second = "avg " .. Short(average)
+	end
+	local critAverage = ns.Breakdown.AverageCrit(row)
+	if critAverage then
+		second = second .. ", crits for " .. Short(critAverage)
+	end
+	if row.max > 0 then
+		second = second .. ", best " .. Short(row.max)
+	end
+
+	local third = ("%s damage"):format(Short(row.damage))
+	if row.wasted > 0 then
+		third = third .. ", " .. Short(row.wasted) .. " of it overkill"
+	end
+	if row.casts > 0 then
+		third = third .. (", %d casts"):format(row.casts)
+	end
+	return first, second, third
+end
+
+-- The band the graph is not allowed to draw, in the one sentence that says why.
+local function Unseen(row)
+	local attempts = ns.Breakdown.Attempts(row)
+	if attempts <= 0 then
+		return "Every attempt counted had a level on it."
+	end
+	return ("%d attempts landed on something whose level was never seen. They are in the figures above and not on the graph: a mob nobody targeted is not a harder mob.")
+		:format(attempts)
+end
+
+local function PaintPane()
+	-- The grand total first and copied out as a number, because Split fills one
+	-- table and hands it back, so the second call below is the same table with
+	-- different numbers in it.
+	local _, everything = ns.Breakdown.Split(nil)
+	local lifetime = everything.damage
+
+	local split, whole = ns.Breakdown.Split(selected)
+
+	local texture = selected and IconFor(selectedKey)
+	pane.icon:SetTexture(texture or "")
+	pane.icon:SetShown(texture and true or false)
+
+	pane.name:SetPoint("TOPLEFT", pane.frame, "TOPLEFT",
+		texture and (ICON + M.gutter) or 0, -PANE_NAME_Y)
+	pane.share:SetPoint("TOPLEFT", pane.frame, "TOPLEFT",
+		texture and (ICON + M.gutter) or 0, -PANE_SHARE_Y)
+
+	if selected then
+		pane.name:SetText(selected)
+		pane.share:SetText((lifetime > 0)
+			and (Percent(whole.damage / lifetime) .. " of everything you have done")
+			or "none of your damage yet")
+	else
+		pane.name:SetText("Everything you have swung")
+		pane.share:SetText("every ability added together, over every band")
+	end
+
+	local first, second, third = Figures(whole)
+	pane.figures[1]:SetText(first)
+	pane.figures[2]:SetText(second)
+	pane.figures[3]:SetText(third)
+
+	ns.BreakdownGraph.Draw(pane.plot, split)
+	pane.unseen:SetText(Unseen(split[ns.Breakdown.Bands()[4]]))
 end
 
 --------------------------------------------------------------------------
@@ -449,6 +705,21 @@ function Window.Paint()
 	local ranked, total = ns.Breakdown.Rank(ns.Breakdown.Band())
 	local top = ranked[1] and ranked[1].damage or 0
 
+	-- A selection the band chip has just filtered out of the list, or one a
+	-- reset threw away. The pane would go on showing an ability with no row
+	-- under it, which is a window arguing with itself.
+	selectedKey = nil
+	if selected then
+		for index = 1, #ranked do
+			if ranked[index].name == selected then
+				selectedKey = ranked[index].key
+			end
+		end
+		if not selectedKey then
+			selected = nil
+		end
+	end
+
 	shown = 0
 	for index = 1, MAX_ROWS do
 		local row = rows[index]
@@ -458,6 +729,8 @@ function Window.Paint()
 		else
 			shown = index
 			row:Show()
+			row.ability = entry.name
+			row.pick:SetShown(entry.name == selected)
 			row.name:SetText(entry.name)
 			row.damage:SetText(Short(entry.damage))
 			row.landed:SetText(Landed(entry))
@@ -479,6 +752,8 @@ function Window.Paint()
 
 	head:SetText(("%s damage"):format(Short(total)))
 	note:SetText(ns.Breakdown.Describe())
+	wipe.text:SetText(ResetWord())
+	PaintPane()
 
 	bandChip.text:SetText(BandWord())
 	bandChip.active = ns.Breakdown.Band() ~= nil
@@ -568,4 +843,14 @@ end
 
 function Window.Row(index)
 	return rows[index]
+end
+
+-- The pane, for the same readers. Which ability it is showing is the one piece
+-- of this window's state that is not derivable from the store.
+function Window.Pane()
+	return pane
+end
+
+function Window.Selected()
+	return selected
 end

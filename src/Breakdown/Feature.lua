@@ -110,14 +110,14 @@ local function Panel(ui)
 		function(word)
 			ns.db.breakdownBand = (word == EVERY) and 0 or BandFor(word)
 		end)
-	ui.Hint("Worth picking one band before you believe a crit or a miss rate: in this era the target's level drives both hard, and a pooled number averages two unrelated things.")
+	ui.Hint("This filters the ranking and the damage column. It is no longer how you read the level gap: the window draws every band at once, under whichever ability you click.")
 
 	ui.Action(function()
 		return Window.IsShown() and "close the table" or "open the table"
 	end, function()
 		Window.Toggle()
 	end)
-	ui.Hint("A left click on the meter's header opens it too, which is where you are looking when the question occurs to you. Right click that header to swap damage and healing.")
+	ui.Hint("A left click on the meter's header opens it too, which is where you are looking when the question occurs to you. Right click to swap damage and healing. Its footer can start the count again.")
 
 	ui.Action(function()
 		if armed then

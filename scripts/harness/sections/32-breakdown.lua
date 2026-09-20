@@ -277,6 +277,146 @@ for index = 1, Pane.Shown() do
 end
 
 ----------------------------------------------------------------------
+-- The four bands, side by side
+--
+-- The counters have been filed under a level band since the first version
+-- of this and for a year the only way to read the split was a chip that
+-- showed one band at a time. Split is what holds all four at once, and
+-- Breakdown/Graph.lua draws three of them.
+--
+-- Two claims worth a fixture. The bands have to add back up, or the
+-- picture and the row under it are two different numbers on one screen.
+-- And a band with no attempts in it has to stay empty: a line drawn
+-- through it to the floor says your miss rate improves against bosses,
+-- which is the one lie this picture could tell.
+----------------------------------------------------------------------
+
+local LOW = "Creature-0-0-0-0-4321-00000010"
+local HIGH = "Creature-0-0-0-0-4321-00000012"
+
+-- UnitLevel answers 62 for the player, so 62 is your own level and 66 is
+-- four over, which is the third band. Nothing is ever logged against a mob
+-- one or two over, and that is the hole.
+local function looking(guid, level)
+	_G.WiggleUILevels.target = level
+	guids.target = guid
+	fire("PLAYER_TARGET_CHANGED")
+end
+
+looking(LOW, 62)
+log("SPELL_DAMAGE", ME, LOW, { [12] = 1680, [13] = "Whirlwind", [15] = 300 })
+log("SPELL_DAMAGE", ME, LOW, { [12] = 1680, [13] = "Whirlwind", [15] = 300 })
+log("SPELL_DAMAGE", ME, LOW, { [12] = 1680, [13] = "Whirlwind", [15] = 300 })
+log("SPELL_DAMAGE", ME, LOW, { [12] = 1680, [13] = "Whirlwind", [15] = 600, [21] = true })
+
+looking(HIGH, 66)
+log("SPELL_DAMAGE", ME, HIGH, { [12] = 1680, [13] = "Whirlwind", [15] = 200 })
+log("SPELL_DAMAGE", ME, HIGH, { [12] = 1680, [13] = "Whirlwind", [15] = 200 })
+log("SPELL_MISSED", ME, HIGH, { [12] = 1680, [13] = "Whirlwind", [15] = "DODGE" })
+log("SPELL_MISSED", ME, HIGH, { [12] = 1680, [13] = "Whirlwind", [15] = "DODGE" })
+
+local split, everything = Breakdown.Split("Whirlwind")
+
+check(Breakdown.Attempts(split[1]) == 4, "the four attempts at your own level did not land in the first band")
+check(Breakdown.Attempts(split[2]) == 0, "something reached a band nothing was ever logged against")
+check(Breakdown.Attempts(split[3]) == 8 - 4, "the attempts four levels over did not land in the third band")
+check(Breakdown.Attempts(everything) == 8, "the bands do not add back up to the whole")
+check(everything.damage == 1900, ("the bands total %s damage, expected 1900")
+	:format(tostring(everything.damage)))
+
+-- The rate is per band and not a pooled number, which is the whole reason
+-- the counters were split. One crit in four at your own level and none in
+-- two against something four over is 25 and 0, and a pooled 17 is the
+-- number that says nothing.
+check(Breakdown.CritRate(split[1]) == 0.25, "the crit rate in the first band is not one in four")
+check(Breakdown.CritRate(split[3]) == 0, "a band with hits and no crits did not report zero")
+check(Breakdown.CritRate(split[2]) == nil, "a band with no hits reported a crit rate")
+check(Breakdown.MissRateOf(split[3], "DODGE") == 0.5, "the dodges in the third band did not keep their rate")
+check(Breakdown.MissRateOf(split[1], "DODGE") == nil, "a dodge leaked into the band it did not happen in")
+
+-- Split hands back one table and fills it again on the next call, which is
+-- why the window copies what it needs out between the two. A section that
+-- held both would be reading the same numbers twice.
+local other = Breakdown.Split(nil)
+check(other == split, "Split allocated a second table rather than filling its own")
+
+----------------------------------------------------------------------
+-- The graph
+----------------------------------------------------------------------
+
+Pane.Open()
+
+-- A row is a button and clicking it picks that ability. It was a Button
+-- with a hover glow and nothing on the click for a year, which promised an
+-- answer that was not there. Clicked through the client's own call rather
+-- than by reaching for the handler, so this also says the clicks were
+-- registered: an unregistered button swallows the press.
+local picked
+for index = 1, Pane.Shown() do
+	if Pane.Row(index).name:GetText() == "Whirlwind" then
+		picked = Pane.Row(index)
+	end
+end
+check(picked ~= nil, "Whirlwind is not in the ranking, so the pane cannot be tested")
+picked:Click()
+check(Pane.Selected() == "Whirlwind",
+	("a click on a row selected %s"):format(tostring(Pane.Selected())))
+
+local plot = Pane.Pane().plot
+local lines, dots = ns.BreakdownGraph.Drawn(plot)
+
+-- Two outcomes ever happened to Whirlwind, a crit and a dodge, and each has
+-- a point in two of the three bands. The four that never happened are not
+-- drawn at all, which is the rule the rows in the window already follow: a
+-- zero that is the absence of a measurement is not a measurement.
+check(dots == 4, ("the graph drew %d points, expected two outcomes over two bands")
+	:format(dots))
+
+-- And not one segment between them. The two bands with attempts are the
+-- first and the third, the second is empty, and a line across it would be
+-- drawn out of a fight that never happened.
+check(lines == 0, ("the graph drew %d segments across a band with no attempts in it")
+	:format(lines))
+
+-- The same ability with the hole filled in. One attempt one level over is
+-- enough to join the two ends, and now each of the two outcomes is a line.
+looking("Creature-0-0-0-0-4321-00000011", 63)
+log("SPELL_DAMAGE", ME, "Creature-0-0-0-0-4321-00000011",
+	{ [12] = 1680, [13] = "Whirlwind", [15] = 250 })
+Pane.Paint()
+lines, dots = ns.BreakdownGraph.Drawn(plot)
+check(dots == 6, ("the graph drew %d points with all three bands filled"):format(dots))
+check(lines == 4, ("the graph drew %d segments, expected two outcomes over three bands")
+	:format(lines))
+
+-- Clicking the picked row again goes back to the whole character, which is
+-- the only way back there that does not need a second control.
+picked:Click()
+check(Pane.Selected() == nil, "clicking the picked row again did not clear the selection")
+
+-- Six lines on a dark box, and each of them has to be seen on the darkest
+-- surface every palette has. Graph.lua says in its header that all six
+-- clear 3:1 against the palest `sunken` in the set, which is parchment's;
+-- a paragraph that says a ratio and is never computed is a paragraph that
+-- goes stale on the first palette somebody adds.
+--
+-- Three and not four and a half, the ratio Unit/Color.lua holds a level tag
+-- to, because a two pixel stroke is recognised rather than read.
+local RATIO = ns.Unit.Color.TOKEN_RATIO
+local worst, worstAt = math.huge, ""
+for name, palette in pairs(ns.Palettes) do
+	for _, series in ipairs(ns.BreakdownGraph.SERIES) do
+		local ratio = ns.Unit.Color.Contrast(series.color, palette.sunken)
+		if ratio < worst then
+			worst, worstAt = ratio, ("%s on %s"):format(series.word, name)
+		end
+	end
+end
+check(worst >= RATIO,
+	("the %s line is at %.1f:1 against the box it is drawn on, and the floor is %.1f")
+		:format(worstAt, worst, RATIO))
+
+----------------------------------------------------------------------
 -- Starting again
 ----------------------------------------------------------------------
 
@@ -289,5 +429,6 @@ check(Pane.Shown() == 0, "the window still drew rows after a reset")
 Pane.Close()
 check(not Pane.IsShown(), "the breakdown window would not close")
 
-print(("break  %s; %d bands, melee as %q")
-	:format(Breakdown.Describe(), #Breakdown.Bands(), ns.SpellName(6603) or "Melee"))
+print(("break  %s; %d bands, melee as %q; %d graph lines, worst at %.1f:1 on a floor of %.1f")
+	:format(Breakdown.Describe(), #Breakdown.Bands(), ns.SpellName(6603) or "Melee",
+		#ns.BreakdownGraph.SERIES, worst, RATIO))

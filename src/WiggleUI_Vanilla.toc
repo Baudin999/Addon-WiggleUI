@@ -762,7 +762,10 @@ Feeds\Feature.lua
 # kept between sessions: one row per ability, how often it lands, how often it
 # crits, what stopped it and how much of your damage it is. Breakdown.lua counts
 # and Window.lua draws the table into a window of its own, so Window loads after
-# it, and Feature.lua last as everywhere else.
+# it, and Feature.lua last as everywhere else. Graph.lua is between them: it is
+# the picture of what the level bands do to you, it names nothing but the
+# counting, and the window is its only caller, which is why it is here and not
+# in the widget kit.
 #
 # It is not the meters and shares nothing with them. Meter/Meter.lua totals the
 # pull you are in and forgets it when the next one starts; this never forgets
@@ -775,6 +778,7 @@ Feeds\Feature.lua
 # this line, because the window is built out of the second and opened from the
 # first.
 Breakdown\Breakdown.lua
+Breakdown\Graph.lua
 Breakdown\Window.lua
 Breakdown\Feature.lua
 
