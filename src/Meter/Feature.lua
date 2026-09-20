@@ -137,11 +137,12 @@ ns.Register({
 		meterWidth = 260,
 		meterZoom = 1,
 
-		-- Solid. The note in Meter/Window.lua argues for a tint you rank four
-		-- players by rather than a wash you read the meter through, and it is
-		-- right about the middle of the screen; parked out on the right edge
-		-- with nothing behind it, the full bar is the thing you rank by from
-		-- across the screen and the stepper goes back down to 15.
+		-- Solid, and now for a plainer reason than it shipped with. A row draws
+		-- the spent grey behind its bar, so the class colour is read against a
+		-- surface the palette owns rather than against the zone, and at the top
+		-- of the slider it is the flat class colour that every other gauge in
+		-- the addon fills with. The stepper still goes down, because how loud a
+		-- meter should be is taste.
 		meterBarAlpha = 100,
 
 		-- The right edge, on the floor. It is the one part of a 16:9 screen

@@ -13,11 +13,25 @@ ns.MeterWindow = MeterWindow
 -- read out of the corner of your eye during a pull, and every pixel of chrome
 -- around them is a pixel of the fight it is standing on.
 --
--- So there is no window. There are rows, each with a class coloured bar as
--- long as that player's share of the top one, and the bars are the only
--- surface drawn at all. The text is outlined rather than shadowed, which is
--- what UI/Text.lua's default flag is for and the reason it exists: these
--- glyphs sit over the world and a drop shadow disappears against a dark floor.
+-- So there is no window. There is a header standing on the world, a hairline,
+-- and a column of rows, and a row is a gauge: the player's share filled in
+-- their class colour and the rest of it the spent grey every other gauge in the
+-- addon leaves behind its fill. The pane has no backdrop, no frame and no
+-- chrome of its own, and the gap between two rows is the world.
+--
+-- A row was bare for a long time and its text was outlined for that reason,
+-- which is UI/Text.lua's third role: over the world a rim is the only thing
+-- that works, because a shadow has nothing to be darker than. The track is what
+-- took the outline off, and the two changes are one change. A string is flat or
+-- outlined by what is behind it and never by what it says, so a row with a
+-- known colour under every glyph takes the first role instead, which is the one
+-- the enemy bar's name and health number have always taken. Outlined text
+-- beside flat text is the same face at the same size drawn two different ways,
+-- and the meter was the one widget in the addon on the wrong side of that.
+--
+-- The header keeps the rim. It stands above the rule with nothing of ours under
+-- it, exactly like the enemy bar's threat line, and a role is a fact about the
+-- background rather than a house style to be applied evenly.
 --
 -- A bar is the same surface a health bar is, and for a long time it was not.
 -- Three things were wrong with it and all three came from this file drawing
@@ -40,10 +54,13 @@ ns.MeterWindow = MeterWindow
 --   in two pixels of the class's identity colour, which is the bright half of
 --   the pair being spent on the one mark that has nothing drawn over it.
 --
--- The guarantee is at full alpha. meterBarAlpha is a setting because what is
--- behind the meter is the zone, and every percent it comes down is contrast
--- traded for seeing through the bar. That is the player's trade to make and
--- the default does not make it.
+-- meterBarAlpha is how strongly the class colour reads, and what it reads over
+-- is the track rather than the zone. That is a change in what the setting
+-- means and it is the right one: a bar turned down over the world took the
+-- guarantee with it, because a translucent fill is not a colour the palette
+-- knows. Turned down over the track it is a muted class colour on a dark grey,
+-- the row keeps a known ground under every glyph, and the flat text stays
+-- readable at every stop on the slider.
 --
 -- Both panes are children of one frame, so dragging either drags both and
 -- there is one saved anchor rather than two to keep beside each other.
@@ -107,23 +124,23 @@ local CAP = 2
 -- Font sizes, in pixels, because inside a frame on the grid a font size is a
 -- pixel height rather than a point.
 --
--- Every string on the meter is outlined and every one of them has to be, which
--- is what sets the floor under both of these numbers.
+-- The same number twice, and they are two constants because the two strings
+-- are drawn two different ways and only one of them is held to anything.
 --
--- The meter has no background. The outline is the only thing between a number
--- and a pale floor behind it, so unlike a timer on a debuff square this text
--- cannot trade the rim for a shadow: a shadow needs a known colour to be darker
--- than and the world is not one. ns.UI.NumberFont makes that trade at every
--- size and is deliberately not used here for that reason.
+-- The header stands on the world, so it is outlined, so it has a hard minimum.
+-- An outline costs a pixel on every stroke, and below ns.UI.OutlineFloor a 3
+-- and an 8 stop being different shapes. HEADER_TEXT sits at the floor rather
+-- than near it, and the harness reads the floor out of UI/Text.lua rather than
+-- carrying its own copy of the number. It was 12 and it was under the floor,
+-- which is the defect the report about the meter not being sharp was looking
+-- at: the glyphs were not soft, they were closed up.
 --
--- What that leaves is a hard minimum. An outline costs a pixel on every stroke,
--- and below ns.UI.OutlineFloor a 3 and an 8 stop being different shapes. Both
--- sizes below sit at the floor rather than near it, and the harness reads the
--- floor from UI/Text.lua rather than carrying its own copy of the number.
---
--- Both of these were under it at first, 11 on a row and 12 on a header, and the
--- report from the client was that the meter was not sharp. It was not soft. It
--- was closed up.
+-- A row's strings stand on the track, so they are flat, so no floor applies to
+-- them at all. ROW_TEXT stays at fourteen anyway, because the row is as tall as
+-- a 27 pixel icon and type that fits the row is what decides this rather than a
+-- rule about rims. Keeping it equal to the header is deliberate: the header
+-- names the column the rows are in and two sizes there would read as two
+-- readings.
 local ROW_TEXT = 14
 local HEADER_TEXT = 14
 
@@ -137,25 +154,20 @@ local REFRESH = 0.2
 -- slider would leak a row every time it went back up.
 local MAX_ROWS = 10
 
--- How faint a bar is, as a fraction, out of the whole percent the setting
--- holds. Low enough to read the world through and high enough to tell four
--- classes apart at a glance, which is the whole job.
+-- How strongly a bar's class colour reads, as a fraction, out of the whole
+-- percent the setting holds.
 --
--- It was a constant here, and the argument for the number it was set to still
--- stands and is now the default rather than the only answer. It was 0.32 first,
--- and 0.32 is a wash rather than a tint: the top row's bar is the full width of
--- the pane by definition, so whatever this number is, the number one player is
--- a solid rectangle of class colour across the meter every tick, and at a third
--- alpha that rectangle is the brightest thing on that part of the screen. At
--- 0.15 the rank still reads at a glance, because a bar is read against the bars
--- beside it and not against the world behind it, and the world behind it comes
--- through.
+-- What it reads over is the track, which is the part of this note that changed
+-- when the track arrived. It used to be the zone, and the argument for the
+-- number was about the zone: 15 over a night time crypt floor is a tint and 15
+-- over Tanaris at noon is nothing at all, no number this file could pick was
+-- right on both, and that is what made it a setting rather than a constant.
 --
--- What made it a setting is the half of that the addon cannot see. The right
--- alpha depends on what is behind the meter, and what is behind the meter is
--- the zone: 15 over a night time crypt floor is the tint this was drawn for and
--- 15 over Tanaris at noon is nothing at all. No number this file picks is right
--- on both, and a player looking at one of them can tell in a second.
+-- Over a dark grey the answer is bounded at both ends instead. The floor is
+-- what still tells four classes apart, the ceiling is the flat class colour
+-- itself, and nothing outside the addon moves either. The setting stays,
+-- because how loud a meter should be is taste and a slider is cheap, but it is
+-- no longer covering for a background the addon could not see.
 --
 -- Called from the two places a bar's colour is written, never from a tick:
 -- BuildRow runs once per row and PaintRow's write sits behind its class guard.
@@ -251,34 +263,65 @@ local function ClassColors(class)
 	return fill, Color.ClassTint(class) or fill
 end
 
--- The draw order inside a row, which is three layers and not one.
+-- The draw order inside a row, which is four layers and not one.
 --
--- A row is one frame carrying six regions rather than a frame per part, which
+-- A row is one frame carrying seven regions rather than a frame per part, which
 -- is what keeps twenty rows at twenty frames. Inside one frame the order is the
 -- layer and the sublevel, and nothing a caller does to frame levels can move
 -- it, which is the same argument UI/Gauge.lua's Underlay makes for drawing a
 -- spent track on BACKGROUND.
 --
--- The bar is the bottom. The sheen is over the colour and under the art,
--- because a wash across a spell icon is the icon lit at the top and shaded at
--- the bottom, which is a picture of a different spell. The cap is over the
--- sheen so the bright end stays the colour it was chosen as rather than the
--- colour plus a twelfth of black. The icon and its rim are on ARTWORK, and
--- every string is on OVERLAY, which is where ns.UI.Label puts one.
+-- The track is the bottom and the bar sits on it. The sheen is over the colour
+-- and under the art, because a wash across a spell icon is the icon lit at the
+-- top and shaded at the bottom, which is a picture of a different spell. The
+-- cap is over the sheen so the bright end stays the colour it was chosen as
+-- rather than the colour plus a twelfth of black. The icon and its rim are on
+-- ARTWORK, and every string is on OVERLAY, which is where ns.UI.Label puts one.
+local TRACK_LAYER = 0
+local BAR_LAYER = 1
 local SHEEN_LAYER = 0
 local CAP_LAYER = 1
 
--- One row: the bar, the sheen over it, the cap on its end, the icon with its
--- rim, the name and the number. Nothing is anchored to anything but the row
--- itself and the bar, so a row can be moved by moving one frame and everything
--- on it comes along.
-local function BuildRow(pane, index)
-	local row = CreateFrame("Frame", nil, pane)
-	row:SetSize(pane:GetWidth(), ROW * unit)
-	row:SetPoint("TOPLEFT", pane, "TOPLEFT", 0,
-		-(HEADER + RULE + (index - 1) * (ROW + ROW_GAP)) * unit)
+-- A row is a gauge and a face, built in that order and in two functions.
+--
+-- The gauge is the track, the bar on it, the sheen over that and the cap on its
+-- end, and it is how much. The face is the icon with its rim, the name and the
+-- number, and it is who. Nothing in either is anchored to anything but the row
+-- itself and the bar, so a row can be moved by moving one frame and the seven
+-- regions come along.
+--
+-- Two functions rather than one because one was 110 lines and check.sh allows
+-- 100, and the split the gate forced is the one the row already had.
+
+local function BuildGauge(row)
+	-- What the bar has not reached, which is the same surface the spent end of
+	-- a unit frame's health is and is painted by the same call: Color.spent
+	-- through Gauge.Paint, which takes it to Color.track at the alpha every
+	-- other gauge in the addon draws its empty end at. Colour is what you did
+	-- and grey is what you did not.
+	--
+	-- This is what the row was missing and it is not decoration. Two things
+	-- turn on it.
+	--
+	-- A meter is a comparison of lengths, and the top row's bar is the full
+	-- width of the pane by definition, so with nothing behind it the busiest
+	-- player's row and the pane itself are the same rectangle and there is
+	-- nothing for the other four to be a fraction of.
+	--
+	-- And the text. UI/Text.lua's three roles are chosen by what is behind the
+	-- glyph, not by what it says: over a fill the palette owns a string is flat
+	-- and bare, because Unit/Color.lua guarantees the contrast, and over the
+	-- world it has to carry a rim, because nothing else works there. Every
+	-- string on this row was outlined, which made the meter the one widget in
+	-- the addon whose text did not look like the addon's text. It is flat now,
+	-- and it can be flat because this track is under all of it.
+	row.track = ns.Fill(row, "BACKGROUND", 0, 0, 0, 0)
+	row.track:SetDrawLayer("BACKGROUND", TRACK_LAYER)
+	row.track:SetAllPoints()
+	ns.UI.Gauge.Paint(nil, row.track, Color.spent)
 
 	row.bar = ns.Fill(row, "BACKGROUND", IDLE[1], IDLE[2], IDLE[3], BarAlpha())
+	row.bar:SetDrawLayer("BACKGROUND", BAR_LAYER)
 	row.bar:SetPoint("TOPLEFT")
 	row.bar:SetHeight(ROW * unit)
 	row.bar:SetWidth(CAP * unit)
@@ -300,7 +343,11 @@ local function BuildRow(pane, index)
 	row.cap:SetPoint("TOPRIGHT", row.bar, "TOPRIGHT")
 	row.cap:SetPoint("BOTTOMRIGHT", row.bar, "BOTTOMRIGHT")
 	row.cap:SetWidth(CAP * unit)
+end
 
+-- The face: who this row is and what their number reads. The icon with its
+-- rim, the name and the value, all of them over the gauge above.
+local function BuildFace(row)
 	row.icon = ns.UI.Icon(row, "ARTWORK")
 	row.icon:SetSize(ICON * unit, ICON * unit)
 	row.icon:SetPoint("LEFT", row, "LEFT", INSET * unit, 0)
@@ -326,15 +373,36 @@ local function BuildRow(pane, index)
 	-- Paper on both, and the name is no longer the class colour. On a fill the
 	-- ceiling has shaped, paper clears four and a half to one; the class colour
 	-- on the class colour cleared one.
-	row.name = ns.UI.Label(row, ROW_TEXT, PAPER, "LEFT", ns.UI.OUTLINE)
+	--
+	-- Flat and bare, which is UI/Text.lua's first role and the one every other
+	-- string on a bar in this addon already takes: the enemy bar's name and its
+	-- health number are ns.UI.FLAT for the same reason these two now are. Both
+	-- were outlined, which was right while a row was a bar on the open world and
+	-- wrong the moment it got a track, and it is what made the meter's text the
+	-- one text in the addon that did not match the rest. An outline costs a
+	-- pixel on every stroke and thickens the stems either side of it, so at
+	-- fourteen pixels beside a flat fourteen pixel name on a unit frame it does
+	-- not read as the same face at the same size, because it is not drawn like
+	-- it.
+	row.name = ns.UI.Label(row, ROW_TEXT, PAPER, "LEFT", ns.UI.FLAT)
 	row.name:SetPoint("LEFT", row, "LEFT", (INSET + ICON + GUTTER) * unit, 0)
 
-	row.value = ns.UI.Label(row, ROW_TEXT, PAPER, "RIGHT", ns.UI.OUTLINE)
+	row.value = ns.UI.Label(row, ROW_TEXT, PAPER, "RIGHT", ns.UI.FLAT)
 	row.value:SetPoint("RIGHT", row, "RIGHT", -INSET * unit, 0)
 
 	-- The name gives way to the number, not the other way round. A truncated
 	-- name is still the right player; a truncated number is a lie.
 	row.name:SetPoint("RIGHT", row.value, "LEFT", -GUTTER * unit, 0)
+end
+
+local function BuildRow(pane, index)
+	local row = CreateFrame("Frame", nil, pane)
+	row:SetSize(pane:GetWidth(), ROW * unit)
+	row:SetPoint("TOPLEFT", pane, "TOPLEFT", 0,
+		-(HEADER + RULE + (index - 1) * (ROW + ROW_GAP)) * unit)
+
+	BuildGauge(row)
+	BuildFace(row)
 
 	-- Whether this row's number is a percentage. The threat pane's are, the
 	-- damage pane's are not, and it is the one difference between the two kinds

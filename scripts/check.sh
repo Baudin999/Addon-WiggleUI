@@ -2036,7 +2036,7 @@ HARNESS_NAME_LIMIT=40
 
 # path:ceiling:why it is exempt
 HARNESS_NAME_ALLOWED="
-sections/25-meters.lua:57:one scene held across damage, threat, the clock and both panes
+sections/25-meters.lua:56:one scene held across damage, threat, the clock and both panes
 "
 
 harness_names='

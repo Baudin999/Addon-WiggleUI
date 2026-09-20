@@ -93,36 +93,73 @@ for _, zoom in ipairs({ 1, 2 }) do
 		:format(drawn, zoom))
 end
 
--- Every string on the meter is big enough to survive its own outline.
+-- Which of UI/Text.lua's three roles every string on the meter takes, and it
+-- is decided by what is behind the glyph rather than by which widget it is on.
 --
--- All of them are outlined and all of them have to be: the meter has no
--- background, so flat text over a pale floor is not softer, it is gone. That
--- rules out the fallback ns.UI.NumberFont takes for a number on a debuff
--- square, and leaves a hard minimum instead. The floor is read from
--- UI/Text.lua rather than written here, so one number governs both parts.
+-- This is the same gate 12-debuff-square-size.lua puts on the enemy bars, and
+-- it is here because the meter failed it for as long as it existed. Every
+-- string on a row was outlined, which was the right answer while a row was a
+-- bar on the open world and the wrong one the moment the row got a track. What
+-- the player saw was that the meter's text did not look like the addon's text:
+-- a rim costs a pixel on every stroke and thickens the stems either side of it,
+-- so fourteen pixels outlined beside fourteen pixels flat on a unit frame is
+-- the same face at the same size drawn two different ways.
 --
--- The headers were the ones this caught. The rows went to 14 off the report
--- from the client; the headers stayed at 12 and were the same defect sitting
--- one line above it, unnoticed because nobody reads a header twice.
-local floor = ns.UI.OutlineFloor()
-for _, entry in ipairs({
-	{ "a row's number", damagePane.rows[1].value },
-	{ "a row's name", damagePane.rows[1].name },
-	{ "the left header", damagePane.left },
-	{ "the right header", damagePane.right },
-	{ "the threat header", threatPane.left },
-}) do
-	local _, size, flags = entry[2]:GetFont()
-	flags = flags or ""
-	check(size and (size >= floor or not flags:find("OUTLINE", 1, true)),
-		("%s is outlined at %s pixels and the floor is %d")
-			:format(entry[1], tostring(size), floor))
-	-- The other half of the same rule, and the meter is where it is most
-	-- visible: fourteen pixel rows of prose are what the report about fuzzy
-	-- text was actually looking at.
-	check(not flags:find("MONOCHROME", 1, true),
-		("%s has the rasteriser turned off, which broke Arial Narrow's stems"
-			.. " the last time it was tried"):format(entry[1]))
+-- The header keeps the rim, because it stands above the rule with nothing of
+-- ours under it. Both halves are asserted, so a later edit that made the whole
+-- widget one role would fail here rather than look tidy.
+-- One block, so the two helpers and the floor stay out of the chunk's own
+-- namespace: this file is at its ceiling for names at chunk level.
+do
+	local floor = ns.UI.OutlineFloor()
+
+	local function role(label, region)
+		local _, size, flags = region:GetFont()
+		flags = flags or ""
+		-- MONOCHROME was the default for everything under sixteen pixels for one
+		-- commit and the report was that every string in the addon went fuzzy. The
+		-- meter is where it was most visible, so it is asserted here as well as at
+		-- the debuff square.
+		check(not flags:find("MONOCHROME", 1, true),
+			("%s has the rasteriser turned off, which broke Arial Narrow's stems"
+				.. " the last time it was tried"):format(label))
+		return size, flags, select(1, region:GetShadowOffset())
+	end
+
+	-- On the track, which is a surface the palette owns and holds to a contrast
+	-- floor against Color.paper, so a row's strings carry nothing at all: no rim,
+	-- and no shadow either, which is what the enemy bar's name and health number
+	-- have always done.
+	for _, entry in ipairs({
+		{ "a row's name", damagePane.rows[1].name },
+		{ "a row's number", damagePane.rows[1].value },
+		{ "a threat row's number", threatPane.rows[1].value },
+	}) do
+		local size, flags, shadow = role(entry[1], entry[2])
+		check(flags == "" and shadow == 0,
+			("%s carries %q and a %s pixel shadow over a track whose contrast the"
+				.. " palette already guarantees"):format(entry[1], flags, tostring(shadow)))
+		check(size == 14, ("%s is %s pixels and the rows are 14")
+			:format(entry[1], tostring(size)))
+	end
+
+	-- Over the world above the rule, so outlined, and at or above the floor,
+	-- because under it the rim closes the hole in a 6. The headers were the ones
+	-- that caught: the rows went to 14 off the report from the client and the
+	-- headers stayed at 12, the same defect one line up, unnoticed because nobody
+	-- reads a header twice.
+	for _, entry in ipairs({
+		{ "the left header", damagePane.left },
+		{ "the right header", damagePane.right },
+		{ "the threat header", threatPane.left },
+	}) do
+		local size, flags = role(entry[1], entry[2])
+		check(flags:find("OUTLINE", 1, true),
+			("%s went flat, and it has no background to be flat over"):format(entry[1]))
+		check(size and size >= floor,
+			("%s is %s pixels over the world, under the %d floor, and cannot drop"
+				.. " its outline"):format(entry[1], tostring(size), floor))
+	end
 end
 
 -- Every setting that reshapes it reuses the frames it already made.
@@ -627,6 +664,30 @@ do
 		return region and near(region.r, color[1]) and near(region.g, color[2])
 			and near(region.b, color[3]) and near(region.a, alpha)
 	end
+
+	-- The track behind the bar, which is what the row's flat text stands on
+	-- and is the same surface the spent end of a unit frame's health is. Not
+	-- compared against numbers typed here: Gauge.Paint is what wrote it and
+	-- Color.spent at Color.track is what it wrote, so a change to either moves
+	-- this with it.
+	local spent = Color.spent
+	check(paints(row.track, { spent[1] * Color.track, spent[2] * Color.track,
+		spent[3] * Color.track }, 0.9),
+		("the row's track is %s,%s,%s and Color.spent at Color.track is"
+			.. " %.3f,%.3f,%.3f"):format(tostring(row.track.r), tostring(row.track.g),
+			tostring(row.track.b), spent[1] * Color.track, spent[2] * Color.track,
+			spent[3] * Color.track))
+	-- And it is the whole row, because the number is right aligned at the pane
+	-- edge and the bar under it is only as long as that player's share. Read
+	-- off the anchors rather than off a width, which the client works out
+	-- through the frame's scale and which is the wrong thing to compare.
+	local nearPoint, nearTo = row.track:GetPoint(1)
+	local farPoint, farTo = row.track:GetPoint(2)
+	check(nearPoint == "TOPLEFT" and nearTo == row
+		and farPoint == "BOTTOMRIGHT" and farTo == row,
+		("the track is pinned %s and %s, not to both corners of its row, so a"
+			.. " short bar leaves its number on the world")
+			:format(tostring(nearPoint), tostring(farPoint)))
 
 	-- The bar is the fill, which is the class colour taken under the
 	-- luminance ceiling, and not the tint the client hands out.
