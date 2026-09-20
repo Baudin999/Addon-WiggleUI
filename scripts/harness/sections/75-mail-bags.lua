@@ -12,6 +12,15 @@
 -- square's own registration is read, because that is the mechanism: the right
 -- button off it while the letter is open, so the secure OnClick never runs, and
 -- back on it when the letter closes, so a scroll reads again.
+--
+-- And what the square looks like afterwards, which is the other half of the
+-- same gesture. A stack that has gone onto the letter is still sitting in the
+-- bag looking exactly like the stack beside it, so attaching twelve out of
+-- twenty identical ones meant counting the squares in this window against the
+-- squares in the other one. The faint square is the answer and it is asserted
+-- the way the click is: on the widget, after the gesture, with no bag update in
+-- between, because a mark that only survives a full refresh is a mark that is
+-- not there while you are attaching.
 
 local H = ...
 local ns, fire, check, CARRIED = H.ns, H.fire, H.check, H.CARRIED
@@ -68,6 +77,14 @@ check(put and put.bag == 3 and put.slot == ORE,
 	("the click attached bag %s slot %s rather than the one it landed on")
 		:format(tostring(put and put.bag), tostring(put and put.slot)))
 
+-- Faint, and only that one. The neighbour is the control: a mark that dimmed
+-- the whole bag would pass the first of these on its own.
+check(ore:GetAlpha() == ns.UI.SLOT_SPOKEN,
+	("a stack on the letter is drawn at %.2f against %.2f for one that is not")
+		:format(ore:GetAlpha(), square(3, ORE + 2):GetAlpha()))
+check(square(3, ORE + 2):GetAlpha() == 1,
+	"a stack that is not on the letter was drawn faint with the one that is")
+
 -- The same slot twice is one attachment and a refusal, and the refusal is the
 -- half that matters: a claimed click handed back is a client that eats the ore.
 ore:Click("RightButton")
@@ -86,6 +103,14 @@ _G.WiggleUIShift(false)
 check(Draft.Held() == 2, "a shift click put something on the mail")
 check(H.modifiedBagClicks() == modified + 1, "a shift click did not reach the client")
 check(CARRIED[3][20] == "Copper Ore", "a shift click used the stack")
+
+-- And whole again when it comes off. A stack taken back off the letter is one
+-- you can put somewhere else, and a square left faint is a square that reads as
+-- attached to a mail that is not carrying it.
+Draft.Detach(1)
+ns.MailWindow.Changed()
+check(ore:GetAlpha() == 1,
+	("a stack taken off the letter is still drawn at %.2f"):format(ore:GetAlpha()))
 
 local open = ns.MailBags.Describe()
 Draft.Empty()

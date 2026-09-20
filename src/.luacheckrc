@@ -471,6 +471,7 @@ read_globals = {
 	-- SetSendMailMoney, SetSendMailShowing, GetSendMailItem, GetSendMailPrice,
 	-- GetInboxNumItems, GetInboxHeaderInfo, GetInboxItem, GetInboxText,
 	-- AutoLootMailItem, DeleteInboxItem, ReturnInboxItem, CloseMail,
+	-- ClearSendMail, ClickSendMailItemButton,
 	-- ATTACHMENTS_MAX_SEND, MailFrame and the friends list either side of
 	-- C_FriendList. Baganator and Syndicator prove the attach path on this
 	-- client and Mail/Send.lua cites them; proving a call exists is still not

@@ -89,6 +89,13 @@ UI.SLOT_LANE = math.floor(UI.SLOT / 2)
 -- front of you the moment is about, not to hide the rest.
 UI.SLOT_DIM = 0.4
 
+-- And how faint one is that is spoken for: on the letter in the mail window,
+-- still in the bag, still yours. Lighter than the refusal above on purpose. A
+-- square a vendor will not take is out of the question while you are standing
+-- at him and wants to be out of the way; one that is already on a mail is a
+-- square you are still counting, and it has to stay readable while you count.
+UI.SLOT_SPOKEN = 0.6
+
 -- The line a pile's name sits on, and the air under the last row of one pile
 -- before the next name.
 --

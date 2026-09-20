@@ -55,6 +55,22 @@ _G.SetSendMailShowing = function(showing)
 	form.showing = showing and true or false
 end
 
+-- The client's own reset, which is what SendMailFrame_Reset calls and the only
+-- way anything but walking away from the mailbox puts a refused mail's
+-- attachments back. It is here because the addon's clear button presses it: a
+-- stub with no such call would let a window that says it clears the form pass
+-- while clearing nothing.
+_G.ClearSendMail = function()
+	for index = 1, _G.ATTACHMENTS_MAX_SEND do
+		local held = form[index]
+		if held then
+			CARRIED[held.bag][held.slot] = held.name
+			form[index] = nil
+		end
+	end
+	form.money = 0
+end
+
 _G.SetSendMailMoney = function(copper)
 	form.money = copper or 0
 end

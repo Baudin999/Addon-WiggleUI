@@ -360,7 +360,6 @@ local function Build(index)
 	-- still on the square. Ours has to answer the same name or the client's would
 	-- open underneath the addon's on the next refresh.
 	button.UpdateTooltip = Enter
-	ns.MailBags.Dress(button)
 	return button
 end
 
@@ -465,7 +464,21 @@ local function Paint(button, entry, selling, counted)
 	if paying == button and not button.sells then
 		Give()
 	end
-	button:SetAlpha(refused and UI.SLOT_DIM or 1)
+	-- How faint this window wants the square, written on it rather than set,
+	-- and then the mail window's say over the same square: which buttons it
+	-- answers to while a letter is open, and a second, lighter fade over a
+	-- stack that is already on that letter. Wear does the one write, because
+	-- two of them is two redraws and the second would undo the first on every
+	-- square that is on a mail.
+	--
+	-- Here rather than where the square is built, which is where the dressing
+	-- used to be. A square built once and dressed once is a square that cannot
+	-- change, and both of the things being set change while it sits there: a
+	-- letter opens, a stack goes onto it, the letter is sent. This is the one
+	-- call that crosses into Mail and scripts/trees.lua counts it, so it is the
+	-- one that carries both.
+	button.faint = refused and UI.SLOT_DIM or 1
+	ns.MailBags.Wear(button)
 
 	-- Both guarded on what the square already answers, because on a held
 	-- layout neither changes and this runs on every square ten times a second

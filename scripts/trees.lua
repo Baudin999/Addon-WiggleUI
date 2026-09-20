@@ -113,10 +113,10 @@ local ALLOWED = {
 	  why = "a cooldown row asks whether the ability on it is ready" },
 
 	-- A window naming another window's widget.
-	{ from = "Mail", sym = "BagsGrid", uses = 2,
-	  why = "the attachment picker reads the bag window's own squares" },
+	{ from = "Mail", sym = "BagsGrid", uses = 1,
+	  why = "the attachment picker reads the bag window's own squares, through one local" },
 	{ from = "Bags", sym = "MailBags", uses = 1,
-	  why = "a bag square dresses itself for the mail window that is open over it" },
+	  why = "a bag square wears what the open letter says about it: its clicks, and faint when it is already attached" },
 	{ from = "Setup", sym = "Settings", uses = 3,
 	  why = "one of the setup's four answers is where a tooltip opens, which Settings owns" },
 	{ from = "Settings", sym = "Compare", uses = 4,

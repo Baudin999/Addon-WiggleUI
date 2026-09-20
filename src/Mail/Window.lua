@@ -565,7 +565,17 @@ end
 
 local function PaintFoot()
 	local Draft, Send = ns.MailDraft, ns.MailSend
+	-- What is stuck on the client's own form comes first, because it is the one
+	-- reason a send is refused that has nothing to do with the letter you are
+	-- looking at: the fields are all filled in, the band is green, and the
+	-- press does nothing. It reads as the window being broken, and it was the
+	-- state a mail the server refused left behind every time.
+	local stuck = Send.Loaded()
 	local why = Draft.Problem()
+	if not why and stuck > 0 then
+		why = ("%d %s on the client's own form: press clear to put %s back"):format(
+			stuck, stuck == 1 and "item is" or "items are", stuck == 1 and "it" or "them")
+	end
 	local risky = Draft.Risky()
 
 	foot.send.text:SetText(SendLabel())
@@ -766,6 +776,12 @@ function Window.Paint()
 		PaintBand()
 	end
 	PaintFoot()
+
+	-- And the bag window, which draws what is on this letter faint. It is a
+	-- repaint of nothing when the list has not moved, and the list moves on a
+	-- drop, a right click in the bags and the end of a send, all three of which
+	-- come through here.
+	ns.MailBags.Mark()
 
 	local waitingCount = ns.MailInbox.Count()
 	tabs:SetLabel(2, waitingCount > 0 and ("Inbox (%d)"):format(waitingCount) or "Inbox")
@@ -1017,11 +1033,18 @@ local function BuildFoot()
 	foot.stop:SetPoint("RIGHT", foot.send, "LEFT", -M.rowGap, 0)
 	foot.stop:Hide()
 
-	-- Empties the draft and nothing else. The fields follow on the repaint,
-	-- because putting each of them back by hand here is the second place that
-	-- would have to know what a draft is made of.
+	-- Empties the letter, and the client's own form with it. The fields follow
+	-- on the repaint, because putting each of them back by hand here is the
+	-- second place that would have to know what a draft is made of.
+	--
+	-- The form is the half that was missing and it is the half that matters. A
+	-- mail the server refuses leaves its twelve attachments sitting on a frame
+	-- parked off the side of the screen; the draft could be emptied and refilled
+	-- all evening and every send would still be refused by something the player
+	-- has no way to see, let alone undo. Clear is that way now.
 	foot.clear = UI.Button(window.footer, { label = "clear", width = 70, height = M.row,
 		onClick = function()
+			ns.MailSend.Unload()
 			ns.MailDraft.Clear()
 			Changed()
 		end })
@@ -1077,9 +1100,19 @@ local function Build()
 		window.frame:HookScript("OnHide", function()
 			ns.MailBlizzard.Apply()
 			ns.MailBags.Apply()
+			-- Closing the window is the end of the letter, so everything the
+			-- letter left anywhere goes with it: a run part way through, the
+			-- items a refused mail left on the client's form, and the draft
+			-- itself. Closing and opening again is the one gesture everybody
+			-- already tries when a window has got itself into a state, and
+			-- until this it was the one gesture that changed nothing.
+			ns.MailSend.Forget()
+			ns.MailSend.Unload()
 			if atMailbox and type(_G.CloseMail) == "function" then
 				pcall(_G.CloseMail)
 			end
+			ns.MailDraft.Reset()
+			ns.MailBags.Mark()
 		end)
 	end
 

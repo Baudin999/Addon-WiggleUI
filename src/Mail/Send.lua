@@ -36,17 +36,55 @@ ns.MailSend = Send
 -- than silently replaced by whatever is in that slot now, which is the failure
 -- Comfort/Destroy.lua is built around and is worse here.
 --
+-- **Filling the form waits too, and that was the bug.** The fill used to be one
+-- pass: walk the twelve, attach what is there, and anything whose bag slot was
+-- locked at that instant was counted as gone and left behind. Mail two is
+-- filled from inside the MAIL_SEND_SUCCESS handler, which is the one moment in
+-- a send when the bags are certain to be mid-move, so the second mail of a
+-- split reached a batch of locked slots, placed nothing, and stopped with
+-- "nothing of that mail is still in your bags". The split worked everywhere
+-- except in a game.
+--
+-- So a mail is filled over as many passes as it takes. Each pass asks for what
+-- it can, the client's own lock and bag events bring the next one, and the mail
+-- goes when the form holds the whole batch. An item that is genuinely gone is
+-- counted once and never asked for again, and PATIENCE is what ends a wait on
+-- something that will never come free.
+--
 -- **There is no timeout and that is deliberate.** A stalled send waits, the
 -- window says which mail of how many it is waiting on, and there is a stop
 -- button under it. The alternative is an OnUpdate, and an OnUpdate is a ticker
 -- this addon would then have to defend forever, for a case that is a server not
 -- answering. MAIL_FAILED and the mailbox closing both end it on their own.
+--
+-- **And a refusal has to be undoable.** A mail the server would not take has
+-- left its attachments on the client's own form, and that form is parked off
+-- the side of the screen: nothing on the screen says the twelve items are
+-- there and no press in this window used to put them back. Send.Unload is that
+-- press, and the window's clear button is where it is wired.
 --------------------------------------------------------------------------
 
 -- Nothing, one in flight, or finished. `done` counts mails the server has
 -- confirmed, so "2 of 3" is a fact rather than a hope.
 local running, at, done, total = false, 0, 0, 0
 local missing, note = 0, ""
+
+-- The mail being filled: its attachments, which of them have been asked for,
+-- how many are never coming, and how many event passes in a row have moved
+-- nothing. `filling` is false while the mail is with the server, which is the
+-- half of the run no bag event has anything to say about.
+local batch, asked, gone, idle = nil, {}, 0, 0
+local filling = false
+
+-- How many passes that move nothing this will sit through before it sends what
+-- it has. Every pass is the client saying a lock or a bag changed, so four of
+-- them with nothing moving is the bags having settled around an item that is
+-- not going to come free.
+local PATIENCE = 4
+
+-- Made here rather than at the foot of the file, because a run turns two of its
+-- events on and off and both ends of that are above the handler.
+local events = CreateFrame("Frame")
 
 --------------------------------------------------------------------------
 -- The client's own form
@@ -129,43 +167,36 @@ local function Locate(entry)
 	return ns.MailDraft.Slot(entry.link)
 end
 
--- One attachment onto the form. False and a reason, so the caller can count
--- what did not make it rather than believing the mail is complete.
-local function Put(entry)
+-- One attachment asked for. Three answers, and the middle one is the whole
+-- reason this file has passes at all: nil is an item that is not in your bags
+-- any more, false is one that is there and not free to move yet, and true is
+-- one the client has been told to attach.
+--
+-- Whether it landed is not asked here. The form is counted instead, once a
+-- pass, because a client that attaches a frame later would otherwise have every
+-- item asked for twice: once on the pass that moved it and once on the pass
+-- that found the slot still looking empty.
+local function Offer(entry)
 	local bag, slot = Locate(entry)
 	if not bag then
-		return false
+		return nil
 	end
 
-	-- A locked slot is a move the server has not finished. Sending it would ask
-	-- the client to do two things with one stack, so it is left where it is and
-	-- counted, the same as one that has gone.
+	-- A locked slot is a move the server has not finished. Asking for it now
+	-- would be asking the client to do two things with one stack, so it waits
+	-- for the lock to clear and the next pass picks it up.
 	local _, locked = ns.ContainerItem(bag, slot)
 	if locked then
 		return false
 	end
 
-	local index = FreeSlot()
-	if not index then
+	if not FreeSlot() then
 		return false
 	end
 	if not ns.UseContainerItem(bag, slot) then
-		return false
+		return nil
 	end
-	return Occupied(index) and true or false
-end
-
-local function Fill(which)
-	local batch = ns.MailDraft.Batch(which)
-	local placed, lost = 0, 0
-	for index = 1, #batch do
-		if Put(batch[index]) then
-			placed = placed + 1
-		else
-			lost = lost + 1
-		end
-	end
-	return placed, lost
+	return true
 end
 
 --------------------------------------------------------------------------
@@ -173,24 +204,28 @@ end
 --------------------------------------------------------------------------
 
 local function Stop(why)
-	running, at = false, 0
+	running, at, filling = false, 0, false
+	batch = nil
 	note = why or note
 	Showing(false)
+	events:UnregisterEvent("ITEM_LOCK_CHANGED")
+	events:UnregisterEvent("BAG_UPDATE_DELAYED")
 	return false
 end
 
-local function Post(which)
+-- The form as it stands, handed to the server. `placed` is what the form is
+-- carrying, which is what the run counted rather than what it hoped for.
+local function Ship(placed)
 	local Draft = ns.MailDraft
 	local post = _G.SendMail
 	if type(post) ~= "function" then
 		return Stop("this client has no SendMail")
 	end
 
-	Showing(true)
-	local placed, lost = Fill(which)
-	missing = missing + lost
+	filling = false
+	missing = missing + gone
 
-	local money = Draft.MoneyOn(which)
+	local money = Draft.MoneyOn(at)
 	if money > 0 and type(_G.SetSendMailMoney) == "function" then
 		pcall(_G.SetSendMailMoney, money)
 	end
@@ -199,12 +234,84 @@ local function Post(which)
 		return Stop("nothing of that mail is still in your bags")
 	end
 
-	at = which
-	if not pcall(post, Draft.To(), Draft.SubjectFor(which), Draft.Body()) then
+	if not pcall(post, Draft.To(), Draft.SubjectFor(at), Draft.Body()) then
 		return Stop("the client refused the send")
 	end
-	note = ("mail %d of %d is with the server"):format(which, total)
+	note = ("mail %d of %d is with the server"):format(at, total)
 	return true
+end
+
+-- One pass over the mail being filled. Called once when the mail starts and
+-- again on every lock and bag event until the form holds the batch.
+--
+-- The form is counted rather than each attachment being verified, because the
+-- form starts every mail empty: what is on it is what this batch has put there.
+local function Pass()
+	local want = #batch
+	local landed = Loaded()
+	if landed + gone >= want then
+		return Ship(landed)
+	end
+
+	local moved = false
+	for index = 1, want do
+		if not asked[index] then
+			local answer = Offer(batch[index])
+			if answer == nil then
+				asked[index], gone, moved = true, gone + 1, true
+			elseif answer then
+				asked[index], moved = true, true
+			end
+		end
+	end
+
+	landed = Loaded()
+	if landed + gone >= want then
+		return Ship(landed)
+	end
+
+	if moved then
+		idle = 0
+		return true
+	end
+
+	-- Nothing moved and nothing is coming. What is left is counted as left
+	-- behind rather than waited on forever, and the window says how many.
+	idle = idle + 1
+	if idle < PATIENCE then
+		return true
+	end
+	gone = want - landed
+	return Ship(landed)
+end
+
+-- One pass at a time, and never two.
+--
+-- UseContainerItem is what a pass calls and ITEM_LOCK_CHANGED is what a pass
+-- waits for, and nothing says the client may not send the second from inside
+-- the first. A re-entered pass would ask again for every attachment the outer
+-- one had not reached yet, which is the same stack asked for twice.
+local passing = false
+
+local function Fill()
+	if passing then
+		return true
+	end
+	passing = true
+	local answered = Pass()
+	passing = false
+	return answered
+end
+
+local function Begin(which)
+	at, batch, gone, idle = which, ns.MailDraft.Batch(which), 0, 0
+	-- `passing` with it, because a new mail is a new pass whatever the last one
+	-- was doing when its send went out.
+	asked, passing = {}, false
+	filling = true
+	Showing(true)
+	note = ("mail %d of %d is going onto the form"):format(which, total)
+	return Fill()
 end
 
 --------------------------------------------------------------------------
@@ -229,9 +336,67 @@ function Send.Start()
 	running, done, missing = true, 0, 0
 	total = ns.MailDraft.Mails()
 	note = ""
-	if not Post(1) then
+	-- The two the fill waits on, held only while a run is going. A send is a
+	-- minute of an evening and these two are among the noisiest events the
+	-- client has, so the frame is deaf to both the rest of the time.
+	events:RegisterEvent("ITEM_LOCK_CHANGED")
+	events:RegisterEvent("BAG_UPDATE_DELAYED")
+	if not Begin(1) then
 		return false, note
 	end
+	return true
+end
+
+-- What is sitting on the client's own form. Nought is the ordinary answer and
+-- the only one a send may start on; anything else is a mail the server refused,
+-- or a form the player half filled in Blizzard's own window.
+function Send.Loaded()
+	if running then
+		return 0
+	end
+	return Loaded()
+end
+
+-- The form emptied back into the bags.
+--
+-- ClearSendMail is the client's own reset and is what SendMailFrame_Reset calls
+-- on every close of Blizzard's window. Without it a refused mail leaves twelve
+-- items on a form parked off the side of the screen, every send after it is
+-- refused for a reason nothing on the screen can undo, and the only way out is
+-- to walk away from the mailbox. Clicking each slot is the older way to the
+-- same place and is the fallback, because one of the two exists on every
+-- client that has a mailbox at all.
+function Send.Unload()
+	if running then
+		return false
+	end
+
+	local reset = _G.ClearSendMail
+	if type(reset) == "function" and pcall(reset) then
+		note, missing = "", 0
+		return true
+	end
+
+	local click = _G.ClickSendMailItemButton
+	if type(click) ~= "function" then
+		return false
+	end
+	for index = ns.MailDraft.PerMail(), 1, -1 do
+		if Occupied(index) then
+			pcall(click, index)
+		end
+	end
+	note, missing = "", 0
+	return true
+end
+
+-- Everything this file remembers, put back. The window calls it as it closes,
+-- because the sentence under the send button is about a letter that is over and
+-- a window that reopens saying "mail 2 of 3 was refused" is a window describing
+-- somebody else's evening.
+function Send.Forget()
+	Send.Stop()
+	done, total, missing, note = 0, 0, 0, ""
 	return true
 end
 
@@ -285,13 +450,22 @@ local function OnEvent(_, event)
 	if not running then
 		return
 	end
+	-- A lock cleared or a bag settled, which is the only news the fill is
+	-- waiting on. Ignored while the mail is with the server: the bags move all
+	-- through a send and none of it is about the form.
+	if event == "ITEM_LOCK_CHANGED" or event == "BAG_UPDATE_DELAYED" then
+		if filling then
+			Fill()
+		end
+		return
+	end
 	if event == "MAIL_SEND_SUCCESS" then
 		done = done + 1
 		if done >= total then
 			Stop(("sent %d %s"):format(total, total == 1 and "mail" or "mails"))
 			ns.MailDraft.Clear()
 		else
-			Post(done + 1)
+			Begin(done + 1)
 		end
 	elseif event == "MAIL_FAILED" then
 		Stop(("mail %d of %d was refused, the rest is still in your bags"):format(at, total))
@@ -300,7 +474,6 @@ local function OnEvent(_, event)
 	end
 end
 
-local events = CreateFrame("Frame")
 events:RegisterEvent("MAIL_SEND_SUCCESS")
 events:RegisterEvent("MAIL_FAILED")
 events:RegisterEvent("MAIL_CLOSED")

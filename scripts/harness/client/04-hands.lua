@@ -330,10 +330,33 @@ _G.GetContainerItemLink = function(bag, slot)
 	local held = carrying(bag, slot)
 	return held and itemLink(held) or nil
 end
+-- Which slots the server has not finished moving.
+--
+-- Empty on every ordinary pass and set by hand by the one section whose subject
+-- is what the addon does while it waits. A lock is latency, and modelling
+-- latency for its own sake would be modelling the server rather than the addon.
+-- The mail send is the exception and it is not a small one: the second mail of
+-- a split is filled from inside the first one's success, which is the one
+-- moment in a send when the bags are certainly mid-move, so a batch arriving
+-- locked is not an edge case there, it is the ordinary case. A stub that never
+-- locked anything is what let that ship.
+local locks = {}
+
+local function locked(bag, slot)
+	return locks[bag * 256 + slot] and true or false
+end
+
+-- One slot held or let go, with the event the client sends either way. The
+-- event is the half that matters: the addon's fill waits for it rather than
+-- polling, so a stub that moved the lock in silence would test nothing.
+-- H.fire is read at the call rather than held, because the runner builds it
+-- after this file loads.
+H.lock = function(bag, slot, held)
+	locks[bag * 256 + slot] = held and true or nil
+	H.fire("ITEM_LOCK_CHANGED")
+end
+
 -- Texture, count, locked, quality, in the order the loose global answers them.
--- Nothing is ever locked here: a locked slot is a sale the server has not
--- finished, and modelling that would be modelling latency rather than the
--- addon.
 --
 -- The count is the one a section wrote and one otherwise, which is what the
 -- client answers for a slot holding a single thing. Everything that reads it
@@ -343,7 +366,7 @@ _G.GetContainerItemInfo = function(bag, slot)
 	if not held then
 		return nil
 	end
-	return ITEMS[held].icon, counted(bag, slot), false, ITEMS[held].quality
+	return ITEMS[held].icon, counted(bag, slot), locked(bag, slot), ITEMS[held].quality
 end
 
 -- The call the whole vendor part is built around, and the reason it checks the

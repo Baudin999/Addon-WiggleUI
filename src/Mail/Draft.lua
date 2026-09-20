@@ -72,6 +72,20 @@ local POSTAGE = 30
 local to, subject, body, money = "", "", "", 0
 local attached = {}
 
+-- The bag slots on the list, keyed by bag and slot folded into one number. No
+-- bag on either client holds more than this, so the fold is unique and costs no
+-- string.
+local BAG_SLOTS = 256
+local spoken = {}
+
+local function Remember()
+	wipe(spoken)
+	for index = 1, #attached do
+		local entry = attached[index]
+		spoken[entry.bag * BAG_SLOTS + entry.slot] = true
+	end
+end
+
 --------------------------------------------------------------------------
 
 function Draft.PerMail()
@@ -167,14 +181,14 @@ end
 -- Whether this bag slot is already on the list. Two stacks of the same item are
 -- two attachments and both are wanted; the same stack twice is one attachment
 -- and a slot that would come up empty at send.
-local function Taken(bag, slot)
-	for index = 1, #attached do
-		local entry = attached[index]
-		if entry.bag == bag and entry.slot == slot then
-			return true
-		end
-	end
-	return false
+--
+-- Answered off an index rather than by walking, because the bag window asks it
+-- of every square it draws to grey out what is already on the letter. A walk
+-- would be thirty six comparisons a square, a hundred and fifty squares, on
+-- every bag update; this is one lookup. The index is rebuilt whenever the list
+-- changes, which is the only time the answer can move.
+function Draft.Has(bag, slot)
+	return spoken[bag * BAG_SLOTS + slot] == true
 end
 
 -- The first bag slot holding this link that is not already on the list. This is
@@ -184,7 +198,7 @@ end
 function Draft.Slot(link)
 	for bag = 0, 4 do
 		for slot = 1, ns.ContainerSlots(bag) do
-			if ns.ContainerItemLink(bag, slot) == link and not Taken(bag, slot) then
+			if ns.ContainerItemLink(bag, slot) == link and not Draft.Has(bag, slot) then
 				return bag, slot
 			end
 		end
@@ -205,7 +219,7 @@ function Draft.AttachSlot(bag, slot)
 	if type(link) ~= "string" then
 		return nil, "there is nothing in that slot"
 	end
-	if Taken(bag, slot) then
+	if Draft.Has(bag, slot) then
 		return nil, "that stack is already on the mail"
 	end
 
@@ -215,6 +229,7 @@ function Draft.AttachSlot(bag, slot)
 		link = link, name = name or "?", icon = icon,
 		count = count or 1, bag = bag, slot = slot,
 	}
+	Remember()
 	return #attached
 end
 
@@ -245,11 +260,13 @@ function Draft.Detach(index)
 		return false
 	end
 	table.remove(attached, index)
+	Remember()
 	return true
 end
 
 function Draft.Empty()
 	wipe(attached)
+	Remember()
 	return true
 end
 

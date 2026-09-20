@@ -22,9 +22,22 @@
 -- synchronously would never produce the shape it is written against, so the
 -- success here is delivered by hand.
 --
+-- Does the second mail of a split survive bags that are still moving. This is
+-- the one that was broken in game, and it is the same shape the inbox sweep was
+-- broken in. Mail two is filled from inside mail one's success, which is the
+-- one moment in a send when every slot the next batch wants may be locked, and
+-- a fill that counted a locked slot as an item that had gone stopped the run
+-- with "nothing of that mail is still in your bags". Twelve went, eight stayed
+-- in the bags, and the window said it had sent everything it could.
+--
 -- Does a refusal stop the rest. A mail the server would not take has left its
 -- attachments on the form, and posting the next one on top of them would send
 -- somebody else's items to this recipient.
+--
+-- And can that be undone without walking away. A refused mail leaves twelve
+-- items on a form parked off the side of the screen. Nothing on screen says so,
+-- every send after it is refused for that reason, and until the clear button
+-- reached the form there was no press in the window that changed it.
 --
 -- And does the sweep count down. Taking a message renumbers the inbox, and a
 -- sweep walking upwards skips every other message while reporting that it took
@@ -303,6 +316,60 @@ check(not mail.form.showing,
 	"a finished send left the client's send pane flagged as showing")
 
 ----------------------------------------------------------------------
+-- The second mail, out of bags that are still moving
+--
+-- The failure above is the same send with the bags in the state the game
+-- actually hands them over in. Every stack the second mail wants is locked at
+-- the instant the first one lands, because that is what a mail leaving your
+-- bags does to them, and the fill used to read a locked slot as an item that
+-- was no longer there.
+--
+-- Two claims, and the first is the one that shipped broken: the run does not
+-- give up on a locked batch, and every one of the eight is on the mail that
+-- goes when the locks clear. Missing is checked as well, because a fill that
+-- gave up quietly and sent a short mail would satisfy the first claim on its
+-- own.
+----------------------------------------------------------------------
+
+do
+	for slot = 1, 20 do
+		CARRIED[3][slot] = "Copper Ore"
+	end
+	for _ = 1, 20 do
+		Draft.Attach(ore)
+	end
+	Draft.SetTo(ALT)
+
+	local was = #mail.sent
+	check(Send.Start(), "the send of twenty out of a full bag would not start")
+	check(#mail.sent == was + 1, "the first mail of the split did not go")
+
+	for slot = 13, 20 do
+		H.lock(3, slot, true)
+	end
+	mail.deliver()
+	check(Send.Running(), "the second mail gave up on a batch of locked stacks")
+	check(#mail.sent == was + 1,
+		("%d mails went out while the second was still filling"):format(#mail.sent - was))
+
+	-- The locks come off the way the server takes them off, one at a time, and
+	-- each one is an ITEM_LOCK_CHANGED. The send is watching for exactly that.
+	for slot = 13, 20 do
+		H.lock(3, slot, false)
+	end
+	check(#mail.sent == was + 2, "the second mail did not go once the locks cleared")
+	check(#mail.sent[was + 2].items == 8,
+		("the second mail carried %d of the eight that were locked")
+			:format(#mail.sent[was + 2].items))
+	check(Send.Missing() == 0,
+		("%d attachments were counted as left behind"):format(Send.Missing()))
+
+	mail.deliver()
+	check(not Send.Running(), "the send is still running after both mails landed")
+	check(Draft.Held() == 0, "a finished split left its attachments on the draft")
+end
+
+----------------------------------------------------------------------
 -- The two presses
 --
 -- The gate the whole window exists for, and it lives between two presses of one
@@ -398,6 +465,23 @@ check(not Send.Running(), "a refused mail did not stop the rest of the send")
 check(#mail.sent == before + 1,
 	("%d mails went out after the first was refused"):format(#mail.sent - before))
 check(Draft.Held() == 20, "a refused send emptied the draft anyway")
+
+-- And what it left behind can be put back from inside the window.
+--
+-- The twelve are on the client's own form and that form is parked off the
+-- screen. Until the clear button reached it the only way out was to walk away
+-- from the mailbox, and every send in between was refused by something the
+-- player could not see.
+do
+	check(Send.Loaded() == 12,
+		("a refused mail left %d items on the client's own form"):format(Send.Loaded()))
+	check(Send.Unload(), "the client's own form would not empty")
+	check(Send.Loaded() == 0,
+		("%d items are still on the form after a clear"):format(Send.Loaded()))
+	check(CARRIED[3][1] == "Copper Ore",
+		"the items the clear took off the form did not land back in the bags")
+end
+
 mail.refuse(false)
 Draft.Clear()
 
@@ -548,6 +632,30 @@ do
 			reopened.subject.edit:GetText(), reopened.to.edit:GetText()))
 end
 fire("MAIL_CLOSED")
+
+-- And closing the window by hand ends the letter the same way walking away
+-- from the mailbox does.
+--
+-- It is the gesture everybody tries when a window has got itself into a state,
+-- and it used to be the one gesture that changed nothing: the draft survived,
+-- the note under the send button still described a mail that failed twenty
+-- minutes ago, and whatever a refused send had left on the client's form was
+-- still there refusing the next one.
+fire("MAIL_SHOW")
+do
+	CARRIED[3][2] = "Copper Ore"
+	Draft.SetTo(ALT)
+	Draft.SetSubject("a second thought")
+	Draft.AttachSlot(3, 2)
+	check(Draft.Held() == 1, "the letter to be thrown away was never written")
+
+	Window.Hide()
+	check(Draft.Held() == 0 and Draft.Subject() == "",
+		("closing the window left %q and %d attachments on the letter")
+			:format(Draft.Subject(), Draft.Held()))
+	check(Send.Note() == "",
+		("closing the window left the send saying %q"):format(Send.Note()))
+end
 
 -- And the bags are the client's again, which is the promise the take makes.
 -- The global is checked last, after the window has been opened and closed

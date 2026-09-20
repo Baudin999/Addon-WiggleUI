@@ -32,8 +32,22 @@ ns.MailBags = Bags
 -- **Only this addon's squares.** The old takeover reached Blizzard's bags and
 -- Baganator's through the shared name; a widget setting reaches the widgets it
 -- is set on. This addon draws the bag window, so those are the squares under
--- the pointer. A square built while the window is open arrives through
--- Bags.Dress from Bags/Grid.lua, already holding the right state.
+-- the pointer. Every square arrives through Bags.Wear from Bags/Grid.lua's own
+-- paint, already holding the right state.
+--
+-- **And the square says what is already on the letter.** A stack you right
+-- clicked onto the mail is still in the bag and still looks exactly like the
+-- stack beside it, so attaching twelve out of twenty identical ones meant
+-- counting the squares in one window against the squares in the other. A
+-- spoken-for square is drawn faint instead. Faint rather than grey: grey is
+-- already what this window says about something a vendor will not buy, and the
+-- two are different claims. Refused is not yours to sell. Spoken for is yours,
+-- still in the bag, and already promised to somebody.
+--
+-- Both of those are one call, Bags.Wear, and that is not tidiness. It is the
+-- one name this tree may cross into the bag window by, which scripts/trees.lua
+-- counts and refuses to let grow: the grid both windows want belongs in UI and
+-- has not moved there yet, so every edge into it is written down.
 --
 -- **A click this file claims is never passed on.** Not when the list is full,
 -- not when the stack is already on the mail, not while a send is in flight. A
@@ -185,6 +199,13 @@ function Bags.Dress(button)
 	if type(button) ~= "table" or type(button.RegisterForClicks) ~= "function" then
 		return false
 	end
+	-- Only where it moved. This used to run once, when a square was built, and
+	-- it now runs on every square of every bag update; a registration and a
+	-- script are both widget writes whether or not the value changed.
+	if button.taking == taking then
+		return false
+	end
+	button.taking = taking
 	if taking then
 		ns.UI.Press.Clicks(button, "up", "LeftButton")
 		button:SetScript("OnMouseUp", Release)
@@ -195,12 +216,68 @@ function Bags.Dress(button)
 	return true
 end
 
+-- The bag window's squares, or none where that window has never been built.
+--
+-- The one place ns.BagsGrid is named, and everything here that touches a square
+-- comes through it. See the header: this edge is counted.
+local function Squares()
+	local grid = ns.BagsGrid
+	return grid and grid.Squares() or {}
+end
+
 local function Sweep()
-	local squares = ns.BagsGrid and ns.BagsGrid.Squares() or {}
+	local squares = Squares()
 	for index = 1, #squares do
 		Bags.Dress(squares[index])
 	end
 end
+
+--------------------------------------------------------------------------
+-- One square, wearing what the letter says about it
+--------------------------------------------------------------------------
+
+-- Which buttons it answers to, and how faint it is drawn. Bags/Grid.lua calls
+-- it on every square it paints, and the header says why it is one call.
+--
+-- `button.faint` is what the bag window itself wants, written on the square
+-- rather than set, so the one SetAlpha here carries both claims. A vendor's
+-- refusal is the darker of the two and wins: what a merchant will not take is
+-- out of the question for as long as you are standing at him, where a stack on
+-- the letter is a square you are still counting and has to stay readable while
+-- you count it.
+function Bags.Wear(button)
+	Bags.Dress(button)
+	if type(button) ~= "table" or type(button.SetAlpha) ~= "function" then
+		return false
+	end
+
+	local alpha = button.faint or 1
+	local spoken = alpha == 1 and button.bag ~= nil and button.slot ~= nil
+		and ns.MailDraft.Has(button.bag, button.slot)
+	if spoken then
+		alpha = ns.UI.SLOT_SPOKEN
+	end
+	if button:GetAlpha() ~= alpha then
+		button:SetAlpha(alpha)
+	end
+	return spoken
+end
+
+-- Every square brought back in step with the letter, without laying anything
+-- out again.
+--
+-- The list changes on every right click in the bags and the window repaints on
+-- every keystroke in the letter, and a bag refresh reads a hundred and fifty
+-- slots, grades every item in them and lays every square out again. This writes
+-- one number, on the squares it moved on.
+function Bags.Mark()
+	local squares = Squares()
+	for index = 1, #squares do
+		Bags.Wear(squares[index])
+	end
+	return #squares
+end
+
 
 function Bags.Apply()
 	local wanted = Bags.Wanted()
