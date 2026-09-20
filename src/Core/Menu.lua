@@ -4,8 +4,8 @@ local ADDON, ns = ...
 --
 -- Everything in here answers one complaint: a slash command is a thing you have
 -- to be told about. Escape is a thing everyone already presses. So the addon
--- puts one button in that menu, it says WarriorKit, and it opens the same panel
--- /wk opens. No setting guards it, because a checkbox that hides the way into
+-- puts one button in that menu, it says WiggleUI, and it opens the same panel
+-- /wui opens. No setting guards it, because a checkbox that hides the way into
 -- the settings is a checkbox nobody can find their way back to.
 --
 -- The button goes in the menu's own column, under Options, and Blizzard's
@@ -41,8 +41,8 @@ local ADDON, ns = ...
 local Menu = {}
 ns.GameMenu = Menu
 
-local LABEL = "WarriorKit"
-local BUTTON = "WarriorKitGameMenuButton"
+local LABEL = "WiggleUI"
+local BUTTON = "WiggleUIGameMenuButton"
 
 -- How far past the button it follows ours sorts. Blizzard numbers its column in
 -- whole steps, so a half never collides with one of theirs, and LayoutFrame
@@ -61,7 +61,7 @@ local MOST = 4
 -- these frames stacks inside itself.
 local LIFT = 10
 
--- How many regions `/wk menu` lists before it stops. A menu with more than this
+-- How many regions `/wui menu` lists before it stops. A menu with more than this
 -- in it is a menu somebody else has already filled, which is worth knowing and
 -- is not worth thirty lines of chat.
 local PROBE_LIST = 16
@@ -74,7 +74,7 @@ local button, refusal
 -- what the size copy and the paint both have to step over.
 local asked, extra, mine = {}, {}, {}
 
--- What the last attach found to copy a size from. Carried for `/wk status`,
+-- What the last attach found to copy a size from. Carried for `/wui status`,
 -- because a button at the kit's own size in a menu whose buttons are a
 -- different size is a thing you can see and would want explained.
 local copied
@@ -277,7 +277,7 @@ end
 -- This is the only part of the addon whose success depends on the shape of
 -- somebody else's frame, and the shape has changed under it once already. So
 -- there is a way to look at it that is not reading this file and guessing. Same
--- job `/wk skin probe` does for the aura buttons and for the same reason.
+-- job `/wui skin probe` does for the aura buttons and for the same reason.
 local function Say(region, indent)
 	local _, relative = Anchor(region)
 	ns.Print(("%s%s %s%s, %s wide, hangs off %s"):format(

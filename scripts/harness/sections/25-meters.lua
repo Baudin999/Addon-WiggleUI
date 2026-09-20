@@ -47,7 +47,7 @@ check(ns.Meter.Total("dps") == 0,
 	("the group total reads %s before the first fight"):format(tostring(ns.Meter.Total("dps"))))
 meterTicker:Beat(0.25)
 
-local frame = _G.WarriorKitMeter
+local frame = _G.WiggleUIMeter
 check(frame ~= nil, "no meter frame came up")
 local damagePane = ns.MeterWindow.Pane("damage")
 local threatPane = ns.MeterWindow.Pane("threat")

@@ -40,9 +40,9 @@ local function frame()
 	end
 end
 
-local LINEN = _G.WarriorKitItemLink("Linen Cloth")
-local WOOL = _G.WarriorKitItemLink("Wool Cloth")
-local AEGIS = _G.WarriorKitItemLink("Aegis")
+local LINEN = _G.WiggleUIItemLink("Linen Cloth")
+local WOOL = _G.WiggleUIItemLink("Wool Cloth")
+local AEGIS = _G.WiggleUIItemLink("Aegis")
 
 local function sentence(item, count)
 	if count then
@@ -140,7 +140,7 @@ do
 		"pointing at a row did not bring up both its buttons")
 	for _, button in ipairs({ row.cross, row.trash }) do
 		local clicks = button:GetRegisteredClicks()
-		check(button.wkEdge == "up" and clicks and clicks.LeftButtonUp,
+		check(button.wuiEdge == "up" and clicks and clicks.LeftButtonUp,
 			"a button on a loot row did not register its click through UI.Press")
 	end
 	check(row.trash:GetRight() <= row.cross:GetLeft() + 0.01,

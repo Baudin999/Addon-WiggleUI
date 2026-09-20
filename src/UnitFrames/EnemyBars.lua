@@ -492,7 +492,7 @@ function EnemyBars.Slot(spellID)
 end
 
 -- The IDs the list carries that this client cannot name, so the panel and
--- /wk status can say so rather than leaving a row silently short.
+-- /wui status can say so rather than leaving a row silently short.
 function EnemyBars.Unresolved()
 	return unresolved
 end
@@ -629,7 +629,7 @@ function EnemyBars.ResetSpells()
 	EnemyBars.Retrack()
 end
 
--- One line for the panel note and for /wk status: the names, in order, or what
+-- One line for the panel note and for /wui status: the names, in order, or what
 -- is wrong with the list.
 function EnemyBars.DescribeSpells()
 	if #trackedNames == 0 then
@@ -2356,7 +2356,7 @@ function EnemyBars.WidgetFor(unit)
 	return attached[unit]
 end
 
--- One line for /wk status, covering the two things about the bars that are the
+-- One line for /wui status, covering the two things about the bars that are the
 -- client's answer rather than a setting: what the grid resolved to, and whether
 -- the driver agreed to space plates the way the bars need.
 function EnemyBars.Describe()
@@ -2692,7 +2692,7 @@ events:SetScript("OnEvent", function(_, event, arg1)
 			.. " nothing and keep their place: " .. table.concat(unresolved, ", ") .. ".")
 	end
 
-	anchor = CreateFrame("Frame", "WarriorKitEnemyBarsAnchor", UIParent)
+	anchor = CreateFrame("Frame", "WiggleUIEnemyBarsAnchor", UIParent)
 	-- On the grid too, so a list bar is snapped in both axes rather than only
 	-- sized in whole pixels. A bar on a nameplate cannot have this: its origin
 	-- is wherever the mob is standing, which is a moving fraction of a pixel no
@@ -2710,7 +2710,7 @@ events:SetScript("OnEvent", function(_, event, arg1)
 
 	header = anchor:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
 	header:SetPoint("BOTTOMLEFT", anchor, "TOPLEFT", 0, 2)
-	header:SetText("WarriorKit enemies")
+	header:SetText("WiggleUI enemies")
 	header:Hide()
 	-- The list's rows are children of the anchor. The bars on plates are not,
 	-- and Attach asks the theme for those.

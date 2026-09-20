@@ -94,7 +94,7 @@ local ENCHANT_HEAD, ENCHANT_COUNT = "TempEnchant", 3
 
 -- What the square's edge may be set to. The floor is where the stack count
 -- stops being readable. The ceiling is the block's own height, above which a
--- square is taller than the frame it hangs off, and that is `/wk skin height`
+-- square is taller than the frame it hangs off, and that is `/wui skin height`
 -- rather than the constant it was written as: the block was 34 pixels tall
 -- when this file was new and it is a setting that runs to 72.
 local SIZE_MIN, SIZE_CEILING = 12, 72
@@ -124,7 +124,7 @@ local TIMER_CEILING, COUNT_CEILING = 14, 11
 -- shipped at eight, and eight is exactly one line of the block the addon
 -- ships: a raid's worth of buffs stopped at the end of the line and the ninth
 -- was simply not on the screen. A cap on a row that wraps buys nothing, and
--- the switch that takes the rows off is `/wk skin auras`.
+-- the switch that takes the rows off is `/wui skin auras`.
 --
 --   filter    what the client calls this half of the aura list
 --   head      the client's own button names, which are what gets hidden. The
@@ -157,18 +157,18 @@ local ROWS = {
 	player = {
 		{ key = "debuffs", filter = "HARMFUL", head = "DebuffButton", below = true,
 			max = "DEBUFF_MAX_DISPLAY", ceiling = 16, hides = "hideBlizzDebuffs",
-			global = "WarriorKitPlayerDebuffs" },
+			global = "WiggleUIPlayerDebuffs" },
 		{ key = "buffs", filter = "HELPFUL", head = "BuffButton", below = false,
 			max = "BUFF_MAX_DISPLAY", ceiling = 32, enchants = true, secure = true,
-			hides = "hideBlizzBuffs", global = "WarriorKitPlayerBuffs" },
+			hides = "hideBlizzBuffs", global = "WiggleUIPlayerBuffs" },
 	},
 	target = {
 		{ key = "debuffs", filter = "HARMFUL", head = "TargetFrameDebuff", below = true,
 			max = "MAX_TARGET_DEBUFFS", ceiling = 16, hides = "hideBlizzTargetAuras",
-			global = "WarriorKitTargetDebuffs" },
+			global = "WiggleUITargetDebuffs" },
 		{ key = "buffs", filter = "HELPFUL", head = "TargetFrameBuff", below = false,
 			max = "MAX_TARGET_BUFFS", ceiling = 32, hides = "hideBlizzTargetAuras",
-			global = "WarriorKitTargetBuffs" },
+			global = "WiggleUITargetBuffs" },
 	},
 	-- Mend Pet and whatever the mob put on it. The same pair off the same mirror,
 	-- so both run leftward from the pet's gauge end, which is the edge three
@@ -176,9 +176,9 @@ local ROWS = {
 	-- rather than spilling under your block.
 	pet = {
 		{ key = "debuffs", filter = "HARMFUL", below = true, ceiling = 16,
-			global = "WarriorKitPetDebuffs" },
+			global = "WiggleUIPetDebuffs" },
 		{ key = "buffs", filter = "HELPFUL", below = false, ceiling = 32,
-			global = "WarriorKitPetBuffs" },
+			global = "WiggleUIPetBuffs" },
 	},
 }
 
@@ -379,7 +379,7 @@ end
 --
 -- A name this client does not use costs nothing and hides nothing, which is
 -- the honest failure: the sweep stops at the first name that is not a frame
--- and /wk skin probe then says none of the client's are hidden. Whether these
+-- and /wui skin probe then says none of the client's are hidden. Whether these
 -- five names are what this backport calls its own buttons is in the untested
 -- list in docs/README.md.
 --------------------------------------------------------------------------
@@ -424,7 +424,7 @@ local function Sweep(row)
 end
 
 -- How many of the client's buttons this row currently has off the screen,
--- across every run. Only /wk skin probe asks.
+-- across every run. Only /wui skin probe asks.
 local function Swept(row)
 	local runs, total = row.runs, 0
 	for index = 1, #runs do
@@ -745,7 +745,7 @@ function Grow(row, count)
 	Flow.Arrange(row.frame, node)
 	-- How many fit on a line, asked of Flow rather than worked out again here,
 	-- so there is one rule for where a line breaks and not two that agree until
-	-- somebody changes the gap. Only /wk skin probe reads it.
+	-- somebody changes the gap. Only /wui skin probe reads it.
 	local lines = Flow.Lines(node)
 	row.perLine = math.max(lines[1] and #lines[1] or 0, 1)
 	return count
@@ -927,7 +927,7 @@ function Auras.Place(entry, px, width, mirror)
 		-- Outside the guard above, because whether a row is on the screen is not
 		-- part of its layout and something else can move it. Auras.Unstyle hides
 		-- these frames, and the style that follows is five numbers that all held,
-		-- so a settled pass showed nothing: a row taken off by `/wk skin` and put
+		-- so a settled pass showed nothing: a row taken off by `/wui skin` and put
 		-- back came up empty and stayed empty for the rest of the session. Place is
 		-- the only thing that shows a row, so it says so on every pass rather than
 		-- on the pass that happens to lay one out.
@@ -983,7 +983,7 @@ end
 -- sweep of the client's own buttons and the fill of ours. The sweep belongs on
 -- the same pass rather than on its own clock because the client builds
 -- BuffButton9 the first time you carry nine buffs, which is an aura event. A
--- switch under `/wk hide` that moves is picked up by the reading behind the
+-- switch under `/wui hide` that moves is picked up by the reading behind the
 -- events, so it takes up to a second rather than up to a fifth of one.
 function Auras.Update(entry)
 	local list = entry.auras
@@ -1013,7 +1013,7 @@ end
 -- the art inside it came out, and whether the art was ever handed a texture.
 --
 -- In pixels, like the rest of the line, so the answer can be read against
--- `/wk skin aura` without converting anything.
+-- `/wui skin aura` without converting anything.
 local function Drawn(row)
 	local square = row.squares[1]
 	if not square then
@@ -1030,7 +1030,7 @@ local function Drawn(row)
 		(ns.Measure(square.edges[1], "GetHeight") or 0) / unit)
 end
 
--- One line for /wk skin probe, per frame that has rows.
+-- One line for /wui skin probe, per frame that has rows.
 function Auras.Probe(entry)
 	local list = entry.auras
 	if not list then

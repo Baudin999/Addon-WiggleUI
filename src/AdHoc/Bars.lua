@@ -82,15 +82,15 @@ local STRATA = "FULLSCREEN"
 local entries = {}
 
 local function FrameName(index)
-	return ("WarriorKitAdHoc%d"):format(index)
+	return ("WiggleUIAdHoc%d"):format(index)
 end
 
 local function KeyName(index)
-	return ("WarriorKitAdHoc%dKey"):format(index)
+	return ("WiggleUIAdHoc%dKey"):format(index)
 end
 
 local function ButtonName(index, at)
-	return ("WarriorKitAdHoc%dButton%d"):format(index, at)
+	return ("WiggleUIAdHoc%dButton%d"):format(index, at)
 end
 
 Bars.KeyName = KeyName
@@ -215,7 +215,7 @@ local screen
 
 local function Screen()
 	if not screen then
-		screen = CreateFrame("Frame", "WarriorKitAdHocScreen", UIParent, "SecureFrameTemplate")
+		screen = CreateFrame("Frame", "WiggleUIAdHocScreen", UIParent, "SecureFrameTemplate")
 		screen:SetAllPoints(UIParent)
 		screen:Hide()
 	end

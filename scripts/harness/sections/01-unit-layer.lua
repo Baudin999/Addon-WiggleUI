@@ -77,21 +77,21 @@ check(Level.Pays("nameplate1"),
 
 -- Tagged by somebody else. The level says even and the kill still pays nothing,
 -- which is the half of the question a number alone cannot answer.
-_G.WarriorKitTappedUnits.nameplate1 = true
+_G.WiggleUITappedUnits.nameplate1 = true
 check(Level.Worth("nameplate1") == Color.xp.none,
 	"a mob somebody else tagged is still coloured as if the kill paid")
 check(not Level.Pays("nameplate1"),
 	"a mob somebody else tagged still reads as worth killing")
-_G.WarriorKitTappedUnits.nameplate1 = nil
+_G.WiggleUITappedUnits.nameplate1 = nil
 check(Level.Pays("nameplate1"),
 	"the tag verdict stuck to the unit after the tag was released")
 
 -- A level far enough below yours pays nothing on its own, with nobody else
 -- involved. The stub's green range is 8, so 62 minus 20 is well under it.
-_G.WarriorKitLevels.nameplate1 = 42
+_G.WiggleUILevels.nameplate1 = 42
 check(Level.Worth("nameplate1") == Color.xp.none,
 	"a mob twenty levels down is not on the grey")
-_G.WarriorKitLevels.nameplate1 = nil
+_G.WiggleUILevels.nameplate1 = nil
 
 check(Unit.TargetToken("raid17") == "raid17target",
 	("the target token is %q, expected \"raid17target\""):format(Unit.TargetToken("raid17")))

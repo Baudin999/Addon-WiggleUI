@@ -19,7 +19,7 @@ local C, M = UI.Color, UI.Metric
 -- destroy a frame, so a window per copy is a window leaked per copy. And one
 -- room at a time rather than everything, because "what was said" is a room's
 -- question. Conversation holds every line anybody said, System holds what the
--- game said, and the WarriorKit room holds what this addon said, so copying
+-- game said, and the WiggleUI room holds what this addon said, so copying
 -- the room you are in is copying whichever of those you meant.
 --
 -- The field is not a place to type. Anything typed over it is put back, the
@@ -27,7 +27,7 @@ local C, M = UI.Color, UI.Metric
 -- and never a line somebody's Ctrl-V landed in.
 --------------------------------------------------------------------------
 
-local FRAME_NAME = "WarriorKitChatCopy"
+local FRAME_NAME = "WiggleUIChatCopy"
 local WIDTH, HEIGHT = 480, 320
 
 -- One line of the field, in the window's own units. The font plus the spacing

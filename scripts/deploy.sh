@@ -57,7 +57,7 @@ fi
 # Every upload is a new version. CurseForge shows the number, the client shows
 # the number, and before this ran every upload there was 1.9. The last part is
 # raised, so 1.9 becomes 1.10, in the three places check.sh holds together.
-version_files=(src/Core/Core.lua src/WarriorKit.toc src/WarriorKit_Vanilla.toc)
+version_files=(src/Core/Core.lua src/WiggleUI.toc src/WiggleUI_Vanilla.toc)
 
 # The bump is committed on its own, so these three must hold nothing else yet.
 # A peer's edit in Core.lua would otherwise ship inside a commit called Release.
@@ -74,7 +74,7 @@ new="${old%.*}.$(( ${old##*.} + 1 ))"
 
 set_version() {
 	sed -i "s/^ns\.version = \".*\"$/ns.version = \"$1\"/" src/Core/Core.lua
-	sed -i "s/^## Version: .*/## Version: $1/" src/WarriorKit.toc src/WarriorKit_Vanilla.toc
+	sed -i "s/^## Version: .*/## Version: $1/" src/WiggleUI.toc src/WiggleUI_Vanilla.toc
 }
 
 echo "version $old -> $new"
@@ -90,5 +90,5 @@ if ! ./scripts/release.sh --upload --type "$release_type"; then
 fi
 
 git commit -q -m "Release $new" -- "${version_files[@]}"
-git tag -a "v$new" -m "WarriorKit $new, $release_type"
+git tag -a "v$new" -m "WiggleUI $new, $release_type"
 echo "committed and tagged v$new"

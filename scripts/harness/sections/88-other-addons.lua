@@ -19,7 +19,7 @@
 -- own handler passes every other check here.
 --
 -- The word brings it back. A notice that can only ever be seen once is a notice
--- nobody can re-read, and the flag being kept out of `/wk defaults` means the
+-- nobody can re-read, and the flag being kept out of `/wui defaults` means the
 -- word and the button on the page are the only two ways to it.
 --
 -- The two worth keeping are named in the sentence under the list. The one thing
@@ -44,7 +44,7 @@ check(#Replaced.Running() == 0,
 check(Replaced.Words() == nil, "a client running nothing was given words to say")
 check(ns.db.replacedTold == false,
 	"the notice was marked as told on a login where there was nothing to tell")
-check(_G.WarriorKitReplaced == nil,
+check(_G.WiggleUIReplaced == nil,
 	"the notice built its window on a login where it had nothing to say")
 
 ----------------------------------------------------------------------
@@ -117,7 +117,7 @@ local said = Replaced.Show()
 check(said == words, "the window went up saying something other than the notice")
 check(Replaced.Told() == true, "the notice went up and did not write down that it had")
 
-local window = _G.WarriorKitReplaced
+local window = _G.WiggleUIReplaced
 check(window ~= nil, "the notice was shown and built no window")
 if window then
 	check(window:IsShown(), "the notice's window was built and not shown")
@@ -137,7 +137,7 @@ check(window == nil or not window:IsShown(),
 
 -- And the word, which is the way back to it. It reports rather than asks, so
 -- the window goes up again on a flag that is already written.
-local slash = _G.SlashCmdList.WARRIORKIT
+local slash = _G.SlashCmdList.WIGGLEUI
 slash("replaces")
 check(window ~= nil and window:IsShown(),
 	"the replaces word did not put the notice back up")

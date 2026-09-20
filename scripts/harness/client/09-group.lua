@@ -403,7 +403,7 @@ local function Header(header)
 			Update(self)
 		end
 	end
-	header.wkUpdate = Update
+	header.wuiUpdate = Update
 end
 
 local made = _G.CreateFrame

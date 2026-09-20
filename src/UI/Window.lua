@@ -367,7 +367,7 @@ end
 -- Dragged through UI/Placeable.lua, which owns placing for every frame in the
 -- addon that can be moved, windows included. Its header says why that is one
 -- file and not two. No name, because a window has a bar across its top to grab
--- it by and answers the mouse whether or not you are placing it. /wk lock does
+-- it by and answers the mouse whether or not you are placing it. /wui lock does
 -- not reach a window unless the window asks it to, which the chat window is the
 -- only one to do. Locking a quest log would be locking a window rather than
 -- placing the HUD.

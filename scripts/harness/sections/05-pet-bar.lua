@@ -35,7 +35,7 @@ local FRAME = 0.15 -- past the tenth of a second the pet tick asks for
 -- Shift-L carrying "" in 56-dungeon-log as HUNTER, the one run that stands the
 -- pet bar up.
 local function Rebuild()
-	_G.WarriorKitRebuildBindings()
+	_G.WiggleUIRebuildBindings()
 	H.rebound()
 end
 
@@ -62,7 +62,7 @@ do
 
 	-- The keys, read off the pet binding set Blizzard's own button reads, and
 	-- drawn in the corner the action bars draw theirs in.
-	local bindings = _G.WarriorKitBindings
+	local bindings = _G.WiggleUIBindings
 	bindings.BONUSACTIONBUTTON4 = { "G" }
 	bindings.BONUSACTIONBUTTON6 = { "SHIFT-R" }
 	Rebuild()
@@ -78,13 +78,13 @@ do
 
 	check(theirs:GetParent() == ns.Attic.Frame(),
 		"Blizzard's pet bar is not in the attic with the clone on")
-	check(rawget(theirs, "wkStripped") == nil,
+	check(rawget(theirs, "wuiStripped") == nil,
 		"Blizzard's pet bar had its Show written, which taints its own OnEvent")
 
-	check(_G.WarriorKitDriver(bar, "visibility") == "[nopet] hide; show",
+	check(_G.WiggleUIDriver(bar, "visibility") == "[nopet] hide; show",
 		"the client is not holding the pet bar's visibility")
 	Pet.Apply()
-	check(_G.WarriorKitDrivers(bar, "visibility") == 1,
+	check(_G.WiggleUIDrivers(bar, "visibility") == 1,
 		"a second apply left two visibility drivers on the pet bar")
 
 	--------------------------------------------------------------------------
@@ -98,7 +98,7 @@ do
 	local handle = Pet.Handle()
 	local wasLocked, wasBars = ns.db.locked, ns.db.barsLocked
 	ns.db.locked, ns.db.barsLocked = true, false
-	_G.WarriorKitShift(true)
+	_G.WiggleUIShift(true)
 	H.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 1)
 	check(handle ~= nil and handle:IsShown(), "shift put no drag handle over the pet bar")
 
@@ -115,7 +115,7 @@ do
 	check(printed[#printed]:find("pet: ") and printed[#printed]:find("dragged"),
 		"where printed no line for the dragged pet bar: " .. tostring(printed[#printed]))
 
-	_G.WarriorKitShift(false)
+	_G.WiggleUIShift(false)
 	H.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 0)
 	check(not handle:IsShown(), "the pet bar's handle stayed up after shift came off")
 
@@ -165,7 +165,7 @@ do
 	check(Pet.Apply(), "the pet bar's off switch reported combat with no combat running")
 	check(theirs:GetParent() == _G.UIParent, "the off switch did not give Blizzard's pet bar back")
 	check(not bar:IsShown(), "the pet bar stayed up with the clone off")
-	check(_G.WarriorKitDrivers(bar, "visibility") == 0,
+	check(_G.WiggleUIDrivers(bar, "visibility") == 0,
 		"the off switch left the client holding the pet bar's visibility")
 
 	for index = 1, 10 do

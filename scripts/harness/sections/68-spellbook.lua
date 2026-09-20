@@ -101,7 +101,7 @@ end
 ----------------------------------------------------------------------
 
 Window.Show()
-local frame = _G.WarriorKitSpellbook
+local frame = _G.WiggleUISpellbook
 check(frame ~= nil, "the spell book was never built")
 check(Window.Shown(), "the spell book would not open")
 check(math.abs(ns.UI.Pixel(frame) * ns.Zoom("spellbookZoom") - 1) < 1e-9,
@@ -312,7 +312,7 @@ end
 ----------------------------------------------------------------------
 
 do
-	_G.WarriorKitBindings.TOGGLESPELLBOOK = { "P" }
+	_G.WiggleUIBindings.TOGGLESPELLBOOK = { "P" }
 	fire("UPDATE_BINDINGS")
 	H.rebound()
 	ns.BlizzHide.Apply()
@@ -335,7 +335,7 @@ end
 
 do
 	check(Blizz.Caged(), "Blizzard's spell book was left on the screen with this one switched on")
-	check(_G.SpellBookFrame:GetParent() == _G.WarriorKitAttic, "Blizzard's spell book is not in the attic")
+	check(_G.SpellBookFrame:GetParent() == _G.WiggleUIAttic, "Blizzard's spell book is not in the attic")
 
 	Window.Hide()
 	local presses = #H.spellbookKey.books
@@ -352,7 +352,7 @@ do
 	ns.db.hideBlizzSpellbook = false
 	ns.BlizzHide.Apply()
 	check(not Blizz.Caged(), "unticking the switch left the frame caged")
-	check(_G.SpellBookFrame:GetParent() ~= _G.WarriorKitAttic, "unticking the switch left the frame in the attic")
+	check(_G.SpellBookFrame:GetParent() ~= _G.WiggleUIAttic, "unticking the switch left the frame in the attic")
 	_G.ToggleSpellBook("spell")
 	check(#H.spellbookKey.books == presses + 1, "with the switch off the P key did not reach Blizzard's toggle")
 	check(GetBindingAction("P", true) == "TOGGLESPELLBOOK", "with the switch off the P key is still on the secure button")

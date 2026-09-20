@@ -315,7 +315,7 @@ local function BuildBar(entry)
 		-- bound key reads to agree with it; the square went dark under its key
 		-- while the two disagreed.
 		local w = Ability.Dress(ns.UI.Press.Button(header,
-			("WarriorKitBarButton%d"):format(pool), "up"), Ability.QUIET)
+			("WiggleUIBarButton%d"):format(pool), "up"), Ability.QUIET)
 		w:SetAttribute("type", "action")
 		ns.Square.Handle(w)
 		entry.buttons[index] = w

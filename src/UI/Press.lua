@@ -50,7 +50,7 @@ local AURAS = "SecureAuraHeaderTemplate"
 -- takes its names loose. What it registers is what the button keeps from the
 -- camera, see Press.Keep at the foot of this file.
 local function Register(button, edge, ...)
-	button.wkEdge = edge
+	button.wuiEdge = edge
 	local suffix = edge == "down" and "Down" or "Up"
 	local count = select("#", ...)
 	if count == 0 then
@@ -84,7 +84,7 @@ end
 function Press.Key(name, edge)
 	assert(edge == "down" or edge == "both", "Press.Key: edge is \"down\" or \"both\"")
 	local key = CreateFrame("Button", name, UIParent, HANDLER)
-	key.wkEdge = edge
+	key.wuiEdge = edge
 	if edge == "both" then
 		key:RegisterForClicks("AnyDown", "AnyUp")
 	else
@@ -109,7 +109,7 @@ end
 -- an edge before it binds a key to anything.
 function Press.Held(name)
 	local button = CreateFrame("Button", name, UIParent, ACTION)
-	button.wkEdge = "both"
+	button.wuiEdge = "both"
 	button:RegisterForClicks("AnyDown", "AnyUp")
 	button:SetAttribute("useOnKeyDown", false)
 	return button
@@ -135,7 +135,7 @@ end
 -- `/click` can send. For anything else, the way the client works it out: the
 -- button's own attribute, and the player's setting where it does not answer.
 function Press.Edge(button)
-	local built = button and button.wkEdge
+	local built = button and button.wuiEdge
 	if built then
 		return built == "up" and "up" or "down", "UI.Press"
 	end
@@ -260,17 +260,17 @@ local function Pass(owner)
 	if type(owner.SetPassThroughButtons) ~= "function" then
 		return false
 	end
-	local keeps, pass = owner.wkKeeps, {}
+	local keeps, pass = owner.wuiKeeps, {}
 	for index = 1, #CAMERA do
 		local name = CAMERA[index]
 		if not (keeps and (keeps.Any or keeps[name])) then
 			pass[#pass + 1] = name
 		end
 	end
-	if #pass == 0 and not owner.wkPassed then
+	if #pass == 0 and not owner.wuiPassed then
 		return true
 	end
-	owner.wkPassed = #pass > 0
+	owner.wuiPassed = #pass > 0
 	return pcall(owner.SetPassThroughButtons, owner, unpack(pass))
 end
 
@@ -287,15 +287,15 @@ function Press.Keep(frame, ...)
 	for index = 1, count do
 		keeps[select(index, ...)] = true
 	end
-	frame.wkKeeps = keeps
-	if frame.wkPasses then
+	frame.wuiKeeps = keeps
+	if frame.wuiPasses then
 		Pass(frame)
 	end
 	return frame
 end
 
 function UI.PassCamera(owner)
-	owner.wkPasses = true
+	owner.wuiPasses = true
 	return Pass(owner)
 end
 

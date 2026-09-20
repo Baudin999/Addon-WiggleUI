@@ -41,13 +41,13 @@ end
 --
 -- One word with a handful of answers, which is the shape `errors` already has.
 -- The sub-words are tried first and an on or an off falls through to the
--- switch, so `/wk mail off` and `/wk mail fav Aria` are the same word.
+-- switch, so `/wui mail off` and `/wui mail fav Aria` are the same word.
 --------------------------------------------------------------------------
 
 local function Favourites()
 	local list = ns.MailWho.Favourites()
 	if #list == 0 then
-		ns.Print("no favourites. Type /wk mail fav <name> to add one.")
+		ns.Print("no favourites. Type /wui mail fav <name> to add one.")
 		return
 	end
 	for _, name in ipairs(list) do

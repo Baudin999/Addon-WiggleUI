@@ -166,12 +166,12 @@ end
 -- keeps a section readable, and none of these three is read below.
 do
 	local DROPPED = { "RIGHT", "UIParent", "RIGHT", -419, -26 }
-	ns.db.windowSpots.WarriorKitBags = DROPPED
+	ns.db.windowSpots.WiggleUIBags = DROPPED
 
 	check(Window.Show(), "the bag window refused to open")
 	check(Window.Shown(), "the bag window was opened and is not up")
 
-	local frame = _G.WarriorKitBags
+	local frame = _G.WiggleUIBags
 	local opened = { frame:GetPoint() }
 	check(opened[1] == DROPPED[1] and opened[3] == DROPPED[3]
 			and opened[4] == DROPPED[4] and opened[5] == DROPPED[5],
@@ -189,17 +189,17 @@ do
 		:format(took and (took:GetName() or took:GetObjectType()) or "nothing"))
 	check(dragging, "the bag window is open and its bar took no left drag")
 
-	local dropped = ns.db.windowSpots.WarriorKitBags
+	local dropped = ns.db.windowSpots.WiggleUIBags
 	local at = frame:GetPoint()
 	check(dropped and dropped[1] == at and dropped[4] == 111 and dropped[5] == -222,
 		"the bag window was dragged and wrote down " .. (dropped
 			and ("%s at %s, %s"):format(tostring(dropped[1]), tostring(dropped[4]),
 				tostring(dropped[5])) or "nothing"))
-	ns.db.windowSpots.WarriorKitBags = nil
+	ns.db.windowSpots.WiggleUIBags = nil
 end
 
 local window = Window.Frame()
-check(window ~= nil and window.frame:GetName() == "WarriorKitBags",
+check(window ~= nil and window.frame:GetName() == "WiggleUIBags",
 	"the bag window is not the named frame escape closes")
 
 check(window and window.free:GetText() == ("%d free of %d"):format(3, slots),
@@ -689,7 +689,7 @@ end
 -- wrong.
 ----------------------------------------------------------------------
 
-SlashCmdList.WARRIORKIT("bags off")
+SlashCmdList.WIGGLEUI("bags off")
 check(not Window.Shown(), "turning the window off left it on the screen")
 check(not ns.BagsBlizzard.Held(), "the window is off and the addon is still holding B")
 
@@ -699,7 +699,7 @@ check(backOpened == nowOpened + 1,
 	"B does not reach the client's own bags again with the window switched off")
 check(not Window.Shown(), "the window came back up with the feature switched off")
 
-SlashCmdList.WARRIORKIT("bags on")
+SlashCmdList.WIGGLEUI("bags on")
 check(ns.BagsBlizzard.Held(), "turning the window back on did not take the keys again")
 
 ----------------------------------------------------------------------
@@ -745,7 +745,7 @@ do
 	-- In the title bar, a mark in the glyph face, and the hover is the word.
 	local button = Window.Frame().stack
 	check(button ~= nil and button.text:GetText() == "=" and (button.text:GetFont())
-		== "Interface\\AddOns\\WarriorKit\\Media\\Glyphs.ttf",
+		== "Interface\\AddOns\\WiggleUI\\Media\\Glyphs.ttf",
 		"the title bar has no button wearing the stack mark in the glyph face")
 	check(button ~= nil and button.tip():find("half stacks", 1, true) ~= nil,
 		"resting on the stack button says nothing about half stacks")

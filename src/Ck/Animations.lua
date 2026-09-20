@@ -3,7 +3,7 @@ local ADDON, ns = ...
 local UI = ns.UI
 
 -- The library this file starts. Everything under Ck/ is written to know nothing
--- about WarriorKit, so that lifting it into an addon of its own is a change to
+-- about WiggleUI, so that lifting it into an addon of its own is a change to
 -- this line and to the two TOCs, and nothing else.
 ns.Ck = {}
 

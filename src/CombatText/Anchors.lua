@@ -65,10 +65,10 @@ local WIDTH, HEIGHT = 90, 28
 -- is the shape this addon has had to be shown twice: UI/Placeable.lua exists
 -- because twelve parts wrote the same drag out longhand.
 local SPOTS = {
-	{ id = "dealt", key = "hitsDealtPoint", name = "WarriorKit hits you land" },
-	{ id = "taken", key = "hitsTakenPoint", name = "WarriorKit hits on you" },
-	{ id = "heals", key = "hitsHealsPoint", name = "WarriorKit healing" },
-	{ id = "calls", key = "hitsCallsPoint", name = "WarriorKit combat calls" },
+	{ id = "dealt", key = "hitsDealtPoint", name = "WiggleUI hits you land" },
+	{ id = "taken", key = "hitsTakenPoint", name = "WiggleUI hits on you" },
+	{ id = "heals", key = "hitsHealsPoint", name = "WiggleUI healing" },
+	{ id = "calls", key = "hitsCallsPoint", name = "WiggleUI combat calls" },
 }
 
 local frames, places = {}, {}

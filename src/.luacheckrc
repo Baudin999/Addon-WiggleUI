@@ -12,51 +12,51 @@ ignore = { "211/ADDON" }
 globals = {
 	-- written by this addon. Two saved variable tables: the account's and this
 	-- character's, both declared in every TOC.
-	"WarriorKitDB", "WarriorKitCharDB",
+	"WiggleUIDB", "WiggleUICharDB",
 	-- frames created with a name write a global of that name
 	-- Where a frame of Blizzard's goes when this addon draws it instead. Named
 	-- for the reason the blocks are: a frame that has gone missing has to be
-	-- findable from a macro, and `/wk hide probe` reads the parent of every
+	-- findable from a macro, and `/wui hide probe` reads the parent of every
 	-- frame it reports against this one.
-	"WarriorKitAttic",
-	"WarriorKitChargeBinder",
-	"WarriorKitMarkButton",
-	"WarriorKitOptions",
-	"WarriorKitClutter",
+	"WiggleUIAttic",
+	"WiggleUIChargeBinder",
+	"WiggleUIMarkButton",
+	"WiggleUIOptions",
+	"WiggleUIClutter",
 	-- The bag window, and one global per square in it, named
-	-- WarriorKitBagSlot<n>. A bag button is one of the frames the client
+	-- WiggleUIBagSlot<n>. A bag button is one of the frames the client
 	-- and other addons reach for by name, and a square that has landed
 	-- somewhere wrong has to be findable from a macro. The squares are made
 	-- with a computed name and never read back through _G, so only the
 	-- window is listed here.
-	"WarriorKitBags",
+	"WiggleUIBags",
 	-- the breakdown table, opened from the meter. Named so Escape closes it
 	-- through UISpecialFrames, which is a list of names.
-	"WarriorKitBreakdown",
+	"WiggleUIBreakdown",
 	-- the square that holds the other addons' minimap buttons. Named so a
 	-- button that has gone missing can be found from a macro or from
 	-- scripts/harness.lua without Minimap/Corral.lua handing out a reference to
 	-- its own tables.
-	"WarriorKitCorral",
+	"WiggleUICorral",
 	-- The four aura rows, two on each block, named for the reason the three
 	-- blocks in UnitFrames/Block.lua are: a row that lands in the wrong place has
 	-- to be measurable from a macro and from the harness without Auras.lua
 	-- handing out a reference to its own tables.
-	"WarriorKitTargetDebuffs", "WarriorKitTargetBuffs",
-	"WarriorKitPlayerDebuffs", "WarriorKitPlayerBuffs",
+	"WiggleUITargetDebuffs", "WiggleUITargetBuffs",
+	"WiggleUIPlayerDebuffs", "WiggleUIPlayerBuffs",
 	-- the secure header over your buff row whose buttons cancel a buff on a
 	-- right click, named off the row by UI.Press.Cancels
-	"WarriorKitPlayerBuffsCancel",
-	"WarriorKitChargeButton",
+	"WiggleUIPlayerBuffsCancel",
+	"WiggleUIChargeButton",
 	-- The performance window and the button Ctrl-R presses. The window is named
 	-- so Escape closes it through UISpecialFrames, which is a list of names;
 	-- the button is named because SetOverrideBindingClick binds to a name.
-	"WarriorKitPerf", "WarriorKitPerfButton",
+	"WiggleUIPerf", "WiggleUIPerfButton",
 	-- the button Core/Menu.lua puts in the client's own game menu. Named
 	-- because a button that did not turn up has to be findable from a macro,
 	-- which is the same reason the corral and the aura rows are named.
-	"WarriorKitGameMenuButton",
-	"WarriorKitSwitchButton",
+	"WiggleUIGameMenuButton",
+	"WiggleUISwitchButton",
 	-- the one secure button every mouseover key presses, and the list of what
 	-- you bound drawn over the world. The button is named because
 	-- SetOverrideBindingClick binds to a name rather than to a frame, which is
@@ -64,8 +64,8 @@ globals = {
 	-- the reason the meter and the swing bars are, so a list that has wandered
 	-- off the screen can be found from a macro and measured by
 	-- scripts/harness.lua without Hover/Sheet.lua handing out its row pool.
-	"WarriorKitHoverButton",
-	"WarriorKitHoverSheet",
+	"WiggleUIHoverButton",
+	"WiggleUIHoverSheet",
 	-- One per square on a cloned action bar, plus the cooldown frame each square
 	-- carries, which UI/Ability.lua names after it. Both are made by CreateFrame
 	-- with a name built by concatenation, so luacheck never sees the write;
@@ -73,54 +73,54 @@ globals = {
 	-- one of those is written down. Sixty is five bars of twelve, which is every
 	-- action bar this client has, and Buttons/Bars.lua hands the button's name to
 	-- SetOverrideBindingClick, which is the whole reason any of them is named.
-	"WarriorKitBarButton1", "WarriorKitBarButton2", "WarriorKitBarButton3", "WarriorKitBarButton4", "WarriorKitBarButton5", "WarriorKitBarButton6",
-	"WarriorKitBarButton7", "WarriorKitBarButton8", "WarriorKitBarButton9", "WarriorKitBarButton10", "WarriorKitBarButton11", "WarriorKitBarButton12",
-	"WarriorKitBarButton13", "WarriorKitBarButton14", "WarriorKitBarButton15", "WarriorKitBarButton16", "WarriorKitBarButton17", "WarriorKitBarButton18",
-	"WarriorKitBarButton19", "WarriorKitBarButton20", "WarriorKitBarButton21", "WarriorKitBarButton22", "WarriorKitBarButton23", "WarriorKitBarButton24",
-	"WarriorKitBarButton25", "WarriorKitBarButton26", "WarriorKitBarButton27", "WarriorKitBarButton28", "WarriorKitBarButton29", "WarriorKitBarButton30",
-	"WarriorKitBarButton31", "WarriorKitBarButton32", "WarriorKitBarButton33", "WarriorKitBarButton34", "WarriorKitBarButton35", "WarriorKitBarButton36",
-	"WarriorKitBarButton37", "WarriorKitBarButton38", "WarriorKitBarButton39", "WarriorKitBarButton40", "WarriorKitBarButton41", "WarriorKitBarButton42",
-	"WarriorKitBarButton43", "WarriorKitBarButton44", "WarriorKitBarButton45", "WarriorKitBarButton46", "WarriorKitBarButton47", "WarriorKitBarButton48",
-	"WarriorKitBarButton49", "WarriorKitBarButton50", "WarriorKitBarButton51", "WarriorKitBarButton52", "WarriorKitBarButton53", "WarriorKitBarButton54",
-	"WarriorKitBarButton55", "WarriorKitBarButton56", "WarriorKitBarButton57", "WarriorKitBarButton58", "WarriorKitBarButton59", "WarriorKitBarButton60",
-	"WarriorKitBarButton1Cooldown", "WarriorKitBarButton2Cooldown", "WarriorKitBarButton3Cooldown", "WarriorKitBarButton4Cooldown", "WarriorKitBarButton5Cooldown", "WarriorKitBarButton6Cooldown",
-	"WarriorKitBarButton7Cooldown", "WarriorKitBarButton8Cooldown", "WarriorKitBarButton9Cooldown", "WarriorKitBarButton10Cooldown", "WarriorKitBarButton11Cooldown", "WarriorKitBarButton12Cooldown",
-	"WarriorKitBarButton13Cooldown", "WarriorKitBarButton14Cooldown", "WarriorKitBarButton15Cooldown", "WarriorKitBarButton16Cooldown", "WarriorKitBarButton17Cooldown", "WarriorKitBarButton18Cooldown",
-	"WarriorKitBarButton19Cooldown", "WarriorKitBarButton20Cooldown", "WarriorKitBarButton21Cooldown", "WarriorKitBarButton22Cooldown", "WarriorKitBarButton23Cooldown", "WarriorKitBarButton24Cooldown",
-	"WarriorKitBarButton25Cooldown", "WarriorKitBarButton26Cooldown", "WarriorKitBarButton27Cooldown", "WarriorKitBarButton28Cooldown", "WarriorKitBarButton29Cooldown", "WarriorKitBarButton30Cooldown",
-	"WarriorKitBarButton31Cooldown", "WarriorKitBarButton32Cooldown", "WarriorKitBarButton33Cooldown", "WarriorKitBarButton34Cooldown", "WarriorKitBarButton35Cooldown", "WarriorKitBarButton36Cooldown",
-	"WarriorKitBarButton37Cooldown", "WarriorKitBarButton38Cooldown", "WarriorKitBarButton39Cooldown", "WarriorKitBarButton40Cooldown", "WarriorKitBarButton41Cooldown", "WarriorKitBarButton42Cooldown",
-	"WarriorKitBarButton43Cooldown", "WarriorKitBarButton44Cooldown", "WarriorKitBarButton45Cooldown", "WarriorKitBarButton46Cooldown", "WarriorKitBarButton47Cooldown", "WarriorKitBarButton48Cooldown",
-	"WarriorKitBarButton49Cooldown", "WarriorKitBarButton50Cooldown", "WarriorKitBarButton51Cooldown", "WarriorKitBarButton52Cooldown", "WarriorKitBarButton53Cooldown", "WarriorKitBarButton54Cooldown",
-	"WarriorKitBarButton55Cooldown", "WarriorKitBarButton56Cooldown", "WarriorKitBarButton57Cooldown", "WarriorKitBarButton58Cooldown", "WarriorKitBarButton59Cooldown", "WarriorKitBarButton60Cooldown",
-	"WarriorKitChargeCooldown",
-	"WarriorKitChargeMarker",
-	"WarriorKitChargeMarkerCooldown",
-	"WarriorKitEnemyBarsAnchor",
+	"WiggleUIBarButton1", "WiggleUIBarButton2", "WiggleUIBarButton3", "WiggleUIBarButton4", "WiggleUIBarButton5", "WiggleUIBarButton6",
+	"WiggleUIBarButton7", "WiggleUIBarButton8", "WiggleUIBarButton9", "WiggleUIBarButton10", "WiggleUIBarButton11", "WiggleUIBarButton12",
+	"WiggleUIBarButton13", "WiggleUIBarButton14", "WiggleUIBarButton15", "WiggleUIBarButton16", "WiggleUIBarButton17", "WiggleUIBarButton18",
+	"WiggleUIBarButton19", "WiggleUIBarButton20", "WiggleUIBarButton21", "WiggleUIBarButton22", "WiggleUIBarButton23", "WiggleUIBarButton24",
+	"WiggleUIBarButton25", "WiggleUIBarButton26", "WiggleUIBarButton27", "WiggleUIBarButton28", "WiggleUIBarButton29", "WiggleUIBarButton30",
+	"WiggleUIBarButton31", "WiggleUIBarButton32", "WiggleUIBarButton33", "WiggleUIBarButton34", "WiggleUIBarButton35", "WiggleUIBarButton36",
+	"WiggleUIBarButton37", "WiggleUIBarButton38", "WiggleUIBarButton39", "WiggleUIBarButton40", "WiggleUIBarButton41", "WiggleUIBarButton42",
+	"WiggleUIBarButton43", "WiggleUIBarButton44", "WiggleUIBarButton45", "WiggleUIBarButton46", "WiggleUIBarButton47", "WiggleUIBarButton48",
+	"WiggleUIBarButton49", "WiggleUIBarButton50", "WiggleUIBarButton51", "WiggleUIBarButton52", "WiggleUIBarButton53", "WiggleUIBarButton54",
+	"WiggleUIBarButton55", "WiggleUIBarButton56", "WiggleUIBarButton57", "WiggleUIBarButton58", "WiggleUIBarButton59", "WiggleUIBarButton60",
+	"WiggleUIBarButton1Cooldown", "WiggleUIBarButton2Cooldown", "WiggleUIBarButton3Cooldown", "WiggleUIBarButton4Cooldown", "WiggleUIBarButton5Cooldown", "WiggleUIBarButton6Cooldown",
+	"WiggleUIBarButton7Cooldown", "WiggleUIBarButton8Cooldown", "WiggleUIBarButton9Cooldown", "WiggleUIBarButton10Cooldown", "WiggleUIBarButton11Cooldown", "WiggleUIBarButton12Cooldown",
+	"WiggleUIBarButton13Cooldown", "WiggleUIBarButton14Cooldown", "WiggleUIBarButton15Cooldown", "WiggleUIBarButton16Cooldown", "WiggleUIBarButton17Cooldown", "WiggleUIBarButton18Cooldown",
+	"WiggleUIBarButton19Cooldown", "WiggleUIBarButton20Cooldown", "WiggleUIBarButton21Cooldown", "WiggleUIBarButton22Cooldown", "WiggleUIBarButton23Cooldown", "WiggleUIBarButton24Cooldown",
+	"WiggleUIBarButton25Cooldown", "WiggleUIBarButton26Cooldown", "WiggleUIBarButton27Cooldown", "WiggleUIBarButton28Cooldown", "WiggleUIBarButton29Cooldown", "WiggleUIBarButton30Cooldown",
+	"WiggleUIBarButton31Cooldown", "WiggleUIBarButton32Cooldown", "WiggleUIBarButton33Cooldown", "WiggleUIBarButton34Cooldown", "WiggleUIBarButton35Cooldown", "WiggleUIBarButton36Cooldown",
+	"WiggleUIBarButton37Cooldown", "WiggleUIBarButton38Cooldown", "WiggleUIBarButton39Cooldown", "WiggleUIBarButton40Cooldown", "WiggleUIBarButton41Cooldown", "WiggleUIBarButton42Cooldown",
+	"WiggleUIBarButton43Cooldown", "WiggleUIBarButton44Cooldown", "WiggleUIBarButton45Cooldown", "WiggleUIBarButton46Cooldown", "WiggleUIBarButton47Cooldown", "WiggleUIBarButton48Cooldown",
+	"WiggleUIBarButton49Cooldown", "WiggleUIBarButton50Cooldown", "WiggleUIBarButton51Cooldown", "WiggleUIBarButton52Cooldown", "WiggleUIBarButton53Cooldown", "WiggleUIBarButton54Cooldown",
+	"WiggleUIBarButton55Cooldown", "WiggleUIBarButton56Cooldown", "WiggleUIBarButton57Cooldown", "WiggleUIBarButton58Cooldown", "WiggleUIBarButton59Cooldown", "WiggleUIBarButton60Cooldown",
+	"WiggleUIChargeCooldown",
+	"WiggleUIChargeMarker",
+	"WiggleUIChargeMarkerCooldown",
+	"WiggleUIEnemyBarsAnchor",
 	-- the meter frame. Named so the two panes can be found from a macro or from
 	-- scripts/harness.lua without Meter/Window.lua handing out a reference to its
 	-- own row pool.
-	"WarriorKitMeter",
+	"WiggleUIMeter",
 	-- your own cast bar. Named for the same reason the swing bars below it are:
 	-- the harness has to measure what was drawn, and a bar that is empty almost
 	-- all of the time has to be findable from a macro when it has wandered off
 	-- the screen.
-	"WarriorKitPlayerCast",
+	"WiggleUIPlayerCast",
 	-- the swing timer's frame, holding a gauge per hand. Named for the same
 	-- reason the meter is: scripts/harness.lua has to measure what was drawn,
 	-- and Swing/Gauges.lua handing out a reference to its own bars would be a
 	-- worse seam than a global the client makes anyway.
-	"WarriorKitSwing",
+	"WiggleUISwing",
 	-- the experience and reputation rails. Named for the reason the swing bars
 	-- are: scripts/harness.lua has to measure what was drawn, and a frame that
 	-- is one thin line along the bottom edge of the screen has to be findable
 	-- from a macro once somebody has dragged it somewhere else.
-	"WarriorKitProgress",
+	"WiggleUIProgress",
 	-- the buff nag's row. Named for the reason the meter and the swing bars
 	-- are: the row is hidden almost all the time, so a row that has wandered
 	-- off the screen has to be findable from a macro, and scripts/harness.lua
 	-- has to measure what was drawn without Buffs/Nag.lua handing out its pool.
-	"WarriorKitBuffs",
+	"WiggleUIBuffs",
 	-- the block the skin draws over each of the three Blizzard unit frames.
 	-- Named so a block that lands in the wrong place can be measured from a
 	-- macro or from scripts/harness.lua without UnitFrames/Block.lua handing out
@@ -128,37 +128,37 @@ globals = {
 	-- from there rather than written as a literal, so
 	-- luacheck never sees the write; listed here because the game makes the
 	-- global and the README says every one of those is written down.
-	"WarriorKitSkinPlayer",
-	"WarriorKitSkinTarget",
-	"WarriorKitSkinToT",
+	"WiggleUISkinPlayer",
+	"WiggleUISkinTarget",
+	"WiggleUISkinToT",
 	-- The party and raid list: the frame you drag, and the secure group header
 	-- hung off it. Both named for the reason the three blocks above are, and the
 	-- header for one more: it is a Blizzard template doing the work, so a list
 	-- that came out in the wrong order has to be readable from a macro one
 	-- attribute at a time.
-	"WarriorKitGroup",
-	"WarriorKitGroupHeader",
-	"WarriorKit_MarkSkull",
-	"WarriorKit_MarkCross",
-	"WarriorKit_MarkMoon",
+	"WiggleUIGroup",
+	"WiggleUIGroupHeader",
+	"WiggleUI_MarkSkull",
+	"WiggleUI_MarkCross",
+	"WiggleUI_MarkMoon",
 	-- the chat window, and the key that puts the cursor in its line. The frame
 	-- is named for the same reason the meter is: so a window that has wandered
 	-- off the screen can be found from a macro or from scripts/harness.lua
 	-- without Chat/Window.lua handing out a reference to its own tables.
-	"WarriorKitChat",
+	"WiggleUIChat",
 	-- the column of rooms down its left. Named for the reason the aura rows
 	-- are: a column that has laid itself out wrongly has to be measurable from
 	-- a macro and from scripts/harness.lua without Chat/Window.lua handing out
 	-- a reference to its own tables.
-	"WarriorKitChatRooms",
+	"WiggleUIChatRooms",
 	-- the box a room is copied out of. Named so Escape closes it through
 	-- UISpecialFrames, which is a list of names.
-	"WarriorKitChatCopy",
+	"WiggleUIChatCopy",
 	-- the button the enter key is bound onto while Blizzard's chat window is
 	-- hidden. SetOverrideBindingClick binds to a name rather than to a frame,
 	-- which is the whole reason it has one.
-	"WarriorKitChatEnterButton",
-	"WarriorKit_ChatEnter",
+	"WiggleUIChatEnterButton",
+	"WiggleUI_ChatEnter",
 	-- the two feeds, and the tooltip they open. All three are named for the
 	-- reason the meter and the chat window are: a frame that has wandered off
 	-- the screen has to be findable from a macro, and scripts/harness.lua has to
@@ -166,60 +166,61 @@ globals = {
 	-- scanner is different and is not optional: a GameTooltip's own lines are
 	-- reachable only as globals built from its name, so a nameless one has text
 	-- on it that nothing can read.
-	"WarriorKitLootFeed",
-	"WarriorKitCombatFeed",
-	"WarriorKitTooltip",
-	"WarriorKitTooltipScan",
+	"WiggleUILootFeed",
+	"WiggleUICombatFeed",
+	"WiggleUITooltip",
+	"WiggleUITooltipScan",
 	-- the mail window, and the column of favourites down its left. Both named
 	-- for the reason the chat window and its room rail are: a window that has
 	-- wandered off the screen has to be findable from a macro, and
 	-- scripts/harness.lua has to measure what was drawn without Mail/Window.lua
 	-- handing out a reference to its own row pool.
-	"WarriorKitMail",
-	"WarriorKitMailFavourites",
+	"WiggleUIMail",
+	"WiggleUIMailFavourites",
 	-- the quest log, and the column of quests down its left. Both named for the
 	-- reason the mail window and its favourites column are, and the column for
 	-- one more: a log grouped into zones lays sixty rows out from a model, and a
 	-- column that has laid them out wrongly has to be measurable from a macro
 	-- and from scripts/harness.lua without Quests/Window.lua handing out a
 	-- reference to its own pool.
-	"WarriorKitQuests",
-	"WarriorKitQuestList",
+	"WiggleUIQuests",
+	"WiggleUIQuestList",
 	-- This addon's own quest tracker, the column of the zone you are standing
 	-- in drawn over the world. Named for the reason every placeable frame here
 	-- is: a frame with no chrome that has landed off the edge of the monitor is
 	-- findable from a macro by its name and by nothing else, and the harness
 	-- measures its rows through the same name.
-	"WarriorKitQuestColumn",
+	"WiggleUIQuestColumn",
 	-- The two scrolling columns beside that list. Named for the same reason and
 	-- for one more: the three of them share the window's width between four
 	-- equal margins, and that arithmetic is only checkable from outside if each
 	-- column can be found and measured.
-	"WarriorKitQuestText",
-	"WarriorKitQuestRewards",
+	"WiggleUIQuestText",
+	"WiggleUIQuestRewards",
 	-- The other side of the tab over the middle column, and the zone drawn
 	-- inside it. Both named for the reason the columns are, and the board for
 	-- one more: what it draws is twelve tiles of somebody else's art cropped to
 	-- the shape of a zone, and a map with a seam of black through it is only
 	-- findable from outside if the tiles can be walked one texture coordinate at
 	-- a time.
-	"WarriorKitQuestMap",
-	"WarriorKitQuestChart",
+	"WiggleUIQuestMap",
+	"WiggleUIQuestChart",
 	-- The world map, and the zone drawn inside it. Both named for the reason the
 	-- quest log and its board are: a window that has wandered off the screen has
 	-- to be findable from a macro, and a picture carrying two hundred and fifty
 	-- of another addon's icons has to be measurable from scripts/harness.lua
 	-- without Map/Window.lua handing out a reference to the chart's own pools.
-	"WarriorKitMap",
-	"WarriorKitMapChart",
-	"BINDING_HEADER_WARRIORKIT",
-	"BINDING_NAME_WARRIORKIT_MARK_SKULL",
-	"BINDING_NAME_WARRIORKIT_MARK_CROSS",
-	"BINDING_NAME_WARRIORKIT_MARK_MOON",
-	"BINDING_NAME_WARRIORKIT_CHAT",
-	"SLASH_WARRIORKIT1",
-	"SLASH_WARRIORKIT2",
-	"SLASH_WARRIORKITEXIT1",
+	"WiggleUIMap",
+	"WiggleUIMapChart",
+	"BINDING_HEADER_WIGGLEUI",
+	"BINDING_NAME_WIGGLEUI_MARK_SKULL",
+	"BINDING_NAME_WIGGLEUI_MARK_CROSS",
+	"BINDING_NAME_WIGGLEUI_MARK_MOON",
+	"BINDING_NAME_WIGGLEUI_CHAT",
+	"SLASH_WIGGLEUI1",
+	"SLASH_WIGGLEUI2",
+	"SLASH_WIGGLEUI3",
+	"SLASH_WIGGLEUIEXIT1",
 	"SlashCmdList",
 }
 
@@ -232,11 +233,11 @@ globals = {
 -- squares for the reason the cloned bars' are: one that has landed somewhere
 -- wrong has to be findable from a macro.
 for bar = 1, 6 do
-	globals[#globals + 1] = ("WarriorKitAdHoc%d"):format(bar)
-	globals[#globals + 1] = ("WarriorKitAdHoc%dKey"):format(bar)
+	globals[#globals + 1] = ("WiggleUIAdHoc%d"):format(bar)
+	globals[#globals + 1] = ("WiggleUIAdHoc%dKey"):format(bar)
 	for at = 1, 16 do
-		globals[#globals + 1] = ("WarriorKitAdHoc%dButton%d"):format(bar, at)
-		globals[#globals + 1] = ("WarriorKitAdHoc%dButton%dCooldown"):format(bar, at)
+		globals[#globals + 1] = ("WiggleUIAdHoc%dButton%d"):format(bar, at)
+		globals[#globals + 1] = ("WiggleUIAdHoc%dButton%dCooldown"):format(bar, at)
 	end
 end
 
@@ -246,7 +247,7 @@ read_globals = {
 	"RegisterStateDriver", "UnregisterStateDriver",
 	"SetOverrideBindingClick", "SetOverrideBinding", "ClearOverrideBindings",
 	"UISpecialFrames", "tinsert", "pcall",
-	-- The interface rebuilt from scratch, which is how `/wk defaults` and the
+	-- The interface rebuilt from scratch, which is how `/wui defaults` and the
 	-- button beside it apply two dozen parts' worth of settings at once: a
 	-- part reads its own settings when it is built, and there is no hook that
 	-- says "read them again". Nothing else in the addon calls it.

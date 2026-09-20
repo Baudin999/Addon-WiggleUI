@@ -47,7 +47,7 @@ local Cast = ns.Cast
 local Gauge = ns.UI.Gauge
 local Color = ns.Unit.Color
 
-local FRAME_NAME = "WarriorKitPlayerCast"
+local FRAME_NAME = "WiggleUIPlayerCast"
 
 -- How often the client is asked, which is the rate every readout in this addon
 -- runs at. The events below are what make a cast appear at once rather than up
@@ -313,7 +313,7 @@ local function Build()
 	ns.UI.Adopt(frame, ns.db.playerCastZoom)
 	unit = ns.UI.Unit(frame)
 	place = ns.UI.Placeable(frame, {
-		name = "WarriorKit cast",
+		name = "WiggleUI cast",
 		moved = function(anchor)
 			ns.db.playerCastPoint = anchor
 			PlayerCast.Apply()
@@ -436,7 +436,7 @@ end
 
 --------------------------------------------------------------------------
 
--- One line for /wk status and for the panel.
+-- One line for /wui status and for the panel.
 function PlayerCast.Describe()
 	if not ns.db.playerCast then
 		if ns.db.hideBlizzPlayerCast then

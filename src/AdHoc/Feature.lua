@@ -5,7 +5,7 @@ local ADDON, ns = ...
 -- page, and this file is the registration and the slash word. It draws
 -- nothing.
 
--- What `/wk adhoc <bar> <key>` says back. Three sentences rather than one,
+-- What `/wui adhoc <bar> <key>` says back. Three sentences rather than one,
 -- because a key this addon takes is a key something else was using, and saying
 -- which is what stops somebody wondering all evening why their jump is gone.
 local function BindWord(index, key)
@@ -26,7 +26,7 @@ end
 local function List()
 	local list = ns.AdHoc.All()
 	if #list == 0 then
-		return "no bars yet. /wk adhoc add <name> makes one."
+		return "no bars yet. /wui adhoc add <name> makes one."
 	end
 	for index, bar in ipairs(list) do
 		ns.Print(("%d %s: %s, %d square%s"):format(index, bar.name,
@@ -61,7 +61,7 @@ local Word = ns.Command.Word({
 		end
 		local index = ns.AdHoc.Find(option)
 		if not index then
-			ns.Print(("no bar called %s. /wk adhoc lists them."):format(option))
+			ns.Print(("no bar called %s. /wui adhoc lists them."):format(option))
 			return
 		end
 		local key = value:upper()

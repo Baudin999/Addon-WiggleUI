@@ -336,7 +336,7 @@ function Window.Build()
 	end
 
 	window = UI.Window({
-		name = "WarriorKitSpellbook",
+		name = "WiggleUISpellbook",
 		title = "Spell book",
 		width = Width(),
 		height = Height(),
@@ -561,7 +561,7 @@ end
 -- which key opens this window and hands the key back when the switch is off.
 --------------------------------------------------------------------------
 
-local KEY = "WarriorKitSpellbookKey"
+local KEY = "WiggleUISpellbookKey"
 
 function Window.Key()
 	if key then

@@ -41,9 +41,9 @@ local function TalentWord(arg, rawArg)
 		if not ns.TalentTraining.Hunter() then
 			ns.Print("only a hunter trains a pet, through Beast Training.")
 		elseif not ns.TalentTraining.Offered() then
-			ns.Print("the pet page is off, and Blizzard's Beast Training window teaches your pet. Type /wk talents pet on.")
+			ns.Print("the pet page is off, and Blizzard's Beast Training window teaches your pet. Type /wui talents pet on.")
 		elseif not ns.db.talents then
-			ns.Print("the talent window is off. Type /wk talents on.")
+			ns.Print("the talent window is off. Type /wui talents on.")
 		else
 			ns.TalentWindow.ShowPet()
 		end
@@ -55,7 +55,7 @@ local function TalentWord(arg, rawArg)
 		ns.Print("the talent window is " .. (ns.db.talents and "on" or "off") .. ".")
 	elseif word == "" then
 		if not ns.db.talents then
-			ns.Print("the talent window is off. Type /wk talents on.")
+			ns.Print("the talent window is off. Type /wui talents on.")
 			return
 		end
 		ns.TalentWindow.Toggle()

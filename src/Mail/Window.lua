@@ -862,7 +862,7 @@ local function BuildSend(parent, tall)
 	body:SetAllPoints()
 
 	rail = { pool = {} }
-	rail.frame = CreateFrame("Frame", "WarriorKitMailFavourites", body)
+	rail.frame = CreateFrame("Frame", "WiggleUIMailFavourites", body)
 	rail.frame:SetPoint("TOPLEFT")
 	rail.frame:SetPoint("BOTTOMLEFT")
 	rail.frame:SetWidth(RAIL)
@@ -1036,7 +1036,7 @@ end
 
 local function Build()
 	window = UI.Window({
-		name = "WarriorKitMail",
+		name = "WiggleUIMail",
 		title = "Mail",
 		width = WIDTH,
 		height = HEIGHT,

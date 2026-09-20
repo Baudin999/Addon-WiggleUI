@@ -19,11 +19,11 @@ ns.Switch = Switch
 -- allowed to do it. The macro is a constant, which the charge macro is not, so
 -- nothing here is ever rewritten and combat can refuse only a rebind.
 --
--- Bind it in /wk or with `/wk switch <key>`, or put
--- `/click WarriorKitSwitchButton` in a normal macro and drag that to a bar.
+-- Bind it in /wui or with `/wui switch <key>`, or put
+-- `/click WiggleUISwitchButton` in a normal macro and drag that to a bar.
 --------------------------------------------------------------------------
 
-local BUTTON_NAME = "WarriorKitSwitchButton"
+local BUTTON_NAME = "WiggleUISwitchButton"
 Switch.BUTTON_NAME = BUTTON_NAME
 
 -- /targetenemy is TAB's own binding, TARGETNEARESTENEMY, said as a macro

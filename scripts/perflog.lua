@@ -1,10 +1,10 @@
--- WarriorKitDB.perfLog as a table, oldest minute first.
+-- WiggleUIDB.perfLog as a table, oldest minute first.
 --
 -- The log is a ring of parallel columns, which is the right shape to write from
 -- a tick and the wrong one to read. This turns it into one tab separated row a
 -- minute, in the order the minutes happened, with a column per addon on the end.
 --
---     lua5.1 scripts/perflog.lua <WTF/Account/NAME/SavedVariables/WarriorKit.lua>
+--     lua5.1 scripts/perflog.lua <WTF/Account/NAME/SavedVariables/WiggleUI.lua>
 --     lua5.1 scripts/perflog.lua <file> | column -t -s "$(printf '\t')"
 --
 -- A session is a run of rows whose `up` counts 1, 2, 3. A row where it goes back
@@ -17,12 +17,12 @@
 
 local path = arg[1]
 if not path then
-	io.stderr:write("usage: lua5.1 scripts/perflog.lua <SavedVariables/WarriorKit.lua>\n")
+	io.stderr:write("usage: lua5.1 scripts/perflog.lua <SavedVariables/WiggleUI.lua>\n")
 	os.exit(2)
 end
 dofile(path)
 
-local log = WarriorKitDB and WarriorKitDB.perfLog
+local log = WiggleUIDB and WiggleUIDB.perfLog
 if type(log) ~= "table" or type(log.at) ~= "table" then
 	io.stderr:write("no perfLog in " .. path .. "\n")
 	os.exit(1)

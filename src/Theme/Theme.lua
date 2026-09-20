@@ -20,7 +20,7 @@ ns.Theme = Theme
 -- saved variables and drawn at the next /reload, because a live switch would
 -- mean every window repainting itself on a signal and every part listening for
 -- one, and the theme's promise is that it costs nothing once you are in the
--- world. Two exceptions. The frames being placed: /wk unlock brings every
+-- world. Two exceptions. The frames being placed: /wui unlock brings every
 -- element up so it can be dragged, and locking puts the theme back. And the
 -- wiggle: a shake of the mouse swaps the theme for the one it is set to wiggle
 -- to, and the next shake swaps it back.
@@ -265,10 +265,10 @@ end
 function Theme.Wear(key, frame)
 	assert(known[key], ("%q is not an element in Themes.lua"):format(tostring(key)))
 	assert(type(frame) == "table", ("the element %q was worn with no frame"):format(key))
-	if frame.wkWorn then
+	if frame.wuiWorn then
 		return
 	end
-	frame.wkWorn = key
+	frame.wuiWorn = key
 	worn[#worn + 1] = { key = key, frame = frame }
 	if chosen and not Dress(frame, key) then
 		ns.Lockdown.Done(Pass, false)

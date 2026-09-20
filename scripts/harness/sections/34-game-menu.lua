@@ -22,8 +22,8 @@ local ns, check = H.ns, H.check
 
 local menu = H.menu
 local Menu = ns.GameMenu
-local button = _G.WarriorKitGameMenuButton
-local setup = _G.WarriorKitGameMenuSetup
+local button = _G.WiggleUIGameMenuButton
+local setup = _G.WiggleUIGameMenuSetup
 local M = ns.UI.Metric
 
 local PAD, GAP = M.pad, M.rowGap
@@ -230,7 +230,7 @@ local border, header = menu.Border, menu.Header
 local function mine(frame, kind)
 	local out = {}
 	for _, region in ipairs(frame.regions) do
-		if region.wkOurs and region:GetObjectType() == kind then
+		if region.wuiOurs and region:GetObjectType() == kind then
 			out[#out + 1] = region
 		end
 	end
@@ -240,7 +240,7 @@ end
 local function theirs(frame, kind)
 	local out = {}
 	for _, region in ipairs(frame.regions) do
-		if not region.wkOurs and region:GetObjectType() == kind then
+		if not region.wuiOurs and region:GetObjectType() == kind then
 			out[#out + 1] = region
 		end
 	end
@@ -249,14 +249,14 @@ end
 
 local function hidden(frame, where)
 	for _, art in ipairs(theirs(frame, "Texture")) do
-		check(art.wkStripped and not art:IsShown(),
+		check(art.wuiStripped and not art:IsShown(),
 			("%s is still showing on %s"):format(art.name or "an unnamed texture", where))
 	end
 end
 
 local function shown(frame, where)
 	for _, art in ipairs(theirs(frame, "Texture")) do
-		check(not art.wkStripped and art:IsShown(),
+		check(not art.wuiStripped and art:IsShown(),
 			("%s did not come back on %s"):format(art.name or "an unnamed texture", where))
 	end
 end
@@ -298,10 +298,10 @@ end
 
 local painted, labels = 0, 0
 for _, entry in ipairs(buttons) do
-	check(entry.wkOn == true, entry.name .. " was not painted")
-	check(entry.wkPaint ~= nil and entry.wkPaint:IsShown(),
+	check(entry.wuiOn == true, entry.name .. " was not painted")
+	check(entry.wuiPaint ~= nil and entry.wuiPaint:IsShown(),
 		entry.name .. " carries no fill of the addon's")
-	if entry.wkPaint then
+	if entry.wuiPaint then
 		painted = painted + 1
 	end
 	for _, text in ipairs(theirs(entry, "FontString")) do
@@ -313,9 +313,9 @@ for _, entry in ipairs(buttons) do
 end
 check(labels == #buttons, ("%d labels dressed across %d buttons"):format(labels, #buttons))
 
-check(button == nil or button.wkPaint == nil,
+check(button == nil or button.wuiPaint == nil,
 	"the skin painted the addon's own button a second time")
-check(setup == nil or setup.wkPaint == nil,
+check(setup == nil or setup.wuiPaint == nil,
 	"the skin painted the setup's button a second time")
 
 -- The same pass again, twice. Nothing new is drawn and nothing of ours is
@@ -332,7 +332,7 @@ do
 			:format(buttons[1].name, first, #buttons[1].regions))
 	for _, entry in ipairs(buttons) do
 		hidden(entry, entry.name .. " after two more passes")
-		check(entry.wkPaint:IsShown(), entry.name .. " lost its fill to the second pass")
+		check(entry.wuiPaint:IsShown(), entry.name .. " lost its fill to the second pass")
 	end
 end
 
@@ -347,7 +347,7 @@ do
 	shown(header, "the menu's header")
 	for _, entry in ipairs(buttons) do
 		shown(entry, entry.name)
-		check(not entry.wkPaint:IsShown(), entry.name .. " kept the addon's fill")
+		check(not entry.wuiPaint:IsShown(), entry.name .. " kept the addon's fill")
 		for _, text in ipairs(theirs(entry, "FontString")) do
 			check(text:GetFontObject() == _G.GameFontNormal,
 				("%s did not get its own font back"):format(entry.name))
@@ -382,7 +382,7 @@ do
 	hidden(border, "the menu's border on the way back")
 	for _, entry in ipairs(buttons) do
 		hidden(entry, entry.name .. " on the way back")
-		check(entry.wkPaint:IsShown(), entry.name .. " did not get its fill back")
+		check(entry.wuiPaint:IsShown(), entry.name .. " did not get its fill back")
 	end
 	local _, back = offset(column[1])
 	check(math.abs(back - TOP) < 0.001, "the pad did not come back with the paint")
@@ -393,14 +393,14 @@ check(painted == #buttons,
 
 -- The probe runs. It is what somebody types when the button has not turned
 -- up, and a probe that raises at that moment is worse than no probe.
-check(pcall(SlashCmdList.WARRIORKIT, "menu"), "/wk menu raised")
+check(pcall(SlashCmdList.WIGGLEUI, "menu"), "/wui menu raised")
 
-check(pcall(SlashCmdList.WARRIORKIT, "menu off"), "/wk menu off raised")
-check(ns.db.menuSkin == false, "/wk menu off left the paint on")
-check(pcall(SlashCmdList.WARRIORKIT, "menu on"), "/wk menu on raised")
-check(ns.db.menuSkin == true, "/wk menu on left the paint off")
+check(pcall(SlashCmdList.WIGGLEUI, "menu off"), "/wui menu off raised")
+check(ns.db.menuSkin == false, "/wui menu off left the paint on")
+check(pcall(SlashCmdList.WIGGLEUI, "menu on"), "/wui menu on raised")
+check(ns.db.menuSkin == true, "/wui menu on left the paint off")
 for _, entry in ipairs(buttons) do
-	check(entry.wkPaint:IsShown(), entry.name .. " did not come back after /wk menu on")
+	check(entry.wuiPaint:IsShown(), entry.name .. " did not come back after /wui menu on")
 end
 
 print(("game menu %d in the column, ours under Options, %g x %g, %s")

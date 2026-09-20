@@ -17,14 +17,14 @@ ns.version = "1.13"
 --   name          the word that heads its slash help and its status line
 --   order         a whole number, unique across the addon: where this part's
 --                 tabs sit inside whichever group they named, and where its
---                 line sits in /wk status
+--                 line sits in /wui status
 --   defaults      merged into ns.db, the account-wide saved variables
 --   charDefaults  merged into ns.dbc, this character's saved variables
 --   switch        { key, label, available } the one boolean that decides
 --                 whether this part puts anything on your screen
 --   words         slash words this part answers to, word = function(arg, raw)
---   help          lines printed by /wk help
---   status        function returning one line for /wk status
+--   help          lines printed by /wui help
+--   status        function returning one line for /wui status
 --   lock          function applying ns.db.locked to this part's frames
 --   reset         function putting this part's frames back where they started
 --   panel         function(ui) building this part's sections of the panel
@@ -202,7 +202,7 @@ local RETIRED = {
 	barsMouseThrough = true,
 	barsCamera = true,
 	-- 1.9: where the pet bar was dragged to, while UI.Placeable moved it and
-	-- only /wk unlock reached it. It moves with the action bars' handles now
+	-- only /wui unlock reached it. It moves with the action bars' handles now
 	-- and a drag is written to barPoints.pet with theirs. It lived one commit
 	-- and nobody could grab it, so nothing in it is worth carrying across.
 	petBarPoint = true,
@@ -368,29 +368,29 @@ function ns.Blocked(region)
 end
 
 function ns.Strip(region)
-	if not region or region.wkStripped then
+	if not region or region.wuiStripped then
 		return true
 	end
 	if ns.Blocked(region) then
 		return false
 	end
-	region.wkStripped = true
-	region.wkShow = region.Show
+	region.wuiStripped = true
+	region.wuiShow = region.Show
 	region.Show = region.Hide
 	region:Hide()
 	return true
 end
 
 function ns.Unstrip(region)
-	if not region or not region.wkStripped then
+	if not region or not region.wuiStripped then
 		return true
 	end
 	if ns.Blocked(region) then
 		return false
 	end
-	region.Show = region.wkShow
-	region.wkShow = nil
-	region.wkStripped = nil
+	region.Show = region.wuiShow
+	region.wuiShow = nil
+	region.wuiStripped = nil
 	region:Show()
 	return true
 end
@@ -400,7 +400,7 @@ end
 -- everything that window would have drawn comes round through one hook, and
 -- the prefix is the only thing that tells a line of ours from a loot line. A
 -- second spelling of it anywhere would be a room that quietly stopped filling.
-ns.SIGNATURE = "|cff40c0f0WarriorKit|r: "
+ns.SIGNATURE = "|cff40c0f0WiggleUI|r: "
 
 -- cold: ns.Print writes one line into the chat frame, which is the addon telling you something and never a tick
 function ns.Print(msg)
@@ -2705,8 +2705,8 @@ end
 -- ADDON_LOADED fires once every file in the TOC has run, so every feature has
 -- already registered its defaults by the time this merges them.
 --
--- Two tables. WarriorKitDB is the account's and reaches ns.db through the
--- profile this character wears (see Profiles below), WarriorKitCharDB is this
+-- Two tables. WiggleUIDB is the account's and reaches ns.db through the
+-- profile this character wears (see Profiles below), WiggleUICharDB is this
 -- character's and reaches ns.dbc. Both are declared in the TOC and both
 -- arrive at ADDON_LOADED, so no caller has to know which file its setting came
 -- out of, only which name to read it from.
@@ -3131,18 +3131,18 @@ end
 -- account table alone.
 local function Retire()
 	for key in pairs(RETIRED) do
-		WarriorKitDB[key] = nil
-		WarriorKitCharDB[key] = nil
+		WiggleUIDB[key] = nil
+		WiggleUICharDB[key] = nil
 	end
 end
 
 local function Migrate()
 	for key in pairs(charDefaults) do
-		if WarriorKitDB[key] ~= nil then
-			if WarriorKitCharDB[key] == nil then
-				WarriorKitCharDB[key] = WarriorKitDB[key]
+		if WiggleUIDB[key] ~= nil then
+			if WiggleUICharDB[key] == nil then
+				WiggleUICharDB[key] = WiggleUIDB[key]
 			end
-			WarriorKitDB[key] = nil
+			WiggleUIDB[key] = nil
 		end
 	end
 end
@@ -3158,8 +3158,8 @@ end
 -- the HUD parts each had their own zoom before this and none of them was ever
 -- multiplied by uiSize.
 local function MigrateZooms()
-	local was = tonumber(WarriorKitDB.uiSize)
-	WarriorKitDB.uiSize = nil
+	local was = tonumber(WiggleUIDB.uiSize)
+	WiggleUIDB.uiSize = nil
 	if not was or was == 1 then
 		return 0
 	end
@@ -3187,8 +3187,8 @@ end
 -- migration rather than an entry in RETIRED for that reason: RETIRED wipes both
 -- tables before anything has had a chance to read them.
 local function MigrateAimPrior()
-	local was = WarriorKitCharDB.softPrior
-	WarriorKitCharDB.softPrior = nil
+	local was = WiggleUICharDB.softPrior
+	WiggleUICharDB.softPrior = nil
 	if type(was) == "string" and was ~= "" and ns.dbc.aimPrior.SoftTargetEnemy == nil then
 		ns.dbc.aimPrior.SoftTargetEnemy = was
 	end
@@ -3203,13 +3203,13 @@ end
 -- Runs before the defaults are applied, because ApplyDefaults keeps a saved
 -- value of the wrong type and Buttons/Look.lua would index the string.
 local function MigrateGaugeLook()
-	local was = WarriorKitDB.barLook
+	local was = WiggleUIDB.barLook
 	if type(was) == "table" or was == nil then
 		return
 	end
-	WarriorKitDB.barLook = nil
-	if WarriorKitDB.gaugeLook == nil and (was == "flat" or was == "modern") then
-		WarriorKitDB.gaugeLook = was
+	WiggleUIDB.barLook = nil
+	if WiggleUIDB.gaugeLook == nil and (was == "flat" or was == "modern") then
+		WiggleUIDB.gaugeLook = was
 	end
 end
 
@@ -3217,8 +3217,8 @@ end
 -- Profiles
 --
 -- Every setting the reset writes lives in a named profile under
--- WarriorKitDB.profiles, and each character points at one by name in
--- WarriorKitCharDB.profile. Two characters can point at the same profile;
+-- WiggleUIDB.profiles, and each character points at one by name in
+-- WiggleUICharDB.profile. Two characters can point at the same profile;
 -- a character that points at nothing gets one of its own, named after it.
 --
 -- Records stay on the account. The line between the two is Restorable, the
@@ -3239,7 +3239,7 @@ end
 -- screen the account was wearing when all of this was one flat table.
 local SHARED = "Shared"
 
--- Names under WarriorKitDB and WarriorKitCharDB that hold profiles rather
+-- Names under WiggleUIDB and WiggleUICharDB that hold profiles rather
 -- than a setting. A feature registering one of them would be read as a
 -- setting and written over the profile list.
 local RESERVED = { profiles = true, profileUsers = true, profile = true }
@@ -3252,14 +3252,14 @@ local function Profiled(profile)
 	return setmetatable(profile, {
 		__index = function(_, key)
 			if not Restorable(key) then
-				return WarriorKitDB[key]
+				return WiggleUIDB[key]
 			end
 		end,
 		__newindex = function(held, key, value)
 			if Restorable(key) then
 				rawset(held, key, value)
 			else
-				WarriorKitDB[key] = value
+				WiggleUIDB[key] = value
 			end
 		end,
 	})
@@ -3268,67 +3268,67 @@ end
 -- Before profiles every setting sat flat on the account. They move into
 -- SHARED once, and the key that says it happened is the profile list itself.
 local function MigrateProfiles()
-	if type(WarriorKitDB.profiles) == "table" then
+	if type(WiggleUIDB.profiles) == "table" then
 		return
 	end
 	local shared
-	for key, value in pairs(WarriorKitDB) do
+	for key, value in pairs(WiggleUIDB) do
 		if Restorable(key) then
 			shared = shared or {}
 			shared[key] = value
 		end
 	end
 	for key in pairs(shared or {}) do
-		WarriorKitDB[key] = nil
+		WiggleUIDB[key] = nil
 	end
-	WarriorKitDB.profiles = { [SHARED] = shared }
+	WiggleUIDB.profiles = { [SHARED] = shared }
 end
 
 -- The profile this character wears. One it named that has since been deleted
 -- on another character is as good as none: it falls back to its own, which is
 -- a copy of SHARED where that still exists and the shipped screen where not.
 local function Chosen()
-	local profiles = WarriorKitDB.profiles
-	local name = WarriorKitCharDB.profile
+	local profiles = WiggleUIDB.profiles
+	local name = WiggleUICharDB.profile
 	if type(name) ~= "string" or type(profiles[name]) ~= "table" then
 		name = ns.CharacterKey()
 		if type(profiles[name]) ~= "table" then
 			profiles[name] = Copy(profiles[SHARED] or {})
 		end
-		WarriorKitCharDB.profile = name
+		WiggleUICharDB.profile = name
 	end
-	WarriorKitDB.profileUsers = WarriorKitDB.profileUsers or {}
-	WarriorKitDB.profileUsers[ns.CharacterKey()] = name
+	WiggleUIDB.profileUsers = WiggleUIDB.profileUsers or {}
+	WiggleUIDB.profileUsers[ns.CharacterKey()] = name
 	return name
 end
 
 function ns.ProfileName()
-	return WarriorKitCharDB.profile
+	return WiggleUICharDB.profile
 end
 
 -- The profile list itself, raw. Profiles/Profiles.lua is the one reader.
 function ns.ProfileStore()
-	return WarriorKitDB.profiles, WarriorKitDB.profileUsers
+	return WiggleUIDB.profiles, WiggleUIDB.profileUsers
 end
 
 -- Point this character at another profile. Takes effect at the next reload.
 function ns.UseProfile(name)
-	assert(type(WarriorKitDB.profiles[name]) == "table",
+	assert(type(WiggleUIDB.profiles[name]) == "table",
 		("there is no profile called %q"):format(tostring(name)))
-	WarriorKitCharDB.profile = name
-	WarriorKitDB.profileUsers[ns.CharacterKey()] = name
+	WiggleUICharDB.profile = name
+	WiggleUIDB.profileUsers[ns.CharacterKey()] = name
 end
 
 -- A profile in a table nobody else is holding, for a copy under a new name.
 function ns.ProfileCopy(name)
-	return Copy(WarriorKitDB.profiles[name])
+	return Copy(WiggleUIDB.profiles[name])
 end
 
 -- The settings in one profile that are not what the addon ships with. An
 -- export carries only these, so a string made today still takes every default
 -- a later release moves.
 function ns.ProfileMoved(name)
-	local profile, moved = WarriorKitDB.profiles[name], {}
+	local profile, moved = WiggleUIDB.profiles[name], {}
 	for key, value in pairs(profile or {}) do
 		if Restorable(key) and not Same(value, defaults[key]) then
 			moved[key] = value
@@ -3343,8 +3343,8 @@ loader:SetScript("OnEvent", function(self, _, name)
 	if name ~= ADDON then
 		return
 	end
-	WarriorKitDB = WarriorKitDB or {}
-	WarriorKitCharDB = WarriorKitCharDB or {}
+	WiggleUIDB = WiggleUIDB or {}
+	WiggleUICharDB = WiggleUICharDB or {}
 	Retire()
 	Migrate()
 	MigrateGaugeLook()
@@ -3354,8 +3354,8 @@ loader:SetScript("OnEvent", function(self, _, name)
 			("a feature registers %q, which holds the profiles"):format(key))
 	end
 	MigrateProfiles()
-	ns.db = ApplyDefaults(Profiled(WarriorKitDB.profiles[Chosen()]), defaults)
-	ns.dbc = ApplyDefaults(WarriorKitCharDB, charDefaults)
+	ns.db = ApplyDefaults(Profiled(WiggleUIDB.profiles[Chosen()]), defaults)
+	ns.dbc = ApplyDefaults(WiggleUICharDB, charDefaults)
 	MigrateZooms()
 	MigrateAimPrior()
 

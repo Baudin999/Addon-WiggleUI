@@ -97,7 +97,7 @@ check(Alpha("nameplate2") > Alpha("nameplate1"),
 	"changing target did not reach the bars until the next reading")
 
 local hit = ns.EnemyBars.WidgetFor("nameplate1")
-_G.WarriorKitHealth.nameplate1 = 1200
+_G.WiggleUIHealth.nameplate1 = 1200
 fire("UNIT_HEALTH", "nameplate1")
 Frame()
 check(hit.health:GetValue() == 1200,
@@ -105,13 +105,13 @@ check(hit.health:GetValue() == 1200,
 		:format(tostring(hit.health:GetValue())))
 
 -- And the other way: an event for somebody else's mob is not this one's news.
-_G.WarriorKitHealth.nameplate1 = 800
+_G.WiggleUIHealth.nameplate1 = 800
 fire("UNIT_HEALTH", "nameplate2")
 Frame()
 check(hit.health:GetValue() == 1200,
 	"a bar redrew on an event that named another unit")
 
-_G.WarriorKitHealth.nameplate1 = nil
+_G.WiggleUIHealth.nameplate1 = nil
 guids.target = nil
 fire("PLAYER_TARGET_CHANGED")
 Tick()
@@ -178,7 +178,7 @@ print(("ramp   four frames in is %.2f, out is off the plate and holding its plac
 
 local realPlayers, unitFaction, unitClass = H.realPlayers, H.unitFaction, H.unitClass
 local pvpUnits, ffaUnits = H.pvpUnits, H.ffaUnits
-local friendlyUnits = _G.WarriorKitFriendlyUnits
+local friendlyUnits = _G.WiggleUIFriendlyUnits
 local Color = ns.Unit.Color
 
 fire("NAME_PLATE_UNIT_REMOVED", "nameplate2")
@@ -242,7 +242,7 @@ fire("NAME_PLATE_UNIT_ADDED", "nameplate2")
 -- mob would grey out as worthless and a friend must not.
 unitFaction.nameplate2, friendlyUnits.nameplate2 = "Alliance", true
 unitClass.nameplate2 = "PRIEST"
-_G.WarriorKitLevels.nameplate2 = 10
+_G.WiggleUILevels.nameplate2 = 10
 fire("UNIT_FACTION", "nameplate2")
 Tick()
 local mate = ns.EnemyBars.WidgetFor("nameplate2")
@@ -269,7 +269,7 @@ print("players every player but you gets a bar on either side, in the class colo
 fire("NAME_PLATE_UNIT_REMOVED", "nameplate2")
 realPlayers.nameplate2, unitFaction.nameplate2 = nil, nil
 friendlyUnits.nameplate2, unitClass.nameplate2 = nil, nil
-pvpUnits.nameplate2, _G.WarriorKitLevels.nameplate2 = nil, nil
+pvpUnits.nameplate2, _G.WiggleUILevels.nameplate2 = nil, nil
 fire("NAME_PLATE_UNIT_ADDED", "nameplate2")
 check(ns.EnemyBars.WidgetFor("nameplate2") ~= nil, "nameplate2 did not come back as a mob")
 Tick()

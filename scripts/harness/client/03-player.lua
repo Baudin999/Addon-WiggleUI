@@ -115,8 +115,8 @@ end
 -- something friendly, and a stub answering "alive and hostile" to everything
 -- would leave both refusals unreachable from a test.
 local deadUnits, friendlyUnits = {}, {}
-_G.WarriorKitDeadUnits = deadUnits
-_G.WarriorKitFriendlyUnits = friendlyUnits
+_G.WiggleUIDeadUnits = deadUnits
+_G.WiggleUIFriendlyUnits = friendlyUnits
 _G.UnitIsDead = function(unit) return deadUnits[unit] == true end
 _G.UnitCanAttack = function(_, unit) return friendlyUnits[unit] ~= true end
 -- Who somebody else got to first. Table driven and empty by default, because a
@@ -124,7 +124,7 @@ _G.UnitCanAttack = function(_, unit) return friendlyUnits[unit] ~= true end
 -- exception is what gets marked. A stub answering true to everything would
 -- paint every name grey and pass every assertion about the grey.
 local tappedUnits = {}
-_G.WarriorKitTappedUnits = tappedUnits
+_G.WiggleUITappedUnits = tappedUnits
 _G.UnitIsTapDenied = function(unit) return tappedUnits[unit] == true end
 _G.UnitName = function(unit) return unitName[unit] or "Target Dummy" end
 -- One realm, because a profile is named for the character and the realm it
@@ -135,7 +135,7 @@ _G.GetRealmName = function() return "Harness" end
 -- of the action bar ladder now, and a fixed 46% could drive neither side of a
 -- twenty percent line.
 local health, healthMax = {}, {}
-_G.WarriorKitHealth, _G.WarriorKitHealthMax = health, healthMax
+_G.WiggleUIHealth, _G.WiggleUIHealthMax = health, healthMax
 _G.UnitHealth = function(unit) return health[unit] or 4200 end
 _G.UnitHealthMax = function(unit) return healthMax[unit] or 9000 end
 -- Heal prediction, which both clients register and both back with an event.
@@ -154,12 +154,12 @@ _G.UnitReaction = constant(2)
 -- proving nothing, which is the worst kind of fixture: the failure it hides is
 -- that every crit and miss rate in the table is an average of unrelated fights.
 --
--- On _G rather than on H, the way WarriorKitItemLink is: a section sets a
+-- On _G rather than on H, the way WiggleUIItemLink is: a section sets a
 -- unit's level to drive a scene, and a global is one lookup for both sides
 -- rather than a name to hand across.
-_G.WarriorKitLevels = {}
+_G.WiggleUILevels = {}
 _G.UnitLevel = function(unit)
-	return _G.WarriorKitLevels[unit] or 62
+	return _G.WiggleUILevels[unit] or 62
 end
 -- True for exactly one unit, so the skin's player frame takes the class colour
 -- through ClassTint and the other two fall to the reaction colour. Both halves
@@ -320,7 +320,7 @@ _G.RAID_CLASS_COLORS = {
 -- ns.SpellCastTime reads and what the Slam window is built on. Empty here and
 -- filled by the swing section, so every other spell in this file stays the
 -- instant it was.
-_G.WarriorKitSpellCast = {}
+_G.WiggleUISpellCast = {}
 -- The handful of ids whose real name is what the test is about, spelled the way
 -- both clients spell them. Everything else keeps the synthetic name, because a
 -- stub carrying the whole spell table would be a second copy of the client to
@@ -385,7 +385,7 @@ _G.GetSpellInfo = function(id)
 		return nil
 	end
 	return SPELL_NAMES[id] or ("Spell" .. id), nil,
-		"Interface\\Icons\\A" .. id, _G.WarriorKitSpellCast[id]
+		"Interface\\Icons\\A" .. id, _G.WiggleUISpellCast[id]
 end
 _G.GetSpellTexture = function(id) return "Interface\\Icons\\A" .. id end
 -- Table driven, and empty in the shipped scene so every spell reads as ready
@@ -410,7 +410,7 @@ _G.IsSpellInRange = constant(1)
 -- Two returns and in the same order as the action-level call: usable, and
 -- whether the block is the power bar rather than anything else.
 local unusableSpells = {}
-_G.WarriorKitUnusableSpells = unusableSpells
+_G.WiggleUIUnusableSpells = unusableSpells
 _G.IsUsableSpell = function(spell)
 	local entry = unusableSpells[spell]
 	if not entry then
@@ -423,9 +423,9 @@ end
 -- square, where the action-level answer is about the macro and not about the
 -- spell it would cast, so a stub answering a flat false here would leave the
 -- macro half of the "nothing to aim at" rung unreachable from a test.
-_G.WarriorKitHarmfulSpells = {}
+_G.WiggleUIHarmfulSpells = {}
 _G.IsHarmfulSpell = function(spell)
-	return _G.WarriorKitHarmfulSpells[spell] == true
+	return _G.WiggleUIHarmfulSpells[spell] == true
 end
 -- Table driven, and true unless a section says otherwise. What it is here for
 -- is the cooldown row: every entry in a class file is walked with this call, a
@@ -461,8 +461,8 @@ _G.GetNumSpellTabs = constant(0)
 -- row already knows about has to move rather than arrive a second time.
 local BOOK = { "Rend", "Thunder Clap", "Battle Shout" }
 local BOOK_IDS = { 772, 6343, 6673 }
-_G.WarriorKitSpellBook = BOOK
-_G.WarriorKitSpellBookIds = BOOK_IDS
+_G.WiggleUISpellBook = BOOK
+_G.WiggleUISpellBookIds = BOOK_IDS
 _G.GetSpellBookItemName = function(index, book)
 	if book ~= "spell" then
 		return nil
@@ -657,7 +657,7 @@ end
 local function itemLink(name, enchant)
 	return ("|cffff8000|Hitem:1:%s:::::::60:::::|h[%s]|h|r"):format(enchant or "", name)
 end
-_G.WarriorKitItemLink = itemLink
+_G.WiggleUIItemLink = itemLink
 
 -- The client's own loot sentences.
 --

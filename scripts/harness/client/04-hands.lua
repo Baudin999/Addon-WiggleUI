@@ -23,7 +23,7 @@ local swing = {
 	talent = 0,   -- points in the talent whose name contains Slam's
 	cast = nil,   -- a cast in flight, as start and stop in milliseconds
 }
-_G.WarriorKitSwing = swing
+_G.WiggleUISwing = swing
 
 -- The two hands and the two trinkets. The hands are the swing timer's and the
 -- trinkets are the cooldown row's, and they sit in one table because the client

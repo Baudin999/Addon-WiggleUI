@@ -81,13 +81,13 @@ check(paints(track, safe[1] * TRACK, safe[2] * TRACK, safe[3] * TRACK, TRACK_ALP
 -- know about the freeze would write into the no-op and change nothing at
 -- all. Modelled here rather than left to the unit frames below, because the
 -- freeze is the half of the contract that has no picture.
-bar.wkSetStatusBarColor = bar.SetStatusBarColor
+bar.wuiSetStatusBarColor = bar.SetStatusBarColor
 bar.SetStatusBarColor = function() end
 local off = ns.Unit.Color.threat.off
 Gauge.Paint(bar, track, off)
 check(near(bar.barR, off[1]) and near(bar.barB, off[3]),
 	"a frozen bar was painted through its own no-op, so the gauge kept the last colour")
-bar.SetStatusBarColor, bar.wkSetStatusBarColor = nil, nil
+bar.SetStatusBarColor, bar.wuiSetStatusBarColor = nil, nil
 
 -- Flattening is on the skin's tick, because Blizzard's code puts
 -- UI-StatusBar back and ours has to be the last word. Being the last word

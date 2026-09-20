@@ -16,7 +16,7 @@
 --   copy itself and on a restore that follows a drag.
 --
 --   That every feature's own reset hook writes the registered default and not
---   a literal beside it. Run from a clean slate, `/wk reset` must move nothing
+--   a literal beside it. Run from a clean slate, `/wui reset` must move nothing
 --   at all, and the moment any reset carries its own copy of a number this
 --   fails with that part named by the count.
 --
@@ -226,15 +226,15 @@ check(ns.db.chatWhy == "the last build said this",
 
 local reloads = state.reloads
 
-SlashCmdList.WARRIORKIT("defaults")
+SlashCmdList.WIGGLEUI("defaults")
 check(state.reloads == reloads, "the word on its own reloaded the interface")
 
 ns.db.swingWidth = 200
-SlashCmdList.WARRIORKIT("defaults")
+SlashCmdList.WIGGLEUI("defaults")
 check(ns.db.swingWidth == 200, "the word on its own wrote a setting back")
 check(state.reloads == reloads, "the word on its own reloaded the interface")
 
-SlashCmdList.WARRIORKIT("defaults YES")
+SlashCmdList.WIGGLEUI("defaults YES")
 check(ns.db.swingWidth == ns.DefaultFor("swingWidth"),
 	"defaults yes did not put the setting back")
 check(state.reloads == reloads + 1,
@@ -242,7 +242,7 @@ check(state.reloads == reloads + 1,
 
 -- Nothing to do is said rather than done, because a reload is the most
 -- expensive thing in the addon and there is no reason to pay it twice.
-SlashCmdList.WARRIORKIT("defaults yes")
+SlashCmdList.WIGGLEUI("defaults yes")
 check(state.reloads == reloads + 1,
 	"defaults yes reloaded with every setting already at its default")
 

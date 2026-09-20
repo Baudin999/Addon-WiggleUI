@@ -95,16 +95,16 @@ local SPECS = {
 	{
 		key = "player", unit = "player", mirror = false, scale = 1,
 		badges = { "state", "pvp" }, ammo = true,
-		global = "WarriorKitPlayerFrame", button = "WarriorKitPlayerButton",
-		title = "WarriorKit player", point = "skinPlayerPoint",
+		global = "WiggleUIPlayerFrame", button = "WiggleUIPlayerButton",
+		title = "WiggleUI player", point = "skinPlayerPoint",
 	},
 	{
 		-- Mirrored, because the target frame sits on the right of the screen
 		-- and its portrait has always been on the outside edge.
 		key = "target", unit = "target", mirror = true, scale = 1,
 		badges = { "marker", "pvp" }, beside = "player", watch = true,
-		global = "WarriorKitTargetFrame", button = "WarriorKitTargetButton",
-		title = "WarriorKit target", point = "skinTargetPoint",
+		global = "WiggleUITargetFrame", button = "WiggleUITargetButton",
+		title = "WiggleUI target", point = "skinTargetPoint",
 	},
 	{
 		-- Off the right of the target block, the pet's place mirrored. Mirrored
@@ -113,8 +113,8 @@ local SPECS = {
 		-- than under, because under is where the target's debuff row goes.
 		key = "tot", unit = "targettarget", mirror = true, scale = GLANCE_SCALE,
 		badges = { "marker" }, flank = "target", watch = true,
-		global = "WarriorKitTargetOfTargetFrame",
-		button = "WarriorKitTargetOfTargetButton",
+		global = "WiggleUITargetOfTargetFrame",
+		button = "WiggleUITargetOfTargetButton",
 	},
 	{
 		-- Your pet, off the left of your own block. Not mirrored, so the row
@@ -122,7 +122,7 @@ local SPECS = {
 		-- your gauge.
 		key = "pet", unit = "pet", mirror = false, scale = GLANCE_SCALE,
 		badges = { "marker", "mood" }, flank = "player", watch = true,
-		global = "WarriorKitPetFrame", button = "WarriorKitPetButton",
+		global = "WiggleUIPetFrame", button = "WiggleUIPetButton",
 	},
 }
 

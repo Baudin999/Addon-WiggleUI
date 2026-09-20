@@ -123,9 +123,9 @@ local function stand(list, raid)
 end
 
 check(header ~= nil, "no secure group header was built")
-check(_G.WarriorKitParty ~= nil and _G.WarriorKitPartyHeader ~= nil,
+check(_G.WiggleUIParty ~= nil and _G.WiggleUIPartyHeader ~= nil,
 	"the list you drag and the header on it are not both named")
-check(_G.WarriorKitParty.ignoreScale == true,
+check(_G.WiggleUIParty.ignoreScale == true,
 	"the frame you drag the list by is not on the grid")
 check(header:IsVisible() and raidHeader:IsVisible(),
 	"a header was left hidden, and hidden it makes no block whatever it is told")
@@ -217,7 +217,7 @@ local function whole(value)
 end
 
 do
-	local ax, ay = _G.WarriorKitParty:GetCenter()
+	local ax, ay = _G.WiggleUIParty:GetCenter()
 	local _, top, x, y = block()
 	check(near(x, ax) and near(y, ay),
 		("four blocks sit round %.1f, %.1f and the frame you drag is at %.1f, %.1f")
@@ -254,7 +254,7 @@ do
 	check(whole(left) and whole(top),
 		("an odd block puts the corner of the list at %.1f, %.1f, which is off the grid")
 			:format(left, top))
-	local ax, ay = _G.WarriorKitParty:GetCenter()
+	local ax, ay = _G.WiggleUIParty:GetCenter()
 	check(math.abs(x - ax) <= 0.5 + 1e-6 and math.abs(y - ay) <= 0.5 + 1e-6,
 		("an odd block sits %.1f, %.1f off the frame you drag, and rounding costs half a unit at most")
 			:format(x - ax, y - ay))
@@ -277,7 +277,7 @@ do
 	local was = ns.db.partyGrow
 
 	local left, top, x, y = block()
-	local ax, ay = _G.WarriorKitParty:GetCenter()
+	local ax, ay = _G.WiggleUIParty:GetCenter()
 	check(near(x, ax) and near(y, ay),
 		("four tiles across sit round %.1f, %.1f and the frame you drag is at %.1f, %.1f")
 			:format(x, y, ax, ay))
@@ -292,7 +292,7 @@ do
 
 	check(ns.Group.Count("party") == 4, "a party running down the screen lost somebody")
 	left, top, x, y = block()
-	ax, ay = _G.WarriorKitParty:GetCenter()
+	ax, ay = _G.WiggleUIParty:GetCenter()
 	check(near(x, ax) and near(y, ay),
 		("four tiles down sit round %.1f, %.1f and the frame you drag is at %.1f, %.1f")
 			:format(x, y, ax, ay))
@@ -867,7 +867,7 @@ do
 
 	-- Centred on the frame you drag, which is the whole point: where it shows
 	-- them is where the real four go.
-	local ax, ay = _G.WarriorKitParty:GetCenter()
+	local ax, ay = _G.WiggleUIParty:GetCenter()
 	check(near((left + right) / 2, ax) and near((top + bottom) / 2, ay),
 		("the preview sits round %.1f, %.1f and the frame you drag is at %.1f, %.1f")
 			:format((left + right) / 2, (top + bottom) / 2, ax, ay))
@@ -896,7 +896,7 @@ do
 	check(fills(raidMade[held].wk.rail, Color.power[3]),
 		"the last block of a previewed raid has no power rail of its own")
 
-	local rx, ry = _G.WarriorKitRaid:GetCenter()
+	local rx, ry = _G.WiggleUIRaid:GetCenter()
 	check(not near(rx, ax) or not near(ry, ay),
 		"the raid grid and the party line are previewing in the same place")
 

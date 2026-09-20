@@ -24,7 +24,7 @@ ns.HoverSheet = Sheet
 -- function in check.sh's HOT list: there is no path here an OnUpdate reaches.
 --------------------------------------------------------------------------
 
-local FRAME_NAME = "WarriorKitHoverSheet"
+local FRAME_NAME = "WiggleUIHoverSheet"
 
 -- Design pixels, multiplied by the frame's unit. The row is the icon plus a
 -- pixel above and below, so a column of them reads as a list rather than as a
@@ -187,7 +187,7 @@ events:SetScript("OnEvent", function()
 	ns.UI.Adopt(frame, ns.db.hoverSheetZoom)
 	unit = ns.UI.Unit(frame)
 	place = ns.UI.Placeable(frame, {
-		name = "WarriorKit mouseover keys",
+		name = "WiggleUI mouseover keys",
 		moved = function(anchor)
 			ns.db.hoverSheetPoint = anchor
 			Sheet.Apply()

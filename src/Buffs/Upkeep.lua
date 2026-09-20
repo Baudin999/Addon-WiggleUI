@@ -122,7 +122,7 @@ Upkeep.OUT, Upkeep.IN, Upkeep.BOTH = OUT, IN, BOTH
 --            left you to work out what about it, which on a bare icon is no
 --            help at all. "bare weapon" is the voice the racial half already
 --            speaks in with "press Blood Fury": it says the thing you would fix.
---   word     what you type. `/wk buffs weapon off`.
+--   word     what you type. `/wui buffs weapon off`.
 --   switch   the panel's tick box, which is a sentence rather than a label
 --            because every other tick box on that page is one.
 --   hint     the tooltip, which is where the detail the caption cannot hold
@@ -211,7 +211,7 @@ local FIXED = {
 -- which is about forty numbers that cannot be verified from outside the game,
 -- go stale on the next content patch, and are wrong in a way nothing reports.
 --
--- So the list is yours. `/wk buffs add <spell id>` puts an aura on the row and
+-- So the list is yours. `/wui buffs add <spell id>` puts an aura on the row and
 -- the panel says where to find the id, exactly the way the debuff row on the
 -- enemy bars takes one. Six slots, and the same rule as everywhere else in this
 -- addon: use the id of the aura that lands on you, not of the item.
@@ -358,7 +358,7 @@ end
 
 -- Which class claims a slash word this character has no entry for, or nil for a
 -- word nobody claims, which is an ordinary typo. Named rather than left to fall
--- through to the bare on|off toggle, because `/wk buffs shout` on a mage would
+-- through to the bare on|off toggle, because `/wui buffs shout` on a mage would
 -- otherwise switch the whole row off and report that it had done something else.
 function Upkeep.Elsewhere(word)
 	for _, def in pairs(ns.Class.All()) do
@@ -419,7 +419,7 @@ end
 -- This exists so a silenced entry is visible somewhere. A nag you turned off
 -- six weeks ago and cannot find any trace of is the same defect as a nag you
 -- learned to ignore, moved one room over: the row is quiet and you no longer
--- know why. `/wk status` and the panel both say this.
+-- know why. `/wui status` and the panel both say this.
 function Upkeep.Silent()
 	local count, names = 0, ""
 	local list = Upkeep.Fixed()

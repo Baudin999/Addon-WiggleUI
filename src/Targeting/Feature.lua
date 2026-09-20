@@ -101,7 +101,7 @@ ns.Register({
 				end
 			end,
 			function() ns.Switch.Bind("") end)
-		ui.Hint("TAB is the key worth putting it on: TAB already cycles and the only thing it is missing is the attack. Or put /click WarriorKitSwitchButton in a macro.")
+		ui.Hint("TAB is the key worth putting it on: TAB already cycles and the only thing it is missing is the attack. Or put /click WiggleUISwitchButton in a macro.")
 
 		ui.Reading("this key", function()
 			if ns.db.switchKey == "" then

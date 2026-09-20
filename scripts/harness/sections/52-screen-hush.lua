@@ -38,7 +38,7 @@
 -- **The row's own answer has to survive it.** The whole reason this is a hidden
 -- parent rather than a Hide is that every one of these rows is driven by a tick
 -- that shows and hides it as the fight goes. A mechanism that wrote the child's
--- own flag would be undone on the next tick, and it would also lie to /wk
+-- own flag would be undone on the next tick, and it would also lie to /wui
 -- status, which asks the row whether it is up. IsShown before and after has to
 -- be the same answer; IsVisible is the one that changes.
 --
@@ -68,34 +68,34 @@ local UI = ns.UI
 -- A run does not build all of them: the standing row refuses a class with no
 -- slots to watch, the combat feed ships off. What is checked is what exists.
 local ROWS = {
-	"WarriorKitBuffs",
-	"WarriorKitCooldowns",
-	"WarriorKitStanding",
-	"WarriorKitSwing",
-	"WarriorKitProgress",
-	"WarriorKitMeter",
-	"WarriorKitLootFeed",
-	"WarriorKitCombatFeed",
+	"WiggleUIBuffs",
+	"WiggleUICooldowns",
+	"WiggleUIStanding",
+	"WiggleUISwing",
+	"WiggleUIProgress",
+	"WiggleUIMeter",
+	"WiggleUILootFeed",
+	"WiggleUICombatFeed",
 }
 
 -- The three unit blocks, by the anchor that is hidden and the button inside it
 -- that must not be. A run builds all three or none: the client stub either
 -- carries SecureUnitButtonTemplate or it does not.
 local BLOCKS = {
-	{ anchor = "WarriorKitPlayerFrame", button = "WarriorKitPlayerButton" },
-	{ anchor = "WarriorKitPetFrame", button = "WarriorKitPetButton" },
-	{ anchor = "WarriorKitTargetFrame", button = "WarriorKitTargetButton" },
-	{ anchor = "WarriorKitTargetOfTargetFrame", button = "WarriorKitTargetOfTargetButton" },
+	{ anchor = "WiggleUIPlayerFrame", button = "WiggleUIPlayerButton" },
+	{ anchor = "WiggleUIPetFrame", button = "WiggleUIPetButton" },
+	{ anchor = "WiggleUITargetFrame", button = "WiggleUITargetButton" },
+	{ anchor = "WiggleUITargetOfTargetFrame", button = "WiggleUITargetOfTargetButton" },
 }
 
 Window.Hide()
 
-local sheet = _G.WarriorKitCharacter
+local sheet = _G.WiggleUICharacter
 
-local pulse = _G.WarriorKitHushPulse
+local pulse = _G.WiggleUIHushPulse
 check(pulse ~= nil, "no tick was ever armed, so nothing follows the sheet once it moves")
 
-local guard = _G.WarriorKitHushGuard
+local guard = _G.WiggleUIHushGuard
 check(guard ~= nil, "no guard was ever built, so the unit blocks draw over the sheet")
 
 local held = {}

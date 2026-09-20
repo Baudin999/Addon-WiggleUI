@@ -30,7 +30,7 @@ like a key that was never bound, except the readback says it was.
 ## Step four is the one that was wrong
 
 `SetOverrideBindingClick(button, true, key, BUTTON_NAME, name)` puts
-`CLICK WarriorKitHoverButton:<name>` on the layer. When the key is pressed the
+`CLICK WiggleUIHoverButton:<name>` on the layer. When the key is pressed the
 click arrives at the button carrying `<name>`, and the client turns that name
 into the tail of an attribute it looks up.
 
@@ -131,7 +131,7 @@ pairs the same two on its own global button and ships them on the down edge.
 
 ## The log, and why it is a PostClick
 
-`/wk hover debug on` prints a line where the binding is written, a line where the
+`/wui hover debug on` prints a line where the binding is written, a line where the
 press arrives, the verdict, and `UNIT_SPELLCAST_SENT` when the client actually
 sends something. A press with an arrival line and no sent line is the press being
 thrown away.

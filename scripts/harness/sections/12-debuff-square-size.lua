@@ -224,7 +224,7 @@ print(("bar    %.0f x %.0f px, box %.0f idle and %.0f casting, icon %.0f, hairli
 	:format(widget:GetWidth(), widget:GetHeight(), widget.boxIdle, widget.boxOpen,
 		widget.icons[1]:GetWidth(), widget.box.edges[1].height))
 print(("plates %s"):format(ns.Plates.Describe()))
-local playerBox = _G.WarriorKitPlayerButton
+local playerBox = _G.WiggleUIPlayerButton
 local player = ns.FrameSkin.Entry("player")
 print(("skin   %s; player block %.0f x %.0f px, gauge %.0f and %.0f, hairline %.0f")
 	:format(ns.FrameSkin.Describe(), playerBox:GetWidth(), playerBox:GetHeight(),

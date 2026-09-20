@@ -1,6 +1,6 @@
 # The session gets slower
 
-Open, as of 17 September 2026. Written from `WarriorKitDB.perfLog`, five
+Open, as of 17 September 2026. Written from `WiggleUIDB.perfLog`, five
 sessions across 15 and 16 September. Nothing here is a fix. It is what the log
 says, what that rules out, and what I think is left.
 
@@ -68,7 +68,7 @@ and I have not tested it directly.
 
 ## What is missing
 
-Whose heap, and which structure. `grower` names WarriorKit most minutes, but it
+Whose heap, and which structure. `grower` names WiggleUI most minutes, but it
 is a difference between two samples of a number the collector swings by 30 MB,
 so for this question it is close to worthless.
 

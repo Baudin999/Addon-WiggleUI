@@ -511,7 +511,7 @@ end
 
 --------------------------------------------------------------------------
 
--- One line for /wk status and for the panel, covering the two things about this
+-- One line for /wui status and for the panel, covering the two things about this
 -- row that are the client's answer rather than a setting.
 function Cast.Describe()
 	if not ns.db.barsCast then

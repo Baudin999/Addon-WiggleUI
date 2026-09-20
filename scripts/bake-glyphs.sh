@@ -104,11 +104,11 @@ for table in font["cmap"].tables:
 # is a modified version, so it may not go out under that name. Everything else
 # in the name table is left as it was found, including whose copyright it is.
 NAMES = {
-    1: "WarriorKit Glyphs",
+    1: "WiggleUI Glyphs",
     2: "Regular",
-    3: "WarriorKit Glyphs: seventeen glyphs of Font Awesome Free Solid",
-    4: "WarriorKit Glyphs",
-    6: "WarriorKitGlyphs-Regular",
+    3: "WiggleUI Glyphs: seventeen glyphs of Font Awesome Free Solid",
+    4: "WiggleUI Glyphs",
+    6: "WiggleUIGlyphs-Regular",
     13: "SIL Open Font License 1.1. See Media/Glyphs-LICENSE.txt.",
     14: "http://scripts.sil.org/OFL",
 }

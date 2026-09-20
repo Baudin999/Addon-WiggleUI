@@ -105,7 +105,7 @@ end
 -- on it once, because a worn item answers a different call from a spell and
 -- nothing else about the two differs.
 --
--- The keys are the words you type at them, so `/wk cooldowns trinket1 off`
+-- The keys are the words you type at them, so `/wui cooldowns trinket1 off`
 -- silences the top one. Numbered rather than named after whatever is in the
 -- slot today, because the switch is per character and outlives the trinket.
 --------------------------------------------------------------------------
@@ -684,7 +684,7 @@ end
 
 -- Which class claims a slash word this character has no entry for, or nil for a
 -- word nobody claims, which is an ordinary typo. The same answer Upkeep gives
--- and for the same reason: `/wk cooldowns iceblock` on a warrior would
+-- and for the same reason: `/wui cooldowns iceblock` on a warrior would
 -- otherwise fall through to the bare on|off toggle, switch the whole row off
 -- and report that it had done something else.
 function Cooldowns.Elsewhere(word)

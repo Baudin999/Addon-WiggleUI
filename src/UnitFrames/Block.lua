@@ -47,7 +47,7 @@ local MODERN_HEALTH_SHARE = 0.76
 local PARK_GAP = 3
 
 -- How far the target's top edge drops below the player's. The range one may
--- land in, shared with `/wk skin level` through Skin.LinkRange so the slash
+-- land in, shared with `/wui skin level` through Skin.LinkRange so the slash
 -- command, the panel and a dropped drag all clamp to the same numbers.
 --
 -- There is no horizontal number beside it. The distance across is the mirror,
@@ -585,7 +585,7 @@ end
 --
 -- Across, it is the player's facing edge reflected in the middle of the
 -- screen. Down, it is the level setting in screen pixels, snapped, the same
--- ruler `/wk skin height` and `/wk skin width` are on.
+-- ruler `/wui skin height` and `/wui skin width` are on.
 --
 -- Written on every pass rather than only when the switch moves, because three
 -- things change the numbers without changing the state: the player moving,
@@ -677,7 +677,7 @@ function Block.Range()
 	return LEVEL_LOW, LEVEL_HIGH
 end
 
--- Where the block is, for `/wk skin probe`. The anchor's point, which is either
+-- Where the block is, for `/wui skin probe`. The anchor's point, which is either
 -- the setting or the link, and whether the button is on the screen, which is
 -- the line to read when the block is placed and painted and still nobody can
 -- see it.

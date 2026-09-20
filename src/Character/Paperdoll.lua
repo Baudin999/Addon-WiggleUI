@@ -75,7 +75,7 @@ local C, M = UI.Color, UI.Metric
 -- answers a left click with the cursor swap and a right click with the use call
 -- that takes a piece off or fires it. Only half of that is open to an addon:
 -- the swap is an ordinary call, and using what is in a slot is protected. A
--- page that called it got the dialog saying WarriorKit has been blocked from an
+-- page that called it got the dialog saying WiggleUI has been blocked from an
 -- action only available to the Blizzard UI, and so did a page that tried to
 -- finish a spell the client was holding until it was told which item it was
 -- for. That is a sharpening stone, an oil, an enchanting scroll or a poison,
@@ -1538,7 +1538,7 @@ end
 -- out, and the header the client files it under is not.
 --
 -- Standings are the fourth and they are not a stat at all. They have a window
--- of their own on /wk reputation and they keep it; what this adds is that you
+-- of their own on /wui reputation and they keep it; what this adds is that you
 -- do not have to leave the sheet to read them, which was the whole argument for
 -- folding the other three tabs into this column in the first place.
 local TABS = {

@@ -97,7 +97,7 @@ local loadingUntil = 0  -- the client's clock, up to which frames are a load
 -- 100 Hz panel with vsync on, the frames that pull the rate down are 10 to 20 ms
 -- ones missing a deadline, and the question is whether minute sixty has more of
 -- them than minute five. So each minute is summed into one row of
--- WarriorKitDB.perfLog, and the client writes it to disk on a reload or a
+-- WiggleUIDB.perfLog, and the client writes it to disk on a reload or a
 -- logout.
 --
 -- The row is a set of parallel columns made full length at login and written in
@@ -239,7 +239,7 @@ local minute = {
 -- is never made again.
 local slowKeys = {}
 local sinceSlow = 0     -- ms of frames since the last slow one, that one included
-local saved             -- WarriorKitDB.perfLog once Ready has made it whole
+local saved             -- WiggleUIDB.perfLog once Ready has made it whole
 local startedAt = 0     -- the client's clock when watching began
 local reading = false   -- the roll just read addon memory, and the next frame pays for it
 

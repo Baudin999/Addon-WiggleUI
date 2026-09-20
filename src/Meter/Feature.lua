@@ -44,7 +44,7 @@ local function Describe()
 end
 
 -- Which of the two numbers a pane is showing is a word each rather than one
--- word taking a value, because `/wk meters dps` is what anybody types.
+-- word taking a value, because `/wui meters dps` is what anybody types.
 local function ModeEntry(mode)
 	return { mode, run = function()
 		ns.db.meterMode = mode

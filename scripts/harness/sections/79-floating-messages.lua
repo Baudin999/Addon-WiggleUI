@@ -63,7 +63,7 @@ local function beat(seconds)
 end
 
 local function show(name)
-	return Floats.Show(_G.WarriorKitItemLink(name), 1)
+	return Floats.Show(_G.WiggleUIItemLink(name), 1)
 end
 
 -- Where a frame sits, as the two numbers this section is about.
@@ -524,7 +524,7 @@ end
 
 do
 	ns.db.lootFloat = false
-	fire("CHAT_MSG_LOOT", ("You receive loot: %s."):format(_G.WarriorKitItemLink("Aegis")))
+	fire("CHAT_MSG_LOOT", ("You receive loot: %s."):format(_G.WiggleUIItemLink("Aegis")))
 	check(Floats.Count() == 0, "a drop floated with the switch off")
 	ns.db.lootFloat = true
 end

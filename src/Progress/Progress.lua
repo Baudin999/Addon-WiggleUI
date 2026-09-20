@@ -403,7 +403,7 @@ local function Announce()
 	end
 end
 
--- One line for /wk status and for the panel.
+-- One line for /wui status and for the panel.
 function Progress.Describe()
 	local level, value, max, rested = Progress.Experience()
 	local parts

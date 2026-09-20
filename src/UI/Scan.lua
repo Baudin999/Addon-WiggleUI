@@ -37,7 +37,7 @@ UI.Scan = Scan
 -- The scanner's name is load bearing. A GameTooltip's lines are reachable only
 -- as globals built from the frame's own name, so a nameless one has text on it
 -- that nothing can read.
-local NAME = "WarriorKitTooltipScan"
+local NAME = "WiggleUITooltipScan"
 
 -- What each kind asks the client, and how many arguments it passes.
 --

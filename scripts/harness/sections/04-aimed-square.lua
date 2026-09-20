@@ -16,7 +16,7 @@ local H = ...
 local guids, ns, check = H.guids, H.ns, H.check
 
 local Slot = ns.Slot
-local slots = _G.WarriorKitSlots
+local slots = _G.WiggleUISlots
 local SLOT = 1
 local ART = "Interface\\Icons\\Ability_Warrior_Charge"
 
@@ -24,9 +24,9 @@ local function put(fields)
 	slots[SLOT] = fields
 end
 
-local deadUnits, friendlyUnits = _G.WarriorKitDeadUnits, _G.WarriorKitFriendlyUnits
-local macroSpells = _G.WarriorKitMacroSpells
-local harmfulSpells = _G.WarriorKitHarmfulSpells
+local deadUnits, friendlyUnits = _G.WiggleUIDeadUnits, _G.WiggleUIFriendlyUnits
+local macroSpells = _G.WiggleUIMacroSpells
+local harmfulSpells = _G.WiggleUIHarmfulSpells
 local MOB = "Creature-0-0-0-0-1234-00000099"
 
 guids.target = nil

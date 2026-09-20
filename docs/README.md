@@ -1,6 +1,6 @@
-# WarriorKit
+# WiggleUI
 
-A personal warrior addon for WoW TBC Anniversary. Twelve parts: ctrl-click raid
+A personal interface for WoW TBC Anniversary and Classic Era. Twelve parts: ctrl-click raid
 marking, one button that casts Charge, Intervene or Intercept depending on what
 you are looking at, one key that takes the next enemy and swings at it, weapon
 loadouts with a key each that swap your stance and both your hands, a warrior
@@ -13,7 +13,7 @@ a row over your character counting down the cooldowns that decide fights, a
 second one holding a shaman's four totem slots with a hole where one is missing,
 a loot stream and a combat log drawn as scrolling feeds, and one Edit Mode
 layout carried inside the addon folder. Settings live in a panel opened with
-`/wk`.
+`/wui`.
 
 This file is written for whoever picks the addon up next, human or agent. The
 first half is what it does, the second half is what the client will and will
@@ -26,12 +26,12 @@ Two, from one copy of the source.
     product      wow_anniversary          wow_classic_era
     version      2.5.6.69110 (TBC)        1.15.9.69109 (vanilla)
     interface    20506                    11509
-    toc          WarriorKit.toc           WarriorKit_Vanilla.toc
+    toc          WiggleUI.toc           WiggleUI_Vanilla.toc
 
     install      <wow>/_anniversary_      <wow>/_classic_era_
     wow          /home/baudin/Games/battlenet/drive_c/Program Files (x86)/World of Warcraft
 
-The Era install carries `Interface/AddOns/WarriorKit` as a symlink to the
+The Era install carries `Interface/AddOns/WiggleUI` as a symlink to the
 Anniversary copy, so there is one set of files to edit and both clients load it.
 Saved variables are not shared: those live in each install's own WTF, so the two
 clients keep separate settings, which is what you want when one of them has no
@@ -53,7 +53,7 @@ the probes that were already there, never by loading different files:
                       vanilla, which is why every Classic threat meter parses
                       the combat log. ns.HasThreat answers, and the enemy bars
                       colour by who each mob is hitting instead. Said once in
-                      chat at login and shown in /wk status.
+                      chat at login and shown in /wui status.
     Edit Mode         absent. EditMode.CanApply says so and the panel greys out.
     Intervene         a TBC ability. MacroText writes a line only for an opener
                       Charge.Known says is trained, and this one is not, so the
@@ -422,8 +422,8 @@ name of none of them.
     Settings/Feature.lua
 
     Bindings.xml         keybindings, loaded automatically, not listed in the TOC
-    WarriorKit.toc       load order, TBC Anniversary and the fallback for anything else
-    WarriorKit_Vanilla.toc   the same list for Classic Era
+    WiggleUI.toc       load order, TBC Anniversary and the fallback for anything else
+    WiggleUI_Vanilla.toc   the same list for Classic Era
     check.sh             syntax, TOC coverage and lint gate, exits non-zero on any finding
     bake-ui.sh           bakes a captured Edit Mode layout into EditMode/Saved.lua
     bake-dungeons.sh     bakes the dungeon book out of Questie's databases into
@@ -477,12 +477,12 @@ Each part calls `ns.Register` once, from its `Feature.lua`, and hands Core
 everything Core or the panel could want:
 
     name          the word that heads its slash help and its status line
-    order         where it sits in the panel and in /wk status
+    order         where it sits in the panel and in /wui status
     defaults      merged into ns.db, the account-wide saved variables
     charDefaults  merged into ns.dbc, this character's saved variables
     words         slash words this part answers to, word = function(arg, raw)
-    help          lines printed by /wk help
-    status        function returning one line for /wk status
+    help          lines printed by /wui help
+    status        function returning one line for /wui status
     lock          function applying ns.db.locked to this part's frames
     reset         function putting this part's frames back where they started
     panel         function(ui) building this part's section of the panel
@@ -523,7 +523,7 @@ a slash word Core answers itself.
 
 That third one is not hypothetical. `Core/Command.lua` answered `ui` before it
 ever consulted the registry, the interface part registered `ui` anyway, and
-every `/wk ui` command opened the settings panel instead of reaching Edit Mode.
+every `/wui ui` command opened the settings panel instead of reaching Edit Mode.
 The capture and bake workflow was dead for a release and nothing said so. The
 reserved words are one table now, `RESERVED`, and `BuildWords` asserts against
 it. `BuildWords` also runs at `PLAYER_LOGIN` rather than on the first slash
@@ -920,7 +920,7 @@ goes through `Feature.lua` or through the shared surface below:
     ns.PlayerCast.Bar() / SizeRange() / Describe() / Reset()
     ns.BlizzHide.Switches() / Find(word)
                                  the seven switches in panel order, and the one a
-                                 `/wk hide` word names. The panel and the slash
+                                 `/wui hide` word names. The panel and the slash
                                  word both walk this rather than writing the
                                  list out again
     ns.BlizzHide.Found() / Describe()
@@ -928,7 +928,7 @@ goes through `Feature.lua` or through the shared surface below:
                                  client carries, and what is currently hidden
     ns.BlizzHide.Probe()         one line per name: whether this client has the
                                  frame, whether the attic holds it, and whether
-                                 it is on the screen anyway. `/wk hide probe`
+                                 it is on the screen anyway. `/wui hide probe`
     ns.FrameSkin.LinkRange()     level low, level high, so the command, the
                                  panel and a drag clamp to one range
     ns.FrameSkin.DescribeLink()  one line on where the target block is hanging,
@@ -961,7 +961,7 @@ goes through `Feature.lua` or through the shared surface below:
     ns.Bars.Short(key)           a binding shortened to fit a 27 pixel square
     ns.Bars.Restyle()            lay every standing bar out again to what
                                  ns.BarLook says; false when combat deferred it
-    ns.Bars.Describe()           one line for /wk status and the panel
+    ns.Bars.Describe()           one line for /wui status and the panel
     ns.WhichBars.PLAN            every bar this client can have, in draw order
     ns.WhichBars.Wanted(def) / Want(key, value) / Follow() / Decided()
                                  which of them we clone: the saved answer, or
@@ -1028,7 +1028,7 @@ goes through `Feature.lua` or through the shared surface below:
                                  claim or hand back Blizzard's frames
     ns.ChatFeed.Attach(onLine)   set the sink, and get what arrived before it
     ns.ChatFeed.System(text, r, g, b)  a line Blizzard's window would have drawn,
-                                 to System, or to the WarriorKit room when it
+                                 to System, or to the WiggleUI room when it
                                  starts with ns.SIGNATURE
     ns.ChatFeed.Installed() / Claimed() / Describe()
     ns.ChatBlizzard.Apply()      the client's chat window off the screen, or back
@@ -1094,7 +1094,7 @@ goes through `Feature.lua` or through the shared surface below:
                                  straightforward yes, whether Questie is
                                  answering at all, and one line on which
     ns.Destroy.Show() / Hide() / Toggle() / Describe()
-                                 the clutter window, and one line for /wk status
+                                 the clutter window, and one line for /wui status
     ns.Destroy.Take() / ns.Destroy.Skip()   the two buttons, which is the only
                                  route to a delete in the whole addon
 
@@ -1360,7 +1360,7 @@ So `Unit/Color.lua` carries a rule rather than a pile of hand-picked pairs.
     Color.Luma(c)          sRGB relative luminance, the WCAG definition
     Color.Contrast(a, b)   how far apart two colours are, 1 to 21
     Color.fills / .tokens  every colour in each role, so a gate can walk them
-    Color.Describe()       the whole table, and `/wk colors` prints it
+    Color.Describe()       the whole table, and `/wui colors` prints it
 
 **Every fill is taken under a luminance ceiling, and the ceiling is solved, not
 typed.** It is the value at which `Color.paper` clears `TEXT_RATIO`, which is one
@@ -1590,7 +1590,7 @@ the part does quietly.
 ### What the addon costs
 
 `GetAddOnMemoryUsage` answers one number for the whole addon, and one number for
-the whole addon is close to useless: "WarriorKit, 341 KB" names nothing you can
+the whole addon is close to useless: "WiggleUI, 341 KB" names nothing you can
 switch off. What is worth measuring is the four tickers, because each one maps
 to a setting on the page next to the one reporting it.
 
@@ -1725,7 +1725,7 @@ below is the whole of what runs.
     UnitFrames/Skin.lua          5 Hz     the marked blocks, and target of target
     UnitFrames/Group.lua         5 Hz     the range on every tile, and the marked
     Meter/Window.lua             5 Hz     the two panes of numbers
-    Buttons/Trace.lua            5 Hz     only while /wk bars trace is on
+    Buttons/Trace.lua            5 Hz     only while /wui bars trace is on
     Comfort/Vendor.lua           5 Hz     only during a sale, and it stops itself
     UnitFrames/EnemyBars.lua     1 Hz     everything else on every bar on screen
     UnitFrames/Skin.lua          1 Hz     all three blocks read from the top
@@ -2022,7 +2022,7 @@ methods on them from a stack that goes on to perform protected actions, and an
 addon's frame in that chain is a taint. Those are hidden with `statehidden` and
 `Hide` and nothing else.
 
-`/wk hide probe` reports one line per name: whether this client has the frame,
+`/wui hide probe` reports one line per name: whether this client has the frame,
 whether the attic holds it, and whether it is on the screen anyway. Every bug
 these switches have had looked identical from the outside, a switch that was on
 with the frame still drawn, and telling a name this client spells differently
@@ -2157,7 +2157,7 @@ One line each. A bug that survived a shipped fix gets a full write-up in
 
 - A word Core answers itself is a word no feature can have. The dispatch in
   `Core/Command.lua` returned before the registry was consulted, so the
-  interface part's `ui` lost silently and every `/wk ui` opened the panel. One
+  interface part's `ui` lost silently and every `/wui ui` opened the panel. One
   `RESERVED` table now, asserted in `BuildWords`, which runs at login.
 - Saved variables have two scopes and the wrong one is not an error, it is a
   bug you find on your second character. Anything describing one character's
@@ -2226,7 +2226,7 @@ One line each. A bug that survived a shipped fix gets a full write-up in
 - A frame level cannot win an argument with a frame strata. `MainActionBar` on
   this client is mouse enabled in TOOLTIP, the top strata there is, so a cloned
   bar at MEDIUM 122 lost every hit test on the bottom of the screen to a frame
-  at level 50. Two fixes were written against the level before `/wk actionbars
+  at level 50. Two fixes were written against the level before `/wui actionbars
   trace` printed the strata. When a frame is taking a click that is not yours,
   read both numbers, and read them off the client rather than off Blizzard's
   XML: this one is declared MEDIUM and is not running at MEDIUM.
@@ -2242,7 +2242,7 @@ One line each. A bug that survived a shipped fix gets a full write-up in
   frame that answers `OnEnter` is the frame the client hit tested the cursor
   against, so if a square hovers, the drop is reaching it and the depth of what
   is underneath cannot be the reason it failed. Two fixes went in on a reading
-  of the code before that was worked out. `/wk actionbars trace` exists so the
+  of the code before that was worked out. `/wui actionbars trace` exists so the
   third one is chosen on what the client says: it prints the frame under the
   cursor as it changes, and every gesture a square gets, with the slot and the
   cursor either side of it. A drop that never prints was never sent to us; a
@@ -2329,7 +2329,7 @@ One line each. A bug that survived a shipped fix gets a full write-up in
 the icon clears it. `SetRaidTarget` silently does nothing without raid leader
 or assistant, so the addon says so once every five seconds instead.
 
-Three marks, one key each, set in the panel or with `/wk markkey`. The shipped
+Three marks, one key each, set in the panel or with `/wui markkey`. The shipped
 keys are `F5` for skull, `F4` for cross and `F3` for moon: function keys rather
 than modified clicks, because a modified click on a nameplate competes with the
 camera and with click targeting, and the point of these is that they beat opening
@@ -2351,7 +2351,7 @@ nowhere still has an obvious subject. The OnMouseDown hook on plates and unit
 frames gets its unit from `mouseover` the same as the rest.
 
 Clearing every key hands the mouse back and puts the ctrl-targeting fallback in
-charge. `/wk status` names each mark and its key, and appends `unproven` when
+charge. `/wui status` names each mark and its key, and appends `unproven` when
 `GetBindingAction` has not confirmed the override.
 
 **Mouseover casting.** The addon's own Clique, in five files under `Hover/`.
@@ -2381,7 +2381,7 @@ holds nothing. The dash is the click name: the client answers only the five real
 mouse buttons with a bare number, and every other click name gets a dash in
 front, so a click called `wk1` looks for `-wk1`. Written as `type-1` and then as
 `*type1` the attributes were under a name nothing ever asks for, the override
-bound, `GetBindingAction` read it back correctly, `/wk hover show` printed the
+bound, `GetBindingAction` read it back correctly, `/wui hover show` printed the
 right macro, and not one key cast anything. `UnitFrames/Group.lua` writes its
 click actions with the wildcard and always did.
 
@@ -2449,7 +2449,7 @@ the question is which abilities you were given rather than which class you are.
 `SoftTarget.Wanted` asks the same question, so the CVar is never written either;
 that gate is on `Wanted` and not on the event frame, because `Apply` is also
 called straight from the panel and the slash word and one authority is what
-stops those three paths disagreeing. `/wk charge`, `/wk size` and `/wk bind` say
+stops those three paths disagreeing. `/wui charge`, `/wui size` and `/wui bind` say
 why instead of writing a setting nothing reads, and the Charge part opens no
 page at all, so it takes no row on Start and no entry in the rail.
 
@@ -2535,7 +2535,7 @@ the CVar is switched off, and `unproven` while neither has happened. The marker
 says so in chat once, but only for `off`, because that is the only one you can
 do anything about.
 
-**Charge button.** `WarriorKitChargeButton` is the HUD icon and the caster both.
+**Charge button.** `WiggleUIChargeButton` is the HUD icon and the caster both.
 The addon rewrites its `macrotext` whenever the predicted mob changes, from the
 marker's ticker so the two never disagree by a frame:
 
@@ -2593,8 +2593,8 @@ weapon; the stance keys need two, so it moved to the shared layer rather than
 being reached across a folder boundary. Unlocking the icon clears the `type` attribute so dragging it cannot
 cast.
 
-Two ways to press it. `/wk bind X` takes the key with an override binding, or
-put `/click WarriorKitChargeButton` in an ordinary macro and drag that to an
+Two ways to press it. `/wui bind X` takes the key with an override binding, or
+put `/click WiggleUIChargeButton` in an ordinary macro and drag that to an
 action bar.
 
 **The key never touches your saved bindings.** `SetBindingClick` would, and the
@@ -2606,7 +2606,7 @@ The key is held the whole time by default, because the in-combat half casts
 Intervene and Intercept. `chargeKeyRelease` hands it back during combat instead,
 for anyone who would rather keep their own binding there. Releasing at
 PLAYER_REGEN_DISABLED is too late, lockdown is already up when the event fires,
-so that option needs `WarriorKitChargeBinder`, a SecureHandlerStateTemplate
+so that option needs `WiggleUIChargeBinder`, a SecureHandlerStateTemplate
 driven by `RegisterStateDriver` on `[combat]` whose snippet sets and clears the
 binding from inside the restricted environment.
 
@@ -2647,7 +2647,7 @@ The first was usually not the addon. Soft targeting is a character scoped CVar,
 so a character that never touched it ran the default, which is off, and with it
 off `Pick` has no camera answer and falls back to target then cursor. That is
 what the section below now takes care of, so if the marker is missing out of
-combat, check `/wk status` first: `action targeting auto, on out of combat`
+combat, check `/wui status` first: `action targeting auto, on out of combat`
 with `token unproven` means the CVar is set and the token is what is not
 answering.
 
@@ -2666,7 +2666,7 @@ something. So the setting follows the ability.
 
 The CVar is character scoped, so the value it had before the addon took it is
 remembered per character in `softPrior`, and turning the setting off with
-`/wk charge soft off` puts that value back rather than leaving the CVar wherever
+`/wui charge soft off` puts that value back rather than leaving the CVar wherever
 the last combat transition happened to drop it. A setting that quietly edits
 your client config and does not put it back is not a setting, it is a side
 effect.
@@ -2693,7 +2693,7 @@ warning stays quiet, because off out of combat then means a write the client
 refused, which `SoftTarget` has already said, and telling you to set a CVar the
 addon is driving is advice that fights itself.
 
-`/wk status` reports the two halves separately, because they are two questions:
+`/wui status` reports the two halves separately, because they are two questions:
 `action targeting auto, on out of combat` is what the CVar is doing, and
 `token on | off | unproven` is whether `softenemy` resolves on this client at
 all.
@@ -2704,7 +2704,7 @@ whole reason this part exists, because cycling picks the next mob and leaves it
 standing there untouched, so switching mid-fight otherwise costs a second press
 that is easy to forget while something is hitting you.
 
-`Targeting/Switch.lua` builds `WarriorKitSwitchButton`, a
+`Targeting/Switch.lua` builds `WiggleUISwitchButton`, a
 `SecureActionButtonTemplate` with no size and no anchor, the shape
 `Marking/Keys.lua` uses for its own button. Starting an attack is protected, so
 the two commands have to run as a macro off a hardware key press rather than as
@@ -2727,7 +2727,7 @@ list.
 The key is an override binding, the same as the charge key and the marking keys,
 so putting it on TAB leaves TAB alone in the binding set and clearing it hands
 TAB straight back. `Switch.Describe` reads `GetBindingAction` back rather than
-reporting what it meant to set, so `/wk status` can say the client did not take
+reporting what it meant to set, so `/wui status` can say the client did not take
 the key.
 
 **Loadouts.** A loadout is a name, a pair of weapons, an optional stance and a
@@ -2799,7 +2799,7 @@ The keys are override bindings, the same as the charge key, the marking keys and
 the switch key, so your saved bindings are untouched and clearing a key hands it
 straight back. Two loadouts cannot claim one key: the second claim is refused
 with a reason and the first keeps the key. Or put
-`/click WarriorKitLoadout1Button` in an ordinary macro and drag that to a bar.
+`/click WiggleUILoadout1Button` in an ordinary macro and drag that to a bar.
 
 **The page is a paperdoll.** `kit.Paperdoll` draws Blizzard's own `PlayerModel`
 of your character in the addon's own box, with a gear square per hand under it
@@ -2823,7 +2823,7 @@ takes a widget kit and calls the same nine functions every other page in the
 addon calls, and the character window is a host in the sense `UI.Kit` means, so
 the whole of the move is which frame the rows land on. `Loadouts/Feature.lua`
 carries no `panel` any more, which means turning the character sheet off leaves
-loadouts to `/wk loadout`, and the switch says so.
+loadouts to `/wui loadout`, and the switch says so.
 
 **Why the loadout strip is not the window's tab strip.** The options window's
 strip is chrome: `Core/Panel.lua` builds it once at PLAYER_LOGIN out of the
@@ -2838,7 +2838,7 @@ and hidden again after a press on one of its squares. A bar of trade skills
 under T, a bar of totems under Shift-T, up to six. Four files under `AdHoc/`.
 `AdHoc.lua` is the list, per character for the reason loadouts are. `Bars.lua`
 is the frames, the keys and the tick. `Panel.lua` is the page, under Action
-bars in the options window. `Feature.lua` is the registration and `/wk adhoc`.
+bars in the options window. `Feature.lua` is the registration and `/wui adhoc`.
 
 **A square holds a spell by name and never by id.** `/cast Frost Shock` with no
 rank named casts the best rank you know, so a bar never goes stale after a
@@ -3176,7 +3176,7 @@ are standing in, and derives the other two pages from the 12 slot stride. If
 `GetBonusBarOffset` says bar 1 is not paging, it fills one page with the
 Defensive set and says so rather than writing to slots nothing displays.
 
-*The backup.* Per character, in `WarriorKitCharDB`, because it describes one
+*The backup.* Per character, in `WiggleUICharDB`, because it describes one
 character's bars. Held account-wide it was a way to lose them: the first
 character to apply owned the only backup, the second overwrote its bars without
 taking one, and restoring on the second wrote the first one's bars into its
@@ -3195,7 +3195,7 @@ checks for free macro slots before it starts.
 **Our own bars.** This is on out of the box. It reads whichever action bars you
 have up, stands one of ours up for each of them on the same action slots, moves
 your keys onto it with an override binding and hides Blizzard's twelve behind it;
-`/wk actionbars off` hands them back without a reload. Nothing in it invents a
+`/wui actionbars off` hands them back without a reload. Nothing in it invents a
 slot space, a key or a bar: `Buttons/Which.lua` holds the plan of the five bars
 this client can have and answers which of them you want, and the shipping answer
 is read off your own interface options, so the feature gives you back the
@@ -3291,7 +3291,7 @@ question and the client keeps both. Handing a bar back drops it: left on, the
 client would go on deciding when to show a bar this addon had already given up.
 
 *The bars' own lock.* `ns.db.barsLocked` ships off. On means a bar moves only
-while `/wk unlock` has every frame in the addon loose. Off means holding shift
+while `/wui unlock` has every frame in the addon loose. Off means holding shift
 puts a drag handle over each bar for as long as you hold it, watched through
 `MODIFIER_STATE_CHANGED` rather than through a ticker asking `IsShiftKeyDown` ten
 times a second. The cost is stated rather than hidden: a handle is a frame laid
@@ -3326,7 +3326,7 @@ the frame and never comes past `Core/Panel.lua`. A mark that outlived the window
 would be an accent rectangle round one bar for the rest of the session with
 nothing on the screen to say why.
 
-**Options panel.** `/wk` with nothing after it opens it, Escape closes it, and
+**Options panel.** `/wui` with nothing after it opens it, Escape closes it, and
 every row has a slash command behind it so nothing is only reachable by mouse.
 
 Nine groups down the left, declared in `Core/Panel.lua` and owned by no
@@ -3377,7 +3377,7 @@ when it names none. `says` is the one sentence the switch needs and it hangs on
 the row the way any hint does. Eleven features each wrote their own for the
 same idea and no two worded it the same way: `show the row`, `show the icon`,
 `Show the meters`, `Show the swing bars`, `show enemy bars` and `draw the
-WarriorKit chat window`. The wording stops being each author's choice, which is
+WiggleUI chat window`. The wording stops being each author's choice, which is
 most of why those six were six different shapes.
 
 `page` exists because "the first page a part opens" put the enemy bars switch at
@@ -3454,7 +3454,7 @@ there.
 
 A query is matched against the label, the section title, the group name, the
 part's name and every slash word it answers to. That last one is what makes
-typing `skin` find the frame controls, because `/wk skin` is what drives them
+typing `skin` find the frame controls, because `/wui skin` is what drives them
 and it is the word somebody who already knows the addon reaches for.
 
 The index pays for itself twice. The harness types all 147 labels in full and
@@ -3902,7 +3902,7 @@ costs a bar up to a fifth of a second late, and not a bar that never comes up.
 backported from call it different things. It is a plain boolean like the other
 four and it does not read the setting above it, which means both off is the one
 combination that leaves you with no cast bar at all. That is said in the hint
-under the switch, in what `/wk cast off` prints, and in the panel's readout,
+under the switch, in what `/wui cast off` prints, and in the panel's readout,
 because a switch whose effect you cannot predict from its label is not a switch.
 
 **The debuff row is a setting, not a constant.** It ships tracking Sunder Armor,
@@ -3933,7 +3933,7 @@ list. Both re-resolve the names and textures and then relayout, because a caller
 that forgot either half would leave a row of blank squares behind. An ID this
 client cannot name is kept on the list and drawn as nothing, since an account
 plays both flavours and a spell Era has never heard of should come back on the
-character it was added on. The panel and `/wk status` name the ones that are in
+character it was added on. The panel and `/wui status` name the ones that are in
 that state rather than leaving the row silently short.
 
 `bars icon` sizes one square, 16 to 32 pixels, and **29 is the only size in that
@@ -3978,7 +3978,7 @@ at eight has closed the hole in a 6.
 **Bar art.** Strips the 2007 furniture off the action bars at PLAYER_LOGIN: the
 two gryphons, the riveted metal strip behind bar 1, the page arrows and the page
 number. It is on the moment the addon loads, because that is the look the
-loadout in `warrior-loadout.md` was designed around, and `/wk art on` puts every
+loadout in `warrior-loadout.md` was designed around, and `/wui art on` puts every
 piece back without a reload.
 
 Two decisions are worth knowing before editing `ART_HOLDERS` or `ART_REGIONS`.
@@ -3993,13 +3993,13 @@ Names are a fallback, not the method. This client is a hybrid, TBC-era art under
 a backported Edit Mode, so a texture global the wiki names may not be the one
 2.5.6 has. Walking `GetRegions` cannot go stale, and every name in either list
 is resolved through `_G`, so an absent one is a skipped entry rather than an
-error. `/wk status` reports how many regions the last sweep touched, and zero is
+error. `/wui status` reports how many regions the last sweep touched, and zero is
 the answer that matters: it means this client calls the art something else, not
 that the art was already gone.
 
 The experience bar is not artwork. `MainMenuExpBar` and
 `StatusTrackingBarManager` are deliberately in neither list. `Progress/` draws
-both of those bars now and `/wk hide xp` is what takes the client's own down, so
+both of those bars now and `/wui hide xp` is what takes the client's own down, so
 stripping their textures here would be two parts arguing over one frame.
 
 **The experience and reputation rails.** `Progress/Rails.lua`, along the bottom
@@ -4060,7 +4060,7 @@ and the symptom is an hourly rate saying you are going backwards.
 
 **Frame skin.** The player frame, the target frame and target of target,
 wearing the enemy bars' look: flat fills, one pixel edges, a square portrait,
-and the class colour on the gauge and on the edge around it. `/wk skin off`
+and the class colour on the gauge and on the edge around it. `/wui skin off`
 puts every piece back without a reload. On by default, for the same reason the
 bar art strip is.
 
@@ -4081,12 +4081,12 @@ was never set and must never be set back, and `GetPoint` answers a nil
 
 The colour is held rather than repainted. Blizzard recolours a health bar on
 every unit change, so `SetStatusBarColor` is swapped for a no-op and the
-original kept beside it as `wkSetStatusBarColor`, which is what `ns.Strip` does
+original kept beside it as `wuiSetStatusBarColor`, which is what `ns.Strip` does
 to `Show`. `Paint` calls the original. Nothing in that is a protected action.
 
 **Incoming heals are a slice of the gauge, and they are clamped.** A pale green
 slice runs from where the health fill stops to where the heals already in the
-air will take that unit. `/wk skin heals off` drops it. Two decisions carry it.
+air will take that unit. `/wui skin heals off` drops it. Two decisions carry it.
 
 It is clamped to what the unit is missing, so a 2,000 heal on a warrior who is
 down 300 draws 300. An unclamped slice runs past the end of the bar and lies
@@ -4106,7 +4106,7 @@ predicted it.
 estimate. Both binaries register it and both fire `UNIT_HEAL_PREDICTION`, which
 is why there is no LibHealComm here and no scan of anyone else's casts. It is
 still probed rather than trusted, so a client that drops it draws nothing and
-says so in `/wk status`.
+says so in `/wui status`.
 
 **The frame is fitted to the block, and the size is a setting in pixels.**
 The block used to hang off the portrait's own anchor inside a frame five times
@@ -4144,14 +4144,14 @@ right to left and the target's run left to right, across the same corridor the
 two blocks are mirrored about. `lineOrder` on the `ns.UI.Flow` node is what
 keeps line one against the block on the row above it, where the frame is sized
 for a full list and fills from the bottom edge up.
-`/wk skin auras off` leaves both frames with no row at all, which is the honest
+`/wui skin auras off` leaves both frames with no row at all, which is the honest
 answer rather than an oversight: each frame is its block, so handing the
-client's row back would hang it in the gauge. Only `/wk skin off` gives it back,
+client's row back would hang it in the gauge. Only `/wui skin off` gives it back,
 because that is what gives the frame its size back.
 
-`/wk skin aura` sizes the square, and its ceiling is the block's own height
+`/wui skin aura` sizes the square, and its ceiling is the block's own height
 rather than a constant. Above that a square is taller than the frame it hangs
-off, which was 34 pixels when these rows were written and is `/wk skin height`
+off, which was 34 pixels when these rows were written and is `/wui skin height`
 now, running to 72. The floor is 12, where the stack count stops being
 readable.
 
@@ -4259,7 +4259,7 @@ down. There is exactly one key in that list and that is a rule: a key is read
 straight off a frame this addon does not own, so a guessed one hides something
 nobody asked to hide, which is worse than the failure the list exists to fix.
 `spellbar` is the only one written from FrameXML source. The next one goes in
-after `/wk hide probe` has printed ON SCREEN against a name. The raid hook is
+after `/wui hide probe` has printed ON SCREEN against a name. The raid hook is
 gone.
 
 A run is one name the client counts from 1, and a row can stand in for more
@@ -4283,7 +4283,7 @@ allowed in combat where re-anchoring target of target itself is not, for the one
 reason that matters here: that frame is ours.
 
 A resize is not a free change, so three things carry it. The original size is
-recorded before the first fit and `/wk skin off` writes it back, without a
+recorded before the first fit and `/wui skin off` writes it back, without a
 reload, like every other change the skin makes. `SetSize` on a secure unit
 button is a protected action, so it sits behind the same lockdown guard as the
 rest of `Place` and finishes at `PLAYER_REGEN_ENABLED`. And target of target is
@@ -4317,14 +4317,14 @@ down on its own is one this agrees with. Showing a secure unit button is
 protected, so a change combat refuses waits for `PLAYER_REGEN_ENABLED` like
 every other write here; the client's own show and hide are secure and go on
 working through a pull, which is what covers a frame that first has to go up
-mid fight. Nothing puts the flag back at `/wk skin off`, and that is deliberate:
+mid fight. Nothing puts the flag back at `/wui skin off`, and that is deliberate:
 the client's driver reads the frame's own flag, so its first pass after the skin
 comes off finds whatever state it was left in and corrects it.
 
 **The three frames are one chain, and Edit Mode is left one job.** The player
 block is wherever Edit Mode put it. The target block hangs off the player block
 and target of target hangs off the target block, so what you place is one HUD
-rather than three frames free to drift apart. `/wk skin link off` puts the
+rather than three frames free to drift apart. `/wui skin link off` puts the
 target frame back on its own point without a reload.
 
 That division is the only one available rather than a compromise. Edit Mode
@@ -4356,8 +4356,8 @@ it by dragging the player outward. Drag the player across the centre and the
 pair crosses, which is what a mirror does and is worth knowing before it
 surprises you.
 
-`/wk skin level 0` is the one number left: how far the target's top edge drops
-below the player's, in screen pixels on the same ruler as `/wk skin height`,
+`/wui skin level 0` is the one number left: how far the target's top edge drops
+below the player's, in screen pixels on the same ruler as `/wui skin height`,
 snapped. Where the pair lands on the screen is still a fraction of a pixel
 nobody can read, because the player frame's origin is Blizzard's. That is the
 boundary the pixel grid already draws round the block, unchanged.
@@ -4389,7 +4389,7 @@ lands somewhere new depending on which switch you flipped.
 
 Fourth, the link needs both frames skinned. Unskinned, `TargetFrame` is 232 by
 100 and an edge measured off it is the edge of a rectangle three quarters of
-which is empty, so the link waits and `/wk status` names the half that is
+which is empty, so the link waits and `/wui status` names the half that is
 missing rather than drawing something wrong. `Mirrored` can also come back with
 nothing, on a pass where the client has not resolved the player block's
 position yet. There is nothing to fall back to and that is deliberate. The
@@ -4410,7 +4410,7 @@ hook is the one piece of this part that cannot be taken off again, so it does
 nothing at all while the skin is off.
 
 Only you know how tall you want the block, so the height and the width are
-`/wk skin height` and `/wk skin width`, and since the block went on the pixel
+`/wui skin height` and `/wui skin width`, and since the block went on the pixel
 grid those two numbers are counts of screen pixels rather than of UI units. On a 1440 tall screen at UI scale 0.65 one unit used to buy 1.22
 pixels, so the same setting draws a smaller square than it did and the ranges
 reach further up to compensate: 18 to 72 and 90 to 360. Sizing it off Blizzard's
@@ -4565,10 +4565,10 @@ clamp against. The two settings are the whole of the size.
 Target of target is still the frame to turn off first. It is a glance rather
 than something you read, it takes a fixed fraction of both settings, and ours
 is opaque where Blizzard's is mostly not. Each of the three frames has its own
-switch under the part's switch, `/wk skin tot off` being the one to reach for,
+switch under the part's switch, `/wui skin tot off` being the one to reach for,
 and turning it off puts the aura rows straight against the block.
 
-**`/wk skin probe` prints what the client answered.** Frame size, whether the
+**`/wui skin probe` prints what the client answered.** Frame size, whether the
 portrait resolved, its recorded height, the health bar's recorded width, what
 the frame measured before the fit, whether this client put an Edit Mode
 selection on it, and the name of every region hidden. Every number the
@@ -4588,7 +4588,7 @@ They are matched on the end of a region's name rather than on the whole of it.
 Naming them outright would mean three names per icon across two clients and a
 hybrid between them, and the suffix is the half that has never moved:
 `AttackIcon$` catches the combat icon under any prefix. A pattern that matches
-nothing costs one missing icon, and `/wk skin probe` prints the name of every
+nothing costs one missing icon, and `/wui skin probe` prints the name of every
 region hidden, so an icon called something unexpected here names itself in that
 list and is one line in `BADGES` away from coming back.
 
@@ -4642,7 +4642,7 @@ frames five times a second to say a number that changes when the unit does.
 the harness at fifty ticks across all three frames, that was 18.75 KB before and
 0.00 after.
 
-`/wk status` reports how many regions the last apply hid, and zero with the
+`/wui status` reports how many regions the last apply hid, and zero with the
 skin on is the answer that matters: it means the walk found no textures on
 these frames, which says this client builds them out of something else rather
 than that they were already bare.
@@ -4694,7 +4694,7 @@ the first minute you are in a group and then stops moving.
 
 The header takes it as `sortMethod = "NAMELIST"` with the names in order, which
 is the one sorting the template offers that an addon can decide for itself.
-`/wk party order group` swaps that for `groupBy = "GROUP"`, which is what
+`/wui party order group` swaps that for `groupBy = "GROUP"`, which is what
 somebody running twenty five with assignments per group wants; a party is always
 by role, because every group number in a party is 1 and grouping by it is the
 order the client handed the units over.
@@ -4704,7 +4704,7 @@ the block, not its top left corner. The header sizes itself to the block it has
 just arranged, gaps and column spacing included, so centring it on the anchor is
 the whole of the effect: a fifth person moves every slot half a block away from
 the anchor rather than pushing the bottom of the list further down the screen and
-leaving the top where it was. `/wk party grow up|down` still picks which end the
+leaving the top where it was. `/wui party grow up|down` still picks which end the
 first slot is at.
 
 That centring is written as a rounded offset rather than as `CENTER` anchored to
@@ -4736,7 +4736,7 @@ room in it.
 
 The override is per character and by name rather than by GUID, because the point
 of it is that you type it for the people you play with and it is still right next
-week. A GUID would be right and unreadable. `/wk party role <name>
+week. A GUID would be right and unreadable. `/wui party role <name>
 tank|healer|dps|none`, or the picker on the page, which walks one name round the
 three bands and then off again.
 
@@ -5181,7 +5181,7 @@ complaint that produced this setting, one level up. It is `ns.dbc.buffWatch`, an
 absent means watched, so a fresh character carries an empty table and an entry
 added in a later release arrives switched on rather than silently missing.
 
-**A silenced entry is visible somewhere.** `/wk status` and the panel both name
+**A silenced entry is visible somewhere.** `/wui status` and the panel both name
 what you switched off, because a nag you turned off six weeks ago and can find
 no trace of is the same defect one room over: the row is quiet and you no longer
 know why. The status reads `3 tracked, 1 missing; bare weapon switched off`.
@@ -5272,13 +5272,13 @@ a warrior's, and a troll rogue forgets Berserking the same way.
 that an aura came from an elixir. There is no category on an aura and no call
 that maps one back to the item, so the only built-in version is about forty hand
 written spell ids that cannot be verified from outside the game, go stale on the
-next patch, and are wrong in a way nothing reports. `/wk buffs add <id>` takes
+next patch, and are wrong in a way nothing reports. `/wui buffs add <id>` takes
 six of your own, the same shape the debuff row on the enemy bars already has.
 
 **Only the racials that are damage are nagged about.** Blood Fury on an orc and
 Berserking on a troll: both are throughput, both come back inside three minutes,
 and forgetting one across a boss fight is free damage thrown away. Every other
-racial a warrior can have is listed with the nag off, so `/wk status` and the
+racial a warrior can have is listed with the nag off, so `/wui status` and the
 panel can name yours and say why it is quiet. Stoneform is spent when something
 bleeds you and War Stomp when something needs stunning, and a row that shouted
 about either every fight would teach you to ignore the row, which would cost you
@@ -5337,7 +5337,7 @@ is the cooldown row's rule rather than the buff nag's, and for the same reason:
 what you have out is a question you ask again thirty seconds later, so a row
 that appeared the moment something ran out would arrive exactly when you had
 stopped needing it. Four holes over your character between pulls is furniture.
-`/wk totems idle on` keeps it up anyway.
+`/wui totems idle on` keeps it up anyway.
 
 **Built out of `UI/Aura.lua`, not `UI/Ability.lua`.** A totem is not a press. It
 has no cost, no range and no stance, its sweep fills as it runs out rather than
@@ -5545,7 +5545,7 @@ about the character you happen to be standing in.
 **Blizzard's chat window is hidden, and everything it would have drawn is
 forwarded here.** That is the default. The switch is on the **Blizzard's own
 frames** page with the other six, because it answers the same question they do,
-and `/wk hide chat` is the word for it. Loot,
+and `/wui hide chat` is the word for it. Loot,
 experience, faction, system text, the combat log and every addon's output,
 including this one's, arrive at a chat frame's `AddMessage` as finished strings
 with nothing to say where they came from, so they go to the System room whole.
@@ -5571,7 +5571,7 @@ shown again. That coupling is deliberate rather than a setting of its own: the
 client's enter opens the client's chat line, and with that window hidden the
 line it opens is invisible. Every slash command still works from this field,
 because the ones the addon does not know are handed to the client's parser.
-There is also a key under WarriorKit in the client's own key bindings, for
+There is also a key under WiggleUI in the client's own key bindings, for
 somebody who keeps Blizzard's window and wants this one on a key of their own.
 
 The numbered channels are on by default and have no room of their own: they land
@@ -5643,7 +5643,7 @@ appears.
 **A pin is not a button.** The minimap is also where every addon that draws on
 the map hangs its pins, and those are left where they are. They arrive in pools
 with generated names, which is what tells them apart from a button. The corral
-also refuses to hold more than it can lay out, and `/wk minimap list` says what
+also refuses to hold more than it can lay out, and `/wui minimap list` says what
 it took, what it left as pins and what it refused, because nothing should be
 taken quietly.
 
@@ -5658,7 +5658,7 @@ thing that travels with an addon is the addon folder, so the layout has to end
 up as a file in it. An addon cannot write files, so the capture goes out through
 saved variables and comes back in through a shell script:
 
-    in game     /wk ui save            reads the active layout into ns.db.uiLayout
+    in game     /wui ui save            reads the active layout into ns.db.uiLayout
                 /reload                the game writes saved variables on unload
     in a shell  ./bake-ui.sh           rewrites EditMode/Saved.lua from that
 
@@ -5670,7 +5670,7 @@ diff. It runs `check.sh` on the way out.
 On a client that has no layout by that name, `AutoApply` imports it at
 PLAYER_ENTERING_WORLD and makes it active, once. A layout already present is the
 user's and is left alone, because swapping the UI at every login is not
-automatic, it is a fight. `uiAuto` turns the import off; `/wk ui apply` does it
+automatic, it is a fight. `uiAuto` turns the import off; `/wui ui apply` does it
 by hand.
 
 `EditModeManagerFrame` is confirmed here only through `GetActiveLayoutInfo`,
@@ -5948,7 +5948,7 @@ button that opens it.
 
 **No reset hook.** The registry's `reset` means "put this part's frames back
 where they started" and this part has no frames. Registering one would make
-`/wk reset`, which is what you type when a window has wandered off screen,
+`/wui reset`, which is what you type when a window has wandered off screen,
 quietly turn selling back on for someone who had deliberately turned it off.
 
 ### Zoom
@@ -5980,8 +5980,8 @@ sees a new one, so the player who has run the addon longest is the only one who
 never gets the layout it ships with. Deleting the saved variables file was the
 answer before this, and it takes the gold ledger and your groups with it.
 
-`/wk defaults` reports how many settings are off the shipped answer and writes
-nothing. `/wk defaults yes` writes them all back and reloads. The Settings page
+`/wui defaults` reports how many settings are off the shipped answer and writes
+nothing. `/wui defaults yes` writes them all back and reloads. The Settings page
 draws the same thing as a button that arms on the first press and does it on
 the second, and drops the arm when the window is shut.
 
@@ -6027,7 +6027,7 @@ setter once, on the way up. A click on the track and a keyboard nudge are not
 drags and commit straight away. The harness holds the button, moves the thumb,
 asserts nothing was saved, lets go and asserts the value landed.
 
-**What it covers.** The windows this addon draws, which today are the `/wk`
+**What it covers.** The windows this addon draws, which today are the `/wui`
 panel and the Clutter window. Not the enemy bars, which have `bars zoom` in
 whole steps, and not the skinned unit frames or the charge button, which are
 sized in pixels where they sit and have their own settings for it.
@@ -6052,7 +6052,7 @@ the client's own bar asks instead on the builds that have them.
 It exists because a macro is typed. On a machine where the clipboard does not
 reach the game window, six calls with their names beside them are six chances
 to mistype one, and the answer to "what does this client say here" is worth
-having exact. `/wk console xp` prints the same lines to chat, and `/wk console
+having exact. `/wui console xp` prints the same lines to chat, and `/wui console
 run <lua>` takes one line raw. The chunk runs as the client's own globals, the
 way a macro does, and `print` is borrowed for the length of the chunk and put
 back whether it ran, raised or never parsed.
@@ -6106,7 +6106,7 @@ there is no state in which the window is not telling you.
 
 Red also arms the send. The button turns with the band, reads `send anyway`, and
 takes a second press; anything you change in between disarms it, because the
-thing you changed is the thing the warning was about. `/wk mail warn off` drops
+thing you changed is the thing the warning was about. `/wui mail warn off` drops
 the second press and keeps the colour.
 
 **Favourites are a different axis from the colour and that is deliberate.** A
@@ -6116,7 +6116,7 @@ week is a stranger by relation and belongs on the list; an alt the addon met
 once is green and does not. The warning is measured against the list, because the
 list is the half you curated. The list ships with the author's bank alt on it,
 which on anybody else's account is one name in the picker that never matches
-anybody and comes off with `/wk mail unfav`.
+anybody and comes off with `/wui mail unfav`.
 
 **More than twelve attachments.** A mail carries twelve and there is no arguing
 with that. What the client then does is make twelve the number you have to think
@@ -6183,7 +6183,7 @@ lays its panels out again whenever a panel opens. The cost against the attic is
 real and is why parking is not the default anywhere else: a client that
 repositions the frame between two re-parks puts it back on the screen, where the
 attic could not. That failure is visible rather than silent, and
-`/wk mail hide off` is the way out of it.
+`/wui mail hide off` is the way out of it.
 
 **Who a name is comes from three lists and `Mail/Who.lua` owns one of them.** The
 friends list is the client's and is read there, because it is an API rather than
@@ -6203,237 +6203,237 @@ on different realms read as the same person.
 
 ## Commands
 
-    /wk                          open the settings panel
-    /wk panel | options | config the same thing
-    /wk status                   one line per part
-    /wk help                     the command list, gathered from the registry
-    /wk lock | unlock            both frames
-    /wk reset                    positions, size, width, offset
-    /wk defaults                 what is not the answer the addon ships with
-    /wk defaults yes             put all of it back, and reload
-    /wk size 52                  charge icon, 16 to 128
-    /wk mark on|off              marking, all paths
-    /wk markkey skull F5         one key per mark, or none to clear
-    /wk markkey cross|moon <key>
-    /wk targetmark on|off        the ctrl-targeting fallback
-    /wk hover on|off             a key casts on whatever the mouse is over
-    /wk hover show               every key and the macro it presses
-    /wk hover remove SHIFT-BUTTON3   take one key off
-    /wk hover clear              take them all off
-    /wk hover list on|off        the list drawn over the world
-    /wk hover target on|off      fall back to your target when hovering nothing
-    /wk charge on|off
-    /wk charge always|ready      always visible, or only when usable
-    /wk charge marker on|off     the icon in the world
-    /wk charge marker size 30    16 to 96
-    /wk charge marker offset 10  nudge it up or down the plate, -60 to 60
-    /wk charge soft on|off       action targeting driven off combat, or yours
-    /wk charge weapon Bloodspiller   equipped into slot 16, "none" to drop the line
-    /wk bind SHIFT-Q             take a key, override binding only
-    /wk bind none                hand the key back
-    /wk switch TAB               next enemy and swing at it, override binding only
-    /wk switch none              hand that key back
-    /wk actionbars on|off        our own bars over Blizzard's, same slots, same keys
-    /wk actionbars match         back to cloning whichever bars you have on
-    /wk actionbars where         the plan lines for wherever you dragged them
-    /wk actionbars reset         drop every dragged position
-    /wk actionbars lock|unlock   whether shift and a drag moves a bar
-    /wk actionbars rows bar1 3   1, 2, 3, 4, 6 or 12 rows of the twelve;
+    /wui                          open the settings panel
+    /wui panel | options | config the same thing
+    /wui status                   one line per part
+    /wui help                     the command list, gathered from the registry
+    /wui lock | unlock            both frames
+    /wui reset                    positions, size, width, offset
+    /wui defaults                 what is not the answer the addon ships with
+    /wui defaults yes             put all of it back, and reload
+    /wui size 52                  charge icon, 16 to 128
+    /wui mark on|off              marking, all paths
+    /wui markkey skull F5         one key per mark, or none to clear
+    /wui markkey cross|moon <key>
+    /wui targetmark on|off        the ctrl-targeting fallback
+    /wui hover on|off             a key casts on whatever the mouse is over
+    /wui hover show               every key and the macro it presses
+    /wui hover remove SHIFT-BUTTON3   take one key off
+    /wui hover clear              take them all off
+    /wui hover list on|off        the list drawn over the world
+    /wui hover target on|off      fall back to your target when hovering nothing
+    /wui charge on|off
+    /wui charge always|ready      always visible, or only when usable
+    /wui charge marker on|off     the icon in the world
+    /wui charge marker size 30    16 to 96
+    /wui charge marker offset 10  nudge it up or down the plate, -60 to 60
+    /wui charge soft on|off       action targeting driven off combat, or yours
+    /wui charge weapon Bloodspiller   equipped into slot 16, "none" to drop the line
+    /wui bind SHIFT-Q             take a key, override binding only
+    /wui bind none                hand the key back
+    /wui switch TAB               next enemy and swing at it, override binding only
+    /wui switch none              hand that key back
+    /wui actionbars on|off        our own bars over Blizzard's, same slots, same keys
+    /wui actionbars match         back to cloning whichever bars you have on
+    /wui actionbars where         the plan lines for wherever you dragged them
+    /wui actionbars reset         drop every dragged position
+    /wui actionbars lock|unlock   whether shift and a drag moves a bar
+    /wui actionbars rows bar1 3   1, 2, 3, 4, 6 or 12 rows of the twelve;
                                  1, 2, 5 or 10 for the pet bar, named pet
-    /wk actionbars square bar1 32        one square's edge, 16 to 54, sharp at
+    /wui actionbars square bar1 32        one square's edge, 16 to 54, sharp at
                                  27 and 54
-    /wk actionbars centre bar1 across|down   its middle on the middle of the
+    /wui actionbars centre bar1 across|down   its middle on the middle of the
                                  screen, one axis at a time
-    /wk actionbars background bar1 40    the ground's opacity, 0 to 100 in fives
-    /wk actionbars from pet bar1         the pet bar takes bar 1's square, key
+    /wui actionbars background bar1 40    the ground's opacity, 0 to 100 in fives
+    /wui actionbars from pet bar1         the pet bar takes bar 1's square, key
                                  and background and follows them; none stops
-    /wk actionbars combat bar1 on        the bar goes down when a fight starts
-    /wk actionbars key bar1 shift        up only while that key is held
-    /wk actionbars plain         every bar back to the plan's own shape
-    /wk actionbars trace         what the mouse is really touching, for a drop
+    /wui actionbars combat bar1 on        the bar goes down when a fight starts
+    /wui actionbars key bar1 shift        up only while that key is held
+    /wui actionbars plain         every bar back to the plan's own shape
+    /wui actionbars trace         what the mouse is really touching, for a drop
                                  that goes nowhere
-    /wk bars on|off
-    /wk bars mode auto|plates|list
-    /wk bars style replace|attach
-    /wk bars offset 0            nudge the bar on the plate, -60 to 60
-    /wk bars marker on|off       ours, or hand the marker back to Blizzard
-    /wk bars level on|off        the mob level inside the bar, coloured by XP
-    /wk bars max 8               list mode only, 1 to 15
-    /wk bars width 220           a bar on a plate and in the list, 120 to 400
-    /wk bars debuff              what the icon row tracks, in order
-    /wk bars debuff add 12721    a spell id, up to ten of them
-    /wk bars debuff remove 772   by the same id
-    /wk bars debuff reset        back to the five it ships with
-    /wk bars icon 27             one debuff square's edge, 16 to 32, sharp at 29
-    /wk meter on|off             the two meters
-    /wk meter dps|hps            what the left pane counts
-    /wk meter threat on|off      the right pane
-    /wk meter rows 6             3 to 10, per pane
-    /wk meter width 260          one pane, 120 to 400
-    /wk meter alpha 100          the background behind the bars, 0 to 100 in fives
-    /wk meter zoom 1             1 to 3
-    /wk swing on|off             the main hand and off hand swing bars, off
-    /wk swing width 330          80 to 400, one bar
-    /wk swing height 14          4 to 32, one bar
-    /wk swing zoom 2             1 to 3
-    /wk buffs                    what is missing, and what your racial is doing
-    /wk buffs on|off             the row of squares over your character
-    /wk buffs weapon on|off      the stone on the weapon you swing
-    /wk buffs offhand on|off     the stone on the weapon in your off hand
-    /wk buffs shout on|off       Battle Shout lapsing
-    /wk buffs food on|off        not being Well Fed
-    /wk buffs racial on|off      the racial you own and have not pressed
-    /wk buffs pulse on|off       whether the racial square breathes
-    /wk buffs resting on|off     nag in inns and cities too, off by default
-    /wk buffs zoom 2             1 to 3, and 2 is what it ships at
-    /wk buffs list               the flask and elixirs you added
-    /wk buffs add 17038          a spell id, up to six of your own
-    /wk buffs remove 17038       by the same id
-    /wk totems                   how many of your slots are filled
-    /wk totems on|off            the row of what you have out, over your
+    /wui bars on|off
+    /wui bars mode auto|plates|list
+    /wui bars style replace|attach
+    /wui bars offset 0            nudge the bar on the plate, -60 to 60
+    /wui bars marker on|off       ours, or hand the marker back to Blizzard
+    /wui bars level on|off        the mob level inside the bar, coloured by XP
+    /wui bars max 8               list mode only, 1 to 15
+    /wui bars width 220           a bar on a plate and in the list, 120 to 400
+    /wui bars debuff              what the icon row tracks, in order
+    /wui bars debuff add 12721    a spell id, up to ten of them
+    /wui bars debuff remove 772   by the same id
+    /wui bars debuff reset        back to the five it ships with
+    /wui bars icon 27             one debuff square's edge, 16 to 32, sharp at 29
+    /wui meter on|off             the two meters
+    /wui meter dps|hps            what the left pane counts
+    /wui meter threat on|off      the right pane
+    /wui meter rows 6             3 to 10, per pane
+    /wui meter width 260          one pane, 120 to 400
+    /wui meter alpha 100          the background behind the bars, 0 to 100 in fives
+    /wui meter zoom 1             1 to 3
+    /wui swing on|off             the main hand and off hand swing bars, off
+    /wui swing width 330          80 to 400, one bar
+    /wui swing height 14          4 to 32, one bar
+    /wui swing zoom 2             1 to 3
+    /wui buffs                    what is missing, and what your racial is doing
+    /wui buffs on|off             the row of squares over your character
+    /wui buffs weapon on|off      the stone on the weapon you swing
+    /wui buffs offhand on|off     the stone on the weapon in your off hand
+    /wui buffs shout on|off       Battle Shout lapsing
+    /wui buffs food on|off        not being Well Fed
+    /wui buffs racial on|off      the racial you own and have not pressed
+    /wui buffs pulse on|off       whether the racial square breathes
+    /wui buffs resting on|off     nag in inns and cities too, off by default
+    /wui buffs zoom 2             1 to 3, and 2 is what it ships at
+    /wui buffs list               the flask and elixirs you added
+    /wui buffs add 17038          a spell id, up to six of your own
+    /wui buffs remove 17038       by the same id
+    /wui totems                   how many of your slots are filled
+    /wui totems on|off            the row of what you have out, over your
                                  character; a shaman's four totem slots today,
-                                 and `/wk stances` is the same row under the
+                                 and `/wui stances` is the same row under the
                                  name a warrior would look for it by
-    /wk totems list              one line per slot and what is standing in it
-    /wk totems idle on|off       keep it up out of combat, off by default
-    /wk totems zoom 1            1 to 3
-    /wk skin on|off              square class-coloured player and target frames
-    /wk skin player|target|tot on|off   one frame at a time
-    /wk skin height 68           18 to 72, the block's height
-    /wk skin width 198           90 to 360, the gauge's width
-    /wk skin link on|off         mirror the target block off the player block
-    /wk skin level 0             -100 to 100, the target's drop from the player
-    /wk skin heals on|off        the incoming heal slice on the health gauge
-    /wk skin auras on|off        the buff and debuff rows on both blocks, every
+    /wui totems list              one line per slot and what is standing in it
+    /wui totems idle on|off       keep it up out of combat, off by default
+    /wui totems zoom 1            1 to 3
+    /wui skin on|off              square class-coloured player and target frames
+    /wui skin player|target|tot on|off   one frame at a time
+    /wui skin height 68           18 to 72, the block's height
+    /wui skin width 198           90 to 360, the gauge's width
+    /wui skin link on|off         mirror the target block off the player block
+    /wui skin level 0             -100 to 100, the target's drop from the player
+    /wui skin heals on|off        the incoming heal slice on the health gauge
+    /wui skin auras on|off        the buff and debuff rows on both blocks, every
                                  aura the client reports, wrapped away from
                                  the block
-    /wk skin aura 28             12 to 32, the size of one aura square
-    /wk skin probe               what this client answered for each frame
-    /wk party on|off             blocks for the people you are grouped with
-    /wk party self on|off        whether your own block is in the list
-    /wk party order role|group   role bands, or the raid's own group numbers
-    /wk party role <name> tank|healer|dps|none   an answer you type
-    /wk party icons on|off       the role icon on each block
-    /wk party range on|off       drain a member you cannot reach
-    /wk party width 168          90 to 360, the gauge's width
-    /wk party height 34          18 to 72, the block's height
-    /wk party gap 4              0 to 20, between two blocks
-    /wk party grow up|down       which end of the middle the first slot is at
-    /wk party columns 8          1 to 8, the raid only
-    /wk party percolumn 5        1 to 40, the raid only
-    /wk party zoom 1             1 to 3
-    /wk party reset              the list back on its own corner of the screen
-    /wk hide                     the ten switches, and what each is doing
-    /wk hide buffs on|off        Blizzard's buffs, in the corner of the screen
-    /wk hide debuffs on|off      Blizzard's debuffs, beside them
-    /wk hide target on|off       Blizzard's icons on the target frame
-    /wk hide cast on|off         Blizzard's cast bar for your target
-    /wk hide playercast on|off   Blizzard's cast bar for you
-    /wk hide chat on|off         Blizzard's chat window, forwarded into ours
-    /wk hide party on|off        Blizzard's four party frames
-    /wk hide raid on|off         Blizzard's raid container and its manager
-    /wk hide xp on|off           Blizzard's experience and reputation bars
-    /wk hide character on|off    Blizzard's character sheet, and the C key with it
-    /wk buttons apply            fill the bars with the warrior loadout
-    /wk buttons restore          put back exactly what was there before
-    /wk buttons                  what it would do, and whether a backup is held
-    /wk ranks                    how many bar slots are holding an older rank
-    /wk ranks refresh            move them all up to your best rank
-    /wk art on|off               Blizzard bar art, off by default
-    /wk menu                     what the client's Escape menu is made of, and
+    /wui skin aura 28             12 to 32, the size of one aura square
+    /wui skin probe               what this client answered for each frame
+    /wui party on|off             blocks for the people you are grouped with
+    /wui party self on|off        whether your own block is in the list
+    /wui party order role|group   role bands, or the raid's own group numbers
+    /wui party role <name> tank|healer|dps|none   an answer you type
+    /wui party icons on|off       the role icon on each block
+    /wui party range on|off       drain a member you cannot reach
+    /wui party width 168          90 to 360, the gauge's width
+    /wui party height 34          18 to 72, the block's height
+    /wui party gap 4              0 to 20, between two blocks
+    /wui party grow up|down       which end of the middle the first slot is at
+    /wui party columns 8          1 to 8, the raid only
+    /wui party percolumn 5        1 to 40, the raid only
+    /wui party zoom 1             1 to 3
+    /wui party reset              the list back on its own corner of the screen
+    /wui hide                     the ten switches, and what each is doing
+    /wui hide buffs on|off        Blizzard's buffs, in the corner of the screen
+    /wui hide debuffs on|off      Blizzard's debuffs, beside them
+    /wui hide target on|off       Blizzard's icons on the target frame
+    /wui hide cast on|off         Blizzard's cast bar for your target
+    /wui hide playercast on|off   Blizzard's cast bar for you
+    /wui hide chat on|off         Blizzard's chat window, forwarded into ours
+    /wui hide party on|off        Blizzard's four party frames
+    /wui hide raid on|off         Blizzard's raid container and its manager
+    /wui hide xp on|off           Blizzard's experience and reputation bars
+    /wui hide character on|off    Blizzard's character sheet, and the C key with it
+    /wui buttons apply            fill the bars with the warrior loadout
+    /wui buttons restore          put back exactly what was there before
+    /wui buttons                  what it would do, and whether a backup is held
+    /wui ranks                    how many bar slots are holding an older rank
+    /wui ranks refresh            move them all up to your best rank
+    /wui art on|off               Blizzard bar art, off by default
+    /wui menu                     what the client's Escape menu is made of, and
                                  where our button in it went
-    /wk menu on|off              that menu drawn in the addon's look, on by
+    /wui menu on|off              that menu drawn in the addon's look, on by
                                  default
-    /wk xp on|off                the experience and reputation rails
-    /wk xp faction on|off        the reputation rail under the experience one
-    /wk xp bubbles on|off        the twenty segment marks
-    /wk xp width 460             120 to 900
-    /wk xp height 14             6 to 32
-    /wk xp zoom 2                1 to 3
-    /wk xp reset                 back along the bottom of the screen
-    /wk loot on|off              empty a corpse in one go
-    /wk filter on|off            take only the colours and kinds you asked for
-    /wk leftovers on|off         loot and destroy the rest, so a corpse can be skinned
-    /wk reagents                 what your professions have put on the filter
-    /wk reagents clear           empty the list, and write it again next window
-    /wk sell on|off              grey items at every merchant, shift to skip one
-    /wk repair                   pay the merchant in front of you now
-    /wk repair on|off            every merchant who mends, shift to skip one
-    /wk zoom on|off              how far the camera pulls back
-    /wk errors on|off            filter the red text through your muted list
-    /wk errors list              what is muted, and what has come past this session
-    /wk errors clear             unmute everything
-    /wk errors charge            mute what a missed positional ability shouts
-    /wk minimap on|off           square rather than round
-    /wk minimap size 180         120 to 300, how wide the map is drawn
-    /wk minimap buttons on|off   collect the addon buttons behind one square
-    /wk minimap scan             look for buttons that appeared since login
-    /wk minimap list             what the corral holds, and what it left as pins
-    /wk map                      open the world map
-    /wk map on|off               the addon's world map instead of the client's
-    /wk map hide on|off          Blizzard's map in the attic, and M opens this one
-    /wk map zones                how many zones the client names, and how many have a level
-    /wk map markers              whether Questie is answering for the markers
-    /wk map turnins [name]       where the question mark went for a finished quest
-    /wk map group                whether the client will say where your group is
-    /wk map places               every kind of place Questie can draw, and which are on
-    /wk map places Innkeeper on  one of them switched, in Questie and on both maps
-    /wk destroy                  the clutter window, one quest item at a time
-    /wk ui                       what is baked in, and whether Edit Mode answers
-    /wk ui save                  capture the active Edit Mode layout
-    /wk ui apply                 import the baked layout and make it active
-    /wk ui auto on|off           import it on a client that does not have it
-    /wk scale                    every screen, what it is drawn at and what it costs
-    /wk scale map 0.8            one screen, 0.5 to 3 in tenths, refused off a step
-    /wk mail                     the mail window, at a mailbox
-    /wk mail on|off              the addon's window instead of the client's
-    /wk mail hide on|off         move Blizzard's own mail frame out of the way
-    /wk mail fav Aria            put a name on the quick list down the left
-    /wk mail unfav Aria          take it off again
-    /wk mail favs                the list, and who each of them is
-    /wk mail warn on|off         whether value to a name off the list asks twice
-    /wk bags                     the bag window
-    /wk bags on|off              one window with your bags in piles
-    /wk bags hide on|off         take the client's nine bag calls, so B opens this
-    /wk bags columns 10          how many squares across, 6 to 16
-    /wk bags count               how many slots you have and how many are free
-    /wk dungeons                 the dungeon log
-    /wk dungeons on|off          the window and the key that opens it
-    /wk dungeons key SHIFT-L     which key opens it, override binding only
-    /wk dungeons key none        hand that key back
-    /wk dungeons book            how many dungeons, bosses and drops it holds
-    /wk dungeons maps            whether this client has a map for each dungeon
-    /wk dungeons seen            what your own runs have added to it
-    /wk dungeons forget          throw the boss positions and learned drops away
-    /wk character                the character sheet
-    /wk character on|off         the addon's sheet instead of the client's
-    /wk character hide on|off    Blizzard's own in the attic, and the C key
-    /wk character gear           what you are wearing and how worn it is
-    /wk character stats          your hit, and what you still miss with it
-    /wk character skills         which weapon skills are behind the cap
-    /wk loadout                  every loadout, its key and the pair it draws
-    /wk loadout 2 SHIFT-2        the key for that loadout, or none to clear
-    /wk loadout add Sword        a new one
-    /wk loadout combat on|off    whether the weapon swap fires mid fight
-    /wk adhoc                    every ad hoc bar, its key and how many squares it holds
-    /wk adhoc add totems         a new bar
-    /wk adhoc totems SHIFT-T     the key that shows and hides that bar, or none
-    /wk adhoc zoom 1.5           the bars' zoom, 0.5 to 3
-    /wk adhoc reset              every bar back where it started
-    /wk adhoc on|off
-    /wk console                  the console page, under Under the hood
-    /wk console xp               a probe: the experience readings, in chat
-    /wk console rail             a probe: the experience rail's frame, and what is over it
-    /wk console run <lua>        one line of Lua, and what it printed, in chat
-    /wk perf                     the frame trace window, the same as Ctrl-R
-    /wk perf key CTRL-R          which key opens it, override binding only
-    /wk perf key none            hand that key back to the client's own display
-    /wk perf dips                the frames that went wrong, and what made each
-    /wk perf watch on|off        whether the trace runs while the window is shut
-    /wk perf dip 50              how long a frame has to be to count as one
-    /wk perf show                what each ticker costs, in chat
-    /wk perf on|off              tick timing, which is what that list is made of
-    /wk perf reset               clear the counters and the log
+    /wui xp on|off                the experience and reputation rails
+    /wui xp faction on|off        the reputation rail under the experience one
+    /wui xp bubbles on|off        the twenty segment marks
+    /wui xp width 460             120 to 900
+    /wui xp height 14             6 to 32
+    /wui xp zoom 2                1 to 3
+    /wui xp reset                 back along the bottom of the screen
+    /wui loot on|off              empty a corpse in one go
+    /wui filter on|off            take only the colours and kinds you asked for
+    /wui leftovers on|off         loot and destroy the rest, so a corpse can be skinned
+    /wui reagents                 what your professions have put on the filter
+    /wui reagents clear           empty the list, and write it again next window
+    /wui sell on|off              grey items at every merchant, shift to skip one
+    /wui repair                   pay the merchant in front of you now
+    /wui repair on|off            every merchant who mends, shift to skip one
+    /wui zoom on|off              how far the camera pulls back
+    /wui errors on|off            filter the red text through your muted list
+    /wui errors list              what is muted, and what has come past this session
+    /wui errors clear             unmute everything
+    /wui errors charge            mute what a missed positional ability shouts
+    /wui minimap on|off           square rather than round
+    /wui minimap size 180         120 to 300, how wide the map is drawn
+    /wui minimap buttons on|off   collect the addon buttons behind one square
+    /wui minimap scan             look for buttons that appeared since login
+    /wui minimap list             what the corral holds, and what it left as pins
+    /wui map                      open the world map
+    /wui map on|off               the addon's world map instead of the client's
+    /wui map hide on|off          Blizzard's map in the attic, and M opens this one
+    /wui map zones                how many zones the client names, and how many have a level
+    /wui map markers              whether Questie is answering for the markers
+    /wui map turnins [name]       where the question mark went for a finished quest
+    /wui map group                whether the client will say where your group is
+    /wui map places               every kind of place Questie can draw, and which are on
+    /wui map places Innkeeper on  one of them switched, in Questie and on both maps
+    /wui destroy                  the clutter window, one quest item at a time
+    /wui ui                       what is baked in, and whether Edit Mode answers
+    /wui ui save                  capture the active Edit Mode layout
+    /wui ui apply                 import the baked layout and make it active
+    /wui ui auto on|off           import it on a client that does not have it
+    /wui scale                    every screen, what it is drawn at and what it costs
+    /wui scale map 0.8            one screen, 0.5 to 3 in tenths, refused off a step
+    /wui mail                     the mail window, at a mailbox
+    /wui mail on|off              the addon's window instead of the client's
+    /wui mail hide on|off         move Blizzard's own mail frame out of the way
+    /wui mail fav Aria            put a name on the quick list down the left
+    /wui mail unfav Aria          take it off again
+    /wui mail favs                the list, and who each of them is
+    /wui mail warn on|off         whether value to a name off the list asks twice
+    /wui bags                     the bag window
+    /wui bags on|off              one window with your bags in piles
+    /wui bags hide on|off         take the client's nine bag calls, so B opens this
+    /wui bags columns 10          how many squares across, 6 to 16
+    /wui bags count               how many slots you have and how many are free
+    /wui dungeons                 the dungeon log
+    /wui dungeons on|off          the window and the key that opens it
+    /wui dungeons key SHIFT-L     which key opens it, override binding only
+    /wui dungeons key none        hand that key back
+    /wui dungeons book            how many dungeons, bosses and drops it holds
+    /wui dungeons maps            whether this client has a map for each dungeon
+    /wui dungeons seen            what your own runs have added to it
+    /wui dungeons forget          throw the boss positions and learned drops away
+    /wui character                the character sheet
+    /wui character on|off         the addon's sheet instead of the client's
+    /wui character hide on|off    Blizzard's own in the attic, and the C key
+    /wui character gear           what you are wearing and how worn it is
+    /wui character stats          your hit, and what you still miss with it
+    /wui character skills         which weapon skills are behind the cap
+    /wui loadout                  every loadout, its key and the pair it draws
+    /wui loadout 2 SHIFT-2        the key for that loadout, or none to clear
+    /wui loadout add Sword        a new one
+    /wui loadout combat on|off    whether the weapon swap fires mid fight
+    /wui adhoc                    every ad hoc bar, its key and how many squares it holds
+    /wui adhoc add totems         a new bar
+    /wui adhoc totems SHIFT-T     the key that shows and hides that bar, or none
+    /wui adhoc zoom 1.5           the bars' zoom, 0.5 to 3
+    /wui adhoc reset              every bar back where it started
+    /wui adhoc on|off
+    /wui console                  the console page, under Under the hood
+    /wui console xp               a probe: the experience readings, in chat
+    /wui console rail             a probe: the experience rail's frame, and what is over it
+    /wui console run <lua>        one line of Lua, and what it printed, in chat
+    /wui perf                     the frame trace window, the same as Ctrl-R
+    /wui perf key CTRL-R          which key opens it, override binding only
+    /wui perf key none            hand that key back to the client's own display
+    /wui perf dips                the frames that went wrong, and what made each
+    /wui perf watch on|off        whether the trace runs while the window is shut
+    /wui perf dip 50              how long a frame has to be to count as one
+    /wui perf show                what each ticker costs, in chat
+    /wui perf on|off              tick timing, which is what that list is made of
+    /wui perf reset               clear the counters and the log
 
 **The key field takes mouse buttons.** `ui.KeyField` maps left and right onto
 `BUTTON1` and `BUTTON2` so a modified click can be captured, which is the whole
@@ -6441,11 +6441,11 @@ point of the marking keys. An unmodified click still cancels the capture,
 because clicking away from a field you opened by accident has to stay possible
 and a bare `BUTTON1` binding would be refused anyway.
 
-Keybindings live under Key Bindings > WarriorKit and mark whatever you hover,
+Keybindings live under Key Bindings > WiggleUI and mark whatever you hover,
 falling back to your target when you hover nothing. The two mouse buttons
 `Keys.lua` claims are override bindings and never appear in that panel, the same
 as the charge key. Charge is bound separately with
-`/wk bind`, because a secure action needs a click binding rather than a
+`/wui bind`, because a secure action needs a click binding rather than a
 Bindings.xml entry. It will not appear in the Key Bindings panel, which is the
 point: it is an override, not an entry in the set the panel saves.
 
@@ -6523,7 +6523,7 @@ and zero errors.
    below, because zero on its own is also what a link that dropped the vertical
    offset would produce. A drag is stood up the way Edit Mode drops one, on an
    absolute point of its own rather than on our anchor, so the level has to come
-   back out of two measured edges: dropped 77 across and 33 down, `/wk skin
+   back out of two measured edges: dropped 77 across and 33 down, `/wui skin
    level` reads 33 and the 77 is undone by the re-anchor putting the frame back
    on the mirror line. One check asserts `skinGap` is still absent from the
    settings, so the distance across cannot quietly become a number again.
@@ -6610,7 +6610,7 @@ and zero errors.
    versions: a square hidden on the tick, and an entry tested on the tick with
    the answer thrown away. It has to be absent from the counts as well, so the
    status line cannot report squares nobody can see. It has to land in
-   `WarriorKitCharDB` and not in `WarriorKitDB`, and it has to survive a
+   `WiggleUICharDB` and not in `WiggleUIDB`, and it has to survive a
    modelled reload, where the saved table is handed back as a fresh copy and the
    entry is still off. Fifty ticks with an entry switched off are held to the
    same allocation gate as the racial half, because rebuilding the watched list
@@ -6722,18 +6722,18 @@ luacheck came from luarocks rather than pacman, so it lives in the user tree:
 
 ## Confirmed on the live client
 
-Answered by running it on Tusksfirst, 2.5.6.69110, and reading `/wk status`.
+Answered by running it on Tusksfirst, 2.5.6.69110, and reading `/wui status`.
 Each of these was a guess in the list below until then.
 
 - **Bar 1 pages by stance for a warrior.** `Layout.Bar1Bases` read
   `ActionButton1.action` as 73, which is bonus bar page 1, and derived 85 and 97
-  from the twelve slot stride. `/wk status` says "three stance pages from slot
+  from the twelve slot stride. `/wui status` says "three stance pages from slot
   73". The whole shape of `Layout.BAR1` rested on this.
 - **Edit Mode carries all five methods.** `EditMode.CanApply` probes
   `GetActiveLayoutInfo`, `GetLayouts`, `SelectLayout`, `ImportLayout` and
   `SaveLayouts` by name and answered true, so the interface status line printed
   its full form. Titan only ever proved the first one.
-- **The bar art names are real.** `/wk status` says "stripped 9 regions". Zero
+- **The bar art names are real.** `/wui status` says "stripped 9 regions". Zero
   was the answer that would have meant this client calls the art something else.
 - **`GetCVar` answers for `SoftTargetEnemy`.** `softPrior` recorded a value read
   off the live client, and the charge status line reports what the CVar says.
@@ -6753,7 +6753,7 @@ Everything below was written from the API contract and has never executed:
   three places both flavours of this menu have used. A place it does not reach
   looks like a piece of parchment or a gold corner standing on top of the
   addon's panel, and it would be visible in the first press of Escape. What
-  would settle it: press Escape and read `/wk menu`, which lists every region
+  would settle it: press Escape and read `/wui menu`, which lists every region
   the menu holds and says how many were taken off.
 - **Whether the title bar has room on this client's menu.** The bar is drawn
   over Blizzard's frame and `Room` refuses to draw it at all when the topmost
@@ -6774,7 +6774,7 @@ Everything below was written from the API contract and has never executed:
   fifth value is the art, documented as a fileID, and the addon hands it
   straight to `SetTexture`. A mistake looks like four holes while four totems
   are out, or four squares with no picture on them. What would settle it: drop
-  a totem and read `/wk totems list`.
+  a totem and read `/wui totems list`.
 - **Whether `PLAYER_TOTEM_UPDATE` fires on this client.** It is what puts the
   square up on the frame the totem landed rather than on the next tick; the row
   reads the same answer off its own tick a tenth of a second later either way,
@@ -6787,7 +6787,7 @@ Everything below was written from the API contract and has never executed:
   client delivers through it rather than taking the call and doing nothing. A
   mistake looks like the performance page saying "counting, nothing heard yet"
   after a minute in a city, and every dip explained without an event count. What
-  would settle it: `/wk perf`, stand in Shattrath for ten seconds, read the
+  would settle it: `/wui perf`, stand in Shattrath for ten seconds, read the
   events row on the page.
 - **Whether `GetScriptCPUUsage` answers a running total.** It is the one call
   the whole Lua attribution stands on: read once a frame, its difference is that
@@ -6809,7 +6809,7 @@ Everything below was written from the API contract and has never executed:
   pressed in game, but a bar is a `SecureHandlerAttributeTemplate` frame
   rather than a window, and the harness records the snippet as a string and
   never runs it. A mistake looks like the key doing nothing, in and out of a
-  fight. What would settle it: `/wk adhoc add trade`, `/wk adhoc trade T`,
+  fight. What would settle it: `/wui adhoc add trade`, `/wui adhoc trade T`,
   press T twice.
 - **Whether a wrapped OnClick hides the bar after the cast.** Every square's
   `OnClick` is wrapped by its bar with a post snippet that reads the bar's
@@ -6832,21 +6832,21 @@ Everything below was written from the API contract and has never executed:
   in it is parentless. A mistake looks like the whole addon standing still from
   the moment you log in, with the bars, the enemy bars, the cast bar and the
   swing gauges all frozen together and the windows still opening. What would
-  settle it: log in and watch a swing bar fill, or `/wk perf`, where every slot
+  settle it: log in and watch a swing bar fill, or `/wui perf`, where every slot
   counts the ticks it has had.
-- **Whether the first press of `/wk` is a noticeable pause.** The settings
+- **Whether the first press of `/wui` is a noticeable pause.** The settings
   window is no longer built at login: the first thing that opens it makes the
   whole of it, which is about a thousand frames, eighteen hundred textures and
   one reading of every row on the page it lands on. Login is that much quicker
   and the cost moved rather than went away. A mistake looks like a hitch of a
-  frame or two on the first `/wk` of a session, worst mid-pull, and nothing at
-  all on every press after it. What would settle it: `/wk perf`, then `/wk`
+  frame or two on the first `/wui` of a session, worst mid-pull, and nothing at
+  all on every press after it. What would settle it: `/wui perf`, then `/wui`
   from a standstill and again during a fight.
 - **Whether a row on a page you are not looking at can go stale.** A row is put
   back in step when its page comes up and at no other time, so a setting
   changed by a slash word while the window sits on another page is read when
   you click over to that page. A mistake looks like a number in the window
-  disagreeing with what `/wk status` says, and correcting itself the moment you
+  disagreeing with what `/wui status` says, and correcting itself the moment you
   leave the page and come back. What would settle it: open the window on one
   page, change something with a slash word, then click to the page that shows
   it.
@@ -6873,7 +6873,7 @@ Everything below was written from the API contract and has never executed:
   now runs every five seconds behind it. The hook is probed and pcalled, so a
   client that refuses it loses nothing but the speed. A mistake looks like one
   of Blizzard's frames back on the screen for up to five seconds after something
-  moved it, where it used to be one. What would settle it: `/wk hide probe` with
+  moved it, where it used to be one. What would settle it: `/wui hide probe` with
   the switches on, which says ON SCREEN against any name a switch asked to hide.
 - **Whether `SPELL_UPDATE_COOLDOWN` and `SPELL_UPDATE_USABLE` fire on 2.5.6.**
   The wiki lists both for this build and no addon on this machine registers
@@ -6924,7 +6924,7 @@ Everything below was written from the API contract and has never executed:
   the action squares, the charge icon, the charge marker and the Blizzard
   hider. Nothing on screen should look different; what would show a mistake is
   a row that has stopped moving, or the performance tab reporting a tick count
-  well off the interval beside it. What would settle it: `/wk perf` with a
+  well off the interval beside it. What would settle it: `/wui perf` with a
   target up, and read the ticks per second against each rate.
 - **Whether the client fires UNIT_HEALTH, UNIT_AURA, UNIT_THREAT_LIST_UPDATE
   and UNIT_TARGET for a `nameplateN` token.** The enemy bars register all four
@@ -6987,7 +6987,7 @@ Everything below was written from the API contract and has never executed:
   the walk may come back empty on a build whose map tree has no dungeon nodes,
   and a build that has them may name them differently from the book. The two
   failures look identical on the screen, which is why the reading separates
-  them. What would settle it: `/wk dungeons maps`, which prints how many dungeon
+  them. What would settle it: `/wui dungeons maps`, which prints how many dungeon
   maps this client named and how many of the book's forty found one. Nothing
   raises either way; a dungeon with no map draws its bosses and its drops and a
   line saying the client has no picture for the place.
@@ -7002,7 +7002,7 @@ Everything below was written from the API contract and has never executed:
   at the moment you open a boss's loot window. Instances are the one place that
   call has historically answered nothing, and if it answers nothing here the
   window is a dungeon map with no marks on it for the life of the install. What
-  would settle it: run any dungeon, loot the first boss, and `/wk dungeons seen`.
+  would settle it: run any dungeon, loot the first boss, and `/wui dungeons seen`.
   It reports bosses placed and drops learned separately, so a client that
   records the drops and no position says so in the first number.
 - **Whether `C_Item.RequestLoadItemDataByID` exists on 2.5.6.** It is what warms
@@ -7018,9 +7018,9 @@ Everything below was written from the API contract and has never executed:
   click. Baganator builds its classic squares on the same template on this
   install, so it is there; what is unproven is that a button of it works parented
   to a frame this addon made rather than to a container frame the client built.
-  What would settle it: `/wk bags`, then right click a grey at a merchant. A
+  What would settle it: `/wui bags`, then right click a grey at a merchant. A
   template this client refuses is caught and reported rather than raised, and
-  `/wk status` says so in the words "this client refused the bag button
+  `/wui status` says so in the words "this client refused the bag button
   template". The same is true one layer down of `ContainerFrame_UpdateCooldown`,
   which is the only call that draws the swirl over a potion you just drank: it is
   probed and pcalled, and one refusal takes it off for the session, so the
@@ -7040,7 +7040,7 @@ Everything below was written from the API contract and has never executed:
   `CloseBackpack` and `CloseBag`, on the argument that the client never shows a
   container frame except through one of them. If a build has a tenth, the symptom
   is Blizzard's bags appearing beside this window at a merchant or a bank.
-  `/wk bags count` and `/wk status` both report how many of the nine this client
+  `/wui bags count` and `/wui status` both report how many of the nine this client
   carries; nine of nine and a bag still opening is the tenth call.
 - **Whether the once-a-second re-take fights another bag addon.** Baganator and
   Bagnon take the same nine names. Whichever addon writes them last holds them,
@@ -7051,7 +7051,7 @@ Everything below was written from the API contract and has never executed:
 - **Whether `C_Item.GetItemClassInfo` answers on these builds.** The pile headers
   are the client's own word for each item class where it will say one, so the
   window reads in the language the client is in. A build with no such call draws
-  the English fallbacks and nothing else changes. `/wk bags count` does not report
+  the English fallbacks and nothing else changes. `/wui bags count` does not report
   this; the headers themselves are the test.
 - **Whether `C_Map.GetMapChildrenInfo` walks the whole world on these builds.**
   The world map's zone column is a walk over the client's own map tree rather
@@ -7060,14 +7060,14 @@ Everything below was written from the API contract and has never executed:
   modern map canvas, and Questie calls `WorldMapFrame:SetMapID` unguarded on
   this install, so the tree is there; what is unproven is that asking for every
   descendant of one kind answers on 2.5.6 the way it does on the build this was
-  written against. What would settle it: `/wk map zones`, which prints how many
+  written against. What would settle it: `/wui map zones`, which prints how many
   zones over how many continents. Zero of either is the failure, and it draws an
   empty column and a line saying so rather than raising.
 - **Whether the level ranges are keyed on the map ids these clients use.**
   `Map/Zones.lua` carries the one table in the addon the client cannot answer
   for, because no call on either build has ever said what level a zone is for.
   The ids are read off Questie's generated `areaIdToUiMapId` rather than typed,
-  and `/wk map zones` prints how many of the zones the client offered have a row
+  and `/wui map zones` prints how many of the zones the client offered have a row
   in it. Every zone but the battlegrounds and the instances should have one; a
   count far short of that means the ids are the wrong set, and the symptom is a
   footer that says no level range is known rather than a wrong number.
@@ -7077,7 +7077,7 @@ Everything below was written from the API contract and has never executed:
   `UiMapID`, `miniMapIcon` and Questie's own `hidden` flag. Every field is read
   off the installed copy of Questie 11.37.1 and type checked at the call site, so
   a Questie whose internals moved draws fewer markers rather than raising. What
-  is unproven is the count: `/wk map markers` says how many Questie is holding,
+  is unproven is the count: `/wui map markers` says how many Questie is holding,
   and a map with none on it where that number is large is the failure.
 - **Whether a tick on the Places page makes Questie draw.** The page is built
   out of `QuestieMenu.buildTownsfolkMenu`, `buildVendorMenu` and
@@ -7089,7 +7089,7 @@ Everything below was written from the API contract and has never executed:
   on it; open Questie's own dropdown and Innkeeper is ticked there too. A kind
   of NPC is spawned by Questie over a few ticks, so a map that is already open
   when the box is ticked shows it on its next repaint rather than on the click.
-  `/wk map places` prints what Questie says it has on.
+  `/wui map places` prints what Questie says it has on.
 - **Whether `C_DeathInfo.GetCorpseMapPosition` answers on these builds.** Your
   corpse is on the map because that call says where it is, asked against the map
   being drawn so the skull lands on the continent picture as well as on the zone
@@ -7120,7 +7120,7 @@ Everything below was written from the API contract and has never executed:
   when your log changes and unmade when a quest is done, neither of which has
   anything to do with a map being on screen, which is why the markers survive
   the cage. What would settle it: pick a quest up with `map hide` on, open this
-  window, and check the marker is there. `/wk map hide off` puts the client's map
+  window, and check the marker is there. `/wui map hide off` puts the client's map
   back and hands the M key over in one word.
 
 - **Whether the miss numbers on the character sheet are the game's.** The
@@ -7140,7 +7140,7 @@ Everything below was written from the API contract and has never executed:
 - **Whether the nineteen slot numbers and `GetInventorySlotInfo` key names match
   these builds.** A wrong number draws an empty square in a slot you are wearing
   something in, and a wrong key name draws a square with no silhouette in it.
-  Both are visible at a glance and neither is destructive. `/wk character gear`
+  Both are visible at a glance and neither is destructive. `/wui character gear`
   prints the item level, the durability and how many slots came back empty, and
   an empty count that is too high is the symptom.
 - **Whether `PickupInventoryItem` and `UseInventoryItem` behave from this
@@ -7151,8 +7151,8 @@ Everything below was written from the API contract and has never executed:
 - **Whether `CharacterFrame` and its five pages go into the attic cleanly.** The
   harness cages a stub. What a live client may do that the stub does not is call
   a method on a caged page from its own `OnUpdate`, which is exactly what the
-  target's cast bar did and what `mute` exists for. `/wk hide probe` names every
-  frame and says whether it is on screen anyway, and `/wk character hide off`
+  target's cast bar did and what `mute` exists for. `/wui hide probe` names every
+  frame and says whether it is on screen anyway, and `/wui character hide off`
   hands the whole thing back.
 - **Whether the pet sheet and the honour tab are reachable any other way.** With
   the switch on, `ToggleCharacter` sends both to a printed line. If some other
@@ -7167,7 +7167,7 @@ Everything below was written from the API contract and has never executed:
   everything: that reads as nobody in the group being on any quest, which looks
   exactly like a party with nothing in common. What would settle it: stand in a
   party on a shared quest, open the log, and check the number on the row against
-  who is actually on it. `/wk quests party` says which of the two sources is
+  who is actually on it. `/wui quests party` says which of the two sources is
   answering.
 - Whether the tick and the share arrow drew. Both are new letters in
   `Media/Glyphs.ttf`, cut onto `V` and `s` by `scripts/bake-glyphs.sh`, and the
@@ -7183,7 +7183,7 @@ Everything below was written from the API contract and has never executed:
   menu both call it, so one swap covers both. A Questie that moved or renamed it
   leaves the swap unmade and every click going where it went before, which is
   Blizzard's log in the attic. What would settle it: click a quest in the
-  tracker. The Quests section of `/wk` says whether the swap took.
+  tracker. The Quests section of `/wui` says whether the swap took.
 
 - Whether the tooltip marker picks the right corner on a real screen. The
   addon reads which quarter of `UIParent` the marker sits in and hangs the box
@@ -7194,7 +7194,7 @@ Everything below was written from the API contract and has never executed:
   height: that reading is the same in both conventions, and only the stub has
   ever run it. If it is wrong, a marker near the bottom of the screen grows the
   box down off the edge and the clamp drags it back over the marker. What would
-  settle it: `/wk tips anchor`, `/wk unlock`, drag the marker into each of the
+  settle it: `/wui tips anchor`, `/wui unlock`, drag the marker into each of the
   four corners in turn and hover something.
 - Whether `GetLootSourceInfo` exists on 2.5.6 and 1.15 and answers a creature
   GUID for a slot. It is the whole of the measured drop chance in
@@ -7204,7 +7204,7 @@ Everything below was written from the API contract and has never executed:
   worth watching for is the opposite one, a call that answers a GUID this addon
   cannot parse, which is also silent and also shows nothing. What would settle
   it: kill and loot a dozen of something that carries a quest item, then hover
-  another one. `/wk quests drops` says how many creatures have been counted, and
+  another one. `/wui quests drops` says how many creatures have been counted, and
   zero after a dozen kills is the answer that means the call is not landing.
 - Whether the installed Questie keys its tooltip registry the way this addon
   reads it. `Quests/Drops.lua` walks `QuestieTooltips.lookupByKey["m_<npc id>"]`
@@ -7217,12 +7217,12 @@ Everything below was written from the API contract and has never executed:
 - Whether all eighteen placeable frames still drag in the game after
   `UI/Placeable.lua` took the block over from the twelve copies that used to
   write it. The harness proves the property that broke silently before, which is
-  which frames the lock reaches: twelve HUD frames lose the drag with `/wk lock`
+  which frames the lock reaches: twelve HUD frames lose the drag with `/wui lock`
   and get it back, six chrome windows keep it throughout. What no stub can
   prove is that `StartMoving` on a frame the client considers protected still
   behaves, and the party anchor is the one that would show it, because its
   blocks come off a secure group header and it is the only one that refuses to
-  move in combat. What would settle it: `/wk unlock`, drag each frame, `/reload`
+  move in combat. What would settle it: `/wui unlock`, drag each frame, `/reload`
   and check every one came back where you left it, then pull something and try
   to drag the party blocks mid fight, which should refuse rather than error.
 - Whether rounding the two anchors that were not rounded before moves anything
@@ -7240,7 +7240,7 @@ Everything below was written from the API contract and has never executed:
   read ahead of the bare pair on this build. If they are not, every hover key
   presses a button with no bare `type` set and nothing happens at all, which is
   silent. What would settle it: bind a spell, press the key over a mob, and read
-  `/wk hover show`, which prints the macro off the button itself rather than the
+  `/wui hover show`, which prints the macro off the button itself rather than the
   one the addon meant to write.
 - What shape `GetCursorInfo` answers a dragged spell in on these clients.
   `Hover.Carry` tries three readings and takes the first that names a spell, so
@@ -7261,7 +7261,7 @@ Everything below was written from the API contract and has never executed:
   character to check them on. The failure mode is quiet and small in both
   directions: an id this client cannot name and an id this character has not
   learned both leave no square, so a wrong number costs one square rather than
-  drawing the wrong picture. What would settle it: `/wk cooldowns list` on each
+  drawing the wrong picture. What would settle it: `/wui cooldowns list` on each
   character, which prints every entry with the name this client gave it, or
   "not learned on this character" where it gave none.
 - Whether Ice Block answers to 45438 on both flavours. It is the one entry
@@ -7272,7 +7272,7 @@ Everything below was written from the API contract and has never executed:
   wearing. It is what tells a trinket you press from a trinket you wear, it is
   probed through C_Item first and the loose global second, and a client with
   neither leaves both trinket squares off the row and nothing else. What would
-  settle it: wear a trinket with a use effect and read `/wk cooldowns list`,
+  settle it: wear a trinket with a use effect and read `/wui cooldowns list`,
   which names the effect rather than the item.
 - Whether GetInventoryItemCooldown answers for slots 13 and 14 on these
   clients. Same probe, same failure: a missing call reads as ready forever,
@@ -7282,7 +7282,7 @@ Everything below was written from the API contract and has never executed:
   this row is up for the whole fight and carries a number per square, so double
   sized squares over your character would be in the way rather than in view.
   Against that, the thing you are doing when you look at it is glancing away
-  from a mob mid-pull. `/wk cooldowns zoom 2` is one command and settles it.
+  from a mob mid-pull. `/wui cooldowns zoom 2` is one command and settles it.
 - Whether the priest's three upkeep ids name what this addon thinks they name.
   1243 is Power Word: Fortitude rank 1, 21562 is Prayer of Fortitude and 588 is
   Inner Fire, all matched by the name the client spells them, and the Fortitude
@@ -7293,13 +7293,13 @@ Everything below was written from the API contract and has never executed:
   priest, so this is the one entry on the buff row written without a character
   to look at. What would settle it: buff a priest with each of the three and
   read the row.
-- Which of the frame names under `/wk hide` this client actually carries.
+- Which of the frame names under `/wui hide` this client actually carries.
   The mechanism is settled: a frame in the attic cannot be drawn, and
   `43-blizzard-hide.lua` proves it against the exact call that beat the last
   version. What is not settled is the naming. Every entry is probed, so a name
   these clients spell differently costs that frame and nothing else, and each of
   the two cast bars carries a FrameXML parent key as a second way in. What would
-  settle it: `/wk hide probe`, which prints one line per name saying whether this
+  settle it: `/wui hide probe`, which prints one line per name saying whether this
   client has the frame, whether the attic holds it, and whether it is on the
   screen anyway. Any line reading ON SCREEN is a name to add, not a mechanism to
   argue with.
@@ -7348,14 +7348,14 @@ Everything below was written from the API contract and has never executed:
   empty. The state machine posts the next mail from inside that handler, so an
   event that arrived before the client cleared the slots would put mail two's
   items on top of mail one's. What would settle it: attach twenty stacks of
-  anything and send. The footer counts the mails as they go and `/wk status`
+  anything and send. The footer counts the mails as they go and `/wui status`
   says what the last send did.
 
   Whether parking `MailFrame` off the side of the screen holds. It stays shown,
   so the mailbox stays open, and it is re-parked on its own `OnShow`, which is
   where the UIPanel layout would otherwise put it back. The failure mode is
   visible rather than silent: Blizzard's window turns up in the middle of the
-  screen with ours over it, and `/wk mail hide off` is the way out. What would
+  screen with ours over it, and `/wui mail hide off` is the way out. What would
   settle it: open a mailbox, then open and close the character sheet, which is
   what makes the client lay its panels out again.
 
@@ -7374,19 +7374,19 @@ Everything below was written from the API contract and has never executed:
   every assertion about a slot is an assertion against that model. Four things
   ride on it and none has run in the game. Whether the template exists under that
   name on 2.5.6 and on Era, which fails loudly: `CreateFrame` is pcalled and
-  `/wk status` says the client has none rather than drawing nothing and saying
+  `/wui status` says the client has none rather than drawing nothing and saying
   nothing. Whether `sortMethod = "NAMELIST"` really places one button per name in
   the order given, which is the whole of the role ordering. Whether
   `initialConfigFunction` accepts `SetWidth`, `SetHeight` and `SetAttribute` in
   the restricted environment, which is the only snippet in the addon. And whether
   re-writing the `point` attribute makes the header arrange again, which is what
   puts a resized block back in the column it belongs in. What would settle all
-  four: join a party, read `/wk status`, and change `party height` with the list
+  four: join a party, read `/wui status`, and change `party height` with the list
   on screen.
 - Whether `UnitGroupRolesAssigned` and `GetPartyAssignment` are on these two
   clients. Both are probed by name and a missing one costs that source rather
   than raising, so the failure mode is a list ordered by talents and the class
-  floor alone. `/wk party role` prints which of the four sources answered.
+  floor alone. `/wui party role` prints which of the four sources answered.
 - Whether `Interface\LFGFrame\UI-LFG-ICON-ROLES` is on both flavours and is cut
   as a 256 square of 75 pixel cells. A path that does not resolve draws as a
   green question mark and writes nothing to the log, so this is the one thing
@@ -7398,7 +7398,7 @@ Everything below was written from the API contract and has never executed:
   raid manager's layout pass, and whether that pass is the one that re-shows the
   container. The hook is probed and pcalled, and where the name is wrong the
   symptom is loud: Blizzard's raid frames come back the first time somebody
-  joins. `/wk hide` reports how many of the frames it names this client carries.
+  joins. `/wui hide` reports how many of the frames it names this client carries.
 - Whether a block at 202 by 34 is the right size for a raid. The party is the
   player block repeated and that is the point; forty of them is not a screen, so
   the sizes are settings and a raid is expected to run smaller. Which numbers
@@ -7408,7 +7408,7 @@ Everything below was written from the API contract and has never executed:
   trees one and three as the ones that are not damage. Tree three is Restoration
   and is a healer; tree one is Elemental and is a caster, so following the spec
   there would have sorted every Elemental shaman into the healer band. A client
-  that orders the tabs differently would put the mistake back, and `/wk party
+  that orders the tabs differently would put the mistake back, and `/wui party
   role` beside the icon on the block is what would show it.
 
 - Whether the client's own aura buttons are protected on this backport, and
@@ -7438,7 +7438,7 @@ Everything below was written from the API contract and has never executed:
   at a glance during a pull is a thing you look at.
 - Whether `BuffFrame`, `TemporaryEnchantFrame`, `DebuffFrame` and
   `TargetFrameSpellBar` are what these clients call those four frames. Each
-  `/wk hide` switch takes a global down rather than the buttons inside it, which
+  `/wui hide` switch takes a global down rather than the buttons inside it, which
   is the point of it: a button named something the sweep never guessed still
   goes down with its parent. A client that renamed the frames as well hides
   nothing, and the panel says so by reporting how many of the four were found
@@ -7470,7 +7470,7 @@ Everything below was written from the API contract and has never executed:
   say" and every cast draws as one you can stop. The third does not fail soft: a
   region
   the strip walk cannot find is Blizzard's cast bar still drawn under ours, and
-  it announces itself. `/wk status` reports the other two, so one login answers
+  it announces itself. `/wui status` reports the other two, so one login answers
   them: whether a cast event has ever reached a bar, and what the client put in
   the uninterruptible slot.
 
@@ -7479,7 +7479,7 @@ Everything below was written from the API contract and has never executed:
   12162 talent, and the scan compares the aura's name against
   `ns.SpellName(12721)`, so both sides come off the same client and a localised
   name matches itself. A client that shipped the bleed under another ID is the
-  only way this stays dark, and `/wk bars debuff` would then name a debuff the
+  only way this stays dark, and `/wui bars debuff` would then name a debuff the
   mob does not have.
 - Whether `SWING_DAMAGE` carries the off hand flag in the twenty-first value on
   2.5.6 and 1.15.9, and `SWING_MISSED` in the second. Nothing installed here
@@ -7560,7 +7560,7 @@ Everything below was written from the API contract and has never executed:
   stance pages, which settles the arithmetic and nothing else. `DrivePages`
   probes for the template and the global before either is used, and
   `ns.Bars.CanPage` reports which path is live, so a client with neither pages
-  bar 1 out of combat and says so in `/wk status`.
+  bar 1 out of combat and says so in `/wui status`.
 - Whether a visibility state driver hides one of these bars on 2.5.6. It is the
   same unknown as the page driver above and it is reached through the same two
   calls, so a client that runs one runs the other; what is untested is the
@@ -7644,7 +7644,7 @@ Everything below was written from the API contract and has never executed:
   named by counter, which is how every pin pool this author has read is built
   and is not a thing any client guarantees. An addon button that arrives with a
   counter on its name and two siblings would be left on the map, which is the
-  safe direction to be wrong in; `/wk minimap list` says what was left and why.
+  safe direction to be wrong in; `/wui minimap list` says what was left and why.
 - Whether another addon's minimap button minds being reparented. `Corral.lua`
   changes a button's parent, clears its points and replaces its `SetPoint` with
   a no-op, which is what every button bag has done since the first one, and all
@@ -7659,7 +7659,7 @@ Everything below was written from the API contract and has never executed:
   restore, and a filter is not worth breaking somebody else's.
 - Whether `cameraDistanceMaxZoomFactor` really accepts 4.0 on 2.5.6. Leatrix
   writes it on the Era client here. `Camera.Current` reads the CVar straight back
-  after writing it, so a client that clamps says what it clamped to in `/wk
+  after writing it, so a client that clamps says what it clamped to in `/wui
   status` rather than being believed.
 - Whether `DeleteCursorItem` actually deletes when an addon calls it here, and
   whether the client raises its own confirmation over the top. Questie hooks the
@@ -7717,11 +7717,11 @@ Everything below was written from the API contract and has never executed:
 - Whether `SetIgnoreParentScale` is on 2.5.6. Probed on the first adoption. Where
   it is missing the grid does not happen, sizes stay correct because every
   constant is multiplied by `ns.Pixel`, and edges are still one pixel wide, they
-  just land wherever the frame does. `/wk status` says which.
+  just land wherever the frame does. `/wui status` says which.
 - Whether `SetSnapToPixelGrid` and `SetTexelSnappingBias` are on 2.5.6. Both
   probed per texture. Absent, icons are as soft as they were.
 - Whether `C_NamePlate.SetNamePlateEnemySize` is on 2.5.6. Probed by name, and
-  `nameplateOverlapV` is the fallback. `/wk status` reports which of the two is
+  `nameplateOverlapV` is the fallback. `/wui status` reports which of the two is
   doing the work.
 - Whether `SetCVar` takes `nameplateMotion` and `nameplateOverlapV` here. Both
   pcalled, both retried at PLAYER_REGEN_ENABLED, and `Plates.Warn` says so once
@@ -7754,7 +7754,7 @@ Everything below was written from the API contract and has never executed:
   wrong by the ratio between the two scales, which is very visible.
 - Whether `SetClipsChildren` is on 2.5.6. The harness answers every method probe,
   so it only ever exercises the clipping path: the `ScrollFrame` fallback and the
-  no-clipping fallback have never run. `/wk` drawing content over its own footer
+  no-clipping fallback have never run. `/wui` drawing content over its own footer
   is the symptom of the third.
 - Whether the `Slider` frame type accepts a `Texture` object in
   `SetThumbTexture` here, and whether `SetObeyStepOnDrag` exists. The dress-up is
@@ -7786,7 +7786,7 @@ Everything below was written from the API contract and has never executed:
 - Which container API each client carries. `C_Container` and the loose
   `GetContainerNumSlots` globals are both probed in `Core.lua` and a client with
   neither answers empty, so the worst case is a weapon picker offering nothing
-  but "no weapon swap". `/wk charge weapon <name>` still sets it if that
+  but "no weapon swap". `/wui charge weapon <name>` still sets it if that
   happens.
 - Whether `GetItemInfoInstant` exists on 2.5.6. `ns.ItemInfo` falls back to
   `GetItemInfo`, which can answer nil for an uncached item, so the symptom would
@@ -7808,7 +7808,7 @@ Everything below was written from the API contract and has never executed:
 - Whether `GetActionInfo` returns a rank-specific spell ID here. If it answers
   with a rank-agnostic ID instead, every slot compares equal to the spellbook's
   best and nothing is ever reported stale. Same symptom as the line above and
-  the same test does not separate them, so check `/wk ranks` against a bar you
+  the same test does not separate them, so check `/wui ranks` against a bar you
   know is out of date.
 - Whether `GetSpellBookItemInfo` returns the spell ID in its second slot on this
   client rather than an override ID. The blast radius is small either way: a
@@ -7826,7 +7826,7 @@ Everything below was written from the API contract and has never executed:
   its normal binding roughly when the charge lands.
 - Whether `self:SetBindingClick` inside the snippet takes a frame handle for its
   third argument on 2.5.6. If it wants a name, swap `button` for the literal
-  string `"WarriorKitChargeButton"` in `BIND_SNIPPET`. That is the whole fix.
+  string `"WiggleUIChargeButton"` in `BIND_SNIPPET`. That is the whole fix.
 - `unitFrame.healthBar` and friends in `PlateRegions`. If the Blizzard bar is
   still visible under ours, a field name is wrong. That function is the only
   place to fix it.
@@ -7840,7 +7840,7 @@ Everything below was written from the API contract and has never executed:
   this is the best supported of the unknowns here, but Clique routes through a
   secure header and `Keys.lua` does not, and nothing proves the plain call
   behaves the same. It is pcalled and read back with `GetBindingAction`, so a
-  refusal drops to the ctrl-targeting fallback and says so once. `/wk status`
+  refusal drops to the ctrl-targeting fallback and says so once. `/wui status`
   reports `ctrl-click on` only when the readback agreed.
 - Whether a button with no size and no anchor still receives a click delivered
   by an override binding. Clique's equivalent button is shaped the same way,
@@ -7853,14 +7853,14 @@ Everything below was written from the API contract and has never executed:
 - Whether the `softenemy` unit token resolves on 2.5.6. This is the one worth
   answering first. `SoftTarget` now turns the CVar on for you out of combat, so
   the test is only this: drop your target, aim at a mob, and see whether the
-  world marker lands on it. `/wk status` latches `token on` the moment the token
+  world marker lands on it. `/wui status` latches `token on` the moment the token
   answers once, and stays `unproven` until it does. The addon works either way,
   so this decides whether aiming follows your camera or only your target and
   cursor.
 - Whether `SetCVar` accepts `SoftTargetEnemy` on 2.5.6, and whether the client
   lets it change while lockdown is up. Both calls are pcalled and a refusal
   defers to PLAYER_REGEN_ENABLED, so the failure mode is action targeting
-  staying on through a fight rather than an error. If `/wk status` says
+  staying on through a fight rather than an error. If `/wui status` says
   `auto, off for this fight` while the game is plainly still re-aiming you, the
   in-combat write is what is being refused.
 - Whether `[@softenemy]` resolves inside a macro conditional, which is a
@@ -7878,7 +7878,7 @@ Everything below was written from the API contract and has never executed:
   no addons in it yet. The Era claims here are read off the interface number and
   off what vanilla is known not to have, and every one of them is behind a probe
   or a type check, so the failure mode is a missing feature rather than an
-  error. First run on Era, watch `Logs/General.log` and check `/wk status`.
+  error. First run on Era, watch `Logs/General.log` and check `/wui status`.
 - Whether Era nameplates are restricted regions the same way Anniversary's are.
   `ns.Measure` pcalls either way, so the answer only decides whether the plate
   width is read or defaulted to 130.
@@ -7905,7 +7905,7 @@ Everything below was written from the API contract and has never executed:
   renamed by a client that renamed the global, which is why they are tried
   before the names, but nothing installed here reads one. Each falls back to the
   Classic global, and a piece that resolves to neither leaves that frame
-  unskinned and says so in `/wk status` rather than erroring.
+  unskinned and says so in `/wui status` rather than erroring.
 - Whether anything on this client writes a size back onto `PlayerFrame`,
   `TargetFrame` or `TargetFrameToT` after the fit. `Place` re-fits on every
   target change, every world entry and every resolution change, so a frame that
@@ -7917,7 +7917,7 @@ Everything below was written from the API contract and has never executed:
   are probed before they are touched. If neither is there, the fit still makes
   the frame's own rectangle the block, which is what Edit Mode draws over by
   default; if the client insets its selection by the size of the art this part
-  has already hidden, the pin is what corrects it. `/wk skin probe` says which
+  has already hidden, the pin is what corrects it. `/wui skin probe` says which
   of the two this client is.
 - How this client's Edit Mode says a system has been dropped. `HookDrag` wants
   the moment a drag ends, so that where the target landed becomes the level.
@@ -7925,15 +7925,15 @@ Everything below was written from the API contract and has never executed:
   it as that frame's own drag script, so the method is post-hooked where it is a
   function on the frame and the script is hooked where it is not. Nothing
   installed on this machine touches either. A client that carries neither loses
-  only the drag: the level stays whatever `/wk skin level` was last set to, and
+  only the drag: the level stays whatever `/wui skin level` was last set to, and
   the link is still written. Settle it by opening Edit Mode, dragging the target
-  well up or down, closing Edit Mode and reading `/wk status`, which prints the
+  well up or down, closing Edit Mode and reading `/wui status`, which prints the
   drop it stored.
 - Whether a frame anchored to another frame can still be dragged in this Edit
   Mode at all. `StartMoving` clears a frame's points and follows the mouse, so
   an anchor of ours is no more of an obstacle than Edit Mode's own, and that is
   the contract rather than an observation. A client that refused would show as a
-  target frame that will not move once the link is on, and `/wk skin link off`
+  target frame that will not move once the link is on, and `/wui skin link off`
   is the way out of that without a reload.
 - Whether `EDIT_MODE_LAYOUTS_UPDATED` is a real event on this backport. It is
   retail's name for a layout being applied, which is the moment Edit Mode writes
@@ -7949,7 +7949,7 @@ Everything below was written from the API contract and has never executed:
   five are the Classic names and none is called by anything installed here. A
   name that is not a frame stops that run's sweep at slot one and hides nothing,
   so the client's icons stay where they are, on top of ours in the player's case
-  and inside the gauge in the target's. `/wk skin probe` prints how many of each
+  and inside the gauge in the target's. `/wui skin probe` prints how many of each
   row it has hidden, and the buff row's number counts both of its runs, so a
   full list plus a sharpening stone settles all five in one look.
 - Where the target's cast bar lands. `Target_Spellbar_AdjustPosition` anchors it
@@ -7966,7 +7966,7 @@ Everything below was written from the API contract and has never executed:
 - Whether `AttackIcon$`, `RestIcon$` and `PVPIcon$` match anything on these
   frames here. The four `BADGES` patterns are written from the Classic region
   names, nothing installed here reads one, and a pattern that matches nothing
-  is a state icon that stays hidden rather than an error. `/wk skin probe`
+  is a state icon that stays hidden rather than an error. `/wui skin probe`
   lists every region the walk removed, so a miss names itself.
 - Whether the server actually sends heal prediction for a TBC-era heal. The
   Lua function and the event are both in both client binaries, which is what
@@ -7987,7 +7987,7 @@ Everything below was written from the API contract and has never executed:
   `Buttons/Reaction.lua` uses five, because running a second long costs a glance
   at a square that says pressable when it is not, and running a second short
   greys a free five rage attack that is still sitting there. Settling it needs
-  the live client: get something to dodge you, watch the seconds in `/wk status`
+  the live client: get something to dodge you, watch the seconds in `/wui status`
   and see when the client starts refusing the press.
 - Whether `SPELL_CAST_SUCCESS` is what these clients send when Overpower or
   Revenge lands. It is the subevent the window is shut on. If a client sends
@@ -8009,7 +8009,7 @@ Everything below was written from the API contract and has never executed:
   wanted, and a client answering neither faction call leaves the reputation rail
   off forever. The cap is settled by `UnitXPMax` answering zero even where both
   level calls are missing, which is what every client this addon has been read
-  against does. What would settle it: `/wk xp` on a character partway through a
+  against does. What would settle it: `/wui xp` on a character partway through a
   level, which prints the reading and says which of them answered.
 - Whether `MainMenuExpBar`, `ReputationWatchBar`, `MainMenuBarMaxLevelBar`,
   `StatusTrackingBarManager` and `ExhaustionTick` are what these two clients call
@@ -8017,7 +8017,7 @@ Everything below was written from the API contract and has never executed:
   backport straddles and nothing installed here calls any of them. A name this
   client does not carry is a skipped lookup rather than an error, and the symptom
   of getting all five wrong is two experience bars on the screen rather than one.
-  `/wk hide probe` prints one line per name and says which are on screen, which
+  `/wui hide probe` prints one line per name and says which are on screen, which
   settles it in one look.
 - Whether the reputation band the client answers is the standing's own band or
   the whole scale. `Progress.Faction` folds both calls to a band relative pair by
@@ -8091,6 +8091,6 @@ Everything below was written from the API contract and has never executed:
   window has its recipes by the time either fires. A client that fires before the
   list is there would have the walk see a count of nothing and write nothing. A
   mistake looks like the reagent list staying empty however many times you open
-  blacksmithing, with `/wk reagents` saying none scanned yet while the window is
+  blacksmithing, with `/wui reagents` saying none scanned yet while the window is
   open in front of you. What would settle it: open each profession window once
-  and type `/wk reagents`.
+  and type `/wui reagents`.

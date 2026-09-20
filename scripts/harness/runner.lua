@@ -19,7 +19,7 @@ local ns = {}
 H.ns, H.carry = ns, {}
 
 local order = {}
-for line in io.lines(ROOT .. "/WarriorKit.toc") do
+for line in io.lines(ROOT .. "/WiggleUI.toc") do
 	line = line:gsub("\r", ""):gsub("\\", "/")
 	if line:match("^[A-Za-z].*%.lua$") then
 		order[#order + 1] = line
@@ -27,7 +27,7 @@ for line in io.lines(ROOT .. "/WarriorKit.toc") do
 end
 for _, path in ipairs(order) do
 	H.loading.file = path
-	assert(loadfile(ROOT .. "/" .. path))("WarriorKit", ns)
+	assert(loadfile(ROOT .. "/" .. path))("WiggleUI", ns)
 	H.loading.file = "runtime"
 end
 H.order = order
@@ -70,8 +70,8 @@ H.fire = fire
 
 load("client/08-blizzard.lua")(H)
 
-_G.WarriorKitDB, _G.WarriorKitCharDB = {}, {}
-fire("ADDON_LOADED", "WarriorKit")
+_G.WiggleUIDB, _G.WiggleUICharDB = {}, {}
+fire("ADDON_LOADED", "WiggleUI")
 
 --------------------------------------------------------------------------
 -- Coming up as one spec

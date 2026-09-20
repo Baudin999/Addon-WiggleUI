@@ -102,7 +102,7 @@ check(clip:IsShown(), "the wait ran out and the panel did not come")
 local _, _, side = drawer:Parts()
 check(side == "left", "a feed on the right of the screen opened its panel to the " .. tostring(side))
 local point, anchor, relative = clip:GetPoint(1)
-check(point == "TOPRIGHT" and anchor == _G.WarriorKitLootFeed and relative == "TOPLEFT",
+check(point == "TOPRIGHT" and anchor == _G.WiggleUILootFeed and relative == "TOPLEFT",
 	("the clip hangs %s off the feed's %s, so the panel does not come out of its left edge")
 		:format(tostring(point), tostring(relative)))
 check(panel:GetFrameLevel() == 4 and clip:GetFrameLevel() == 4,

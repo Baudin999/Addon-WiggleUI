@@ -169,7 +169,7 @@ end
 
 local stream = ns.Stream.New({
 	prefix = "combatFeed",
-	name = "WarriorKitCombatFeed",
+	name = "WiggleUICombatFeed",
 	title = "Combat",
 	empty = "quiet",
 	-- Room for a mob's name and the preposition in front of it, which is about
@@ -215,7 +215,7 @@ function CombatFeed.Defaults()
 	-- Off because of what it costs rather than what it is worth. This is the
 	-- part of the addon with something to say about every line in the zone, and
 	-- the meter and the breakdown already answer "how did that fight go" from
-	-- the same log without a row per swing. `/wk feed combat on` for the pull
+	-- the same log without a row per swing. `/wui feed combat on` for the pull
 	-- you actually want to read back.
 	defaults.combatFeed = false
 	defaults.combatFeedShown = false

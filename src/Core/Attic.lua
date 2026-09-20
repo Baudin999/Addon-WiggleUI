@@ -68,7 +68,7 @@ local ART = {
 	Animation = true, AnimationGroup = true,
 }
 
-local ROOM = "WarriorKitAttic"
+local ROOM = "WiggleUIAttic"
 
 -- The room, once there has been something to put in it. nil is "not asked yet",
 -- false is "this client would not make one", and the frame is the frame.
@@ -103,7 +103,7 @@ local function Room()
 	return made
 end
 
--- The room itself, for the harness and for `/wk hide probe`. Handed out rather
+-- The room itself, for the harness and for `/wui hide probe`. Handed out rather
 -- than answered about, because what is being checked is which frame a caged
 -- frame's parent is, and a boolean this file computed is a boolean this file
 -- could compute wrongly and still agree with itself.
@@ -177,10 +177,10 @@ end
 -- for the frame a combat lockdown refused the strip on, which is the one caged
 -- frame whose Show is still its own.
 local function Watch(frame)
-	if frame.wkCaged or type(_G.hooksecurefunc) ~= "function" then
+	if frame.wuiCaged or type(_G.hooksecurefunc) ~= "function" then
 		return
 	end
-	frame.wkCaged = true
+	frame.wuiCaged = true
 	pcall(_G.hooksecurefunc, frame, "SetParent", Recage)
 	pcall(_G.hooksecurefunc, frame, "Show", Recage)
 end

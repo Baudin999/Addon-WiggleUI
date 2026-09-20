@@ -43,7 +43,7 @@ ns.Register({
 
 	defaults = {
 		uiAuto = true, -- import the baked layout on a client that does not have it
-		-- The staging area for ./bake-ui.sh. /wk ui save fills it, the game
+		-- The staging area for ./bake-ui.sh. /wui ui save fills it, the game
 		-- writes it to WTF on reload, and the script reads it from there.
 		uiLayout = {},
 		uiLayoutName = "",

@@ -87,7 +87,7 @@ fire("PLAYER_TALENT_UPDATE")
 ----------------------------------------------------------------------
 
 Window.Show()
-local frame = _G.WarriorKitTalents
+local frame = _G.WiggleUITalents
 check(frame ~= nil, "the talent window was never built")
 check(Window.Shown(), "the talent window would not open")
 -- At its own zoom, whatever that is by now: section 53 put every window back
@@ -424,18 +424,18 @@ do
 	local _, y = Offsets(arms.frame)
 	check(y == top,
 		("with one spec the boards start %.0f down and %.0f was asked"):format(-y, -top))
-	local shortHeight = _G.WarriorKitTalents:GetHeight()
+	local shortHeight = _G.WiggleUITalents:GetHeight()
 
 	model.groups = 2
 	Window.Paint()
 	_, y = Offsets(arms.frame)
 	if striped then
 		check(y == top, "with two specs a hunter's boards moved off the strip the pet's tab had already put up")
-		check(_G.WarriorKitTalents:GetHeight() == shortHeight,
+		check(_G.WiggleUITalents:GetHeight() == shortHeight,
 			"with two specs a hunter's window grew for a strip it already had")
 	else
 		check(y < -Metric.pad, "with two specs the boards did not move down under the strip")
-		check(_G.WarriorKitTalents:GetHeight() > shortHeight, "with two specs the window did not grow for the strip")
+		check(_G.WiggleUITalents:GetHeight() > shortHeight, "with two specs the window did not grow for the strip")
 	end
 	check(Window.Viewing() == 1, ("the window opened on group %d rather than the live one"):format(Window.Viewing()))
 
@@ -476,7 +476,7 @@ do
 	check(Window.Viewing() == 1, "the window did not follow the client back to the first group")
 	model.groups = 1
 	Window.Paint()
-	check(_G.WarriorKitTalents:GetHeight() == shortHeight, "with one spec again the window did not shrink back")
+	check(_G.WiggleUITalents:GetHeight() == shortHeight, "with one spec again the window did not shrink back")
 end
 
 ----------------------------------------------------------------------
@@ -524,7 +524,7 @@ end
 
 do
 	check(Blizz.Caged(), "Blizzard's talent frame was left on the screen with this one switched on")
-	check(_G.PlayerTalentFrame:GetParent() == _G.WarriorKitAttic, "Blizzard's talent frame is not in the attic")
+	check(_G.PlayerTalentFrame:GetParent() == _G.WiggleUIAttic, "Blizzard's talent frame is not in the attic")
 
 	Window.Hide()
 	local presses = H.talentKey.presses
@@ -538,7 +538,7 @@ do
 	ns.db.hideBlizzTalents = false
 	ns.BlizzHide.Apply()
 	check(not Blizz.Caged(), "unticking the switch left the frame caged")
-	check(_G.PlayerTalentFrame:GetParent() ~= _G.WarriorKitAttic, "unticking the switch left the frame in the attic")
+	check(_G.PlayerTalentFrame:GetParent() ~= _G.WiggleUIAttic, "unticking the switch left the frame in the attic")
 	_G.ToggleTalentFrame()
 	check(H.talentKey.presses == presses + 1, "with the switch off the N key did not reach Blizzard's toggle")
 	_G.PlayerTalentFrame:Hide()

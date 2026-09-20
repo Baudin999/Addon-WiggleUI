@@ -65,7 +65,7 @@ local function QuestWord(arg, rawArg)
 		ns.Print("the quest log is " .. (ns.db.quests and "on" or "off") .. ".")
 	elseif word == "" then
 		if not ns.db.quests then
-			ns.Print("the quest log is off. Type /wk quests on.")
+			ns.Print("the quest log is off. Type /wui quests on.")
 			return
 		end
 		ns.QuestWindow.Toggle()

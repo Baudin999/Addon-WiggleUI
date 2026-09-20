@@ -587,8 +587,8 @@ function Adapter.Cage(d)
 		end)
 	end
 
-	-- Registered with the switch it belongs to, so `/wk hide <part>`, the
-	-- panel's own line and `/wk reset` all reach the part without any of them
+	-- Registered with the switch it belongs to, so `/wui hide <part>`, the
+	-- panel's own line and `/wui reset` all reach the part without any of them
 	-- naming it.
 	if d.pass then
 		ns.BlizzHide.Also(Blizz.Apply)

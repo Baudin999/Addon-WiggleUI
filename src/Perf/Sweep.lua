@@ -364,7 +364,7 @@ end
 
 local function Start(minutes)
 	if not ns.Trace.Watching() then
-		ns.Print("sweep: the frame trace is not watching, so there would be no rows to write this into. /wk perf watch on first.")
+		ns.Print("sweep: the frame trace is not watching, so there would be no rows to write this into. /wui perf watch on first.")
 		return
 	end
 	state.minutes = minutes
@@ -379,7 +379,7 @@ local function Start(minutes)
 	end
 end
 
--- `/wk perf sweep`, and the three words that can follow it. Parsed the way
+-- `/wui perf sweep`, and the three words that can follow it. Parsed the way
 -- Perf/Feature.lua parses the rest of its own: a word and the remainder.
 function Sweep.Word(rest)
 	local word = rest:match("^(%S*)")
@@ -404,7 +404,7 @@ function Sweep.Word(rest)
 
 	if state.running then
 		ns.Print("sweep: already running. " .. Sweep.Describe()
-			.. ". /wk perf sweep stop ends it and puts everything back.")
+			.. ". /wui perf sweep stop ends it and puts everything back.")
 		return
 	end
 

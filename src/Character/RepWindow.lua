@@ -14,7 +14,7 @@ local C, M = UI.Color, UI.Metric
 -- belongs beside your gear. Nothing on this list moves when you swap a ring.
 -- When the sheet folded down to one page the standings could not follow the
 -- skills into the stats column, because a faction is not a number about your
--- character, so they got a window instead and `/wk reputation` opens it.
+-- character, so they got a window instead and `/wui reputation` opens it.
 --
 -- Character/Reputation.lua did not change. It hands back a title and a list of
 -- rows exactly as it did as a tab, this window hosts the same ns.CharReadout
@@ -64,7 +64,7 @@ local function Build()
 	end
 
 	window = UI.Window({
-		name = "WarriorKitReputation",
+		name = "WiggleUIReputation",
 		title = "Reputation",
 		width = WIDTH,
 		height = HEIGHT,

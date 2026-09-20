@@ -357,9 +357,9 @@ check(Window.Paint(), "the window refused to paint")
 -- level, which is the shape scripts/check.sh asks every section for.
 do
 	local M = ns.UI.Metric
-	local rail = _G.WarriorKitQuestList
-	local text = _G.WarriorKitQuestText
-	local reward = _G.WarriorKitQuestRewards
+	local rail = _G.WiggleUIQuestList
+	local text = _G.WiggleUIQuestText
+	local reward = _G.WiggleUIQuestRewards
 	check(rail and text and reward,
 		"one of the three columns is not on the screen under its own name")
 
@@ -373,7 +373,7 @@ do
 			:format(-rewardIn, -rewardTop, M.pad))
 
 	local spanned = M.pad * 4 + rail:GetWidth() + text:GetWidth() + reward:GetWidth()
-	local across = _G.WarriorKitQuests:GetWidth()
+	local across = _G.WiggleUIQuests:GetWidth()
 	check(spanned == across,
 		("the columns and their four margins come to %d in a window %d wide")
 			:format(spanned, across))
@@ -655,7 +655,7 @@ do
 	-- what UI.Window hands back and the global is only the frame under it.
 	local held
 	for _, entry in ipairs(ns.UI.Windows) do
-		if entry.frame == _G.WarriorKitQuests then
+		if entry.frame == _G.WiggleUIQuests then
 			held = entry
 		end
 	end
@@ -676,7 +676,7 @@ end
 
 check(ns.QuestBlizzard.Caged(),
 	"Blizzard's quest log was left on the screen with this one switched on")
-check(_G.QuestLogFrame:GetParent() == _G.WarriorKitAttic,
+check(_G.QuestLogFrame:GetParent() == _G.WiggleUIAttic,
 	"Blizzard's quest log is not in the attic")
 
 -- The key. Ours toggles and the client's is never reached, which is what stops

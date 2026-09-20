@@ -78,7 +78,7 @@ local function Secure(name)
 	return button
 end
 
-local cast = Secure("WarriorKitBeastTraining")
+local cast = Secure("WiggleUIBeastTraining")
 cast:SetSize(SQUARE, SQUARE)
 UI.Dress(cast, SQUARE)
 cast:SetAttribute("type", "spell")
@@ -86,7 +86,7 @@ cast:SetAttribute("spell", Training.SPELL)
 
 -- Clear, and the size of whichever row it is laid over. The row under it draws
 -- the square and the words.
-local teach = Secure("WarriorKitBeastTeach")
+local teach = Secure("WiggleUIBeastTeach")
 teach:SetAttribute("type", "click")
 
 -- Hidden in the secure environment when a fight starts, because that is the

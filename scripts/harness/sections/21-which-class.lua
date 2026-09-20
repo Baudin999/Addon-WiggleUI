@@ -94,9 +94,9 @@ local CHARGE = Class.Of("charge") ~= nil
 check(ns.Charge.Available() == CHARGE,
 	("the charge part disagrees with the registry about a %s"):format(PLAYER_CLASS))
 
-check((_G.WarriorKitChargeButton ~= nil) == CHARGE,
+check((_G.WiggleUIChargeButton ~= nil) == CHARGE,
 	("the charge button %s built on a %s"):format(CHARGE and "was not" or "was", PLAYER_CLASS))
-check((_G.WarriorKitChargeMarker ~= nil) == CHARGE,
+check((_G.WiggleUIChargeMarker ~= nil) == CHARGE,
 	("the world marker %s built on a %s"):format(CHARGE and "was not" or "was", PLAYER_CLASS))
 check(ns.Charge.Known("charge") == CHARGE,
 	("a %s %s Charge"):format(PLAYER_CLASS, CHARGE and "does not know" or "knows"))
@@ -319,7 +319,7 @@ end
 print(("class   %s: %s, charge button %s, action targeting %s, %d class page%s under %s")
 	:format(PLAYER_CLASS,
 		mine and "a file of its own" or "no file, and none needed",
-		_G.WarriorKitChargeButton and "built" or "not built",
+		_G.WiggleUIChargeButton and "built" or "not built",
 		cvars.SoftTargetEnemy == "0" and "left alone"
 			or ("aiming at " .. cvars.SoftTargetEnemy .. ", forcing at " .. cvars.SoftTargetForce),
 		classGroup and #classGroup.sections or 0,

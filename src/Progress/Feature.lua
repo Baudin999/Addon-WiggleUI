@@ -65,7 +65,7 @@ local XPWord = ns.Command.Word({
 		return "the experience and reputation rails " .. (on and "on" or "off")
 				.. ": " .. Rails.Describe() .. ".",
 			(not on and ns.db.hideBlizzXP) and "Blizzard's own are hidden by"
-				.. " `/wk hide xp`, so nothing is drawing your experience at all."
+				.. " `/wui hide xp`, so nothing is drawing your experience at all."
 				or nil
 	  end },
 })

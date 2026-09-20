@@ -64,7 +64,7 @@ ns.Register({
 		-- Off. Every other readout in this addon is something you cannot get
 		-- anywhere else; a swing bar is a rhythm you already feel through the
 		-- animation, and a second pair of bars under the character is the
-		-- first thing to go when the screen gets busy. `/wk swing on` is one
+		-- first thing to go when the screen gets busy. `/wui swing on` is one
 		-- line for the fury warrior who wants it.
 		swing = false,
 

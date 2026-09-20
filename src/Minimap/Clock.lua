@@ -144,7 +144,7 @@ local function Build()
 	-- Named, the way the corral's face next door is named, because a frame a
 	-- player can point at is a frame they can name back in a bug report and one
 	-- /framestack can find.
-	frame = CreateFrame("Frame", "WarriorKitClock", bezel)
+	frame = CreateFrame("Frame", "WiggleUIClock", bezel)
 	local px = ns.Pixel(frame)
 	frame.bg = ns.Fill(frame, "BACKGROUND", C.window[1], C.window[2], C.window[3],
 		C.window[4])
@@ -215,7 +215,7 @@ function Clock.Update()
 	return false
 end
 
--- What the tab is showing, for the panel and for /wk status. Nil until it has
+-- What the tab is showing, for the panel and for /wui status. Nil until it has
 -- been built, which is the state a client with no Minimap frame stays in.
 function Clock.Describe()
 	if not frame then

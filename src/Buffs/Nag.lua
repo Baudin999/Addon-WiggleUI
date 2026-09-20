@@ -44,7 +44,7 @@ ns.BuffNag = Nag
 -- was extracted to stop.
 --------------------------------------------------------------------------
 
-local FRAME_NAME = "WarriorKitBuffs"
+local FRAME_NAME = "WiggleUIBuffs"
 
 -- 27, and not a number picked for looking right. The client stores a spell icon
 -- at 64 texels, UI/Draw.lua crops the five texel border off each edge, and the
@@ -635,7 +635,7 @@ events:SetScript("OnEvent", function(_, event, token)
 		ns.UI.Hushable(frame)
 		unit = ns.UI.Unit(frame)
 		place = ns.UI.Placeable(frame, {
-			name = "WarriorKit buffs",
+			name = "WiggleUI buffs",
 			moved = function(anchor)
 				ns.db.buffPoint = anchor
 				Nag.Apply()

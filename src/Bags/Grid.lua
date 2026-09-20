@@ -340,14 +340,14 @@ end
 -- somewhere wrong has to be findable from a macro.
 local function Build(index)
 	local made, button = pcall(CreateFrame, "Button",
-		"WarriorKitBagSlot" .. index, canvas, TEMPLATE)
+		"WiggleUIBagSlot" .. index, canvas, TEMPLATE)
 	-- A client with no such template is a client where the squares are still
 	-- drawn and still say what is in them, and where a click does nothing.
 	-- Recorded rather than raised, because the window is worth having either way
 	-- and because the panel has to be able to say which of the two you have.
 	if not made or type(button) ~= "table" then
 		inherited = false
-		button = CreateFrame("Button", "WarriorKitBagSlot" .. index, canvas)
+		button = CreateFrame("Button", "WiggleUIBagSlot" .. index, canvas)
 	end
 
 	button:SetSize(SLOT, SLOT)

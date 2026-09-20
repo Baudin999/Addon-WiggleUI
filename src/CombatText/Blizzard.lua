@@ -236,7 +236,7 @@ function Blizzard.Apply()
 	-- is every number on screen twice with the setting saying it is handled.
 	if Read(TAKEN[1]) ~= OFF and not warned then
 		warned = true
-		ns.Print("this client accepted the change to its own damage numbers and did not make it, so they may still be drawn. /wk hits quiet off stops the addon trying.")
+		ns.Print("this client accepted the change to its own damage numbers and did not make it, so they may still be drawn. /wui hits quiet off stops the addon trying.")
 	end
 
 	applied = true

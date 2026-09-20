@@ -55,7 +55,7 @@ local function CharacterWord(arg, rawArg)
 		ns.Print("the character sheet is " .. (ns.db.character and "on" or "off") .. ".")
 	elseif word == "" then
 		if not ns.db.character then
-			ns.Print("the character sheet is off. Type /wk character on.")
+			ns.Print("the character sheet is off. Type /wui character on.")
 			return
 		end
 		ns.CharWindow.Toggle()
@@ -78,7 +78,7 @@ local function ReputationWord(arg, rawArg)
 
 	if word == "" then
 		if not ns.db.character then
-			ns.Print("the character sheet is off. Type /wk character on.")
+			ns.Print("the character sheet is off. Type /wui character on.")
 			return rawArg
 		end
 		ns.CharRepWindow.Toggle()
@@ -209,7 +209,7 @@ ns.Register({
 
 	panel = function(ui)
 		ui.Section("Character", "Windows")
-		ui.Lede("Your gear, what it adds up to and your skills, on one page the C key opens. Your standings are on /wk reputation.")
+		ui.Lede("Your gear, what it adds up to and your skills, on one page the C key opens. Your standings are on /wui reputation.")
 		ui.Check("darken the world behind the sheet",
 			function() return ns.db.characterDim end,
 			SetDim)

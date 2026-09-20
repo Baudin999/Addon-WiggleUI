@@ -226,7 +226,7 @@ end
 
 -- Whether the addon's lock reaches this frame at all.
 --
--- Eleven of the twelve say nothing and take the default, which is that /wk lock
+-- Eleven of the twelve say nothing and take the default, which is that /wui lock
 -- and the panel's button decide whether they can be dragged. The five chrome
 -- windows are the other case: a quest log or a mail window is a thing you open,
 -- move and close again, and locking it would be locking a window rather than

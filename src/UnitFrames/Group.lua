@@ -156,9 +156,9 @@ local CONFIG = [[
 
 local PARTY = {
 	name = "party",
-	title = "WarriorKit party",
-	frameName = "WarriorKitParty",
-	headerName = "WarriorKitPartyHeader",
+	title = "WiggleUI party",
+	frameName = "WiggleUIParty",
+	headerName = "WiggleUIPartyHeader",
 	raid = false,
 	keys = {
 		on = "party", point = "partyMiddle", width = "partyWidth",
@@ -172,9 +172,9 @@ local PARTY = {
 
 local RAID_LIST = {
 	name = "raid",
-	title = "WarriorKit raid",
-	frameName = "WarriorKitRaid",
-	headerName = "WarriorKitRaidHeader",
+	title = "WiggleUI raid",
+	frameName = "WiggleUIRaid",
+	headerName = "WiggleUIRaidHeader",
 	raid = true,
 	keys = {
 		on = "raid", point = "raidMiddle", width = "raidWidth",
@@ -1162,7 +1162,7 @@ end
 
 --------------------------------------------------------------------------
 
--- One line per list for /wk status and for the panel. It says what is live
+-- One line per list for /wui status and for the panel. It says what is live
 -- rather than what is set, because a raid ordered by group is doing nothing of
 -- the kind while you are standing in a party.
 function Group.Describe(which)

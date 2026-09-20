@@ -39,20 +39,20 @@ local ns, fire, check = H.ns, H.fire, H.check
 local Feed, People, Window = ns.ChatFeed, ns.People, ns.ChatWindow
 local Rooms, Compose, Voice = ns.Rooms, ns.Compose, ns.Voice
 
-check(_G.WarriorKitChat ~= nil, "no chat window was built at login")
+check(_G.WiggleUIChat ~= nil, "no chat window was built at login")
 check(Window.Built(), "the chat window says it was not built")
-check(_G.WarriorKitChat:GetWidth() == ns.db.chatWidth,
+check(_G.WiggleUIChat:GetWidth() == ns.db.chatWidth,
 	("the chat window is %s wide and the setting says %s")
-		:format(tostring(_G.WarriorKitChat:GetWidth()), tostring(ns.db.chatWidth)))
+		:format(tostring(_G.WiggleUIChat:GetWidth()), tostring(ns.db.chatWidth)))
 
 -- The rail down the left, at the theme's picture size rather than the one the
 -- shipped screen captured: every number below is that column plus the setting.
 local M = ns.UI.Metric
 ns.db.chatIcon = M.roomIcon
 Window.Apply()
-check(_G.WarriorKitChatRooms:GetWidth() == M.rooms,
+check(_G.WiggleUIChatRooms:GetWidth() == M.rooms,
 	("the room rail is %s wide and the theme says %d")
-		:format(tostring(_G.WarriorKitChatRooms:GetWidth()), M.rooms))
+		:format(tostring(_G.WiggleUIChatRooms:GetWidth()), M.rooms))
 -- And a row of it is wide enough to hold the icon that is the only thing on it.
 -- The rail is a column of pictures now, so a row narrower than a picture is a
 -- rail that draws nothing at all, and the width above is still correct while it
@@ -65,17 +65,17 @@ check(Window.Rail() >= M.roomIcon,
 -- the foot and the voice button under it do not take. The voice button is in
 -- the rail's own column and is the reason for the second subtraction: a rail
 -- still measuring the full body would be drawing its last room underneath it.
-check(_G.WarriorKitChatRooms:GetHeight() == ns.db.chatHeight - M.entry - M.roomRow,
+check(_G.WiggleUIChatRooms:GetHeight() == ns.db.chatHeight - M.entry - M.roomRow,
 	("the room rail is %s tall in a %d window, which has no title bar and a "
 		.. "voice button in the rail's column")
-		:format(tostring(_G.WarriorKitChatRooms:GetHeight()), ns.db.chatHeight))
+		:format(tostring(_G.WiggleUIChatRooms:GetHeight()), ns.db.chatHeight))
 
 -- Every surface in the window at the one opacity, and not only the sheet
 -- behind it. The rail was painted at its own full alpha over a background the
 -- player can drag to nothing, so a window at eighty percent was a pane of glass
 -- with a solid black column down the side of it.
 do
-	local strip = _G.WarriorKitChatRooms.regions[1]
+	local strip = _G.WiggleUIChatRooms.regions[1]
 	local held = ns.db.chatAlpha
 	ns.db.chatAlpha = 50
 	Window.Apply()
@@ -98,7 +98,7 @@ end
 
 check(People.Count() == 0, "the groups did not ship empty")
 check(Window.Rooms() == 4,
-	("%d rooms standing alone with no guild, expected Conversation, System, WarriorKit and Say")
+	("%d rooms standing alone with no guild, expected Conversation, System, WiggleUI and Say")
 		:format(Window.Rooms()))
 check(Window.Room() == Rooms.ALL,
 	("the window opened in %s, expected everything"):format(tostring(Window.Room())))
@@ -627,7 +627,7 @@ do
 	check(_G.GetBindingAction("/", true) == "OPENCHATSLASH",
 		("the window took the slash key and bound it to %q")
 			:format(_G.GetBindingAction("/", true)))
-	check(_G.WarriorKitChatEnterButton == nil,
+	check(_G.WiggleUIChatEnterButton == nil,
 		"the button the enter key used to be bound onto is still being built")
 
 	-- The client's own enter key. It picks the field, activates it, and only
@@ -769,9 +769,9 @@ end
 do
 	local function Enter(shift)
 		Window.Blur()
-		_G.WarriorKitShift(shift)
+		_G.WiggleUIShift(shift)
 		Window.Focus()
-		_G.WarriorKitShift(false)
+		_G.WiggleUIShift(false)
 	end
 
 	Window.Blur()

@@ -34,7 +34,7 @@ ns.Worn = Worn
 --
 -- **Using what is in a slot is not a call at all, and that is the correction
 -- this file exists in its current shape for.** `UseInventoryItem` is protected.
--- An addon that calls it from its own click gets the dialog saying WarriorKit
+-- An addon that calls it from its own click gets the dialog saying WiggleUI
 -- has been blocked from an action only available to the Blizzard UI, and so
 -- does an addon that finishes a spell the client is holding until it is told
 -- which item it is for, which is what a sharpening stone, a weapon oil, an

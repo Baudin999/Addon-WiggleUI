@@ -142,7 +142,7 @@ end
 _G.PickupSpellBookItem = function(index, book)
 	H.spellbook.pickups[#H.spellbook.pickups + 1] = index
 	local entry = Entry(index, book)
-	_G.WarriorKitCarrySpell(index, book, entry and entry.id)
+	_G.WiggleUICarrySpell(index, book, entry and entry.id)
 end
 
 -- The other way onto the cursor, and the one Buttons/Ranks.lua takes.
@@ -169,7 +169,7 @@ _G.PickupSpell = function(id)
 	for index, entry in ipairs(ENTRIES) do
 		if entry.id == id and entry.kind == "SPELL" then
 			H.spellbook.pickups[#H.spellbook.pickups + 1] = index
-			_G.WarriorKitCarrySpell(index, "spell", id)
+			_G.WiggleUICarrySpell(index, "spell", id)
 			return
 		end
 	end

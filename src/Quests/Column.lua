@@ -812,7 +812,7 @@ function Column.Build()
 		return frame
 	end
 
-	frame = CreateFrame("Frame", "WarriorKitQuestColumn", UIParent)
+	frame = CreateFrame("Frame", "WiggleUIQuestColumn", UIParent)
 	frame:SetFrameStrata("MEDIUM")
 	frame:SetSize(WIDTH, 1)
 	UI.Adopt(frame, ns.Zoom("questsZoom"))
@@ -822,7 +822,7 @@ function Column.Build()
 	-- list in this addon is: a strip that has laid itself out wrongly has to be
 	-- measurable from a macro and from scripts/harness.lua.
 	side = UI.SideTabs(frame, {
-		name = "WarriorKitQuestZones",
+		name = "WiggleUIQuestZones",
 		size = ZONE_TEXT,
 		onSelect = function(name) Column.Choose(name) end,
 	})
@@ -869,7 +869,7 @@ function Column.Build()
 	stack.frame:SetPoint("TOPLEFT", tally, "BOTTOMLEFT", 0, -M.rowGap)
 
 	place = UI.Placeable(frame, {
-		name = "WarriorKit quest tracker",
+		name = "WiggleUI quest tracker",
 		moved = function(anchor)
 			ns.db.questsColumnPoint = anchor
 		end,

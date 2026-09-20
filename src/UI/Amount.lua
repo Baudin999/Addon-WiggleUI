@@ -211,7 +211,7 @@ local function Build()
 	end
 
 	window = UI.Window({
-		name = "WarriorKitAmount",
+		name = "WiggleUIAmount",
 		title = "",
 		width = WIDTH,
 		height = M.title + M.footer + M.pad * 2 + UI.SLOT + M.row,

@@ -81,7 +81,7 @@ do
 	beat(0.1)
 	local frame
 	for _, candidate in ipairs(H.frames) do
-		if candidate.wkWorn == "messages" and candidate:IsShown() then
+		if candidate.wuiWorn == "messages" and candidate:IsShown() then
 			frame = candidate
 		end
 	end
@@ -111,7 +111,7 @@ end
 
 do
 	ns.db.msgFloatSide = "same"
-	Floats.Show(_G.WarriorKitItemLink("Aegis"), 1)
+	Floats.Show(_G.WiggleUIItemLink("Aegis"), 1)
 	whisper("thanks for the run", "Jaina", "M1")
 	check(Floats.Count() == 2 and Messages.Count() == 1,
 		("the drops' column holds %d and %d of them are messages; it is two and one")
@@ -178,7 +178,7 @@ do
 	beat(0.1)
 	local frame
 	for _, candidate in ipairs(H.frames) do
-		if candidate.wkWorn == "messages" and candidate:IsShown() then
+		if candidate.wuiWorn == "messages" and candidate:IsShown() then
 			frame = candidate
 		end
 	end

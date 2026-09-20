@@ -51,7 +51,7 @@ local Window = ns.CharWindow
 -- sheet shut, and the fade is read off the frame's own OnShow, which fires on
 -- the change and not on a Show over a window that is already up.
 Window.Show()
-local frame = _G.WarriorKitCharacter
+local frame = _G.WiggleUICharacter
 check(frame ~= nil, "the character sheet was never built, so there is no screen window to read")
 
 -- The window object rather than the frame, because the wash is the library's

@@ -1,6 +1,6 @@
 -- Blizzard's own frames, held down
 --
--- Every switch under `/wk hide` used to be a frame hidden once at login by
+-- Every switch under `/wui hide` used to be a frame hidden once at login by
 -- putting its own Hide where its Show was, and a record that said it had been.
 -- That shipped and failed twice in game, so this section is written against the
 -- two failures rather than against the switches: the switches were on both
@@ -22,7 +22,7 @@
 --
 -- What is not measured here: the frames each switch names on the live client.
 -- The fixture carries the names this addon was written against, so this section
--- answers for the mechanism and `/wk hide probe` answers for the names.
+-- answers for the mechanism and `/wui hide probe` answers for the names.
 
 local H = ...
 local ns, check, frames, advance = H.ns, H.check, H.frames, H.advance
@@ -81,7 +81,7 @@ do
 	-- raised on every cast, one error per cast rather than one per OnUpdate,
 	-- which is why this one outlived the key by a fortnight. So the method is
 	-- taken off the bar for as long as the bar is in the attic.
-	check(bar.wkMuted ~= nil,
+	check(bar.wuiMuted ~= nil,
 		"the caged cast bar is still holding the layout call that reads its parent")
 
 	-- Reached under FrameXML's parent key as well, so a client that renamed the
@@ -114,7 +114,7 @@ do
 		"the switch went off and TargetFrame never got its cast bar key back")
 	check(Blizz.Stashed("TargetFrame", "spellbar") == false,
 		"the key was handed back and this file still thinks it is holding it")
-	check(bar.wkMuted == nil, "the cast bar came back with its own layout call still off")
+	check(bar.wuiMuted == nil, "the cast bar came back with its own layout call still off")
 	check(pcall(_G.Target_Spellbar_OnEvent),
 		"a cast on the cast bar raised after the switch went off")
 	check(bar.offset == 0,

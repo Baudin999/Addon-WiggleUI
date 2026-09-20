@@ -59,7 +59,7 @@ local function Build()
 	end
 
 	window = UI.Window({
-		name = "WarriorKitAsk",
+		name = "WiggleUIAsk",
 		title = "",
 		width = WIDTH,
 		height = M.title + M.footer + M.pad * 2 + M.row * 2,

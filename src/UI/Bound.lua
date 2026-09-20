@@ -107,7 +107,7 @@ function Bound.Hold(owner, key, name, click)
 		return false
 	end
 	local target = _G[name]
-	if not (target and target.wkEdge) then
+	if not (target and target.wuiEdge) then
 		return false
 	end
 	click = click or "LeftButton"

@@ -6,7 +6,7 @@ ns.World = World
 --------------------------------------------------------------------------
 -- The hover no frame in this addon owns
 --
--- Every other hover in WarriorKit is answered by the thing under the cursor. A
+-- Every other hover in WiggleUI is answered by the thing under the cursor. A
 -- feed row, a nag square, an action slot and a filter chip all have an OnEnter,
 -- and UI/Tip.lua replaces what they would have said. A creature in the 3D world
 -- has none of that. The cursor is over WorldFrame, the client resolves the

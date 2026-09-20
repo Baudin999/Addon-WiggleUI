@@ -730,7 +730,7 @@ local function Note(quest, zones, drawn)
 		return ""
 	end
 	if #zones == 0 then
-		return ("Questie has no row for %s. Type /wk quests where."):format(quest.title)
+		return ("Questie has no row for %s. Type /wui quests where."):format(quest.title)
 	end
 	if drawn == 0 then
 		return "This client has no map picture for that zone."
@@ -811,13 +811,13 @@ end
 -- that order down one column. Built once, like everything else in this window.
 local function Atlas(parent)
 	local map = { width = 0 }
-	map.frame = CreateFrame("Frame", "WarriorKitQuestMap", parent)
+	map.frame = CreateFrame("Frame", "WiggleUIQuestMap", parent)
 
 	map.where = UI.Label(map.frame, M.heading, C.heading, "LEFT", UI.FLAT)
 	map.where:SetPoint("TOPLEFT")
 	UI.Wrap(map.where, false)
 
-	map.board = Chart.New(map.frame, "WarriorKitQuestChart")
+	map.board = Chart.New(map.frame, "WiggleUIQuestChart")
 	map.board.frame:SetPoint("TOPLEFT", map.frame, "TOPLEFT", 0, -(M.heading + M.rowGap))
 
 	-- The strip is anchored under the board rather than measured, so a zone
@@ -991,7 +991,7 @@ function Window.Build()
 	end
 
 	window = UI.Window({
-		name = "WarriorKitQuests",
+		name = "WiggleUIQuests",
 		title = "Quest Log",
 		width = WIDTH,
 		height = HEIGHT,
@@ -1017,7 +1017,7 @@ function Window.Build()
 	-- cross is drawn on every row, because every quest can be abandoned and the
 	-- confirmation is what stands between the mark and the loss.
 	list = UI.List(window.content, {
-		name = "WarriorKitQuestList",
+		name = "WiggleUIQuestList",
 		onSelect = Select,
 		marks = true,
 		describe = Company,
@@ -1052,13 +1052,13 @@ function Window.Build()
 	tabs:Add("the quest")
 	tabs:Add("the map")
 
-	page = Column(window.content, "WarriorKitQuestText")
+	page = Column(window.content, "WiggleUIQuestText")
 	page.frame:SetPoint("TOPLEFT", tabs.frame, "BOTTOMLEFT", 0, -M.gutter)
 
 	atlas = Atlas(window.content)
 	atlas.frame:SetPoint("TOPLEFT", tabs.frame, "BOTTOMLEFT", 0, -M.gutter)
 
-	pay = Column(window.content, "WarriorKitQuestRewards")
+	pay = Column(window.content, "WiggleUIQuestRewards")
 	pay.frame:SetPoint("TOPRIGHT", -M.pad, -M.pad)
 
 	Chrome()

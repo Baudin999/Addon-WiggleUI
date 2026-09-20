@@ -27,7 +27,7 @@
 local H = ...
 local ns, check = H.ns, H.check
 local targetFrame, debuffs, buffs = H.targetFrame, H.debuffs, H.buffs
-local targetAnchor = _G.WarriorKitTargetFrame
+local targetAnchor = _G.WiggleUITargetFrame
 local child, Region, own = H.child, H.Region, H.own
 local skinTicker, fire = H.carry.skinTicker, H.fire
 
@@ -46,11 +46,11 @@ local function tick()
 	skinTicker:Beat(0.25)
 end
 
-local box = _G.WarriorKitTargetButton
+local box = _G.WiggleUITargetButton
 local px = ns.Pixel(box)
 -- The one gap in UnitFrames/Auras.lua, in the units these frames are drawn in.
 local gap = 3 * px
-local rowD, rowB = _G.WarriorKitTargetDebuffs, _G.WarriorKitTargetBuffs
+local rowD, rowB = _G.WiggleUITargetDebuffs, _G.WiggleUITargetBuffs
 
 check(rowD ~= nil and rowB ~= nil,
 	"the skin built no aura rows under the target block")
@@ -344,8 +344,8 @@ end
 -- pair reflected across the corridor between them.
 --------------------------------------------------------------------------
 do
-	local playerBox = _G.WarriorKitPlayerButton
-	local yourD, yourB = _G.WarriorKitPlayerDebuffs, _G.WarriorKitPlayerBuffs
+	local playerBox = _G.WiggleUIPlayerButton
+	local yourD, yourB = _G.WiggleUIPlayerDebuffs, _G.WiggleUIPlayerBuffs
 	check(yourD ~= nil and yourB ~= nil,
 		"the skin built no aura rows on the player block")
 
@@ -512,8 +512,8 @@ end
 -- and a row as wide as the pet block cannot run under your own.
 --------------------------------------------------------------------------
 do
-	local petBox = _G.WarriorKitPetButton
-	local petD, petB = _G.WarriorKitPetDebuffs, _G.WarriorKitPetBuffs
+	local petBox = _G.WiggleUIPetButton
+	local petD, petB = _G.WiggleUIPetDebuffs, _G.WiggleUIPetBuffs
 	check(petD ~= nil and petB ~= nil,
 		"the skin built no aura rows on the pet block")
 
@@ -564,7 +564,7 @@ do
 		{ name = "Battle Shout", icon = "shout", expires = now + 100 },
 	}
 	tick()
-	local yours = squares(_G.WarriorKitPlayerBuffs)
+	local yours = squares(_G.WiggleUIPlayerBuffs)
 	check(yours[2].shownIcon == "shout",
 		"your buff row is not in the client's order, so its squares are not the"
 			.. " auras the buttons over them cancel")

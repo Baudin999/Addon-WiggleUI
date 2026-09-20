@@ -18,7 +18,7 @@ local ADDON, ns = ...
 -- name plays, and the joke everybody means is BestAround's own copy:
 -- LittleJoey's addon from 2007, fixed for 6.0 by Nephyrin, four files and one
 -- of them the song. Install that addon and the file is already on your disk.
--- Without it this part is silent and says so in `/wk`, which is the behaviour
+-- Without it this part is silent and says so in `/wui`, which is the behaviour
 -- it already had for a client that would not play sound at all.
 --
 -- This part owns no frame past the one it listens on and draws nothing, so
@@ -31,7 +31,7 @@ ns.Fanfare = Fanfare
 -- this path; see above. The client's paths are Interface\AddOns\<folder>\...,
 -- with the folder being what the addon is installed as rather than what the TOC
 -- calls itself, which is why this is written out rather than built from ADDON.
-local SOUND = "Interface\\AddOns\\WarriorKit\\Media\\BestAround.mp3"
+local SOUND = "Interface\\AddOns\\WiggleUI\\Media\\BestAround.mp3"
 
 -- Master rather than the SFX channel the call defaults to.
 --
@@ -82,7 +82,7 @@ end
 -- Play it now, whatever the setting says, and answer what happened.
 --
 -- The setting is the caller's business: OnEvent is only registered while it is
--- on, and `/wk ding` is a press, which is the one thing in this addon that is
+-- on, and `/wui ding` is a press, which is the one thing in this addon that is
 -- allowed to ignore a switch because you just asked for it by name.
 function Fanfare.Play()
 	local play = _G.PlaySoundFile

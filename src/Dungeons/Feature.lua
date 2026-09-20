@@ -56,7 +56,7 @@ local function DungeonWord(arg, rawArg)
 		ns.Print("the dungeon log is " .. (ns.db.dungeons and "on" or "off") .. ".")
 	elseif word == "" then
 		if not ns.db.dungeons then
-			ns.Print("the dungeon log is off. Type /wk dungeons on.")
+			ns.Print("the dungeon log is off. Type /wui dungeons on.")
 			return
 		end
 		ns.DungeonWindow.Toggle()

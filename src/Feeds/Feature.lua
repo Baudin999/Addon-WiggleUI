@@ -70,7 +70,7 @@ end
 --------------------------------------------------------------------------
 -- The slash word
 --
--- One word with the stream named first, `/wk feed loot rows 12`, rather than a
+-- One word with the stream named first, `/wui feed loot rows 12`, rather than a
 -- word each. `loot` is already Comfort/Loot.lua's and means fast looting, and a
 -- second meaning for it would be the kind of collision Core/Command.lua cannot
 -- see: two features registering the same word and the later one winning
@@ -281,7 +281,7 @@ local function FeedWord(arg)
 		return
 	end
 
-	-- A bare `/wk feed combat` and nothing else. `show` is not a synonym for it
+	-- A bare `/wui feed combat` and nothing else. `show` is not a synonym for it
 	-- any more: it is the word that puts a hidden feed back on the screen, and
 	-- one word cannot be both a question and an instruction.
 	if rest:match("^(%S*)") == "" then

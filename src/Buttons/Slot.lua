@@ -92,7 +92,7 @@ local NEEDED = {
 -- directly, and that is not tidiness. Nil means nobody has looked yet, and a
 -- reader that read nil as "cannot read" answered "empty" for every slot on
 -- every bar: the only caller that asked was Bars.Describe, so the squares came
--- up blank at login and filled in the moment you typed /wk. A guard that gives
+-- up blank at login and filled in the moment you typed /wui. A guard that gives
 -- the same answer for "no" and "not yet" is a guard that lies once per session,
 -- silently, at the worst moment.
 --

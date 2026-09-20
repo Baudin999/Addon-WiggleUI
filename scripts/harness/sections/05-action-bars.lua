@@ -29,7 +29,7 @@ local check = H.check
 do
 	local barsChurn = 0
 	local Bars = ns.Bars
-	local slots = _G.WarriorKitSlots
+	local slots = _G.WiggleUISlots
 	local ART = "Interface\\Icons\\Ability_Warrior_Charge"
 
 	-- 27 is not a taste decision and the plan is not allowed to drift off it.
@@ -115,7 +115,7 @@ do
 	check(pressing(found.bar1, 1) == 73 and pressing(found.bar1, 12) == 84,
 		"bar 1 did not start on the stance it is standing in")
 
-	local macro = _G.WarriorKitDriver(found.bar1.header, "page")
+	local macro = _G.WiggleUIDriver(found.bar1.header, "page")
 	check(type(macro) == "string" and macro:match("stance:1") and macro:match("stance:2")
 		and macro:match("stance:3") and macro:match("nostance"),
 		"the page driver does not cover all three stances and no stance")
@@ -124,7 +124,7 @@ do
 	-- combat the snippet is the only thing that can do this at all.
 	local PAGES = { ["1"] = 73, ["2"] = 85, ["3"] = 97 }
 	for state, base in pairs(PAGES) do
-		check(_G.WarriorKitDriveState(found.bar1.header, "page", state),
+		check(_G.WiggleUIDriveState(found.bar1.header, "page", state),
 			"the header carries no page handler for the state driver to run")
 		local wrong = 0
 		for index = 1, 12 do
@@ -138,9 +138,9 @@ do
 
 	-- A stance the macro maps to nothing falls to page one rather than to a bar
 	-- of twelve empty squares.
-	_G.WarriorKitDriveState(found.bar1.header, "page", "9")
+	_G.WiggleUIDriveState(found.bar1.header, "page", "9")
 	check(pressing(found.bar1, 1) == 73, "an unknown page left bar 1 pointing at nothing")
-	_G.WarriorKitDriveState(found.bar1.header, "page", "1")
+	_G.WiggleUIDriveState(found.bar1.header, "page", "1")
 
 	--------------------------------------------------------------------------
 	-- The keys
@@ -152,7 +152,7 @@ do
 		for slot = 1, 12 do
 			local name = entry.buttons[slot]:GetName()
 			-- The stub's set: an overridden key stops answering to its command.
-			for _, key in ipairs(_G.WarriorKitBindings[entry.def.command:format(slot)] or {}) do
+			for _, key in ipairs(_G.WiggleUIBindings[entry.def.command:format(slot)] or {}) do
 				claimed = claimed + 1
 				if _G.GetBindingAction(key, true) ~= ("CLICK %s:LeftButton"):format(name) then
 					missed[#missed + 1] = key
@@ -167,10 +167,10 @@ do
 	-- ships holding it, and Buttons/Bars.lua reads the binding layer back before
 	-- claiming a key, so the square gives it up. Nothing saw that until the
 	-- binder's snippet ran, and no other class has a charge button.
-	local lent = _G.WarriorKitChargeButton and ns.db.chargeKey or nil
+	local lent = _G.WiggleUIChargeButton and ns.db.chargeKey or nil
 	local away = lent and 1 or 0
 	check(#missed == away and (not lent or (missed[1] == lent
-			and _G.GetBindingAction(lent, true) == "CLICK WarriorKitChargeButton:LeftButton")),
+			and _G.GetBindingAction(lent, true) == "CLICK WiggleUIChargeButton:LeftButton")),
 		("%d of %d keys did not reach the square they were put on: %s")
 			:format(#missed, claimed, table.concat(missed, ", ")))
 	check(Bars.Keys() == claimed - away,
@@ -293,7 +293,7 @@ do
 	-- Placing them
 	--
 	-- The bars shipped with no lock handling and no drag at all, which followed
-	-- from the plan living in source and was never said out loud. /wk unlock
+	-- from the plan living in source and was never said out loud. /wui unlock
 	-- reached the charge icon and the meters and silently did nothing here.
 	--------------------------------------------------------------------------
 
@@ -386,7 +386,7 @@ do
 		for _, pattern in ipairs({ "ActionButton%d", "MultiBarRightButton%d" }) do
 			local frame = _G[pattern:format(index)]
 			if frame then
-				if rawget(frame, "Show") or rawget(frame, "wkStripped") then
+				if rawget(frame, "Show") or rawget(frame, "wuiStripped") then
 					swapped = swapped + 1
 				end
 				if frame.attributes and frame.attributes.statehidden == true then

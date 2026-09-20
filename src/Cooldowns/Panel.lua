@@ -180,7 +180,7 @@ end
 -- Forgetting one you added yourself is not this gesture and deliberately not.
 -- Off the row and gone for good look identical the moment after you press, and
 -- the one that cannot be undone by dragging is the one that does not get the
--- easy button. `/wk cooldowns drop <id>` is where that lives.
+-- easy button. `/wui cooldowns drop <id>` is where that lives.
 local function Drop(w, spellID)
 	if spellID == nil then
 		if w.line then

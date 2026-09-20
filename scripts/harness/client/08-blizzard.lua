@@ -173,7 +173,7 @@ child("statusbar", _G.UIParent, "ReputationWatchBar")
 --
 -- The two frames they hang off are stood up as well, and the parenting is the
 -- client's: your buffs and your debuffs are both children of BuffFrame, and
--- the enchant is not, which is why `/wk auras off` has two frames to take down
+-- the enchant is not, which is why `/wui auras off` has two frames to take down
 -- and not one.
 local buffFrame = child("frame", _G.UIParent, "BuffFrame")
 local enchantFrame = child("frame", _G.UIParent, "TemporaryEnchantFrame")

@@ -1,7 +1,7 @@
 -- The standings window
 --
 -- Reputation was the character sheet's fourth tab and is a window of its own on
--- `/wk reputation`. Character/Reputation.lua did not change a line for the move,
+-- `/wui reputation`. Character/Reputation.lua did not change a line for the move,
 -- so what this section is about is the host: that nothing exists until somebody
 -- types the word, that what comes up draws the same list the tab did, and that a
 -- window nobody has open is not walking the client's faction table.
@@ -28,7 +28,7 @@ local ns, check, fire = H.ns, H.check, H.fire
 
 local Rep, Window = ns.CharRep, ns.CharRepWindow
 
-local slash = _G.SlashCmdList.WARRIORKIT
+local slash = _G.SlashCmdList.WIGGLEUI
 
 local heard = {}
 local chat = _G.DEFAULT_CHAT_FRAME.AddMessage
@@ -68,7 +68,7 @@ end
 ----------------------------------------------------------------------
 
 check(Window.Built() == false, "the standings window was built before anybody opened it")
-check(_G.WarriorKitReputation == nil,
+check(_G.WiggleUIReputation == nil,
 	"the standings window has a frame on the client and nobody has typed the word")
 check(Window.Describe() == "not built yet",
 	("a window nobody has opened describes itself as %q"):format(Window.Describe()))
@@ -84,9 +84,9 @@ check(Window.Shown() == false, "a window that does not exist says it is open")
 ----------------------------------------------------------------------
 
 say("reputation")
-check(Window.Built() and Window.Shown(), "/wk reputation opened nothing")
+check(Window.Built() and Window.Shown(), "/wui reputation opened nothing")
 
-local frame = _G.WarriorKitReputation
+local frame = _G.WiggleUIReputation
 check(frame ~= nil, "the standings window opened without a frame on the client")
 check(math.abs(ns.UI.Pixel(frame) - 1) < 1e-9,
 	("the standings window is not on the grid: one pixel is %.4f units")
@@ -113,9 +113,9 @@ check(ns.db.reputationZoom == nil,
 -- Typing it again shuts it, which is what every other window word in the addon
 -- does and the only behaviour a player will try without reading anything.
 say("reputation")
-check(not Window.Shown(), "/wk reputation would not close the window it opened")
+check(not Window.Shown(), "/wui reputation would not close the window it opened")
 say("reputation")
-check(Window.Shown(), "/wk reputation would not open it a second time")
+check(Window.Shown(), "/wui reputation would not open it a second time")
 
 -- And the reading, which is the sub-word. It prints rather than opening, so a
 -- player who wants the number without the window has it.
@@ -191,19 +191,19 @@ end
 
 do
 	local home = { frame:GetPoint() }
-	ns.db.windowSpots.WarriorKitReputation = nil
+	ns.db.windowSpots.WiggleUIReputation = nil
 
 	local took, dragging = H.mouse.DragTo(frame, frame, 120, -60, "LeftButton", 8, -8)
 	check(took == frame, ("a drag on the standings window landed on %s")
 		:format(took and (took:GetName() or took:GetObjectType()) or "nothing"))
 	check(dragging, "the standings window is open and its title bar took no drag")
 
-	local spot = ns.db.windowSpots.WarriorKitReputation
+	local spot = ns.db.windowSpots.WiggleUIReputation
 	check(spot ~= nil, "the standings window was dropped somewhere and wrote down nothing")
 
 	frame:ClearAllPoints()
 	frame:SetPoint(home[1], home[2] or _G.UIParent, home[3], home[4], home[5])
-	ns.db.windowSpots.WarriorKitReputation = nil
+	ns.db.windowSpots.WiggleUIReputation = nil
 end
 
 ----------------------------------------------------------------------

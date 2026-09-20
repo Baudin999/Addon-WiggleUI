@@ -76,14 +76,14 @@ for _, box in ipairs(CharWindow.Pane().squares) do
 end
 check(helm ~= nil, "no square on the gear page is the helmet")
 
-_G.WarriorKitShift(false)
+_G.WiggleUIShift(false)
 helm.button:Click("LeftButton")
 check(not Window.Shown(),
 	"an unmodified click on the helmet opened the socketing window instead of taking it off")
 
-_G.WarriorKitShift(true)
+_G.WiggleUIShift(true)
 helm.button:Click("LeftButton")
-_G.WarriorKitShift(false)
+_G.WiggleUIShift(false)
 CharWindow.Hide()
 
 check(Window.Shown(), "a shift click on a piece with holes in it opened no window")
@@ -91,7 +91,7 @@ check(sockets.open(), "the window is up and the client has no session")
 
 local window = Window.Frame()
 check(window ~= nil, "the window is shown and there is no window")
-check(_G.WarriorKitSockets ~= nil,
+check(_G.WiggleUISockets ~= nil,
 	"the window has no name, so escape cannot close it through UISpecialFrames")
 
 ----------------------------------------------------------------------

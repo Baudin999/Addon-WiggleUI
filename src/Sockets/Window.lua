@@ -451,7 +451,7 @@ end
 
 local function Build()
 	window = UI.Window({
-		name = "WarriorKitSockets",
+		name = "WiggleUISockets",
 		title = "Sockets",
 		width = WIDTH,
 		height = HEIGHT,

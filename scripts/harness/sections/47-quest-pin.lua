@@ -82,7 +82,7 @@ do
 	check(not Log.Pinned(quest.key),
 		"an unmodified click pinned the quest it opened")
 
-	_G.WarriorKitShift(true)
+	_G.WiggleUIShift(true)
 	check(Window.Click(quest.key), "a quest row took no shift left click")
 	check(Log.Pinned(quest.key), "a shift left click did not pin the quest")
 
@@ -93,7 +93,7 @@ do
 		"a shift click on the quest already open did not take its pin off")
 
 	check(Window.Click(quest.key), "the selected row took no third shift click")
-	_G.WarriorKitShift(false)
+	_G.WiggleUIShift(false)
 	check(Log.Pinned(quest.key), "the third shift click did not put the pin back")
 
 	check(Window.Click(quest.key), "the selected row took no unmodified click")
@@ -110,10 +110,10 @@ do
 	-- the id it is showing, and the guard against that being read as a press is
 	-- the button rather than the modifier.
 	local held = #ns.dbc.questPins
-	_G.WarriorKitShift(true)
+	_G.WiggleUIShift(true)
 	Window.Paint()
 	Window.Paint()
-	_G.WarriorKitShift(false)
+	_G.WiggleUIShift(false)
 	check(#ns.dbc.questPins == held,
 		("two repaints with shift held moved the pins from %d to %d")
 			:format(held, #ns.dbc.questPins))

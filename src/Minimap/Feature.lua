@@ -59,7 +59,7 @@ ns.Register({
 		-- state and means the corner under the map decides, which is the shape
 		-- barPoints has and for the same reason: a default of nil is a key the
 		-- defaults table never carries, so the setting could not be reset to
-		-- anything and /wk reset would have nothing to put back.
+		-- anything and /wui reset would have nothing to put back.
 		corralPoint = {},
 	},
 
@@ -168,7 +168,7 @@ ns.Register({
 				ns.Options.Refresh()
 			end,
 			function() return ns.Corral.Moved() end)
-		ui.Hint("Unlock the frames with /wk unlock and the square can be dragged anywhere. It starts under the bottom left corner of the map rather than on it.")
+		ui.Hint("Unlock the frames with /wui unlock and the square can be dragged anywhere. It starts under the bottom left corner of the map rather than on it.")
 
 		ui.Reading("addon buttons", ns.Corral.Describe)
 		ui.Reading("left alone", function()

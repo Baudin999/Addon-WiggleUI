@@ -37,7 +37,7 @@ end
 
 local function say(input)
 	heard = {}
-	_G.SlashCmdList.WARRIORKIT(input)
+	_G.SlashCmdList.WIGGLEUI(input)
 end
 
 local function said(what)

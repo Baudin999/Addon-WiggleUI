@@ -63,7 +63,7 @@ if not Training.Offered() then
 end
 
 -- A pet out: a wolf at fifty eight with fifty points left of two hundred.
-local guids, names, levels = H.guids, H.unitName, _G.WarriorKitLevels
+local guids, names, levels = H.guids, H.unitName, _G.WiggleUILevels
 local had = { guid = guids.pet, name = names.pet, level = levels.pet }
 guids.pet, names.pet, levels.pet = "Creature-0-0-0-0-1234-0000000001", "Kibble", 58
 fire("UNIT_PET", "player")
@@ -103,7 +103,7 @@ do
 			:format(tostring(x), tostring(y), tostring(spot:GetLeft()), tostring(spot:GetTop())))
 	check(math.abs(square:GetEffectiveScale() - spot:GetEffectiveScale()) < 1e-9,
 		"the Beast Training square is not at the page's scale")
-	check(_G.WarriorKitDriver(Pet.Driver(), "combat") == "[combat] on; off",
+	check(_G.WiggleUIDriver(Pet.Driver(), "combat") == "[combat] on; off",
 		"nothing hides the secure buttons when a fight starts")
 end
 

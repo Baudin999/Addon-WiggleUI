@@ -45,7 +45,7 @@ do
 	ns.db.playerCastZoom = 1
 	ns.PlayerCast.Apply()
 
-	local frame = _G.WarriorKitPlayerCast
+	local frame = _G.WiggleUIPlayerCast
 	check(frame ~= nil, "no cast bar frame came up")
 	local bar = ns.PlayerCast.Bar()
 	check(bar ~= nil, "the cast bar built no gauge")

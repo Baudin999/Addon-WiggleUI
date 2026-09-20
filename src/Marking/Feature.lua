@@ -45,7 +45,7 @@ ns.Register({
 			ns.Print("marking " .. (ns.db.marking and "on" or "off") .. ".")
 		end,
 
-		-- /wk markkey skull CTRL-BUTTON1, /wk markkey moon none
+		-- /wui markkey skull CTRL-BUTTON1, /wui markkey moon none
 		markkey = function(_, rawArg)
 			local id, key = rawArg:match("^%s*(%S+)%s+(%S+)%s*$")
 			id = id and id:lower()

@@ -37,7 +37,7 @@ local function SpellbookWord(arg, rawArg)
 		ns.Print("the spell book is " .. (ns.db.spellbook and "on" or "off") .. ".")
 	elseif word == "" then
 		if not ns.db.spellbook then
-			ns.Print("the spell book is off. Type /wk spellbook on.")
+			ns.Print("the spell book is off. Type /wui spellbook on.")
 			return
 		end
 		ns.SpellWindow.Toggle()

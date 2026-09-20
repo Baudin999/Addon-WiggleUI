@@ -19,7 +19,7 @@
 local H = ...
 local ns, check = H.ns, H.check
 
-local slash = _G.SlashCmdList.WARRIORKIT
+local slash = _G.SlashCmdList.WIGGLEUI
 
 local chat = _G.DEFAULT_CHAT_FRAME.AddMessage
 local heard = {}

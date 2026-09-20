@@ -23,7 +23,7 @@ local ns, check, state = H.ns, H.check, H.state
 local Profiles = ns.Profiles
 
 local mine = ns.ProfileName()
-local profiles = _G.WarriorKitDB.profiles
+local profiles = _G.WiggleUIDB.profiles
 
 ----------------------------------------------------------------------
 -- Where a key lands
@@ -35,12 +35,12 @@ check(rawequal(profiles[mine], ns.db), "ns.db is not the profile this character 
 local locked = ns.db.locked
 ns.db.locked = not locked
 check(rawget(ns.db, "locked") == not locked, "a setting did not land in the profile")
-check(_G.WarriorKitDB.locked == nil, "a setting landed on the account")
+check(_G.WiggleUIDB.locked == nil, "a setting landed on the account")
 ns.db.locked = locked
 
-check(rawget(ns.db, "purse") == nil and type(_G.WarriorKitDB.purse) == "table",
+check(rawget(ns.db, "purse") == nil and type(_G.WiggleUIDB.purse) == "table",
 	"a record is in the profile rather than on the account")
-check(ns.db.purse == _G.WarriorKitDB.purse, "a record read through ns.db is not the account's")
+check(ns.db.purse == _G.WiggleUIDB.purse, "a record read through ns.db is not the account's")
 
 ----------------------------------------------------------------------
 -- The string
@@ -83,7 +83,7 @@ check(Profiles.New("   ") == nil, "a copy was made under a blank name")
 check(Profiles.Delete(mine) == nil, "the profile this character wears was deleted")
 
 Profiles.Use("Alt")
-check(_G.WarriorKitCharDB.profile == "Alt", "switching did not write the name for the next load")
+check(_G.WiggleUICharDB.profile == "Alt", "switching did not write the name for the next load")
 Profiles.Use(mine)
 check(Profiles.Delete("Alt") == "Alt" and profiles.Alt == nil, "a profile nobody wears was not deleted")
 
@@ -98,14 +98,14 @@ Profiles.ShowImport()
 field:SetText(Profiles.Export())
 local reloads = state.reloads
 Profiles.Press()
-local arrived = _G.WarriorKitCharDB.profile
+local arrived = _G.WiggleUICharDB.profile
 check(arrived ~= mine and profiles[arrived] ~= nil, "an import from the box did not switch to it")
 check(state.reloads == reloads + 1, "an import from the box did not reload once")
 Profiles.Use(mine)
 profiles[arrived] = nil
 
 -- Shut, because a window left up covers what the pointer sections below aim at.
-_G.WarriorKitProfileString:Hide()
+_G.WiggleUIProfileString:Hide()
 
 ----------------------------------------------------------------------
 -- A mode's shipped screen
@@ -119,7 +119,7 @@ _G.WarriorKitProfileString:Hide()
 local Setup = ns.Setup
 -- The whole profile, because the setup writes one answer to every type of
 -- tooltip and the sections below were left a mixture.
-local saved, wasDone = ns.ProfileCopy(mine), _G.WarriorKitDB.setupDone
+local saved, wasDone = ns.ProfileCopy(mine), _G.WiggleUIDB.setupDone
 local width = ns.ShippedAs("exploration", "chatWidth")
 ns.ShippedModes.exploration = { chatWidth = width + 70 }
 
@@ -150,4 +150,4 @@ end
 for _, each in ipairs(ns.UI.Tooltip.TYPES) do
 	ns.Settings.SetPlace(each.key, saved[ns.Settings.PlaceKey(each.key)])
 end
-_G.WarriorKitDB.setupDone = wasDone
+_G.WiggleUIDB.setupDone = wasDone

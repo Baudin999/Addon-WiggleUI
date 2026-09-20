@@ -25,7 +25,7 @@ ns.PerfKey = Key
 -- out why a pull stuttered is the whole point of it.
 --------------------------------------------------------------------------
 
-local BUTTON_NAME = "WarriorKitPerfButton"
+local BUTTON_NAME = "WiggleUIPerfButton"
 Key.BUTTON_NAME = BUTTON_NAME
 
 -- No size and no anchor, the shape every other global button in the addon has.

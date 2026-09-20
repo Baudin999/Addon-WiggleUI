@@ -122,7 +122,7 @@ check(Upkeep.EnchantShape() == 4, "eight returns did not read as a stride of fou
 
 ns.db.locked = true
 own.race, own.raceName = "Orc", "Orc"
-swing.mainhand = _G.WarriorKitItemLink("Arcanite Reaper")
+swing.mainhand = _G.WiggleUIItemLink("Arcanite Reaper")
 swing.offhand, swing.off = nil, nil
 own.main, own.mainLeft, own.off, own.offLeft = false, 0, false, 0
 fire("PLAYER_EQUIPMENT_CHANGED")
@@ -141,7 +141,7 @@ check(math.floor(Upkeep.Left(ns.Gear.MAINHAND)) == 1500,
 -- The off hand, a shield, and the stride
 ----------------------------------------------------------------------
 
-swing.offhand = _G.WarriorKitItemLink("Aegis")
+swing.offhand = _G.WiggleUIItemLink("Aegis")
 swing.off = nil -- OffhandHasWeapon is false for a shield, which is the rule
 fire("PLAYER_EQUIPMENT_CHANGED")
 tick()
@@ -186,7 +186,7 @@ tick()
 -- screenshot of a character who is only missing one thing.
 ----------------------------------------------------------------------
 
-swing.offhand = _G.WarriorKitItemLink("Thrash Blade")
+swing.offhand = _G.WiggleUIItemLink("Thrash Blade")
 swing.off = 1.8
 own.main, own.mainLeft = false, 0
 own.off, own.offLeft = false, 0
@@ -243,7 +243,7 @@ check(Upkeep.Describe():find(("%d tracked, %d missing")
 check(Upkeep.Describe():find("bare weapon switched off", 1, true) ~= nil,
 	"nothing anywhere says what was switched off: " .. Upkeep.Describe())
 check(Nag.Describe():find("bare weapon switched off", 1, true) ~= nil,
-	"/wk status does not carry it: " .. Nag.Describe())
+	"/wui status does not carry it: " .. Nag.Describe())
 
 -- And it costs nothing. The gate is the same figure the racial half is held
 -- to, because a filter that rebuilt the watched list once a tick would be
@@ -266,9 +266,9 @@ check(silentChurn <= CHURN.buffs,
 
 check(ns.dbc.buffWatch ~= nil, "the switch list is not in the character table")
 check(ns.db.buffWatch == nil, "the switch list is in the account table")
-check(ns.dbc == _G.WarriorKitCharDB,
+check(ns.dbc == _G.WiggleUICharDB,
 	"the table the switch lands in is not the one the TOC saves per character")
-check(_G.WarriorKitCharDB.buffWatch.mainhand == false,
+check(_G.WiggleUICharDB.buffWatch.mainhand == false,
 	"switching an entry off never reached the saved variables")
 
 -- The round trip. What the client writes at logout is that table and what it
@@ -277,7 +277,7 @@ check(_G.WarriorKitCharDB.buffWatch.mainhand == false,
 -- fresh copy of what was saved. Anything cached outside the saved table
 -- fails here.
 local reloaded = {}
-for key, value in pairs(_G.WarriorKitCharDB.buffWatch) do
+for key, value in pairs(_G.WiggleUICharDB.buffWatch) do
 	reloaded[key] = value
 end
 ns.dbc.buffWatch = reloaded
@@ -310,7 +310,7 @@ check(hoverText:find("bare off hand", 1, true) ~= nil,
 	"the tooltip does not name the square it is on: " .. hoverText)
 check(hoverText:find("shield", 1, true) ~= nil,
 	"the tooltip does not carry what the caption could not: " .. hoverText)
-check(hoverText:find("/wk", 1, true) == nil,
+check(hoverText:find("/wui", 1, true) == nil,
 	"the box still carries the blue line naming a switch: " .. hoverText)
 
 -- The client's own words above them, which is what used to be missing and is
@@ -334,7 +334,7 @@ check(hoverText:find("Sword", 1, true) ~= nil,
 	"the client's lines came back with only the first of them: " .. hoverText)
 check(hoverText:find("shield", 1, true) ~= nil,
 	"the client's words pushed out what this file had to say: " .. hoverText)
-check(hoverText:find("/wk", 1, true) == nil,
+check(hoverText:find("/wui", 1, true) == nil,
 	"the client's words came with the blue switch line behind them: " .. hoverText)
 H.tooltips.inventory[H.tooltipKey("player", ns.Gear.OFFHAND)] = nil
 
@@ -367,7 +367,7 @@ Upkeep.SetWatched("mainhand", true)
 Nag.Apply()
 tick()
 check(says("bare weapon"), "switching the entry back on did not put it back")
-check(_G.WarriorKitCharDB.buffWatch.mainhand == nil,
+check(_G.WiggleUICharDB.buffWatch.mainhand == nil,
 	"switching an entry back on left a key behind in the saved variables")
 check(select(1, Upkeep.Silent()) == 0,
 	"the status line still reports something switched off")
@@ -483,7 +483,7 @@ check(racialText:find("Increases attack power", 1, true) ~= nil,
 	"the racial square never asks the client what the racial does: " .. racialText)
 check(racialText:find("12 seconds", 1, true) ~= nil,
 	"the racial tooltip does not say how long it has been ready: " .. racialText)
-check(racialText:find("/wk", 1, true) == nil,
+check(racialText:find("/wui", 1, true) == nil,
 	"the racial box still carries the blue line naming a switch: " .. racialText)
 H.tooltips.spell[20572] = nil
 
@@ -526,7 +526,7 @@ Nag.Apply()
 tick()
 check(Nag.Mode() == "quiet", "the racial switch did nothing")
 check(Nag.Describe():find("racial off", 1, true) ~= nil,
-	"/wk status does not say the racial is off: " .. Nag.Describe())
+	"/wui status does not say the racial is off: " .. Nag.Describe())
 do
 	local shelvedRacial = false
 	for index = 1, Upkeep.ShelfCount() do
@@ -558,8 +558,8 @@ do
 	check(Nag.Mode() == "combat" and says("food") and says("press Blood Fury"),
 		"food on the in line did not draw beside the racial in a fight: " .. Nag.Caption())
 	check(Nag.Shown() == 2, ("the in line drew %d squares of 2"):format(Nag.Shown()))
-	check(_G.WarriorKitCharDB.buffLine.food == "both",
-		"an entry on both lines is saved as " .. tostring(_G.WarriorKitCharDB.buffLine.food))
+	check(_G.WiggleUICharDB.buffLine.food == "both",
+		"an entry on both lines is saved as " .. tostring(_G.WiggleUICharDB.buffLine.food))
 	inCombat.player = nil
 	tick()
 	check(says("food"), "putting food on the in line took it off the out line")
@@ -583,8 +583,8 @@ end
 
 	-- Off the out line, it is an in-line entry and quiet between fights.
 	check(Upkeep.Leave("food", Upkeep.OUT), "food could not be taken off the out line")
-	check(_G.WarriorKitCharDB.buffLine.food == "in",
-		"off the out line it is saved as " .. tostring(_G.WarriorKitCharDB.buffLine.food))
+	check(_G.WiggleUICharDB.buffLine.food == "in",
+		"off the out line it is saved as " .. tostring(_G.WiggleUICharDB.buffLine.food))
 	inCombat.player = nil
 	tick()
 	check(not says("food"), "food on the in line alone was nagged about between fights")
@@ -595,12 +595,12 @@ end
 	-- it shipped.
 	Upkeep.Leave("food", Upkeep.IN)
 	check(not Upkeep.Watched("food"), "off its last line an entry is still watched")
-	check(_G.WarriorKitCharDB.buffLine.food == nil,
+	check(_G.WiggleUICharDB.buffLine.food == nil,
 		"off its last line an entry keeps a saved word for the line it is not on")
 	Upkeep.Place("food", nil)
 	check(Upkeep.Watched("food") and Upkeep.Lines(Upkeep.ByWord("food")) == Upkeep.OUT,
 		"put back with no line named, food is not where it shipped")
-	check(_G.WarriorKitCharDB.buffLine.food == nil,
+	check(_G.WiggleUICharDB.buffLine.food == nil,
 		"putting an entry back where it shipped wrote the shipped line into the saved variables")
 
 	-- The racial cannot go to the out line, because a cooldown that is ready

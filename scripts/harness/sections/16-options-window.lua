@@ -257,7 +257,7 @@ if window then
 	-- carrying those letters are in the other font and every other string in the
 	-- window is not, because the whole trick is that a caller writes `v` either
 	-- way and only the font object says which of the two it gets.
-	local GLYPHS = "Interface\\AddOns\\WarriorKit\\Media\\Glyphs.ttf"
+	local GLYPHS = "Interface\\AddOns\\WiggleUI\\Media\\Glyphs.ttf"
 	local glyphed, lettered = 0, 0
 
 	local function Faces(frame)

@@ -20,8 +20,8 @@ local advance, ns, fire, check = H.advance, H.ns, H.fire, H.check
 local WARRIOR = H.WARRIOR
 
 local Cooldowns, Row, Racials, Castable = ns.Cooldowns, ns.CooldownRow, ns.Racials, ns.Castable
-local unusable, harmful = _G.WarriorKitUnusableSpells, _G.WarriorKitHarmfulSpells
-local health = _G.WarriorKitHealth
+local unusable, harmful = _G.WiggleUIUnusableSpells, _G.WiggleUIHarmfulSpells
+local health = _G.WiggleUIHealth
 
 local function tick()
 	local running = ns.UI.Ticking("cooldowns")

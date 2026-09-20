@@ -125,7 +125,7 @@ local MISSED = {
 --------------------------------------------------------------------------
 -- The store
 --
--- Kept per character, in WarriorKitCharDB, because it is a record of what this
+-- Kept per character, in WiggleUICharDB, because it is a record of what this
 -- warrior did and an account-wide one would average a level 70 over an alt that
 -- has never left the starting zone. Core/Core.lua draws that distinction for
 -- the loadout backup and it is the same distinction.

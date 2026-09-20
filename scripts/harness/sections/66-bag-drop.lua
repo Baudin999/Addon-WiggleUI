@@ -31,7 +31,7 @@ CARRIED[4] = nil
 Window.Show()
 Window.Refresh()
 
-local frame = _G.WarriorKitBags
+local frame = _G.WiggleUIBags
 check(type(frame:GetScript("OnReceiveDrag")) == "function",
 	"the bag window has no handler for a drag let go of over it")
 check(type(frame:GetScript("OnMouseUp")) == "function",

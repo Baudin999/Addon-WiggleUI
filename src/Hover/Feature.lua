@@ -11,7 +11,7 @@ local ADDON, ns = ...
 local function ListWord()
 	local list = ns.Hover.List()
 	if #list == 0 then
-		ns.Print("nothing is bound. Drop a spell on the slot in /wk and press a key.")
+		ns.Print("nothing is bound. Drop a spell on the slot in /wui and press a key.")
 		return
 	end
 	for index, bind in ipairs(list) do

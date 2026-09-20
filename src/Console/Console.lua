@@ -17,7 +17,7 @@ local ADDON, ns = ...
 local Console = {}
 ns.Console = Console
 
--- The questions with a button each. `name` is the word after `/wk console`,
+-- The questions with a button each. `name` is the word after `/wui console`,
 -- `label` is what the button says, and `code` is what runs. A probe prints
 -- what it found rather than returning it, so that a probe of four calls reads
 -- as four lines with the call named on each.
@@ -37,7 +37,7 @@ print("IsXPUserDisabled", IsXPUserDisabled and IsXPUserDisabled())
 print("IsPlayerAtEffectiveMaxLevel", IsPlayerAtEffectiveMaxLevel and IsPlayerAtEffectiveMaxLevel())
 print("GetMaxLevelForPlayerExpansion", GetMaxLevelForPlayerExpansion and GetMaxLevelForPlayerExpansion())]] },
 
-	-- rail: the experience rail's own frame, WarriorKitProgress, as the client
+	-- rail: the experience rail's own frame, WiggleUIProgress, as the client
 	-- holds it. Whether it and each bar inside it are shown and visible, where
 	-- they are on the screen, the fill's colour and value, and then every
 	-- visible frame that sits over the rail's centre at its level or above,
@@ -46,8 +46,8 @@ print("GetMaxLevelForPlayerExpansion", GetMaxLevelForPlayerExpansion and GetMaxL
 local pw, ph = GetPhysicalScreenSize and GetPhysicalScreenSize()
 print("screen", ("%.0f x %.0f"):format(GetScreenWidth(), GetScreenHeight()), "physical", pw, ph,
 	"UIParent scale", ("%.4f"):format(UIParent:GetEffectiveScale()), "bottom", UIParent:GetBottom(), "top", UIParent:GetTop())
-local f = WarriorKitProgress
-if not f then print("no frame called WarriorKitProgress") return end
+local f = WiggleUIProgress
+if not f then print("no frame called WiggleUIProgress") return end
 local function rect(r)
 	local l, b, w, h = r:GetRect()
 	if not l then return "no rect" end

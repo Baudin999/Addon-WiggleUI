@@ -297,7 +297,7 @@ do
 	-- player turn the whole hover off.
 	------------------------------------------------------------------
 
-	_G.WarriorKitFriendlyUnits.mouseover = true
+	_G.WiggleUIFriendlyUnits.mouseover = true
 	fire("UPDATE_MOUSEOVER_UNIT")
 	said = drawn()
 	check(beside("Threat") == nil,
@@ -306,7 +306,7 @@ do
 	-- unit whose health you most want to read.
 	check(beside("Health") == "4200 / 9000 (46%)",
 		"a friendly unit lost its health line with the threat line: " .. table.concat(said, " / "))
-	_G.WarriorKitFriendlyUnits.mouseover = nil
+	_G.WiggleUIFriendlyUnits.mouseover = nil
 
 	------------------------------------------------------------------
 	-- A client that answers a percentage
@@ -319,11 +319,11 @@ do
 	-- load.
 	------------------------------------------------------------------
 
-	_G.WarriorKitHealth.mouseover, _G.WarriorKitHealthMax.mouseover = 46, 100
+	_G.WiggleUIHealth.mouseover, _G.WiggleUIHealthMax.mouseover = 46, 100
 	fire("UPDATE_MOUSEOVER_UNIT")
 	local percent = beside("Health")
 	check(percent == "46%", "a percentage was printed as a figure out of 100: " .. tostring(percent))
-	_G.WarriorKitHealth.mouseover, _G.WarriorKitHealthMax.mouseover = nil, nil
+	_G.WiggleUIHealth.mouseover, _G.WiggleUIHealthMax.mouseover = nil, nil
 
 	------------------------------------------------------------------
 	-- The other answers the threat line has

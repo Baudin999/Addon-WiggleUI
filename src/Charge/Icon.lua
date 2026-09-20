@@ -8,10 +8,10 @@ ns.ChargeIcon = ChargeIcon
 -- points at and the mob the button charges are the same mob by construction,
 -- not by two pieces of code guessing alike.
 --
--- Bind it with `/wk bind <key>`, or put `/click WarriorKitChargeButton` in a
+-- Bind it with `/wui bind <key>`, or put `/click WiggleUIChargeButton` in a
 -- normal macro and drag that to an action bar.
 
-local BUTTON_NAME = "WarriorKitChargeButton"
+local BUTTON_NAME = "WiggleUIChargeButton"
 ChargeIcon.BUTTON_NAME = BUTTON_NAME
 
 local FALLBACK_TEXTURE = "Interface\\Icons\\Ability_Warrior_Charge"
@@ -288,7 +288,7 @@ local function BuildBinder(button)
 	if not _G.RegisterStateDriver then
 		return
 	end
-	local ok, handler = pcall(CreateFrame, "Frame", "WarriorKitChargeBinder", UIParent,
+	local ok, handler = pcall(CreateFrame, "Frame", "WiggleUIChargeBinder", UIParent,
 		"SecureHandlerStateTemplate")
 	if not ok or not handler or not handler.Execute then
 		return

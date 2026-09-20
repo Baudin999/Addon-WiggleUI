@@ -71,7 +71,7 @@ ns.SwingGauges.Apply()
 local swingTicker = ticker()
 check(swingTicker ~= nil, "turning the swing timer on armed no ticker")
 
-local frame = _G.WarriorKitSwing
+local frame = _G.WiggleUISwing
 check(frame ~= nil, "no swing frame came up")
 local mainBar = ns.SwingGauges.Bar(ns.Swing.MAIN)
 local offBar = ns.SwingGauges.Bar(ns.Swing.OFF)
@@ -239,7 +239,7 @@ check(math.abs(ns.Swing.Speed(ns.Swing.MAIN) - 3.4) < 1e-6,
 -- The Slam window
 ----------------------------------------------------------------------
 
-_G.WarriorKitSpellCast[SLAM] = 1500
+_G.WiggleUISpellCast[SLAM] = 1500
 swing.talent = 5
 ns.Slam.Forget()
 
@@ -440,7 +440,7 @@ print(("swing  %d x %d px per hand, main %.2fs off %.2fs, Slam window %s, %.2f K
 guids.player = nil
 swing.mainhand, swing.offhand, swing.off = nil, nil, nil
 swing.main, swing.talent = 3.4, 0
-_G.WarriorKitSpellCast[SLAM] = nil
+_G.WiggleUISpellCast[SLAM] = nil
 ns.Slam.Forget()
 fire("UNIT_INVENTORY_CHANGED", "player")
 ns.Swing.Stop(ns.Swing.MAIN)

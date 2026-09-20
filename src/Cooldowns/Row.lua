@@ -29,7 +29,7 @@ ns.CooldownRow = Row
 -- Out of combat it is up only while something is still recovering, which is the
 -- pull-or-wait question and the only reason to look at it between fights.
 -- Everything ready is the resting state, and a row that sat there saying so
--- would be furniture inside a week. `/wk cooldowns idle on` keeps it up anyway
+-- would be furniture inside a week. `/wui cooldowns idle on` keeps it up anyway
 -- for anyone who disagrees.
 --
 -- Ready is worth a colour here, which is why this is the one row in the addon
@@ -43,7 +43,7 @@ ns.CooldownRow = Row
 -- makes. This file adds no drawing of its own.
 --------------------------------------------------------------------------
 
-local FRAME_NAME = "WarriorKitCooldowns"
+local FRAME_NAME = "WiggleUICooldowns"
 
 -- Two sizes, one per line.
 --
@@ -513,7 +513,7 @@ events:SetScript("OnEvent", function(_, event, token)
 		ns.UI.Hushable(frame)
 		unit = ns.UI.Unit(frame)
 		place = ns.UI.Placeable(frame, {
-			name = "WarriorKit cooldowns",
+			name = "WiggleUI cooldowns",
 			moved = function(anchor)
 				ns.db.cooldownPoint = anchor
 				Row.Apply()

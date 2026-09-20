@@ -49,7 +49,7 @@ end
 ----------------------------------------------------------------------
 
 do
-	local rail = _G.WarriorKitChatRooms
+	local rail = _G.WiggleUIChatRooms
 
 	-- From the theme's own size rather than from whatever the shipped screen
 	-- carries. Core\Shipped.lua is a capture of one install, so the picture it
@@ -144,7 +144,7 @@ do
 	local field, why = Window.Copy()
 	check(field ~= nil, ("the copy box refused: %s"):format(tostring(why)))
 	if field then
-		check(_G.WarriorKitChatCopy ~= nil and _G.WarriorKitChatCopy:IsShown(),
+		check(_G.WiggleUIChatCopy ~= nil and _G.WiggleUIChatCopy:IsShown(),
 			"the copy box is not on the screen")
 		check(field:HasFocus(), "the copy box does not hold the keyboard")
 		local from, to = unpack(field:GetHighlighted() or {})
@@ -160,7 +160,7 @@ do
 		check((field:GetText() or ""):find("meet at the stone", 1, true) ~= nil,
 			"typing over the copy box replaced the log")
 		ns.ChatCopy.Hide()
-		check(not _G.WarriorKitChatCopy:IsShown(), "the copy box did not close")
+		check(not _G.WiggleUIChatCopy:IsShown(), "the copy box did not close")
 	end
 
 	-- A room with nothing in it says so rather than opening an empty box.
@@ -179,8 +179,8 @@ end
 ----------------------------------------------------------------------
 
 do
-	check(Rooms.Exists(Rooms.KIT), "there is no WarriorKit room while Blizzard's window is hidden")
-	check(Rooms.Title(Rooms.KIT) == "WarriorKit",
+	check(Rooms.Exists(Rooms.KIT), "there is no WiggleUI room while Blizzard's window is hidden")
+	check(Rooms.Title(Rooms.KIT) == "WiggleUI",
 		("the addon's room is called %q"):format(tostring(Rooms.Title(Rooms.KIT))))
 
 	local kit, system = Window.Count(Rooms.KIT), Window.Count(Rooms.SYSTEM)
@@ -200,8 +200,8 @@ do
 		local text = field:GetText() or ""
 		check(text:find("the loot filter is on", 1, true) ~= nil,
 			"the addon's line is not in its own room")
-		check(text:find("WarriorKit:", 1, true) == nil,
-			"every line in the WarriorKit room still starts with the word WarriorKit")
+		check(text:find("WiggleUI:", 1, true) == nil,
+			"every line in the WiggleUI room still starts with the word WiggleUI")
 		ns.ChatCopy.Hide()
 	end
 
@@ -210,7 +210,7 @@ do
 	ns.db.hideBlizzChat = false
 	Window.Apply()
 	check(not Rooms.Exists(Rooms.KIT),
-		"the WarriorKit room is still offered with Blizzard's window on screen")
+		"the WiggleUI room is still offered with Blizzard's window on screen")
 end
 
 ----------------------------------------------------------------------
@@ -245,7 +245,7 @@ do
 
 	-- Shift held. The key is asked of the client inside the handler, so a row
 	-- that cached it at build time answers false here.
-	_G.WarriorKitShift(true)
+	_G.WiggleUIShift(true)
 	check(shelf:Click("two", "LeftButton"), "a list row took no shift left click")
 	local shifted = told[#told]
 	check(#told == 2 and shifted.mods and shifted.mods.shift == true,
@@ -258,7 +258,7 @@ do
 	local again = told[#told]
 	check(#told == 3 and again.id == "two" and again.mods and again.mods.shift == true,
 		"a modified click on the row already selected told the caller nothing")
-	_G.WarriorKitShift(false)
+	_G.WiggleUIShift(false)
 
 	-- And the modifier goes away with the key, rather than staying on the row
 	-- it was last pressed with.

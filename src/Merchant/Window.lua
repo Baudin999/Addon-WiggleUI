@@ -114,7 +114,7 @@ end
 
 local function Build()
 	window = UI.Window({
-		name = "WarriorKitMerchant",
+		name = "WiggleUIMerchant",
 		title = "Merchant",
 		width = Width(),
 		height = HEIGHT,

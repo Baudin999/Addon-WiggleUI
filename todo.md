@@ -70,7 +70,7 @@ untested list.
 61. The gear page as nineteen rows over the figure. `7b8373a`
 63. Noto Sans shipped in `src/Media/`, and forty windows relaid against it. `89de0a6`
 64. The loadouts come out, with the tab that hosted them. `3b31e1c`
-65. One page: no tab strip, skills in the stats column, standings on `/wk reputation`. `d667d93`
+65. One page: no tab strip, skills in the stats column, standings on `/wui reputation`. `d667d93`
 66. A name read on a gradient rather than on the grass, out of `UI.Wash`. `2b55319`
 67. The world darkens behind the sheet, on a frame that never takes the mouse. `ff5816d`
 68. A gear change is watched: the row dips and the columns arrive from their sides. `fdb49e3`

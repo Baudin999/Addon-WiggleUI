@@ -309,7 +309,7 @@ end
 
 local stream = ns.Stream.New({
 	prefix = "lootFeed",
-	name = "WarriorKitLootFeed",
+	name = "WiggleUILootFeed",
 	title = "Loot",
 	empty = "nothing yet",
 	-- No middle column. The only thing it ever drew was a quest count, and the
@@ -620,7 +620,7 @@ end
 
 -- How many of the loot sentences this client actually carries.
 --
--- Worth a line in /wk status rather than assumed, because a locale that spells
+-- Worth a line in /wui status rather than assumed, because a locale that spells
 -- one of them differently, or a flavour that does not have the crafted form at
 -- all, is a feed that quietly misses a third of what drops. A number here is
 -- the difference between finding that in a second and never finding it.

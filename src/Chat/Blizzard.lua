@@ -234,6 +234,6 @@ end
 
 --------------------------------------------------------------------------
 
--- Registered with the switch it belongs to, so `/wk hide chat`, the panel's own
--- line and `/wk reset` all reach this file without any of them naming it.
+-- Registered with the switch it belongs to, so `/wui hide chat`, the panel's own
+-- line and `/wui reset` all reach this file without any of them naming it.
 ns.BlizzHide.Also(Blizz.Apply)

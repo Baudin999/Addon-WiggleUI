@@ -9,7 +9,7 @@ ns.Command = Command
 
 -- The words Core answers itself. A feature that claimed one of these used to
 -- lose in silence, because the dispatch below returned before the registry was
--- ever consulted: the interface part registered "ui" and every /wk ui command
+-- ever consulted: the interface part registered "ui" and every /wui ui command
 -- opened the settings panel instead, which is how the Edit Mode capture spent a
 -- release doing nothing. Claiming a reserved word is an error now.
 local PANEL_WORDS = { panel = true, options = true, config = true }
@@ -68,7 +68,7 @@ local function Defaults(arg)
 	if arg:match("^(%S*)"):lower() ~= "yes" then
 		ns.Print(("%d setting%s %s not what the addon ships with.")
 			:format(moved, plural, moved == 1 and "is" or "are"))
-		ns.Print("  /wk defaults yes puts them back and reloads the interface.")
+		ns.Print("  /wui defaults yes puts them back and reloads the interface.")
 		ns.Print("  Your groups, your mail favourites, your muted errors, the"
 			.. " flasks you track and the gold ledger are records rather than"
 			.. " settings and are left alone.")
@@ -81,7 +81,7 @@ local function Defaults(arg)
 end
 
 local function Help()
-	ns.Print("/wk on its own opens the panel. Everything in it has a command too:")
+	ns.Print("/wui on its own opens the panel. Everything in it has a command too:")
 	ns.Print("  status, help, lock, unlock, reset, defaults")
 	for _, feature in ipairs(ns.features) do
 		for _, line in ipairs(feature.help or {}) do
@@ -102,9 +102,10 @@ events:SetScript("OnEvent", function()
 	BuildWords()
 end)
 
-SLASH_WARRIORKIT1 = "/wk"
-SLASH_WARRIORKIT2 = "/warriorkit"
-SlashCmdList.WARRIORKIT = function(input)
+SLASH_WIGGLEUI1 = "/wui"
+SLASH_WIGGLEUI2 = "/wiggleui"
+SLASH_WIGGLEUI3 = "/wiggle"
+SlashCmdList.WIGGLEUI = function(input)
 	if not words then
 		BuildWords()
 	end
@@ -168,7 +169,7 @@ end
 -- as a size control can be before the stops stop meaning anything.
 --
 -- Refused rather than rounded, for the reason above. The stops the panel offers
--- and the stops a macro can reach have to be the same set, or /wk uisize 1.3
+-- and the stops a macro can reach have to be the same set, or /wui uisize 1.3
 -- silently becomes 1.25 and the next person to read the macro believes the
 -- window is at 1.3.
 function Command.Step(value, low, high, step, what)

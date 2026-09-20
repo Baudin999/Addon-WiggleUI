@@ -59,11 +59,11 @@ ns.BlizzHide = Blizz
 -- the target.
 --------------------------------------------------------------------------
 
--- Every switch, in the order the panel and `/wk hide` walk them.
+-- Every switch, in the order the panel and `/wui hide` walk them.
 --
 --   key    the setting, and every one of them is a plain boolean that means
 --          exactly what its label says
---   word   what `/wk hide` calls it
+--   word   what `/wui hide` calls it
 --   label  the panel's line, and the sentence the slash word prints back
 --   hint   the one thing about this switch a label cannot hold, where there is
 --          one. Eight of the eleven have a catch and the other three do not,
@@ -106,7 +106,7 @@ local SWITCHES = {
 	-- draws between a texture and a frame.
 	{ key = "hideBlizzMicroMenu", word = "micro",
 		label = "Blizzard's micro menu",
-		hint = "C, P, N and L open this addon's own character sheet, spell book, talents and quest log, and Escape is still the game menu with a WarriorKit button on it." },
+		hint = "C, P, N and L open this addon's own character sheet, spell book, talents and quest log, and Escape is still the game menu with a WiggleUI button on it." },
 	{ key = "hideBlizzBagBar", word = "bagbar",
 		label = "Blizzard's bag bar",
 		hint = "The backpack, the four bags on the belt and the key ring. B opens this addon's bag window instead, and that window does not draw a key ring, so untick this if you carry keys." },
@@ -160,7 +160,7 @@ local SWITCHES = {
 -- the wrong field hides something nobody asked to hide, which is a worse failure
 -- than the one the list exists to fix. `spellbar` is what FrameXML declares the
 -- target's cast bar under and is the only one written from the source. Anything
--- else goes in after `/wk hide probe` has said ON SCREEN against a name and
+-- else goes in after `/wui hide probe` has said ON SCREEN against a name and
 -- somebody has read the key off the client.
 --
 -- The target's auras name no frame here on purpose. Every icon in those two
@@ -361,7 +361,7 @@ local function Mute(entry, frame, hiding)
 	if not names then
 		return
 	end
-	local kept = frame.wkMuted
+	local kept = frame.wuiMuted
 	if hiding then
 		if kept then
 			return
@@ -372,13 +372,13 @@ local function Mute(entry, frame, hiding)
 			kept[name] = frame[name] or false
 			frame[name] = Nothing
 		end
-		frame.wkMuted = kept
+		frame.wuiMuted = kept
 	elseif kept then
 		for index = 1, #names do
 			local name = names[index]
 			frame[name] = kept[name] or nil
 		end
-		frame.wkMuted = nil
+		frame.wuiMuted = nil
 	end
 end
 
@@ -542,7 +542,7 @@ end
 --------------------------------------------------------------------------
 -- Saying what actually happened
 --
--- `/wk hide probe` reports one line per name: whether this client has the frame,
+-- `/wui hide probe` reports one line per name: whether this client has the frame,
 -- whether the attic is holding it, and whether it is on the screen anyway. That
 -- last column is the one worth having. Every bug this file has had looked
 -- identical from the outside, a switch that was on with the frame still drawn,

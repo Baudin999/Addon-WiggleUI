@@ -622,7 +622,7 @@ function Look.Hours(def)
 	return line
 end
 
--- The same across every bar that is standing, for /wk status and the panel's
+-- The same across every bar that is standing, for /wui status and the panel's
 -- one line on the clone. nil where none of them has been given hours, which is
 -- the shipping state and the common one.
 function Look.Summary(order)

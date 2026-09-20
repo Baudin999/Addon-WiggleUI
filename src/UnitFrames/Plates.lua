@@ -212,7 +212,7 @@ end
 --
 -- Blizzard's points are never read back. GetHitTestPoints is a measurement,
 -- a plate is a restricted region, and the client refuses the read and blames
--- WarriorKit for the taint. When the bar leaves, Blizzard's points are built
+-- WiggleUI for the taint. When the bar leaves, Blizzard's points are built
 -- again from NamePlateSetupOptions, the same table ApplyFrameOptions reads.
 --
 -- The driver writes its own points on every plate again in

@@ -109,7 +109,7 @@ ns.Register({
 		-- Set it from the Charge tab's picker, which only offers what you are
 		-- carrying.
 		chargeWeapon = "Whirlwind Axe",
-		chargeKey = "CTRL-2",  -- key the charge button takes over, set in the UI or with /wk bind
+		chargeKey = "CTRL-2",  -- key the charge button takes over, set in the UI or with /wui bind
 		chargeKeyRelease = false, -- hand the key back during combat instead of casting Intervene
 		-- Empty, always. This is what the key was bound to before the button
 		-- took it, which is a fact about the keybinding set in front of us and
@@ -199,7 +199,7 @@ ns.Register({
 		-- against a button and a marker that were never created on this class,
 		-- and a check box you can tick that changes nothing on screen is worse
 		-- than nothing at all. The part keeps its slash words, which say why, and
-		-- its line in /wk status, which says the same.
+		-- its line in /wui status, which says the same.
 		if not ns.Charge.Available() then
 			return
 		end
@@ -220,7 +220,7 @@ ns.Register({
 				end
 			end,
 			function() ns.ChargeIcon.Bind("") end)
-		ui.Hint("Your saved bindings are never written, so clearing this hands the key straight back. Or put /click WarriorKitChargeButton in a macro on a bar.")
+		ui.Hint("Your saved bindings are never written, so clearing this hands the key straight back. Or put /click WiggleUIChargeButton in a macro on a bar.")
 		ui.Reading("this key", function()
 			if ns.db.chargeKey == "" then
 				return "not bound"

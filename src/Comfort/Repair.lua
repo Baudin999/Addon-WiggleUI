@@ -71,7 +71,7 @@ end
 -- up, so one of the two parts on this event worked and the other did not.
 --
 -- The session is the answer, and its two edges are the two events. Both stay
--- registered whatever the setting says, because this flag is what /wk repair
+-- registered whatever the setting says, because this flag is what /wui repair
 -- and the panel button read and both of those work with the automatic repair
 -- turned off.
 local session = false
@@ -217,7 +217,7 @@ local function OnEvent(_, event)
 	end
 
 	-- Set before the setting is read, so a merchant opened with the automatic
-	-- repair off still leaves /wk repair and the panel button able to answer.
+	-- repair off still leaves /wui repair and the panel button able to answer.
 	session = true
 
 	if not ns.db.autoRepair then
@@ -231,7 +231,7 @@ local function OnEvent(_, event)
 	local cost, payer = Repair.Run()
 	-- Silent on every refusal. This runs at every merchant you open and a
 	-- refusal is nearly always "nothing is damaged"; the reasons are worth
-	-- reading when you asked, which is what /wk repair is for.
+	-- reading when you asked, which is what /wui repair is for.
 	if cost and cost > 0 then
 		ns.Print(("repaired for %s, %s."):format(GetCoinText(cost),
 			payer == "guild" and "on the guild" or "out of your own purse"))
@@ -246,7 +246,7 @@ function Repair.Apply()
 		-- handler repairs, not whether the handler runs, because the session
 		-- flag it keeps has to be right for the manual repair either way. It
 		-- used to unregister here, and that is why turning the setting off left
-		-- `/wk repair` at a merchant saying there was no merchant.
+		-- `/wui repair` at a merchant saying there was no merchant.
 		frame:RegisterEvent("MERCHANT_SHOW")
 		frame:RegisterEvent("MERCHANT_CLOSED")
 	end

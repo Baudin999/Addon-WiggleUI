@@ -211,19 +211,19 @@ check(figure:IsShown(),
 	"the header is down on a feed with no title, and the takings with it")
 
 -- Switched off, the end goes back to the count and the header with it.
-local tall = _G.WarriorKitLootFeed:GetHeight()
+local tall = _G.WiggleUILootFeed:GetHeight()
 ns.db.lootFeedPurse = false
 lootStream:Apply()
 check(not hit:IsShown(), "the figure still takes the mouse with the purse off")
-check(_G.WarriorKitLootFeed:GetHeight() < tall,
+check(_G.WiggleUILootFeed:GetHeight() < tall,
 	"the purse went and the header stayed, on a feed with no title")
 
 ns.db.lootFeedPurse = true
 lootStream:Apply()
-check(figure:GetText() == "+30g 0s" and _G.WarriorKitLootFeed:GetHeight() == tall,
+check(figure:GetText() == "+30g 0s" and _G.WiggleUILootFeed:GetHeight() == tall,
 	("the purse came back as %s and the frame is %s rather than %s")
 		:format(tostring(figure:GetText()),
-			tostring(_G.WarriorKitLootFeed:GetHeight()), tostring(tall)))
+			tostring(_G.WiggleUILootFeed:GetHeight()), tostring(tall)))
 
 ------------------------------------------------------------
 -- The hover

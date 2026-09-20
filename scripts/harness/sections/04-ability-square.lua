@@ -106,7 +106,7 @@ check(not Ability.Look(Ability.QUIET, "cooldown").blank,
 -- The slot ladder
 --------------------------------------------------------------------------
 
-local slots = _G.WarriorKitSlots
+local slots = _G.WiggleUISlots
 local SLOT = 1
 
 local function put(fields)
@@ -117,7 +117,7 @@ end
 -- asked yet" and "this client cannot" used to be the same answer here. Every
 -- reader guarded on the raw probe, the probe was nil until something called
 -- CanRead, and the only caller that did was Bars.Describe. So the bars came
--- up blank on every login and filled in the moment you typed /wk, and this
+-- up blank on every login and filled in the moment you typed /wui, and this
 -- file could not see it because the line below primes the probe for the rest
 -- of the run. It has to be the first thing the ladder does or it proves
 -- nothing.
@@ -213,8 +213,8 @@ check(Slot.State(SLOT) == "cooldown", "cost is being reported ahead of cooldown"
 --------------------------------------------------------------------------
 
 do
-	local macroSpells = _G.WarriorKitMacroSpells
-	local unusableSpells = _G.WarriorKitUnusableSpells
+	local macroSpells = _G.WiggleUIMacroSpells
+	local unusableSpells = _G.WiggleUIUnusableSpells
 
 	put({ texture = ART, spell = 1464 })
 	check(Slot.Spell(SLOT) == "Spell1464", "a slot holding a plain spell does not name it")
@@ -438,7 +438,7 @@ else
 	-- #showtooltip drew ready all fight, because this file asked what spell was
 	-- in the slot and a macro is not a spell.
 	advance(6)
-	local wrapped = _G.WarriorKitMacroSpells
+	local wrapped = _G.WiggleUIMacroSpells
 	wrapped[7] = "Overpower"
 	put({ texture = ART, macro = 7 })
 	check(ns.Reaction.Of(SLOT) == OVERPOWER_KEY,
@@ -483,8 +483,8 @@ print(("react  %s"):format(ns.Reaction.Describe()))
 --------------------------------------------------------------------------
 
 do
-	local health, healthMax = _G.WarriorKitHealth, _G.WarriorKitHealthMax
-	local deadUnits, friendlyUnits = _G.WarriorKitDeadUnits, _G.WarriorKitFriendlyUnits
+	local health, healthMax = _G.WiggleUIHealth, _G.WiggleUIHealthMax
+	local deadUnits, friendlyUnits = _G.WiggleUIDeadUnits, _G.WiggleUIFriendlyUnits
 	local EXECUTE = 20662 -- a later rank, on purpose
 
 	guids.target = "Creature-0-0-0-0-1234-00000099"
@@ -554,7 +554,7 @@ do
 		health.target = 500
 
 		-- A macro reaches this rung too, which is the whole point of resolving one.
-		local wrapped = _G.WarriorKitMacroSpells
+		local wrapped = _G.WiggleUIMacroSpells
 		wrapped[9] = "Execute"
 		put({ texture = ART, macro = 9 })
 		check(Slot.State(SLOT) == "condition",

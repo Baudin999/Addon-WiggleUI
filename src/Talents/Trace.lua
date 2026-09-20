@@ -6,7 +6,7 @@ ns.PetTrace = Trace
 --------------------------------------------------------------------------
 -- What a press on a pet ability did
 --
--- Off, and worth nothing until it is on. `/wk talents trace` turns it on, and
+-- Off, and worth nothing until it is on. `/wui talents trace` turns it on, and
 -- every hover and press on the pet's page then says in chat what the client was
 -- asked and what it answered.
 --

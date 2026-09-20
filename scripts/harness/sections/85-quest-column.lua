@@ -46,7 +46,7 @@ standing.map = WESTFALL
 check(Column.Apply(),
 	"the tracker was switched on in Westfall and put nothing on the screen")
 
-local frame = _G.WarriorKitQuestColumn
+local frame = _G.WiggleUIQuestColumn
 check(frame ~= nil, "the tracker is on the screen and has no name to find it by")
 
 -- Everything on the tracker that is not the zone strip: the tally over the
@@ -58,7 +58,7 @@ check(frame ~= nil, "the tracker is on the screen and has no name to find it by"
 -- one child of the tracker that has one.
 local function trunk()
 	for _, child in ipairs(frame.children) do
-		if child ~= _G.WarriorKitQuestZones and #child.children > 0 then
+		if child ~= _G.WiggleUIQuestZones and #child.children > 0 then
 			return child
 		end
 	end
@@ -544,7 +544,7 @@ do
 	standing.map = WESTFALL
 	Column.Refresh()
 
-	local strip = _G.WarriorKitQuestZones
+	local strip = _G.WiggleUIQuestZones
 	check(strip ~= nil, "the zone strip is on the tracker and has no name to find it by")
 
 	-- What is on the strip, as one string per tab, top down.

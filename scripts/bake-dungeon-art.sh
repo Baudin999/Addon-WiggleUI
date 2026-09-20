@@ -30,7 +30,7 @@ CLIENT="wow_anniversary"
 
 EXPORTS="${1:-}"
 if [ -z "$EXPORTS" ]; then
-	EXPORTS="${TMPDIR:-/tmp}/warriorkit-art-exports"
+	EXPORTS="${TMPDIR:-/tmp}/wiggleui-art-exports"
 	mkdir -p "$EXPORTS" || exit 1
 
 	fetch() {

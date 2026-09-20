@@ -77,8 +77,8 @@ local floor = UI.OutlineFloor()
 -- construction. A face change has to be made twice, and the second time is
 -- here.
 local ADDON_FACES = {
-	["Interface\\AddOns\\WarriorKit\\Media\\Sans.ttf"] = true,
-	["Interface\\AddOns\\WarriorKit\\Media\\Glyphs.ttf"] = true,
+	["Interface\\AddOns\\WiggleUI\\Media\\Sans.ttf"] = true,
+	["Interface\\AddOns\\WiggleUI\\Media\\Glyphs.ttf"] = true,
 }
 
 -- Sites this rule does not hold for, and why. An entry with no reason is the

@@ -348,7 +348,7 @@ end
 --
 -- Built here rather than in Cast.lua, because it is the whole of what a binding
 -- means and none of it is about a button or a key. Cast.lua puts the text on
--- the button and `/wk hover show` reads it back off.
+-- the button and `/wui hover show` reads it back off.
 --
 -- Two lines. The spell on the thing under the cursor when the filter passes,
 -- and when it does not, a click on whatever the key was pressing before this
@@ -399,7 +399,7 @@ end
 -- to a key that was never bound at all, and the usual reason is the filter: a
 -- binding made without touching the target button carries `an enemy`, and a
 -- heal aimed at a friend under `harm` is a press the client discards in
--- silence. Nothing here is called unless `/wk hover debug on`.
+-- silence. Nothing here is called unless `/wui hover debug on`.
 --------------------------------------------------------------------------
 
 local function Look(unit)
@@ -491,7 +491,7 @@ function Hover.Would(bind)
 	return "nothing under the cursor, so nothing casts"
 end
 
--- One binding, said in one line, for the sheet and for /wk status both.
+-- One binding, said in one line, for the sheet and for /wui status both.
 function Hover.Line(bind)
 	return ("%s  %s on %s"):format(bind.key, bind.name, Hover.Who(bind.who).label)
 end

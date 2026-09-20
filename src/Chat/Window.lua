@@ -58,10 +58,10 @@ local C, M = UI.Color, UI.Metric
 -- stayed gone across reloads and the way back was a slash word you had to know.
 -- The way to be rid of the window is the setting that turns the part off, which
 -- is where every other part of this addon is switched off and which the panel
--- lists. /wk chat still hides it for the session, and a reload brings it back.
+-- lists. /wui chat still hides it for the session, and a reload brings it back.
 --------------------------------------------------------------------------
 
-local FRAME_NAME = "WarriorKitChat"
+local FRAME_NAME = "WiggleUIChat"
 
 -- The client's two chat keys are the client's. This window took both of them
 -- onto buttons of its own for a while, so that enter opened the line down here
@@ -108,7 +108,7 @@ local answered, painted = 0, 0
 -- from the outside like a part that did nothing. A sentence in a local is no
 -- help there, because the thing that would print it is the window that did not
 -- build; a sentence in the saved file is still there after the reload, and the
--- panel, `/wk status` and anyone reading WTF all get the same answer out of it.
+-- panel, `/wui status` and anyone reading WTF all get the same answer out of it.
 --
 -- It is a saved variable that is not a setting, which is the one of those in the
 -- addon. It earns that by being the only channel out of a failure that has no
@@ -797,7 +797,7 @@ end
 -- spent naming rooms you know by sight, and the name is in the hover now.
 local function BuildRail()
 	return UI.List(window.content, {
-		name = "WarriorKitChatRooms",
+		name = "WiggleUIChatRooms",
 		icons = true,
 		describe = Describe,
 		onSelect = function(id)
@@ -851,7 +851,7 @@ local function Build()
 		moved = function(anchor)
 			ns.db.chatPoint = anchor
 		end,
-		-- And the only window /wk lock reaches, for the same reason it saves
+		-- And the only window /wui lock reaches, for the same reason it saves
 		-- its corner: this one is furniture on the HUD rather than a window you
 		-- opened for a minute, so it locks down with the rest of the furniture.
 		lockable = true,
@@ -1266,7 +1266,7 @@ end
 --
 -- What still comes through here is every way of opening the line that was never
 -- a key press: a click on the line itself, a click on a name in the log, the
--- rail picking a room, `/wk chat`. None of those is a command, so none of them
+-- rail picking a room, `/wui chat`. None of those is a command, so none of them
 -- needs the clean stack.
 function ChatWindow.Focus()
 	if not built then
@@ -1463,13 +1463,13 @@ function ChatWindow.Describe()
 end
 
 -- What the last attempt to stand the window up did, whether it worked or not.
--- The panel draws it and `/wk status` folds it into the chat line, so the thing
+-- The panel draws it and `/wui status` folds it into the chat line, so the thing
 -- you do when the corner is empty is read one line rather than guess.
 function ChatWindow.Why()
 	return said
 end
 
--- How many rooms are drawn right now. Named for the panel and for /wk status,
+-- How many rooms are drawn right now. Named for the panel and for /wui status,
 -- so nothing outside has to know that a room is a row or that a row is a frame.
 function ChatWindow.Rooms()
 	if not built then
@@ -1561,7 +1561,7 @@ function ChatWindow.Count(id)
 	return log and log:Count() or 0
 end
 
--- What every room is holding, for the panel and for /wk status.
+-- What every room is holding, for the panel and for /wui status.
 function ChatWindow.Held()
 	local total = 0
 	for _, log in ipairs(every) do
@@ -1631,9 +1631,9 @@ end
 
 -- What the client's own key binding list calls it. Beside the function it
 -- calls, the way the marking keys are.
-BINDING_NAME_WARRIORKIT_CHAT = "Type in the WarriorKit chat window"
+BINDING_NAME_WIGGLEUI_CHAT = "Type in the WiggleUI chat window"
 
-function WarriorKit_ChatEnter()
+function WiggleUI_ChatEnter()
 	ChatWindow.Focus()
 end
 

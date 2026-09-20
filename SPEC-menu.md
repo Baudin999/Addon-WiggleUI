@@ -1,8 +1,8 @@
-# SPEC: the /wk window
+# SPEC: the /wui window
 
 ## Why now
 
-`Core/Menu.lua` puts a WarriorKit button in the client's own Escape menu. That
+`Core/Menu.lua` puts a WiggleUI button in the client's own Escape menu. That
 is the whole of the first half of this piece of work and it is on main. It also
 raises the stakes on the second half: until now the only way in was a slash
 command, which meant everyone who opened the window had already read something
@@ -198,7 +198,7 @@ only written record of several decisions.
 Most parts have a boolean that decides whether they draw anything, and each one
 draws its own check box with its own wording: `show the row`, `show the icon`,
 `Show the meters`, `Show the swing bars`, `show enemy bars` and
-`draw the WarriorKit chat window`.
+`draw the WiggleUI chat window`.
 
 A part declares it instead:
 
@@ -256,7 +256,7 @@ below read, so it pays for itself twice.
 
 Search matches the label, the section title, the group name and the part's slash
 word, so typing `swing` finds the swing controls and typing `skin` finds the
-frame controls that `/wk skin` drives.
+frame controls that `/wui skin` drives.
 
 ### 6. Start here
 
@@ -432,7 +432,7 @@ its own.
 
 ## What this spec does not decide
 
-The slash commands do not change. Every word keeps working, `/wk` on its own
+The slash commands do not change. Every word keeps working, `/wui` on its own
 still opens the window, and `Core/Command.lua` does not appear anywhere above.
 Those words are muscle memory and they are sitting inside people's macros.
 

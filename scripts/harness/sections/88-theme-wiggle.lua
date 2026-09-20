@@ -117,7 +117,7 @@ check(Theme.Pinned() and Theme.Showing() == "exploration" and ns.db.wiggled,
 check(heard[#heard] == true, "the wiggle was not heard by its watcher")
 check(Theme.Mode("meters") == "hide", "a part asking for a mode still reads the theme at rest")
 check(not UI.Veiled(meters):IsShown(), "the wiggle to exploration left the meters up")
-check(UI.Veiled(chat):GetAlpha() == 0 and chat.wkReveal and chat.wkReveal:IsShown(),
+check(UI.Veiled(chat):GetAlpha() == 0 and chat.wuiReveal and chat.wuiReveal:IsShown(),
 	"the wiggle to exploration did not put the chat under the pointer")
 check(ns.ProgressRails.Describe():find("minimal", 1, true),
 	"exploration on the screen did not draw the minimal rail")
@@ -128,7 +128,7 @@ check(not Theme.Pinned() and Theme.Showing() == "informational" and not ns.db.wi
 check(heard[#heard] == false, "the swap back was not heard by its watcher")
 check(UI.Veiled(meters):IsShown() and UI.Veiled(chat):GetAlpha() == 1,
 	"the swap back left an element dressed for exploration")
-check(not chat.wkReveal:IsShown(), "the swap back left a catcher over the chat window")
+check(not chat.wuiReveal:IsShown(), "the swap back left a catcher over the chat window")
 check(ns.ProgressRails.Describe() == style, "the swap back did not put the rail's style back")
 
 -- In a fight. The action bars are protected, and a veil over them is too, so
@@ -144,11 +144,11 @@ Theme.Aim()
 local realLockdown = _G.InCombatLockdown
 _G.InCombatLockdown = function() return true end
 Theme.Pin(true)
-check(UI.Veiled(bars):GetAlpha() == 0 and bars.wkReveal:IsShown(),
+check(UI.Veiled(bars):GetAlpha() == 0 and bars.wuiReveal:IsShown(),
 	"a wiggle in a fight left the action bars up")
 check(UI.Veiled(feeds):IsShown(), "a wiggle in a fight hid a protected frame's veil")
 Theme.Pin(false)
-check(UI.Veiled(bars):GetAlpha() == 1 and not bars.wkReveal:IsShown(),
+check(UI.Veiled(bars):GetAlpha() == 1 and not bars.wuiReveal:IsShown(),
 	"the wiggle back in a fight did not bring the action bars up")
 _G.InCombatLockdown = realLockdown
 bars:Hide()

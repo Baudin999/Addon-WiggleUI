@@ -35,10 +35,10 @@ fire("UNIT_PET", "player")
 ns.FrameSkin.Apply()
 
 local blocks = {
-	{ "player", _G.WarriorKitPlayerFrame, _G.WarriorKitPlayerButton, "player" },
-	{ "pet", _G.WarriorKitPetFrame, _G.WarriorKitPetButton, "pet" },
-	{ "target", _G.WarriorKitTargetFrame, _G.WarriorKitTargetButton, "target" },
-	{ "tot", _G.WarriorKitTargetOfTargetFrame, _G.WarriorKitTargetOfTargetButton, "targettarget" },
+	{ "player", _G.WiggleUIPlayerFrame, _G.WiggleUIPlayerButton, "player" },
+	{ "pet", _G.WiggleUIPetFrame, _G.WiggleUIPetButton, "pet" },
+	{ "target", _G.WiggleUITargetFrame, _G.WiggleUITargetButton, "target" },
+	{ "tot", _G.WiggleUITargetOfTargetFrame, _G.WiggleUITargetOfTargetButton, "targettarget" },
 }
 
 ----------------------------------------------------------------------
@@ -95,8 +95,8 @@ check(ns.Attic.Held(_G.PetFrame),
 -- that says the target moved, before any addon code runs.
 ----------------------------------------------------------------------
 
-local playerButton, targetButton = _G.WarriorKitPlayerButton, _G.WarriorKitTargetButton
-local totButton = _G.WarriorKitTargetOfTargetButton
+local playerButton, targetButton = _G.WiggleUIPlayerButton, _G.WiggleUITargetButton
+local totButton = _G.WiggleUITargetOfTargetButton
 
 check(playerButton:IsShown(), "your own button is not on the screen")
 check(_G.UnitWatchRegistered(targetButton) and _G.UnitWatchRegistered(totButton),
@@ -120,7 +120,7 @@ check(targetButton:IsShown() and totButton:IsShown(),
 
 -- The pet, on the event the client fires against your own unit when the pet
 -- token changes creature.
-local petButton = _G.WarriorKitPetButton
+local petButton = _G.WiggleUIPetButton
 check(_G.UnitWatchRegistered(petButton),
 	"the pet button is not on the client's unit watch, so a pet called in a fight draws nothing")
 check(petButton:IsShown(), "you have a pet and its button is not on the screen")

@@ -158,7 +158,7 @@ local TOP = {
 	-- Live on the same terms as System, for the same reason: with Blizzard's
 	-- window up, that window is where the addon's lines are drawn and this
 	-- room would be an empty row.
-	{ id = Rooms.KIT,    label = "WarriorKit", under = "Everything",
+	{ id = Rooms.KIT,    label = "WiggleUI", under = "Everything",
 	  kind = "SAY", live = Hiding },
 }
 

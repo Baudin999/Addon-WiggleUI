@@ -202,12 +202,12 @@ ns.db.bagHover = 50
 
 -- The slash word and the panel share one ruler: a stop is taken, and a number
 -- between two stops is refused rather than rounded.
-SlashCmdList.WARRIORKIT("bags hover 120")
+SlashCmdList.WIGGLEUI("bags hover 120")
 check(ns.db.bagHover == 120,
 	("bags hover 120 left the wait at %s"):format(tostring(ns.db.bagHover)))
-SlashCmdList.WARRIORKIT("bags hover 55")
+SlashCmdList.WIGGLEUI("bags hover 55")
 check(ns.db.bagHover == 120, "a number off the panel's step was taken")
-SlashCmdList.WARRIORKIT("bags hover 50")
+SlashCmdList.WIGGLEUI("bags hover 50")
 check(ns.db.bagHover == 50, "the wait did not go back to fifty")
 
 ----------------------------------------------------------------------

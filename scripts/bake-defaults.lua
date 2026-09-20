@@ -8,7 +8,7 @@
 -- second registry, sitting a folder away from the first, wrong the day a
 -- feature adds a setting.
 --
---     lua5.1 scripts/bake-defaults.lua src path/to/WarriorKit.lua [character file]
+--     lua5.1 scripts/bake-defaults.lua src path/to/WiggleUI.lua [character file]
 
 local ROOT, SOURCE, CHARACTER = ...
 assert(ROOT and SOURCE,
@@ -43,11 +43,11 @@ H.ns, H.carry = ns, {}
 -- say, not what the last bake said.
 local GENERATED = "Core/Shipped.lua"
 
-for line in io.lines(ROOT .. "/WarriorKit.toc") do
+for line in io.lines(ROOT .. "/WiggleUI.toc") do
 	line = line:gsub("\r", ""):gsub("\\", "/")
 	if line:match("^[A-Za-z].*%.lua$") and line ~= GENERATED then
 		H.loading.file = line
-		assert(loadfile(ROOT .. "/" .. line))("WarriorKit", ns)
+		assert(loadfile(ROOT .. "/" .. line))("WiggleUI", ns)
 		H.loading.file = "runtime"
 	end
 end
@@ -58,10 +58,10 @@ local listeners = {}
 for index, frame in ipairs(H.events.ADDON_LOADED or {}) do
 	listeners[index] = frame
 end
-_G.WarriorKitDB, _G.WarriorKitCharDB = {}, {}
+_G.WiggleUIDB, _G.WiggleUICharDB = {}, {}
 for _, frame in ipairs(listeners) do
 	if frame.scripts.OnEvent then
-		frame.scripts.OnEvent(frame, "ADDON_LOADED", "WarriorKit")
+		frame.scripts.OnEvent(frame, "ADDON_LOADED", "WiggleUI")
 	end
 end
 
@@ -89,8 +89,8 @@ local env = {}
 setfenv(chunk, env)
 assert(pcall(chunk))
 
-local live = env.WarriorKitDB
-assert(type(live) == "table", "no WarriorKitDB in " .. SOURCE)
+local live = env.WiggleUIDB
+assert(type(live) == "table", "no WiggleUIDB in " .. SOURCE)
 
 -- The character half, out of a second file, because the client keeps it under
 -- the character rather than under the account. Optional: a capture of the
@@ -102,8 +102,8 @@ if CHARACTER and CHARACTER ~= "" then
 	local charEnv = {}
 	setfenv(charChunk, charEnv)
 	assert(pcall(charChunk))
-	liveChar = charEnv.WarriorKitCharDB
-	assert(type(liveChar) == "table", "no WarriorKitCharDB in " .. CHARACTER)
+	liveChar = charEnv.WiggleUICharDB
+	assert(type(liveChar) == "table", "no WiggleUICharDB in " .. CHARACTER)
 end
 
 -- The settings are in profiles since Core.lua split them. Three of them, named
@@ -168,7 +168,7 @@ end
 -- the plan into a button that puts them back to a capture of somebody else's.
 --
 -- A bar layout that should ship goes in the plan instead, which is what
--- `/wk bars where` prints it in the shape of.
+-- `/wui bars where` prints it in the shape of.
 --
 -- The fourth is not an override but a number the client owns. barsDistance is
 -- how far out a nameplate goes up, and UnitFrames\\Plates.lua asks the client

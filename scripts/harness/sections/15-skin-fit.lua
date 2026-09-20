@@ -17,10 +17,10 @@ local ns, check = H.ns, H.check
 local blocks = H.carry.blocks
 local fire, debuffs, skinTicker = H.fire, H.debuffs, H.carry.skinTicker
 
-local playerAnchor, targetAnchor = _G.WarriorKitPlayerFrame, _G.WarriorKitTargetFrame
-local totAnchor = _G.WarriorKitTargetOfTargetFrame
-local playerButton, targetButton = _G.WarriorKitPlayerButton, _G.WarriorKitTargetButton
-local totButton = _G.WarriorKitTargetOfTargetButton
+local playerAnchor, targetAnchor = _G.WiggleUIPlayerFrame, _G.WiggleUITargetFrame
+local totAnchor = _G.WiggleUITargetOfTargetFrame
+local playerButton, targetButton = _G.WiggleUIPlayerButton, _G.WiggleUITargetButton
+local totButton = _G.WiggleUITargetOfTargetButton
 
 -- Beside the target's block on the portrait's side, the pet's place mirrored:
 -- target of target's left edge against the target's right, pushed right by the
@@ -32,7 +32,7 @@ check(perch ~= nil and perch[2] == targetAnchor and perch[1] == "TOPLEFT"
 
 -- Beside the player's block on the portrait's side, top edges on one line: the
 -- pet's right edge against the player's left, pulled left by the gap.
-local petAnchor, petButton = _G.WarriorKitPetFrame, _G.WarriorKitPetButton
+local petAnchor, petButton = _G.WiggleUIPetFrame, _G.WiggleUIPetButton
 local flank = petAnchor.points and petAnchor.points[1]
 check(flank ~= nil and flank[2] == playerAnchor and flank[1] == "TOPRIGHT"
 	and flank[3] == "TOPLEFT" and flank[4] < 0 and flank[5] == 0,
@@ -79,8 +79,8 @@ check(_G.UnitWatchRegistered(targetButton) and _G.UnitWatchRegistered(totButton)
 -- numbers it reads has moved. A skin toggled off and on moves none of them, so
 -- the rows came back hidden and the character carried no debuffs anybody could
 -- see for the rest of the session.
-for _, name in ipairs({ "WarriorKitPlayerDebuffs", "WarriorKitPlayerBuffs",
-	"WarriorKitTargetDebuffs", "WarriorKitTargetBuffs" }) do
+for _, name in ipairs({ "WiggleUIPlayerDebuffs", "WiggleUIPlayerBuffs",
+	"WiggleUITargetDebuffs", "WiggleUITargetBuffs" }) do
 	check(_G[name] ~= nil and _G[name]:IsShown(),
 		("%s: the frames went back on and the aura row stayed down"):format(name))
 end
@@ -370,7 +370,7 @@ end
 ----------------------------------------------------------------------
 
 do
-	local row = _G.WarriorKitTargetDebuffs
+	local row = _G.WiggleUITargetDebuffs
 	local function settle()
 		skinTicker:Beat(5)
 	end

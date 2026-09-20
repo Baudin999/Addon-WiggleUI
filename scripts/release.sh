@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Builds the addon zip CurseForge expects, and uploads it when asked.
 #
-#   ./scripts/release.sh                 build dist/WarriorKit-<version>.zip
+#   ./scripts/release.sh                 build dist/WiggleUI-<version>.zip
 #   ./scripts/release.sh --upload        build, then upload it
 #   ./scripts/release.sh --upload --type beta
 #
@@ -83,7 +83,7 @@ stopped() {
 # leaving a prompt and an exit code.
 trap 'stopped "line $LINENO" "a command failed there"' ERR
 
-echo "Starting release of WarriorKit $version as $release_type"
+echo "Starting release of WiggleUI $version as $release_type"
 
 # Checked before the gate, because the gate takes minutes and learning the
 # token is unset after it is a run thrown away.
@@ -114,22 +114,22 @@ stage=$(mktemp -d)
 trap 'rm -rf "$stage"' EXIT
 
 # The zip's top level entry must be a folder named exactly as the TOC, because
-# that folder name is what the client matches WarriorKit.toc against. src/ is
+# that folder name is what the client matches WiggleUI.toc against. src/ is
 # a repo layout choice and the player never sees it.
-mkdir "$stage/WarriorKit"
-cp -R src/. "$stage/WarriorKit/"
+mkdir "$stage/WiggleUI"
+cp -R src/. "$stage/WiggleUI/"
 for name in "${IGNORE[@]}"; do
-	rm -rf "$stage/WarriorKit/${name:?}"
+	rm -rf "$stage/WiggleUI/${name:?}"
 done
 # The licence travels with the copy, which is the whole point of MIT's
 # "included in all copies" clause, and CurseForge shows a licence per project.
 for extra in README.md LICENSE; do
-	if [ -f "$extra" ]; then cp "$extra" "$stage/WarriorKit/$extra"; fi
+	if [ -f "$extra" ]; then cp "$extra" "$stage/WiggleUI/$extra"; fi
 done
 
-zip_path="dist/WarriorKit-$version.zip"
+zip_path="dist/WiggleUI-$version.zip"
 rm -f "$zip_path"
-if ! ( cd "$stage" && zip -qr - WarriorKit ) >"$zip_path" 2>>"$log"; then
+if ! ( cd "$stage" && zip -qr - WiggleUI ) >"$zip_path" 2>>"$log"; then
 	stopped "build" "zip could not write $zip_path"
 fi
 
@@ -152,14 +152,14 @@ printf '%s\n' "$listing" >>"$log"
 # author's client loads, which is exactly why it is on the list rather than
 # left to a deletion somebody has to remember: the copy step takes all of src/.
 why=""
-for required in WarriorKit/WarriorKit.toc WarriorKit/WarriorKit_Vanilla.toc WarriorKit/Bindings.xml \
-	WarriorKit/Media/Icon.tga WarriorKit/Media/Glyphs.ttf WarriorKit/Media/Glyphs-LICENSE.txt; do
+for required in WiggleUI/WiggleUI.toc WiggleUI/WiggleUI_Vanilla.toc WiggleUI/Bindings.xml \
+	WiggleUI/Media/Icon.tga WiggleUI/Media/Glyphs.ttf WiggleUI/Media/Glyphs-LICENSE.txt; do
 	if ! grep -qF "$required" <<<"$listing"; then
 		why+="the zip is missing $required"$'\n'
 	fi
 done
 for name in "${IGNORE[@]}"; do
-	if grep -qF "WarriorKit/$name" <<<"$listing"; then
+	if grep -qF "WiggleUI/$name" <<<"$listing"; then
 		why+="the zip contains $name, which IGNORE says it must not"$'\n'
 	fi
 done
@@ -185,7 +185,7 @@ iface_to_name() {
 }
 
 wanted=()
-for toc in src/WarriorKit*.toc; do
+for toc in src/WiggleUI*.toc; do
 	iface=$(sed -n 's/^## Interface: //p' "$toc" | tr -d '[:space:]')
 	wanted+=("$(iface_to_name "$iface")")
 done
@@ -246,14 +246,14 @@ changelog_file="docs/CHANGELOG.md"
 
 # The other addons this one talks to, declared to CurseForge so that the
 # project page lists them and an addon manager offers to fetch them alongside
-# this one. That offer is the whole of "install Questie with WarriorKit". The
+# this one. That offer is the whole of "install Questie with WiggleUI". The
 # client has no package manager and an addon cannot install another addon, so
 # the manager is the only thing in the chain that can.
 #
 # optionalDependency, not requiredDependency. Every feature that asks Questie
 # a question says in words when it is not answering, and a required dependency
 # would push Questie on a player who wants the character sheet and the meters
-# and nothing to do with quests. src/WarriorKit*.toc carries the same name in
+# and nothing to do with quests. src/WiggleUI*.toc carries the same name in
 # ## OptionalDeps and check.sh fails if the two ever disagree.
 #
 # Slug, not id, because a slug is the last part of the project URL and stays
@@ -270,7 +270,7 @@ REL
 # per-string execve limit three times over in either direction. Neither the
 # environment nor argv can hold it.
 meta_file=$(mktemp)
-CHANGELOG_FILE="$changelog_file" VERSION="$version" DISPLAY="WarriorKit $version" \
+CHANGELOG_FILE="$changelog_file" VERSION="$version" DISPLAY="WiggleUI $version" \
 	TYPE="$release_type" IDS="$ids" RELATIONS="$relations" \
 	python3 - "$meta_file" <<'META'
 import json, os, sys

@@ -350,7 +350,7 @@ local function BarsPage(ui)
 				or "loose: hold shift and drag one."))
 			ns.Options.Refresh()
 		end)
-	ui.Hint("Locked, a bar moves only while /wk unlock has every frame loose. Unlocked, hold shift to drag one, and a shift-click over a bar belongs to the bar while you hold it.")
+	ui.Hint("Locked, a bar moves only while /wui unlock has every frame loose. Unlocked, hold shift to drag one, and a shift-click over a bar belongs to the bar while you hold it.")
 end
 
 -- The words that set one bar's look
@@ -494,7 +494,7 @@ ns.Register({
 		-- the five bars where the plan in Buttons/Which.lua says, which is the
 		-- layout this addon is for; leaving it off shipped an addon that drew
 		-- everything except the part of the screen you actually press.
-		-- `/wk actionbars off` gives the client's bars back without a reload.
+		-- `/wui actionbars off` gives the client's bars back without a reload.
 		actionBars = true,
 
 		-- Where a bar has been dragged to, keyed by the plan's bar key. Empty
@@ -519,7 +519,7 @@ ns.Register({
 		-- is next to rather than after an unlock. A shift-click on a square
 		-- goes to that handle rather than to the square while it is up, which
 		-- is what it costs and why it is a setting. On means they move only
-		-- while every frame in the addon is unlocked, which is /wk unlock.
+		-- while every frame in the addon is unlocked, which is /wui unlock.
 		barsLocked = false,
 
 		-- Which bars are cloned, keyed by the plan's bar key. Empty is the
@@ -544,7 +544,7 @@ ns.Register({
 		layoutMacros = {},
 	},
 
-	-- /wk unlock reaches the bars through here, the same way it reaches the
+	-- /wui unlock reaches the bars through here, the same way it reaches the
 	-- charge icon and the meters. Without it the handles never show and the
 	-- bars are the one part of the addon you cannot drag. The pet bar is joined
 	-- to the same handles in Buttons/Placing.lua, so this reaches it too.
@@ -596,7 +596,7 @@ ns.Register({
 				ns.Print("pet bar: " .. ns.PetBar.Describe() .. ".")
 				ns.Print("actionbars on clones every bar you have, with its keys, and hides Blizzard's. actionbars off gives them back.")
 				ns.Print("tick bars one at a time in the panel, or actionbars match to follow your own again.")
-				ns.Print("/wk unlock to drag them, actionbars where to print what you dragged, actionbars reset to undo it.")
+				ns.Print("/wui unlock to drag them, actionbars where to print what you dragged, actionbars reset to undo it.")
 				ns.Print("actionbars rows|square|colour|background|combat|key <bar> <value> shapes one bar. actionbars plain drops the lot.")
 				ns.Print("actionbars centre <bar> across|down puts its middle on the middle of the screen, one axis at a time.")
 				ns.Print("actionbars unlock to drag them with shift held, actionbars lock to stop that.")
@@ -632,7 +632,7 @@ ns.Register({
 		"buttons apply, buttons restore, buttons status",
 		"actionbars on|off, our own bars over Blizzard's, same slots and same keys",
 		"actionbars match, back to cloning whichever bars you have on",
-		"actionbars where, actionbars reset, after dragging them with /wk unlock",
+		"actionbars where, actionbars reset, after dragging them with /wui unlock",
 		"actionbars rows|square|colour|background|combat|key <bar> <value>, one bar's shape, ground and hours",
 		"actionbars centre <bar> across|down, its middle on the middle of the screen",
 		"actionbars plain, every bar back to the plan's own shape",
@@ -659,7 +659,7 @@ ns.Register({
 			.. " | " .. ranks .. " | " .. bars .. " | " .. windows
 	end,
 
-	-- No reset hook. /wk reset puts frames back where they started, and where
+	-- No reset hook. /wui reset puts frames back where they started, and where
 	-- the cloned bars sit is not a setting to start from: it is a table in
 	-- Bars.lua. Turning the clone off is a decision, not a reset, so it stays on
 	-- the switch that says so.

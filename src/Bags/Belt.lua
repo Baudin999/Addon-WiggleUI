@@ -105,7 +105,7 @@ end
 -- One square. Named for the reason Grid.lua names its squares: a square that
 -- has landed somewhere wrong has to be findable from a macro.
 local function Build(bag)
-	local button = CreateFrame("Button", "WarriorKitBagBelt" .. bag, bar)
+	local button = CreateFrame("Button", "WiggleUIBagBelt" .. bag, bar)
 	button.bag = bag
 	button:SetSize(SLOT, SLOT)
 	UI.Dress(button, SLOT)

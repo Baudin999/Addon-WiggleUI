@@ -1,14 +1,14 @@
 <Bindings>
-	<Binding name="WARRIORKIT_MARK_SKULL" header="WARRIORKIT" category="WarriorKit">
-		WarriorKit_MarkSkull()
+	<Binding name="WIGGLEUI_MARK_SKULL" header="WIGGLEUI" category="WiggleUI">
+		WiggleUI_MarkSkull()
 	</Binding>
-	<Binding name="WARRIORKIT_MARK_CROSS" category="WarriorKit">
-		WarriorKit_MarkCross()
+	<Binding name="WIGGLEUI_MARK_CROSS" category="WiggleUI">
+		WiggleUI_MarkCross()
 	</Binding>
-	<Binding name="WARRIORKIT_MARK_MOON" category="WarriorKit">
-		WarriorKit_MarkMoon()
+	<Binding name="WIGGLEUI_MARK_MOON" category="WiggleUI">
+		WiggleUI_MarkMoon()
 	</Binding>
-	<Binding name="WARRIORKIT_CHAT" category="WarriorKit">
-		WarriorKit_ChatEnter()
+	<Binding name="WIGGLEUI_CHAT" category="WiggleUI">
+		WiggleUI_ChatEnter()
 	</Binding>
 </Bindings>

@@ -80,9 +80,9 @@ check(Draft.Held() == 2, "a second stack of the same item would not go on")
 -- A modified click is the client's and goes to its own modified handler, which
 -- splits or dresses up and never uses. Nothing goes on the mail.
 local modified = H.modifiedBagClicks()
-_G.WarriorKitShift(true)
+_G.WiggleUIShift(true)
 square(3, 20):Click("RightButton")
-_G.WarriorKitShift(false)
+_G.WiggleUIShift(false)
 check(Draft.Held() == 2, "a shift click put something on the mail")
 check(H.modifiedBagClicks() == modified + 1, "a shift click did not reach the client")
 check(CARRIED[3][20] == "Copper Ore", "a shift click used the stack")

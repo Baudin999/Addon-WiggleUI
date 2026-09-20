@@ -156,7 +156,7 @@ function Auction.Price(link)
 	return math.floor(copper), scanner.name
 end
 
--- One line for the panel and for /wk status, which is the only place a player
+-- One line for the panel and for /wui status, which is the only place a player
 -- ever finds out that this is reading anything at all.
 function Auction.Describe()
 	local scanner = Auction.Scanner()

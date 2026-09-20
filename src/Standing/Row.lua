@@ -33,7 +33,7 @@ ns.StandingRow = Row
 -- that appeared the moment something went wrong would arrive exactly when you
 -- had stopped needing it. Everything down and no fight is the resting state and
 -- the row is not there for it, because a row of four holes over your character
--- while you walk to the next pull is furniture. `/wk totems idle on` keeps it
+-- while you walk to the next pull is furniture. `/wui totems idle on` keeps it
 -- up anyway.
 --
 -- Built out of UI\Aura.lua rather than UI\Ability.lua, which is the one choice
@@ -43,7 +43,7 @@ ns.StandingRow = Row
 -- the aura square's whole vocabulary and none of it is the ability square's.
 --------------------------------------------------------------------------
 
-local FRAME_NAME = "WarriorKitStanding"
+local FRAME_NAME = "WiggleUIStanding"
 
 -- 27, and the same number for the same reason Buffs\Nag.lua and
 -- Cooldowns\Row.lua carry it: the client stores a spell icon at 64 texels,
@@ -398,7 +398,7 @@ events:RegisterEvent("PLAYER_TOTEM_UPDATE")
 -- Nothing is made at all on a class whose file wrote no plan: no frame, no
 -- placeable and no ticker, which is what Charge/Icon.lua does for the same
 -- reason. A hidden frame is still a frame the client walks, and a placeable one
--- is still a rectangle in the list of things `/wk unlock` puts a rim around.
+-- is still a rectangle in the list of things `/wui unlock` puts a rim around.
 --
 -- Called on both login events rather than on the first, because a plan may be
 -- written inside a spec and which spec you are is not reliably known at
@@ -421,7 +421,7 @@ local function Build()
 	unit = ns.UI.Unit(frame)
 	px = ns.UI.Pixel(frame)
 	place = ns.UI.Placeable(frame, {
-		name = "WarriorKit " .. ns.Standing.Word(),
+		name = "WiggleUI " .. ns.Standing.Word(),
 		moved = function(anchor)
 			ns.db.standingPoint = anchor
 			Row.Apply()

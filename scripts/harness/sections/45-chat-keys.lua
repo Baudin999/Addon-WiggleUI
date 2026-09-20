@@ -5,7 +5,7 @@
 -- Whose frame do the characters go into. `/logout` ends in Logout(), and the
 -- client refuses Logout() from any call stack an addon has been in. A field of
 -- the addon's own puts a function of the addon's in that stack, so the press
--- that finished the line came back as a red line naming WarriorKit rather than
+-- that finished the line came back as a red line naming WiggleUI rather than
 -- as a character logging out, and no arrangement of secure buttons and override
 -- bindings ever got that down to one press. The fix was to stop building a
 -- field. This section reads back that the window types into ChatFrame1EditBox
@@ -182,9 +182,9 @@ check(_G.GetBindingAction("NUMPADENTER", true) == "OPENCHAT",
 	("the numpad enter key is bound to %q"):format(_G.GetBindingAction("NUMPADENTER", true)))
 check(_G.GetBindingAction("/", true) == "OPENCHATSLASH",
 	("the slash key is bound to %q"):format(_G.GetBindingAction("/", true)))
-check(_G.WarriorKitChatSecureButton == nil,
+check(_G.WiggleUIChatSecureButton == nil,
 	"the secure button the line used to be run off is still being built")
-check(_G.WarriorKitChatEnterButton == nil,
+check(_G.WiggleUIChatEnterButton == nil,
 	"the button the enter key used to be bound onto is still being built")
 
 ----------------------------------------------------------------------

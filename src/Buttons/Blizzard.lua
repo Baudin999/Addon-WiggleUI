@@ -40,7 +40,7 @@ ns.TheirBars = Theirs
 -- and on this client `MainActionBar` is mouse enabled in the TOOLTIP strata,
 -- which is the top one there is: it sits invisible across the bottom of the
 -- screen with its art stripped, above every strata a bar of ours could stand
--- in, and it takes every drop aimed at bar 1. `/wk actionbars trace` printed it
+-- in, and it takes every drop aimed at bar 1. `/wui actionbars trace` printed it
 -- in one line after two fixes had guessed at frame levels, which is a number
 -- that cannot win an argument with a strata.
 --

@@ -352,7 +352,7 @@ state.lootMethod = "group"
 ----------------------------------------------------------------------
 
 local feed = ns.LootFeed.Stream():Feed()
-local FEMUR = ("You receive loot: %s."):format(_G.WarriorKitItemLink("Splintered Femur"))
+local FEMUR = ("You receive loot: %s."):format(_G.WiggleUIItemLink("Splintered Femur"))
 
 do
 	nothing()
@@ -361,7 +361,7 @@ do
 	fire("CHAT_MSG_LOOT", FEMUR)
 
 	local entry = feed:Held(0) or {}
-	local femur = _G.WarriorKitItemLink("Splintered Femur")
+	local femur = _G.WiggleUIItemLink("Splintered Femur")
 	check(entry.link == femur and ns.Need(femur) == "trash",
 		"a grey the filter refused off the corpse reached the feed with no trash answer")
 	-- Quiet on purpose. Trash is the commonest answer of the three and the one
@@ -385,7 +385,7 @@ do
 	pass()
 	feed:Clear()
 	fire("CHAT_MSG_LOOT", FEMUR)
-	check(ns.Need(_G.WarriorKitItemLink("Splintered Femur")) == nil,
+	check(ns.Need(_G.WiggleUIItemLink("Splintered Femur")) == nil,
 		"the filter switched off still marked a grey as trash")
 	ns.dbc.lootFilter = true
 	feed:Clear()

@@ -360,7 +360,7 @@ function Window.Build()
 	end
 
 	window = UI.Window({
-		name = "WarriorKitMap",
+		name = "WiggleUIMap",
 		title = "Map",
 		width = WIDTH,
 		height = HEIGHT,
@@ -381,7 +381,7 @@ function Window.Build()
 	-- tiles of the client's own art with somebody else's icons over them, and a
 	-- map with a seam through it or a marker in the wrong place is only findable
 	-- from outside if the tiles and the pins can be walked one at a time.
-	board = Chart.New(window.content, "WarriorKitMapChart", Stepped, Outward)
+	board = Chart.New(window.content, "WiggleUIMapChart", Stepped, Outward)
 	Chrome()
 	Window.Fit()
 	return window

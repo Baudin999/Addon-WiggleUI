@@ -146,7 +146,7 @@ local function Marker()
 	if marker then
 		return marker
 	end
-	marker = CreateFrame("Frame", "WarriorKitTooltipAnchor", UIParent)
+	marker = CreateFrame("Frame", "WiggleUITooltipAnchor", UIParent)
 	-- Over the options window, which is DIALOG: the Tooltips page shows the
 	-- marker so you can drag it, and one drawn under the page is one you
 	-- cannot reach wherever the page covers it.
@@ -154,7 +154,7 @@ local function Marker()
 	UI.Adopt(marker, 1)
 	marker:SetSize(MARKER, MARKER / 2)
 	markerPlace = UI.Placeable(marker, {
-		name = "WarriorKit tooltip",
+		name = "WiggleUI tooltip",
 		moved = function(anchor)
 			ns.db.tipPoint = anchor
 			Settings.ApplyAnchor()
@@ -417,7 +417,7 @@ end
 --
 -- Takes a key rather than reading one, so the zoom page can put the sentence
 -- under every row it draws. Left out, it answers for the panel you are reading
--- it in, which is what /wk status wants.
+-- it in, which is what /wui status wants.
 function Settings.Describe(key)
 	local chosen = Settings.Snap(ns.db[key or "panelZoom"])
 	local zoom = UI.ScreenZoom() * chosen

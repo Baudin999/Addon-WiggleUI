@@ -367,7 +367,7 @@ end
 
 local function Build()
 	window = UI.Window({
-		name = "WarriorKitBreakdown",
+		name = "WiggleUIBreakdown",
 		title = "Breakdown",
 		width = WIDTH,
 		height = HEIGHT,
@@ -428,7 +428,7 @@ local function Build()
 
 	local hint = UI.Label(window.footer, M.small, C.quiet, "LEFT", UI.FLAT)
 	hint:SetPoint("LEFT")
-	hint:SetText("Escape closes this. /wk breakdown prints the same table to chat.")
+	hint:SetText("Escape closes this. /wui breakdown prints the same table to chat.")
 
 	local close = UI.Button(window.footer, { label = "close", width = 90, height = M.row,
 		onClick = function() Window.Close() end })

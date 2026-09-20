@@ -207,7 +207,7 @@ function Window.Build()
 	end
 
 	window = UI.Window({
-		name = "WarriorKitTalents",
+		name = "WiggleUITalents",
 		title = "Talents",
 		width = Width(),
 		height = Height(1),

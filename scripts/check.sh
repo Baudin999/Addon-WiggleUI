@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Quality gate for WarriorKit. Exits non-zero on any syntax error or lint
+# Quality gate for WiggleUI. Exits non-zero on any syntax error or lint
 # warning, so it can be wired to a hook or run before a /reload.
 set -uo pipefail
 # The addon is src/, this script is scripts/. Everything below is relative to
@@ -56,7 +56,7 @@ while IFS= read -r toc; do
 		diff <(printf '%s\n' "$reference") <(printf '%s\n' "$toc_files") | sed 's/^/  /'
 		status=1
 	fi
-done < <(find . -maxdepth 1 -name 'WarriorKit*.toc' -type f | sort)
+done < <(find . -maxdepth 1 -name 'WiggleUI*.toc' -type f | sort)
 
 # Every TOC agrees with every other TOC on what the addon is, and all of them
 # agree with ns.version. These drifted once already: the TOCs said 1.1 while
@@ -78,7 +78,7 @@ for field in Version Title Notes IconTexture; do
 			echo "$toc and $first_toc disagree on ## $field: '$value' vs '$first_value'"
 			status=1
 		fi
-	done < <(find . -maxdepth 1 -name 'WarriorKit*.toc' -type f | sort)
+	done < <(find . -maxdepth 1 -name 'WiggleUI*.toc' -type f | sort)
 
 	if [ "$field" = "Version" ] && [ "$first_value" != "$core_version" ]; then
 		echo "$first_toc says ## Version: $first_value, Core/Core.lua says ns.version = $core_version"
@@ -89,7 +89,7 @@ done
 # Every saved variable table a TOC declares must be one the code actually
 # writes, and every one the code writes must be declared. An undeclared table
 # is not saved at all, and the symptom is settings that vanish on logout.
-for table_name in $(grep -hE '^## SavedVariables(PerCharacter)?:' WarriorKit*.toc | sed 's/^[^:]*: *//' | tr ',' ' ' | sort -u); do
+for table_name in $(grep -hE '^## SavedVariables(PerCharacter)?:' WiggleUI*.toc | sed 's/^[^:]*: *//' | tr ',' ' ' | sort -u); do
 	grep -qrE "\b$table_name\b" --include='*.lua' . || {
 		echo "TOC declares $table_name, no Lua file touches it"
 		status=1
@@ -105,18 +105,18 @@ done
 # invisible in review for the same reason: the file list and the code that reads
 # it are never open at the same time.
 #
-# The client's paths are Interface\AddOns\WarriorKit\..., which is this
+# The client's paths are Interface\AddOns\WiggleUI\..., which is this
 # directory with the slashes turned round and a prefix on the front, so the
 # prefix comes off before the file can be looked for.
 while IFS= read -r declared; do
 	[ -n "$declared" ] || continue
 	path=$(printf '%s' "$declared" | tr -d '\r' | tr '\\' '/')
 	case "$path" in
-		Interface/AddOns/WarriorKit/*) path="${path#Interface/AddOns/WarriorKit/}" ;;
+		Interface/AddOns/WiggleUI/*) path="${path#Interface/AddOns/WiggleUI/}" ;;
 		*) echo "a TOC names a texture outside the addon: $declared"; status=1; continue ;;
 	esac
 	[ -f "$path" ] || { echo "a TOC names a missing texture: $declared"; status=1; }
-done < <(grep -hE '^## IconTexture:' WarriorKit*.toc | sed 's/^[^:]*: *//' | sort -u)
+done < <(grep -hE '^## IconTexture:' WiggleUI*.toc | sed 's/^[^:]*: *//' | sort -u)
 
 # And the same the other way round, for the paths that are in the code rather
 # than in a TOC. A font, a texture or a sound is named as a string at the point
@@ -131,7 +131,7 @@ done < <(grep -hE '^## IconTexture:' WarriorKit*.toc | sed 's/^[^:]*: *//' | sor
 # Media/BestAround.mp3 is somebody else's recording. This repository is public,
 # so the file is not in it: a clone gets the line in Comfort/Fanfare.lua that
 # names it and nothing at the end of that line. That is the shipped state and
-# not a fault. The part asks the client, the call comes back refused, and `/wk`
+# not a fault. The part asks the client, the call comes back refused, and `/wui`
 # says the file is not there.
 #
 # So the file being absent is allowed and the file being tracked is not, which
@@ -1855,6 +1855,29 @@ elif [ "$theme_elements" != "$theme_worn" ]; then
 fi
 if [ "${theme_calls:-0}" -gt 0 ]; then
 	echo "$theme_calls ns.Theme.Wear call(s) pass a key that is not a literal, which the element gate cannot read"
+	status=1
+fi
+
+# The old name, in every spelling it ever had. The addon was WarriorKit until
+# 2026-09-20 and the rename touched 295 files; a copied comment, a docstring or
+# a pasted slash command is how half of it comes back. The prefix on fields the
+# addon hangs on Blizzard frames (wkStripped, wkPaint) is in here too, because
+# it is the same brand in the same tree and nothing else catches it.
+#
+# Three paths are exempt, and each is append-only history rather than a claim
+# about what the addon is now:
+#   plan/                  ckplan writes it and validates blob hashes; a sed
+#                          over a ticket refuses to load afterwards.
+#   docs/CHANGELOG.md      entries describe releases that shipped as WarriorKit.
+#   docs/POSTMORTEMS.md    the same, for a bug written up under the old name.
+#   scripts/check.sh       this file, which has to spell the name to forbid it.
+old_name=$(grep -rIlE 'WarriorKit|WARRIORKIT|warriorkit|/wk\b|\bwk[A-Z]' .. \
+	--exclude-dir=.git --exclude-dir=dist --exclude-dir=.worktrees \
+	--exclude-dir=.claude --exclude-dir=plan \
+	--exclude=CHANGELOG.md --exclude=POSTMORTEMS.md --exclude=check.sh || true)
+if [ -n "$old_name" ]; then
+	echo "the old name is back in:"
+	printf '%s\n' "$old_name" | sed 's|^\.\./|  |'
 	status=1
 fi
 

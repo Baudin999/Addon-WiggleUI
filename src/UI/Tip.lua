@@ -32,7 +32,7 @@ local UI = ns.UI
 -- the fight you are covering, and on a box that follows the pointer round the
 -- world it is on screen the whole evening. What a hover is for is the thing
 -- under the cursor. Where the settings are is what the settings window is for,
--- and `/wk help` prints every word.
+-- and `/wui help` prints every word.
 --
 -- Air goes between two bands that both have something in them, and nowhere
 -- else. That single rule is most of what "consistent" means here, and it is

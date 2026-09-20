@@ -154,7 +154,7 @@ local function PrintDips()
 	if count == 0 then
 		ns.Print(ns.Trace.Watching()
 			and "nothing has gone wrong yet."
-			or "not watching. Type /wk perf watch on.")
+			or "not watching. Type /wui perf watch on.")
 		return
 	end
 	ns.Print(("the last %d frame%s that went wrong:"):format(count, count == 1 and "" or "s"))

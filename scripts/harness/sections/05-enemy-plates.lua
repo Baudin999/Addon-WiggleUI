@@ -70,7 +70,7 @@ local function Pull(index)
 	-- arrive. `refusing` is the client blocking addon code in combat off the
 	-- tick a unit arrives, and a write through it raises, as the client's does.
 	-- The read is a measurement of a restricted region, refused to the addon
-	-- always: it shipped in Plates.Aim and the client blamed WarriorKit's taint.
+	-- always: it shipped in Plates.Aim and the client blamed WiggleUI's taint.
 	function plate:CanChangeHitTestPoints() return not self.refusing end
 	function plate:SetHitTestPoints(anchors)
 		assert(not self.refusing, "wrote a plate's hit test points while the client refuses them")
@@ -91,7 +91,7 @@ for i = 1, 2 do
 	Pull(i)
 end
 
-local anchor = _G.WarriorKitEnemyBarsAnchor
+local anchor = _G.WiggleUIEnemyBarsAnchor
 local widget = ns.EnemyBars.WidgetFor("nameplate1")
 check(anchor ~= nil, "no anchor came up")
 check(widget ~= nil, "no widget attached to nameplate1")

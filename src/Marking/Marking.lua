@@ -7,12 +7,12 @@ local Marking = {}
 ns.Marking = Marking
 
 -- The three marks the addon binds, in the order they appear in the panel and in
--- /wk status. One list, read by Keys.lua for the override bindings and by
+-- /wui status. One list, read by Keys.lua for the override bindings and by
 -- Feature.lua for the key fields, so adding a fourth mark is one entry here and
 -- one Bindings.xml block rather than an edit in three files.
 --
 -- `id` is what SetOverrideBindingClick passes back to Marking.Key as the button
--- name, and what /wk markkey takes as its first word. `key` names the setting
+-- name, and what /wui markkey takes as its first word. `key` names the setting
 -- inside ns.db.markBinds. Blizzard's own indices: 1 star, 2 circle, 3 diamond,
 -- 4 triangle, 5 moon, 6 square, 7 cross, 8 skull.
 Marking.MARKS = {
@@ -116,22 +116,22 @@ end
 -- Keybinding entry points, see Bindings.xml. These are the panel's entries and
 -- they are separate functions rather than one list walker because a Bindings.xml
 -- block names a global directly and cannot be generated.
-function WarriorKit_MarkSkull()
+function WiggleUI_MarkSkull()
 	MarkMouseover(SKULL)
 end
 
-function WarriorKit_MarkCross()
+function WiggleUI_MarkCross()
 	MarkMouseover(CROSS)
 end
 
-function WarriorKit_MarkMoon()
+function WiggleUI_MarkMoon()
 	MarkMouseover(MOON)
 end
 
-BINDING_HEADER_WARRIORKIT = "WarriorKit"
-BINDING_NAME_WARRIORKIT_MARK_SKULL = "Mark mouseover with skull"
-BINDING_NAME_WARRIORKIT_MARK_CROSS = "Mark mouseover with cross"
-BINDING_NAME_WARRIORKIT_MARK_MOON = "Mark mouseover with moon"
+BINDING_HEADER_WIGGLEUI = "WiggleUI"
+BINDING_NAME_WIGGLEUI_MARK_SKULL = "Mark mouseover with skull"
+BINDING_NAME_WIGGLEUI_MARK_CROSS = "Mark mouseover with cross"
+BINDING_NAME_WIGGLEUI_MARK_MOON = "Mark mouseover with moon"
 
 local hooked = {}
 

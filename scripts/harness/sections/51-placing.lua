@@ -1,7 +1,7 @@
 -- What the lock reaches, and what it does not
 --
 -- Twenty three frames in this addon can be dragged. Fifteen of them are the HUD, and
--- /wk lock is what stops you shoving the swing bars off the screen with a
+-- /wui lock is what stops you shoving the swing bars off the screen with a
 -- misplaced click during a pull. Eight are chrome windows, and locking one of
 -- those would be locking a window rather than placing a piece of the HUD: you
 -- opened the quest log on purpose and you will close it again in a minute.
@@ -22,7 +22,7 @@
 -- button away is how the addon actually takes a drag away, so it is the one
 -- that answers the question.
 --
--- Driven through ns.Each("lock"), which is what /wk lock and the panel's button
+-- Driven through ns.Each("lock"), which is what /wui lock and the panel's button
 -- both call. Reaching into each part's own Lock would be testing twelve
 -- functions rather than the one route a player can actually take.
 
@@ -30,44 +30,44 @@ local H = ...
 local ns, check = H.ns, H.check
 
 local HUD = {
-	{ "WarriorKitSwing", "the swing bars" },
-	{ "WarriorKitCooldowns", "the cooldown row" },
-	{ "WarriorKitBuffs", "the buff nag" },
-	{ "WarriorKitHoverSheet", "the mouseover sheet" },
-	{ "WarriorKitMeter", "the meters" },
-	{ "WarriorKitProgress", "the experience rails" },
-	{ "WarriorKitPlayerCast", "your cast bar" },
-	{ "WarriorKitPlayerFrame", "the player frame" },
-	{ "WarriorKitTargetFrame", "the target frame" },
-	{ "WarriorKitGroup", "the party anchor" },
-	{ "WarriorKitEnemyBarsAnchor", "the enemy bars anchor" },
-	{ "WarriorKitCorral", "the minimap corral" },
+	{ "WiggleUISwing", "the swing bars" },
+	{ "WiggleUICooldowns", "the cooldown row" },
+	{ "WiggleUIBuffs", "the buff nag" },
+	{ "WiggleUIHoverSheet", "the mouseover sheet" },
+	{ "WiggleUIMeter", "the meters" },
+	{ "WiggleUIProgress", "the experience rails" },
+	{ "WiggleUIPlayerCast", "your cast bar" },
+	{ "WiggleUIPlayerFrame", "the player frame" },
+	{ "WiggleUITargetFrame", "the target frame" },
+	{ "WiggleUIGroup", "the party anchor" },
+	{ "WiggleUIEnemyBarsAnchor", "the enemy bars anchor" },
+	{ "WiggleUICorral", "the minimap corral" },
 	-- The one window that asks for the lock, because it is furniture rather
 	-- than something you opened for a minute.
-	{ "WarriorKitChat", "the chat window" },
+	{ "WiggleUIChat", "the chat window" },
 	-- The marker a hover's box hangs off when the placement is the anchor. It
 	-- draws nothing at all while the frames are locked, so the lock is the only
 	-- thing that makes it visible or draggable, and a marker that ignored the
 	-- lock would be an invisible frame swallowing the camera drag in the middle
 	-- of the screen.
-	{ "WarriorKitTooltipAnchor", "the tooltip marker" },
+	{ "WiggleUITooltipAnchor", "the tooltip marker" },
 	-- Built only for a class whose file wrote slots down, which is why the loop
 	-- below skips a frame that is not there rather than failing on it: on a
 	-- warrior run there is no row and there is nothing to lock.
-	{ "WarriorKitStanding", "the row of what you have out" },
+	{ "WiggleUIStanding", "the row of what you have out" },
 }
 
 -- Built lazily, each by the thing that opens it, so the ones this run has not
 -- opened are skipped rather than failed. Whichever are up are held to the rule.
 local WINDOWS = {
-	{ "WarriorKitOptions", "the settings panel" },
-	{ "WarriorKitQuests", "the quest log" },
-	{ "WarriorKitMap", "the world map" },
-	{ "WarriorKitMail", "the mail window" },
-	{ "WarriorKitBreakdown", "the meter breakdown" },
-	{ "WarriorKitClutter", "the destroy window" },
-	{ "WarriorKitAsk", "the confirmation window" },
-	{ "WarriorKitCharacter", "the character sheet" },
+	{ "WiggleUIOptions", "the settings panel" },
+	{ "WiggleUIQuests", "the quest log" },
+	{ "WiggleUIMap", "the world map" },
+	{ "WiggleUIMail", "the mail window" },
+	{ "WiggleUIBreakdown", "the meter breakdown" },
+	{ "WiggleUIClutter", "the destroy window" },
+	{ "WiggleUIAsk", "the confirmation window" },
+	{ "WiggleUICharacter", "the character sheet" },
 }
 
 -- What the client delivers the drag to, which is not always the frame being
@@ -171,12 +171,12 @@ print(("placing %d of %d HUD frames locked down and all %d back up, %d of %d win
 ----------------------------------------------------------------------
 
 local KEEPS = {
-	{ "WarriorKitOptions", "the settings panel" },
-	{ "WarriorKitQuests", "the quest log" },
-	{ "WarriorKitMap", "the world map" },
-	{ "WarriorKitMail", "the mail window" },
-	{ "WarriorKitBreakdown", "the meter breakdown" },
-	{ "WarriorKitClutter", "the destroy window" },
+	{ "WiggleUIOptions", "the settings panel" },
+	{ "WiggleUIQuests", "the quest log" },
+	{ "WiggleUIMap", "the world map" },
+	{ "WiggleUIMail", "the mail window" },
+	{ "WiggleUIBreakdown", "the meter breakdown" },
+	{ "WiggleUIClutter", "the destroy window" },
 }
 
 -- The character sheet is the eighth and it is not in that list, because opening
@@ -288,10 +288,10 @@ check(kept == #KEEPS,
 -- default that says which corner a conversation belongs in; a window in both
 -- places would be a window whose two answers can disagree. The question box
 -- keeps none at all: it opens over whatever asked the question.
-local chatWas, chat = ns.db.chatPoint, _G.WarriorKitChat
+local chatWas, chat = ns.db.chatPoint, _G.WiggleUIChat
 if chat then
 	drop(chat, 8, -8)
-	check(ns.db.windowSpots.WarriorKitChat == nil,
+	check(ns.db.windowSpots.WiggleUIChat == nil,
 		"the chat window wrote its corner into the shared list as well as its own setting")
 	local at, _, _, ax = chat:GetPoint()
 	check(ns.db.chatPoint[1] == at and ns.db.chatPoint[4] == 8 and ax == 8,
@@ -302,11 +302,11 @@ if chat then
 	replace(chat, chatWas)
 end
 
-local ask = _G.WarriorKitAsk
+local ask = _G.WiggleUIAsk
 if ask then
 	local home = { ask:GetPoint() }
 	drop(ask, 60, -60)
-	check(ns.db.windowSpots.WarriorKitAsk == nil,
+	check(ns.db.windowSpots.WiggleUIAsk == nil,
 		"the question box remembered where it was dragged, and it opens over what asked")
 	replace(ask, home)
 end
@@ -315,9 +315,9 @@ end
 -- Asserted on a frame of this section's own, because the seven above are put
 -- back where the run found them and a restore is only visible on a frame
 -- nothing else is measuring.
-local spare = _G.CreateFrame("Frame", "WarriorKitSpotProbe", _G.UIParent)
+local spare = _G.CreateFrame("Frame", "WiggleUISpotProbe", _G.UIParent)
 local probe = { frame = spare, place = ns.UI.Placeable(spare, { lockable = false }) }
-ns.db.windowSpots.WarriorKitSpotProbe = { "TOPRIGHT", "UIParent", "TOPRIGHT", -30, -70 }
+ns.db.windowSpots.WiggleUISpotProbe = { "TOPRIGHT", "UIParent", "TOPRIGHT", -30, -70 }
 ns.Remember(probe)
 local at = { spare:GetPoint() }
 check(at[1] == "TOPRIGHT" and at[3] == "TOPRIGHT" and at[4] == -30 and at[5] == -70,
@@ -331,7 +331,7 @@ check(at[1] == "TOPRIGHT" and at[3] == "TOPRIGHT" and at[4] == -30 and at[5] == 
 -- Where it was left is kept the way the seven above are: Character/Window.lua
 -- says why a half screen sheet has a corner worth remembering and a full screen
 -- one did not.
-local sheet = _G.WarriorKitCharacter
+local sheet = _G.WiggleUICharacter
 if sheet then
 	check(sheet.dragButton == nil,
 		"the character sheet has a drag button on it and every square in it is protected")
@@ -341,11 +341,11 @@ end
 -- written by whatever the addon was two releases ago. What a corrupt anchor
 -- must be is a window in the middle of the screen, not a Lua error at login on
 -- the window that would have shown it.
-ns.db.windowSpots.WarriorKitSpotProbe = { "TOPLEFT" }
+ns.db.windowSpots.WiggleUISpotProbe = { "TOPLEFT" }
 ns.Remember(probe)
 check(({ spare:GetPoint() })[1] == "TOPRIGHT",
 	"an anchor with nothing in it was handed to SetPoint")
-ns.db.windowSpots.WarriorKitSpotProbe = nil
+ns.db.windowSpots.WiggleUISpotProbe = nil
 
 print(("placing %d windows open where you left them, the chat window on its own"
 	.. " setting and the question box on none"):format(kept))

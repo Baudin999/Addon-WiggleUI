@@ -126,7 +126,7 @@ function EditMode.Apply()
 	end
 	local layout, name = EditMode.Saved()
 	if not layout then
-		return false, "no layout is baked in, capture one with /wk ui save and run ./bake-ui.sh"
+		return false, "no layout is baked in, capture one with /wui ui save and run ./bake-ui.sh"
 	end
 
 	local index, imported = EditMode.IndexOf(name), false

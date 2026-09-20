@@ -11,7 +11,7 @@ Everything below the line is the page.
 
 ## This is an alpha. Read this before you install it.
 
-WarriorKit replaces most of the WoW interface. It is early, it is being worked
+WiggleUI replaces most of the WoW interface. It is early, it is being worked
 on daily, and it has not been through a wide test. Install it if you want to
 help find what is broken. Do not install it the hour before a raid.
 
@@ -25,11 +25,11 @@ What alpha means here, concretely:
   is simply missing, run `/console scriptErrors 1` and reload before you report
   it, so the report has the error in it.
 - It replaces Blizzard frames rather than hiding them. Turning a part off puts
-  the Blizzard version back, and every part can be turned off in `/wk`.
+  the Blizzard version back, and every part can be turned off in `/wui`.
 
 ## Bugs and requests go on GitHub
 
-https://github.com/Baudin999/Addon-WarriorKit/issues
+https://github.com/Baudin999/Addon-WiggleUI/issues
 
 Open an issue there rather than a comment here. Comments on this page are not
 tracked and get lost between file uploads; an issue stays open until the thing
@@ -64,7 +64,7 @@ nothing hidden. The rest works the same on every class.
 ## Install
 
 Unzip into `Interface/AddOns` so that the folder is
-`Interface/AddOns/WarriorKit` with `WarriorKit.toc` directly inside it.
+`Interface/AddOns/WiggleUI` with `WiggleUI.toc` directly inside it.
 
 [Questie](https://www.curseforge.com/wow/addons/questie) is optional and worth
 having. It adds the turn-in pin on the map, drop rates under quest items, and a
@@ -74,4 +74,4 @@ part that would ask says so in the panel when Questie is not answering.
 ## Licence
 
 MIT. Source, issues and the full readme:
-https://github.com/Baudin999/Addon-WarriorKit
+https://github.com/Baudin999/Addon-WiggleUI

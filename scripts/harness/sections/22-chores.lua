@@ -227,10 +227,10 @@ _G.MerchantFrame:Show()
 -- the reader stays replaced for every section after this one, and the bars'
 -- own lock is shift too: 38-bar-look asked for a key that had been a constant
 -- false since this line ran.
-_G.WarriorKitShift(true)
+_G.WiggleUIShift(true)
 fire("MERCHANT_SHOW")
 check(not ns.Vendor.Running(), "shift did not hold the sale off")
-_G.WarriorKitShift(false)
+_G.WiggleUIShift(false)
 
 ns.db.sellTrash = false
 ns.Vendor.Apply()
@@ -329,15 +329,15 @@ state.repairsMerchant = true
 -- Shift holds it off, the same key that holds the sale off.
 damage(400)
 state.purse = 1000
-_G.WarriorKitShift(true)
+_G.WiggleUIShift(true)
 fire("MERCHANT_SHOW")
 check(state.repairBill == 400, "shift did not hold the repair off")
-_G.WarriorKitShift(false)
+_G.WiggleUIShift(false)
 
 -- Off is a branch inside the handler, and deliberately not an unregister.
 -- The repair keeps both edges of the merchant window whatever the setting
 -- says, because what it learns from them is whether a merchant is open, and
--- `/wk repair` and the panel's button both need that answer with the
+-- `/wui repair` and the panel's button both need that answer with the
 -- automatic repair turned off.
 ns.db.autoRepair = false
 ns.Repair.Apply()
@@ -418,7 +418,7 @@ ns.Camera.Apply()
 ----------------------------------------------------------------------
 
 do
-	local SNIPPET = "Interface\\AddOns\\WarriorKit\\Media\\BestAround.mp3"
+	local SNIPPET = "Interface\\AddOns\\WiggleUI\\Media\\BestAround.mp3"
 
 	local function heard()
 		return #sound.played
@@ -458,7 +458,7 @@ do
 	check(heard() == before, "the fanfare played with the setting off")
 	check(ns.Fanfare.Describe():match("^off"), "off does not describe itself as off")
 
-	-- A press ignores the switch, the same as `/wk repair` does. This is the whole
+	-- A press ignores the switch, the same as `/wui repair` does. This is the whole
 	-- of how anybody decides whether they want the setting on.
 	check(ns.Fanfare.Play(), "the press refused to play with the setting off")
 	check(heard() == before + 1, "the press played nothing")

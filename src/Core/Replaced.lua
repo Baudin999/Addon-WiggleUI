@@ -41,7 +41,7 @@ local C, M = UI.Color, UI.Metric
 --
 -- **The flag is a record, not a preference.** It says the player has been told,
 -- which is a thing that happened rather than a number anybody chose, so it is
--- in Core/Core.lua's KEPT list and `/wk defaults` steps over it. The two ways
+-- in Core/Core.lua's KEPT list and `/wui defaults` steps over it. The two ways
 -- back to the notice are the word and the button on the page.
 --------------------------------------------------------------------------
 
@@ -154,7 +154,7 @@ local KEEP = "Questie is worth keeping and this addon reads it: the turn-in map,
 	.. " the drop rates and the party's progress all come out of it. DialogueUI"
 	.. " is worth keeping for the quest text. Nothing else here needs an addon."
 
-local OPENING = "WarriorKit is not a set of parts. It draws the whole"
+local OPENING = "WiggleUI is not a set of parts. It draws the whole"
 	.. " interface, and it draws it over the client's own: your bags, your bars,"
 	.. " your frames, your meters, your chat, your map and your character sheet."
 
@@ -257,7 +257,7 @@ local function Build()
 	end
 
 	window = UI.Window({
-		name = "WarriorKitReplaced",
+		name = "WiggleUIReplaced",
 		title = "One interface, not two",
 		width = WIDTH,
 		height = M.title + M.footer + M.pad * 2 + M.row * 2,

@@ -69,7 +69,7 @@ _G.DEFAULT_CHAT_FRAME.AddMessage = function(_, text)
 end
 local function say(input)
 	heard = {}
-	_G.SlashCmdList.WARRIORKIT(input)
+	_G.SlashCmdList.WIGGLEUI(input)
 end
 local function said(what)
 	for index = 1, #heard do

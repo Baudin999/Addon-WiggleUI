@@ -304,8 +304,8 @@ end
 -- and neither is. A file is what the client loads, so a file is what this
 -- counts.
 local function LoadOrder()
-	local handle = io.open("WarriorKit.toc", "r")
-		or io.open("src/WarriorKit.toc", "r")
+	local handle = io.open("WiggleUI.toc", "r")
+		or io.open("src/WiggleUI.toc", "r")
 	if not handle then return nil end
 	local rank, at = {}, 0
 	for line in handle:lines() do
@@ -332,7 +332,7 @@ end
 
 local order = LoadOrder()
 if not order then
-	Fail("trees: WarriorKit.toc is missing and nothing can say what loads first")
+	Fail("trees: WiggleUI.toc is missing and nothing can say what loads first")
 	print(failures[1])
 	os.exit(1)
 end

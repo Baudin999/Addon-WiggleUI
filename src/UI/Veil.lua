@@ -35,14 +35,14 @@ local UI = ns.UI
 local RECHECK = 0.2
 
 function UI.Veiled(frame)
-	return frame.wkVeil
+	return frame.wuiVeil
 end
 
 -- The frame's veil, made on the first call and handed back on every one after.
 -- Nil while a fight refuses the reparent.
 function UI.Veil(frame)
-	if frame.wkVeil then
-		return frame.wkVeil
+	if frame.wuiVeil then
+		return frame.wuiVeil
 	end
 	if frame:IsProtected() and InCombatLockdown() then
 		return nil
@@ -58,7 +58,7 @@ function UI.Veil(frame)
 	frame:SetParent(veil)
 	frame:SetFrameStrata(strata)
 	frame:SetFrameLevel(level)
-	frame.wkVeil = veil
+	frame.wuiVeil = veil
 	return veil
 end
 
@@ -95,7 +95,7 @@ local function Top(top, ...)
 		local child = select(index, ...)
 		-- The catcher is a child too, and counting it would lift it a level
 		-- on every rest.
-		if not child.wkRevealFrame then
+		if not child.wuiRevealFrame then
 			top = Top(math.max(top, child:GetFrameLevel()), child:GetChildren())
 		end
 	end
@@ -103,14 +103,14 @@ local function Top(top, ...)
 end
 
 local function Rest(catcher)
-	local veil, rest = catcher.wkRevealVeil, catcher.wkRevealRest
+	local veil, rest = catcher.wuiRevealVeil, catcher.wuiRevealRest
 	if veil:GetAlpha() ~= rest then
 		veil:SetAlpha(rest)
 	end
-	if catcher.wkRevealTick then
-		catcher.wkRevealTick:Stop()
+	if catcher.wuiRevealTick then
+		catcher.wuiRevealTick:Stop()
 	end
-	local frame = catcher.wkRevealFrame
+	local frame = catcher.wuiRevealFrame
 	local level = Top(frame:GetFrameLevel(), frame:GetChildren()) + 1
 	if catcher:GetFrameLevel() ~= level then
 		catcher:SetFrameLevel(level)
@@ -121,20 +121,20 @@ local function Rest(catcher)
 end
 
 local function Recheck(_, veil)
-	local catcher = veil.wkRevealCatcher
-	if catcher.wkRevealFrame:IsVisible() and catcher.wkRevealFrame:IsMouseOver() then
+	local catcher = veil.wuiRevealCatcher
+	if catcher.wuiRevealFrame:IsVisible() and catcher.wuiRevealFrame:IsMouseOver() then
 		return
 	end
 	Rest(catcher)
 end
 
 local function Enter(catcher)
-	catcher.wkRevealVeil:SetAlpha(1)
+	catcher.wuiRevealVeil:SetAlpha(1)
 	catcher:Hide()
-	if catcher.wkRevealTick then
-		catcher.wkRevealTick:Start()
+	if catcher.wuiRevealTick then
+		catcher.wuiRevealTick:Start()
 	else
-		catcher.wkRevealTick = UI.Ticker(catcher.wkRevealVeil, RECHECK, "reveal", Recheck)
+		catcher.wuiRevealTick = UI.Ticker(catcher.wuiRevealVeil, RECHECK, "reveal", Recheck)
 	end
 end
 
@@ -142,19 +142,19 @@ end
 -- lifts the reveal for a while (a frame being placed) can take it away with
 -- UI.Unreveal.
 function UI.Reveal(frame, rest)
-	local veil = assert(frame.wkVeil, "UI.Reveal wants a frame UI.Veil has taken")
-	local catcher = frame.wkReveal
+	local veil = assert(frame.wuiVeil, "UI.Reveal wants a frame UI.Veil has taken")
+	local catcher = frame.wuiReveal
 	if not catcher then
 		catcher = CreateFrame("Frame", nil, frame)
 		catcher:SetAllPoints(frame)
 		UI.HoverOnly(catcher)
 		catcher:SetScript("OnEnter", Enter)
-		catcher.wkRevealFrame = frame
-		catcher.wkRevealVeil = veil
-		veil.wkRevealCatcher = catcher
-		frame.wkReveal = catcher
+		catcher.wuiRevealFrame = frame
+		catcher.wuiRevealVeil = veil
+		veil.wuiRevealCatcher = catcher
+		frame.wuiReveal = catcher
 	end
-	catcher.wkRevealRest = rest
+	catcher.wuiRevealRest = rest
 	Rest(catcher)
 	return catcher
 end
@@ -162,12 +162,12 @@ end
 -- The reveal lifted: the recheck stopped and the catcher gone, so a frame
 -- being placed is not put back down by a pointer that wandered off it.
 function UI.Unreveal(frame)
-	local catcher = frame.wkReveal
+	local catcher = frame.wuiReveal
 	if not catcher then
 		return
 	end
-	if catcher.wkRevealTick then
-		catcher.wkRevealTick:Stop()
+	if catcher.wuiRevealTick then
+		catcher.wuiRevealTick:Stop()
 	end
 	catcher:Hide()
 end

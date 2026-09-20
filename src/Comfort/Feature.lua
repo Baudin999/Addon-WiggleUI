@@ -20,7 +20,7 @@ local ADDON, ns = ...
 -- down for everybody.
 --
 -- No reset. The registry's reset means "put this part's frames back where they
--- started" and this part has no frames, so registering one would make /wk reset,
+-- started" and this part has no frames, so registering one would make /wui reset,
 -- which is what you type when a window has wandered off screen, quietly turn
 -- selling back on for someone who had deliberately turned it off.
 
@@ -360,7 +360,7 @@ ns.Register({
 		-- convenience, and it ships on for that reason and not in spite of it:
 		-- nobody installs this and then goes looking for the horn section, and
 		-- a level up is rare enough that the person it turns out not to be for
-		-- has typed `/wk ding off` once in a character's life.
+		-- has typed `/wui ding off` once in a character's life.
 		levelFanfare = true,
 
 		-- On, and it mutes nothing, because the list beside it ships empty.
@@ -388,7 +388,7 @@ ns.Register({
 		-- switch that empties a corpse, `filter` is what it takes, `leftovers`
 		-- is what happens to the rest, and each of the three is a thing you
 		-- turn on or off on its own. Written as `filter destroy on` the middle
-		-- word would be an argument of an argument, and `/wk help` would carry
+		-- word would be an argument of an argument, and `/wui help` would carry
 		-- a line whose first two words are both nouns.
 		filter = function(arg)
 			SetFilter(ns.Command.Toggle(arg))

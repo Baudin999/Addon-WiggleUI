@@ -56,7 +56,7 @@ end
 ----------------------------------------------------------------------
 
 Window.Show()
-local frame = _G.WarriorKitCharacter
+local frame = _G.WiggleUICharacter
 check(frame ~= nil, "the character window was never built")
 check(Window.Shown(), "the character window would not open")
 check(math.abs(ns.UI.Pixel(frame) - 1) < 1e-9,
@@ -124,7 +124,7 @@ do
 	-- a spot in it is an answer somebody gave and this is not the place to
 	-- argue with it; what is left to assert either way is that the sheet opens
 	-- on the anchor the addon holds rather than on some third place.
-	local spot = ns.db.windowSpots.WarriorKitCharacter
+	local spot = ns.db.windowSpots.WiggleUICharacter
 	if spot then
 		check(x == spot[4],
 			("the sheet was left at %s and opened at %d"):format(tostring(spot[4]), x))
@@ -535,7 +535,7 @@ do
 	-- SHIFT-C on the cloned bars, so the page is bound to a key nothing else
 	-- here holds, and the pass is told the binding set moved the way the client
 	-- tells it, with the frame after it that ns.Rebind answers on.
-	_G.WarriorKitBindings.TOGGLECHARACTER0 = { "ALT-C" }
+	_G.WiggleUIBindings.TOGGLECHARACTER0 = { "ALT-C" }
 	fire("UPDATE_BINDINGS")
 	H.rebound()
 	ns.BlizzHide.Apply()
@@ -612,7 +612,7 @@ do
 	-- that walked back to the right hand edge the next time the slider moved
 	-- would look exactly like a drag that never took.
 	local home = { frame:GetPoint() }
-	local spot = ns.db.windowSpots["WarriorKitCharacter"]
+	local spot = ns.db.windowSpots["WiggleUICharacter"]
 	local was = sheet.place.placed
 	local wasShown = frame:IsShown()
 
@@ -663,7 +663,7 @@ do
 
 	H.mouse.Drop(pointerX + (60 - frame:GetLeft()) * own,
 		pointerY + (-30 - frame:GetTop()) * own)
-	check(ns.db.windowSpots["WarriorKitCharacter"] ~= nil,
+	check(ns.db.windowSpots["WiggleUICharacter"] ~= nil,
 		"the sheet was dropped somewhere and wrote down nothing")
 	check(math.abs(frame:GetLeft() - 60) < 1e-6 and math.abs(frame:GetTop() + 30) < 1e-6,
 		("the sheet was dropped at 60, -30 and landed at %.2f, %.2f")
@@ -702,7 +702,7 @@ do
 	end
 	frame:ClearAllPoints()
 	frame:SetPoint(home[1], home[2] or _G.UIParent, home[3], home[4], home[5])
-	ns.db.windowSpots["WarriorKitCharacter"] = spot
+	ns.db.windowSpots["WiggleUICharacter"] = spot
 	-- And the flag, which the drop above set and nothing else clears. Left true,
 	-- the sheet would decline to re-anchor for the rest of the run, and a later
 	-- section asking where it sits off the monitor would be reading the corner

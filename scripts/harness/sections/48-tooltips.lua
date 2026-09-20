@@ -286,7 +286,7 @@ do
 	-- The client's own words, in the addon's box
 	------------------------------------------------------------------
 
-	local link = _G.WarriorKitItemLink("Aegis")
+	local link = _G.WiggleUIItemLink("Aegis")
 	H.tooltips.item[link] = {
 		{ "Aegis", nil, { 0, 1, 0 } },
 		{ "Binds when picked up" },
@@ -362,7 +362,7 @@ do
 	-- bound item filed as unbound, until a reload. A new item in the bags was
 	-- enough to set it off. Hidden here the way the client does it, and the next
 	-- hover still has to come back with the client's words.
-	local scanner = _G.WarriorKitTooltipScan
+	local scanner = _G.WiggleUITooltipScan
 	check(scanner ~= nil, "the scanner frame is not where its name says")
 	scanner:Hide()
 	Tip.Open(owner, { kind = "item", link = link, bag = 0, slot = 3, title = "not this" }, "control")
@@ -400,7 +400,7 @@ do
 	-- straight through to that. False is a value the frame has, and it is what
 	-- both guards in UI/Scan.lua actually read: not whether the key is there but
 	-- whether it is a function.
-	local scanner = _G["WarriorKitTooltipScan"]
+	local scanner = _G["WiggleUITooltipScan"]
 	local setter = scanner and rawget(scanner, "SetSpellByID")
 	check(type(setter) == "function", "the scanner never built a tooltip to ask with")
 	scanner.SetSpellByID = false
@@ -452,9 +452,9 @@ do
 	H.ITEMS["Band of the Third"] = { id = 4103, classId = 4,
 		equip = "INVTYPE_FINGER", icon = "Interface\\Icons\\Ring", quality = 3 }
 
-	local helm = _G.WarriorKitItemLink("Helm of the Second")
-	local ring = _G.WarriorKitItemLink("Ring of the Second")
-	local cloth = _G.WarriorKitItemLink("Linen Cloth")
+	local helm = _G.WiggleUIItemLink("Helm of the Second")
+	local ring = _G.WiggleUIItemLink("Ring of the Second")
+	local cloth = _G.WiggleUIItemLink("Linen Cloth")
 
 	-- What the client says about the two pieces already on: the compare box is
 	-- built from the same scan every other item hover is, so a worn slot the
@@ -469,7 +469,7 @@ do
 	H.tooltips.item[ring] = { { "Ring of the Second" }, { "Finger" } }
 	H.tooltips.item[cloth] = { { "Linen Cloth" } }
 
-	_G.WarriorKitShift(false)
+	_G.WiggleUIShift(false)
 	Tip.Open(owner, { kind = "item", link = helm }, "control")
 	check(Box.Alongside() == 0,
 		("a hover with no key held opened %d boxes beside it")
@@ -480,7 +480,7 @@ do
 	-- one. Both are called something different on purpose: a compare box that
 	-- echoed the item under the cursor would pass an assertion that only read
 	-- the count.
-	_G.WarriorKitShift(true)
+	_G.WiggleUIShift(true)
 	Tip.Open(owner, { kind = "item", link = helm }, "control")
 	check(Box.Alongside() == 1,
 		("shift over a helmet opened %d boxes beside it rather than one")
@@ -507,7 +507,7 @@ do
 
 	-- Fill the other finger and it is two, which is the whole reason
 	-- Gear.Replaces answers a list.
-	H.worn[12] = _G.WarriorKitItemLink("Band of the Third")
+	H.worn[12] = _G.WiggleUIItemLink("Band of the Third")
 	H.tooltips.inventory[H.tooltipKey("player", 12)] = {
 		{ "Band of the Third" }, { "Finger" },
 	}
@@ -533,7 +533,7 @@ do
 	-- box you ignore and one that never appears is a feature that looks broken.
 	H.ITEMS["Blade of the Second"] = { id = 4104, classId = 2,
 		equip = "INVTYPE_WEAPON", icon = "Interface\\Icons\\Sword", quality = 3 }
-	local blade = _G.WarriorKitItemLink("Blade of the Second")
+	local blade = _G.WiggleUIItemLink("Blade of the Second")
 	local dual = _G.CanDualWield
 
 	_G.CanDualWield = function() return true end
@@ -551,40 +551,40 @@ do
 		"a client with no such call refused the hand rather than offering it")
 	_G.CanDualWield = dual
 
-	local shield = ns.Gear.Replaces(_G.WarriorKitItemLink("Aegis"))
+	local shield = ns.Gear.Replaces(_G.WiggleUIItemLink("Aegis"))
 	check(#shield == 1 and shield[1] == ns.Gear.OFFHAND,
 		"a shield went somewhere other than the off hand alone")
-	check(#ns.Gear.Replaces(_G.WarriorKitItemLink("Arcanite Reaper")) == 1,
+	check(#ns.Gear.Replaces(_G.WiggleUIItemLink("Arcanite Reaper")) == 1,
 		"a two hander was offered an off hand three expansions early")
 	check(ns.Gear.Replaces(cloth) == nil, "a stack of cloth was given a slot to go in")
 
 	-- And the gesture itself: the box is already up, the pointer has not moved,
 	-- and the key is the only thing that changed.
-	_G.WarriorKitShift(false)
+	_G.WiggleUIShift(false)
 	Tip.Open(owner, { kind = "item", link = helm }, "control")
 	check(Box.Alongside() == 0, "the scene is not set: something is already beside the box")
-	_G.WarriorKitShift(true)
+	_G.WiggleUIShift(true)
 	H.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 1)
 	check(Box.Alongside() == 1,
 		"pressing shift over an open box did not open the comparison")
 	check(Box.Text(1) == "Helm of the Second",
 		"redrawing the box lost the thing it was about: " .. tostring(Box.Text(1)))
 
-	_G.WarriorKitShift(false)
+	_G.WiggleUIShift(false)
 	H.fire("MODIFIER_STATE_CHANGED", "LSHIFT", 0)
 	check(Box.Alongside() == 0, "letting shift go left the comparison on screen")
 
 	-- The switch, which is the addon's own and is not the key. Off, the key does
 	-- nothing at all; the client's own alwaysCompareItems is the answer for a
 	-- player who wants it without holding anything.
-	_G.WarriorKitShift(true)
+	_G.WiggleUIShift(true)
 	check(ns.Settings.SetCompare(false) == false, "turning the comparison off did not take")
 	Tip.Open(owner, { kind = "item", link = helm }, "control")
 	check(Box.Alongside() == 0, "the comparison is switched off and still opened a box")
 	ns.Settings.SetCompare(true)
 	Tip.Open(owner, { kind = "item", link = helm }, "control")
 	check(Box.Alongside() == 1, "turning the comparison back on did not bring it back")
-	_G.WarriorKitShift(false)
+	_G.WiggleUIShift(false)
 
 	H.worn[12] = nil
 	H.tooltips.inventory[H.tooltipKey("player", 1)] = nil

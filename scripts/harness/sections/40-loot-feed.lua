@@ -81,10 +81,10 @@ check(ns.db.combatFeedHeader and ns.db.combatFeedEdge,
 	"the combat feed lost the chrome the loot feed gave up")
 
 do
-	local rows, unit = ns.db.lootFeedRows, ns.UI.Unit(_G.WarriorKitLootFeed)
+	local rows, unit = ns.db.lootFeedRows, ns.UI.Unit(_G.WiggleUILootFeed)
 	-- The purse holds the strip up on its own, because its figure is on the
 	-- strip's right end, so it ships with a strip and no word.
-	check(feed:Row(1):GetTop() < _G.WarriorKitLootFeed:GetTop(),
+	check(feed:Row(1):GetTop() < _G.WiggleUILootFeed:GetTop(),
 		"the purse is on and the first row is against the top of the frame, so its figure has nowhere to be")
 
 	-- With the word off, the purse off and the delete list empty there is no
@@ -93,7 +93,7 @@ do
 	local purse = ns.db.lootFeedPurse
 	ns.db.lootFeedPurse = false
 	lootStream:Apply()
-	local top = _G.WarriorKitLootFeed:GetTop()
+	local top = _G.WiggleUILootFeed:GetTop()
 	check(feed:Row(1):GetTop() == top,
 		"with no word and nothing on the delete list the first row is still hanging off a strip")
 	local height = feed.frame:GetHeight()
@@ -104,7 +104,7 @@ do
 	-- The word brings the strip back, and the rows move down under it.
 	ns.db.lootFeedHeader = true
 	lootStream:Apply()
-	check(feed:Row(1):GetTop() < _G.WarriorKitLootFeed:GetTop(),
+	check(feed:Row(1):GetTop() < _G.WiggleUILootFeed:GetTop(),
 		"turning the word on left the first row against the top of the frame")
 	ns.db.lootFeedHeader = false
 	ns.db.lootFeedPurse = purse
@@ -121,7 +121,7 @@ end
 ----------------------------------------------------------------------
 
 do
-	local unit = ns.UI.Unit(_G.WarriorKitLootFeed)
+	local unit = ns.UI.Unit(_G.WiggleUILootFeed)
 	local tall = feed.frame:GetHeight()
 	ns.db.lootFeedIcon = 16
 	lootStream:Apply()
@@ -169,7 +169,7 @@ end
 
 do
 	local C = ns.UI.Color
-	local unit = ns.UI.Unit(_G.WarriorKitLootFeed)
+	local unit = ns.UI.Unit(_G.WiggleUILootFeed)
 	local row = feed:Row(1)
 
 	check(lootStream.bg == nil,
@@ -294,7 +294,7 @@ end
 ----------------------------------------------------------------------
 
 do
-	local link = _G.WarriorKitItemLink("Arcanite Reaper")
+	local link = _G.WiggleUIItemLink("Arcanite Reaper")
 	feed:Clear()
 	drop("You receive loot: %s.", link)
 	local want = newest().icon
@@ -324,8 +324,8 @@ end
 ----------------------------------------------------------------------
 
 feed:Clear()
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Chipped Boar Tusk"))
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Arcanite Reaper"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Chipped Boar Tusk"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Arcanite Reaper"))
 check(feed:Count() == 2, "two drops did not both reach the ring")
 check(feed:Row(1).shownEntry ~= nil and feed:Row(2).shownEntry ~= nil,
 	"a grey and an epic both dropped and the column does not draw both")
@@ -349,7 +349,7 @@ check(feed.chips == nil and feed.filter == nil,
 local BORDER, BANG = _G.TEXTURE_ITEM_QUEST_BORDER, _G.TEXTURE_ITEM_QUEST_BANG
 
 feed:Clear()
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Hogger's Claw"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Hogger's Claw"))
 check(newest().quest, "a quest item did not read as one")
 check(newest().badge == BORDER,
 	("a quest item wears %s rather than the client's quest border")
@@ -359,7 +359,7 @@ check(feed:Row(1).badge:IsShown() and feed:Row(1).badge:GetTexture() == BORDER,
 check(newest().ring == nil and not feed:Row(1).mark:IsShown(),
 	"a quest item still drew a ring round its icon under the border")
 
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Linen Cloth"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Linen Cloth"))
 check(not newest().quest, "an ordinary item read as a quest item")
 check(not feed:Row(1).mark:IsShown(), "an ordinary row drew a ring round its icon")
 check(newest().badge == nil and not feed:Row(1).badge:IsShown(),
@@ -372,7 +372,7 @@ check(feed:Row(2).shownEntry ~= nil and feed:Row(2).shownEntry.quest,
 do
 	H.ITEMS["Sealed Orders"] = { id = 8403, classId = 12, subClassId = 0,
 		quality = 1, price = 0, icon = "Interface\\Icons\\Orders" }
-	local orders = _G.WarriorKitItemLink("Sealed Orders")
+	local orders = _G.WiggleUIItemLink("Sealed Orders")
 	H.tooltips.item[orders] = { { "Sealed Orders" }, { _G.ITEM_STARTS_QUEST } }
 	drop("You receive loot: %s.", orders)
 	check(newest().badge == BANG and feed:Row(1).badge:GetTexture() == BANG,
@@ -399,7 +399,7 @@ do
 	local C, M = ns.UI.Color, ns.UI.Metric
 
 	feed:Clear()
-	drop("You receive loot: %s.", _G.WarriorKitItemLink("Linen Cloth"))
+	drop("You receive loot: %s.", _G.WiggleUIItemLink("Linen Cloth"))
 	local row = feed:Row(1)
 	check(row.stripe:GetAlpha() == M.rest,
 		("a resting stripe is at %s and the sheet rests a quality at %s")
@@ -479,7 +479,7 @@ local function hover()
 end
 
 feed:Clear()
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Aegis"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Aegis"))
 hover()
 check(said("Vendor") == ns.Coin(3800),
 	("the vendor line says %s and the item is worth %s")
@@ -487,7 +487,7 @@ check(said("Vendor") == ns.Coin(3800),
 check(said("Stack of 1") == nil, "a single item got a stack line")
 check(said("Auctionator") == nil, "an auction price appeared with no auction addon installed")
 
-drop("You receive loot: %sx8.", _G.WarriorKitItemLink("Tattered Cloth"))
+drop("You receive loot: %sx8.", _G.WiggleUIItemLink("Tattered Cloth"))
 hover()
 check(said("Vendor") == ns.Coin(12), "the vendor line is not the price of one")
 check(said("Stack of 8") == ns.Coin(96),
@@ -496,13 +496,13 @@ check(said("Stack of 8") == ns.Coin(96),
 -- An item a vendor will not take says so in words rather than showing 0c,
 -- because nought copper and "no price cached yet" are the same number and
 -- different facts.
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Broken Twig"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Broken Twig"))
 hover()
 check(said("Vendor") == "will not take it",
 	"an item worth nothing drew a price rather than a sentence")
 
 -- The quest line, and the one thing a quality colour cannot say.
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Hogger's Claw"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Hogger's Claw"))
 hover()
 check(said("Quest item") == false, "a quest item's tooltip does not say so")
 
@@ -511,7 +511,7 @@ check(said("Quest item") == false, "a quest item's tooltip does not say so")
 -- that there was none.
 _G.Auctionator = {
 	API = { v1 = { GetAuctionPriceByItemLink = function(caller, link)
-		check(caller == "WarriorKit", "the auction scanner was not told who was asking")
+		check(caller == "WiggleUI", "the auction scanner was not told who was asking")
 		return link:find("Aegis", 1, true) and 47000 or nil
 	end } },
 }
@@ -519,14 +519,14 @@ check(ns.Auction.Describe():find("Auctionator", 1, true) ~= nil,
 	"the panel does not report the auction addon that just appeared")
 
 feed:Clear()
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Aegis"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Aegis"))
 hover()
 check(said("Auctionator") == ns.Coin(47000),
 	("the auction line says %s and the scanner said %s")
 		:format(tostring(said("Auctionator")), ns.Coin(47000)))
 
 -- An item the scanner has no price for gets no line, rather than a zero.
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Tattered Cloth"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Tattered Cloth"))
 hover()
 check(said("Auctionator") == nil, "an item the scanner has never seen drew a price anyway")
 
@@ -553,7 +553,7 @@ ns.UI.Tooltip.Close()
 -- separate pickups, and which one of the three the clock on it is about.
 ----------------------------------------------------------------------
 
-local LINEN = _G.WarriorKitItemLink("Linen Cloth")
+local LINEN = _G.WiggleUIItemLink("Linen Cloth")
 
 feed:Clear()
 local tally = Loot.Counts()
@@ -571,7 +571,7 @@ check(Loot.Counts() == tally + 3,
 
 -- A different item between two of the same does not end the run, and the row
 -- that folds does not climb over the one above it.
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Aegis"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Aegis"))
 drop("You receive loot: %s.", LINEN)
 check(feed:Count() == 2, "an item in between made the next one of them a new row")
 check(feed:Held(0).name == "Aegis" and feed:Held(1).count == 7,
@@ -695,7 +695,7 @@ check(newest().name == ns.Coined(11247),
 	("the folded coin row reads %s"):format(tostring(newest().name)))
 
 -- An item in between does not end the run, and coin does not fold onto it.
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Arcanite Reaper"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Arcanite Reaper"))
 coin("You loot 3 Copper")
 check(feed:Count() == 2, "coin landed on the item row above it or opened a row of its own")
 check(feed:Held(1).copper == 11250,
@@ -753,7 +753,7 @@ H.ITEMS["Red Silk Bandana"] = { id = 8401, classId = 15, subClassId = 0,
 H.ITEMS["Rough Ingot"] = { id = 8402, classId = 7, subClassId = 1,
 	quality = 1, price = 15, icon = "Interface\\Icons\\Ingot" }
 
-local BANDANA = _G.WarriorKitItemLink("Red Silk Bandana")
+local BANDANA = _G.WiggleUIItemLink("Red Silk Bandana")
 local OBJECTIVE = H.quests.text[203].objectives[1]
 local COUNTING = OBJECTIVE[1]
 
@@ -785,7 +785,7 @@ ns.UI.Tooltip.Close()
 -- stack of linen and no profession here has claimed it, so there is no phrase
 -- and no ring, and a feed that ringed everything would be a feed with no marks
 -- on it.
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Linen Cloth"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Linen Cloth"))
 check(newest().amount == "x1",
 	("an item with no reason reads %s"):format(tostring(newest().amount)))
 check(newest().ring == nil, "an item with no reason got a ring round its icon")
@@ -797,7 +797,7 @@ check(not feed:Row(1).mark:IsShown(), "the ring is drawn on a row with no reason
 do
 	local refused = ns.Loot.Refused
 	ns.Loot.Refused = function() return true end
-	local linen = _G.WarriorKitItemLink("Linen Cloth")
+	local linen = _G.WiggleUIItemLink("Linen Cloth")
 	check(ns.Need(linen) == "trash",
 		("the refused linen reads %s"):format(tostring(ns.Need(linen))))
 	drop("You receive loot: %s.", linen)
@@ -821,7 +821,7 @@ do
 	local was = ns.dbc.lootReagents
 	ns.dbc.lootReagents = { [8402] = { owner = "Blacksmithing", kind = "optimal" } }
 	fire("SKILL_LINES_CHANGED")
-	drop("You receive loot: %s.", _G.WarriorKitItemLink("Rough Ingot"))
+	drop("You receive loot: %s.", _G.WiggleUIItemLink("Rough Ingot"))
 	check(newest().amount == "x1",
 		("a blacksmithing reagent put %s in the number column")
 			:format(tostring(newest().amount)))

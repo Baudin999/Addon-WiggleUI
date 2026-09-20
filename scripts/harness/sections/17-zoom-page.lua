@@ -312,12 +312,12 @@ if window then
 			byName[zoom.key] = want[zoom.key]
 		end
 		local KEYS = {
-			WarriorKitOptions = "panelZoom", WarriorKitChat = "chatScale",
-			WarriorKitClutter = "clutterZoom", WarriorKitBags = "bagsZoom",
-			WarriorKitMail = "mailZoom", WarriorKitMap = "mapZoom",
-			WarriorKitQuests = "questsZoom", WarriorKitMerchant = "merchantZoom",
-			WarriorKitCharacter = "characterZoom", WarriorKitDungeons = "dungeonsZoom",
-			WarriorKitBreakdown = "breakdownZoom",
+			WiggleUIOptions = "panelZoom", WiggleUIChat = "chatScale",
+			WiggleUIClutter = "clutterZoom", WiggleUIBags = "bagsZoom",
+			WiggleUIMail = "mailZoom", WiggleUIMap = "mapZoom",
+			WiggleUIQuests = "questsZoom", WiggleUIMerchant = "merchantZoom",
+			WiggleUICharacter = "characterZoom", WiggleUIDungeons = "dungeonsZoom",
+			WiggleUIBreakdown = "breakdownZoom",
 		}
 		for index = 1, #ns.UI.Windows do
 			local held = ns.UI.Windows[index]

@@ -119,7 +119,7 @@ function Aim.Apply()
 				ok = false
 				if not warnedIgnored then
 					warnedIgnored = true
-					ns.Print(("this client accepted the action targeting change and did not make it, so %s is not a CVar it honours. /wk aim off stops the addon trying."):format(cvar))
+					ns.Print(("this client accepted the action targeting change and did not make it, so %s is not a CVar it honours. /wui aim off stops the addon trying."):format(cvar))
 				end
 			else
 				applied[cvar] = want

@@ -51,7 +51,7 @@ ns.HoverCast = Cast
 -- combat refused.
 --------------------------------------------------------------------------
 
-local BUTTON_NAME = "WarriorKitHoverButton"
+local BUTTON_NAME = "WiggleUIHoverButton"
 Cast.BUTTON_NAME = BUTTON_NAME
 
 -- No size and no anchor, the shape Marking/Keys.lua uses and Clique uses for its
@@ -273,7 +273,7 @@ function Cast.Describe()
 end
 
 -- What one binding is carrying, read back off the button rather than built again.
--- `/wk hover show` prints these, and a line that came from the same place the
+-- `/wui hover show` prints these, and a line that came from the same place the
 -- press comes from is the only line worth printing. Nil where the button holds
 -- nothing under that name.
 function Cast.Macro(index)

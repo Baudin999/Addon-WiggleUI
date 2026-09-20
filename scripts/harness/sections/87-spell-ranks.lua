@@ -26,7 +26,7 @@ local H = ...
 local ns, check, fire = H.ns, H.check, H.fire
 
 local Ranks = ns.Ranks
-local slots = _G.WarriorKitSlots
+local slots = _G.WiggleUISlots
 
 -- 19-spellbook.lua's book, by hand, because the point of the file is what the
 -- reader makes of that book and a section that asked the book would be asking

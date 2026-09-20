@@ -117,9 +117,9 @@ check(Who.Remove(STRANGER) == false, "a name that is not on the list was removed
 
 fire("MAIL_SHOW")
 
-check(_G.WarriorKitMail ~= nil, "no mail window was built at the mailbox")
+check(_G.WiggleUIMail ~= nil, "no mail window was built at the mailbox")
 check(Window.Shown(), "the window says it is not open at a mailbox")
-check(_G.WarriorKitMailFavourites:GetWidth() > 0,
+check(_G.WiggleUIMailFavourites:GetWidth() > 0,
 	"the favourites column came out at no width")
 check(Window.Rail() > 0, "a row of the favourites column came out at no width")
 check(Window.Favourites() == Who.Count() + 1,

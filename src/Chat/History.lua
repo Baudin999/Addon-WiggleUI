@@ -29,7 +29,7 @@ ns.ChatHistory = History
 -- keep at all: what is on this disk in a week's time is nothing.
 --
 -- **Per character.** A whisper is addressed to a character and the party you
--- were in was this one's, so it goes in WarriorKitCharDB beside the experience
+-- were in was this one's, so it goes in WiggleUICharDB beside the experience
 -- tally and the damage record rather than in the account file beside the
 -- groups.
 --------------------------------------------------------------------------
@@ -198,7 +198,7 @@ end
 --------------------------------------------------------------------------
 -- Emptying it
 --
--- Reachable from `/wk chat forget` and from nowhere else. In particular the
+-- Reachable from `/wui chat forget` and from nowhere else. In particular the
 -- window's own reset does not come here: that button is about where the window
 -- sits and how big it is, and a control about the layout has no business
 -- throwing away what somebody said to you.

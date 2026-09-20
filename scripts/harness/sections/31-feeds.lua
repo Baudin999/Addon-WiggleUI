@@ -62,12 +62,12 @@ end
 -- stream that is not collecting has nothing to draw and nothing to hold. It was
 -- built either way: a frame, a column of rows and four hundred entry tables for
 -- a part the player has never turned on.
-check(_G.WarriorKitLootFeed ~= nil, "no loot feed was built at login")
+check(_G.WiggleUILootFeed ~= nil, "no loot feed was built at login")
 check(combatStream:Feed() == nil,
 	"the combat feed was built at login and it ships switched off")
-check(_G.WarriorKitLootFeed:GetWidth() == ns.db.lootFeedWidth,
+check(_G.WiggleUILootFeed:GetWidth() == ns.db.lootFeedWidth,
 	("the loot feed is %s wide and the setting says %s")
-		:format(tostring(_G.WarriorKitLootFeed:GetWidth()), tostring(ns.db.lootFeedWidth)))
+		:format(tostring(_G.WiggleUILootFeed:GetWidth()), tostring(ns.db.lootFeedWidth)))
 
 -- Every row the setting asks for is built and placed, and none past it. The
 -- pool only grows: a row built once is kept, because a frame cannot be
@@ -97,7 +97,7 @@ check(live == 10 and total == 12,
 	("%d of %d loot sentences read off this client, expected 10 of 12")
 		:format(live, total))
 
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Aegis"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Aegis"))
 check(feed:Count() == 1, ("one drop and the feed holds %d"):format(feed:Count()))
 check(newest().name == "Aegis",
 	"a single drop did not come back as the item: " .. tostring(newest().name))
@@ -106,7 +106,7 @@ check(newest().amount == "x1", "a single drop drew no count")
 
 -- The whole reason RULES is ordered. A table that tried the uncounted
 -- sentence first reads this as one item called "Tattered Clothx8".
-drop("You receive loot: %sx8.", _G.WarriorKitItemLink("Tattered Cloth"))
+drop("You receive loot: %sx8.", _G.WiggleUIItemLink("Tattered Cloth"))
 check(newest().count == 8, ("a stack of eight read as %s"):format(tostring(newest().count)))
 check(newest().name == "Tattered Cloth",
 	"the count was swallowed into the name: " .. tostring(newest().name))
@@ -126,12 +126,12 @@ check(feed:Count() == held, "a sentence with no item link in it became a row")
 -- per row would repaint a colour that had not changed on every arrival.
 ----------------------------------------------------------------------
 
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Bloodspiller"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Bloodspiller"))
 local rare = newest().color
 -- Enchanted, so it is its own link rather than a fold into the Aegis above.
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Aegis", 12))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Aegis", 12))
 check(newest().color == rare, "two rares came back with different colour tables")
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Chipped Boar Tusk"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Chipped Boar Tusk"))
 check(newest().color ~= rare, "a grey and a rare came back the same colour")
 
 ----------------------------------------------------------------------
@@ -140,11 +140,11 @@ check(newest().color ~= rare, "a grey and a rare came back the same colour")
 
 ns.db.lootFeedGroup = false
 held = feed:Count()
-drop("%s receives loot: %s.", "Bram", _G.WarriorKitItemLink("Aegis"))
+drop("%s receives loot: %s.", "Bram", _G.WiggleUIItemLink("Aegis"))
 check(feed:Count() == held, "the group's loot was captured with the setting off")
 
 ns.db.lootFeedGroup = true
-drop("%s receives loot: %sx3.", "Bram", _G.WarriorKitItemLink("Emerald Pigment"))
+drop("%s receives loot: %sx3.", "Bram", _G.WiggleUIItemLink("Emerald Pigment"))
 check(feed:Count() == held + 1, "the group's loot was refused with the setting on")
 check(newest().who == "Bram",
 	"a group drop did not record who got it: " .. tostring(newest().who))
@@ -184,7 +184,7 @@ check(feed:Live(), "a cleared feed did not go back to the top")
 check(feed.frame:GetScript("OnUpdate") ~= nil,
 	"the feed registered no painter, so nothing will ever draw what arrives")
 fire("CHAT_MSG_LOOT",
-	("You receive loot: %s."):format(_G.WarriorKitItemLink("Arcanite Reaper")))
+	("You receive loot: %s."):format(_G.WiggleUIItemLink("Arcanite Reaper")))
 check(feed:Count() == 1, "the drop did not reach the ring at all")
 check(feed:Row(1).name:GetText() ~= "Arcanite Reaper",
 	"the arrival painted the column itself rather than marking it for the frame")
@@ -196,7 +196,7 @@ check(feed:Row(1).name:GetText() == "Arcanite Reaper",
 feed:Clear()
 
 for index = 1, ns.db.lootFeedRows + 6 do
-	drop("You receive item: %sx%d.", _G.WarriorKitItemLink("Aegis", index), index)
+	drop("You receive item: %sx%d.", _G.WiggleUIItemLink("Aegis", index), index)
 end
 
 -- The newest is the top row and the one before it is the second, which is
@@ -217,7 +217,7 @@ check(feed:Row(1).amount:GetText() == feed:Held(3).amount,
 -- The one that cannot be seen in a screenshot. Scrolled back, an arrival
 -- must push the list down under the offset rather than under your eyes.
 local reading = feed:Row(1).amount:GetText()
-drop("You receive loot: %s.", _G.WarriorKitItemLink("Arcanite Reaper"))
+drop("You receive loot: %s.", _G.WiggleUIItemLink("Arcanite Reaper"))
 check(feed:Row(1).amount:GetText() == reading,
 	"an arrival scrolled the feed under you while you were reading history")
 check(feed:Offset() == 4, "the offset did not follow the list down")
@@ -247,7 +247,7 @@ feed:ToTop()
 local lap = feed.cap
 local slot = feed:Held(0)
 for index = 1, lap do
-	drop("You receive loot: %s.", _G.WarriorKitItemLink("Aegis", index))
+	drop("You receive loot: %s.", _G.WiggleUIItemLink("Aegis", index))
 end
 check(feed:Held(0) == slot,
 	"a full lap of the ring did not come back to the same table, so every drop allocates")
@@ -307,12 +307,12 @@ do
 	-- throttle that never lets go is a tooltip stuck on the row before last and
 	-- looks exactly like the fix.
 	local named = ns.UI.Tooltip.Text(1)
-	drop("You receive loot: %s.", _G.WarriorKitItemLink("Arcanite Reaper"))
+	drop("You receive loot: %s.", _G.WiggleUIItemLink("Arcanite Reaper"))
 	check(ns.UI.Tooltip.Text(1) == named,
 		"the box was filled again on the arrival that landed under the cursor: "
 			.. tostring(ns.UI.Tooltip.Text(1)))
 	advance(0.25)
-	drop("You receive loot: %s.", _G.WarriorKitItemLink("Bloodspiller"))
+	drop("You receive loot: %s.", _G.WiggleUIItemLink("Bloodspiller"))
 	check(ns.UI.Tooltip.Text(1) == "Bloodspiller",
 		"past the throttle the box is still describing a row that has moved on: "
 			.. tostring(ns.UI.Tooltip.Text(1)))
@@ -633,7 +633,7 @@ do
 
 	ns.db.combatFeedShown = false
 	combatStream:Show()
-	check(not _G.WarriorKitCombatFeed:IsShown(), "hiding the combat feed left it on screen")
+	check(not _G.WiggleUICombatFeed:IsShown(), "hiding the combat feed left it on screen")
 
 	held = combat:Count()
 	log("SPELL_DAMAGE", me, "Baudin", "Creature-77", "Ragged Wolf",
@@ -647,7 +647,7 @@ do
 
 	ns.db.combatFeedShown = true
 	combatStream:Show()
-	check(_G.WarriorKitCombatFeed:IsShown(), "showing the combat feed left it hidden")
+	check(_G.WiggleUICombatFeed:IsShown(), "showing the combat feed left it hidden")
 	check(combat:Row(1).name:GetText() == "Slam",
 		"a feed brought back is showing what it drew before it went away: "
 			.. tostring(combat:Row(1).name:GetText()))
@@ -657,7 +657,7 @@ do
 	-- rather than as a setting.
 	ns.db.combatFeed = false
 	combatStream:Show()
-	check(not _G.WarriorKitCombatFeed:IsShown(),
+	check(not _G.WiggleUICombatFeed:IsShown(),
 		"a feed switched off is still on screen, showing a list that will never move")
 	ns.db.combatFeed = true
 	combatStream:Show()
@@ -666,10 +666,10 @@ do
 	-- belong to Feeds/Stream.lua rather than to either capture file.
 	ns.db.lootFeedShown = false
 	lootStream:Show()
-	check(not _G.WarriorKitLootFeed:IsShown(), "hiding the loot feed left it on screen")
+	check(not _G.WiggleUILootFeed:IsShown(), "hiding the loot feed left it on screen")
 	ns.db.lootFeedShown = true
 	lootStream:Show()
-	check(_G.WarriorKitLootFeed:IsShown(), "showing the loot feed left it hidden")
+	check(_G.WiggleUILootFeed:IsShown(), "showing the loot feed left it hidden")
 
 	----------------------------------------------------------------
 	-- Every tooltip is one size, and it is the addon's
@@ -753,7 +753,7 @@ do
 			"a plain line did not render: " .. tostring(Tip.Text(6)))
 		check(Tip.Text(7) ~= "" and Tip.Text(7) ~= nil,
 			"the last line of the fill is blank, so a band left its air behind")
-		check((Tip.Text(7) or ""):find("/wk", 1, true) == nil,
+		check((Tip.Text(7) or ""):find("/wui", 1, true) == nil,
 			"the blue switch line is still on the end of a feed row's box: "
 				.. tostring(Tip.Text(7)))
 

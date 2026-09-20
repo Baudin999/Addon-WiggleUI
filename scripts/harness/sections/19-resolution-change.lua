@@ -11,7 +11,7 @@ local state = H.state
 local Region, ns = H.Region, H.ns
 local fire, check = H.fire, H.check
 
-local box = _G.WarriorKitPlayerFrame
+local box = _G.WiggleUIPlayerFrame
 check(box ~= nil, "the player frame's anchor is not a named frame, so this cannot be tested")
 if box then
 	local blocked, inCombat = {}, false
@@ -43,7 +43,7 @@ if box then
 	local wanted = before * 2
 	check(box:GetScale() == before,
 		("a protected anchor was re-scaled in combat, %.4f"):format(box:GetScale()))
-	check(math.abs(_G.WarriorKitEnemyBarsAnchor:GetScale() - 768 / 1440 * 2) < 1e-9,
+	check(math.abs(_G.WiggleUIEnemyBarsAnchor:GetScale() - 768 / 1440 * 2) < 1e-9,
 		"an unprotected frame was deferred along with the protected one")
 
 	inCombat = false

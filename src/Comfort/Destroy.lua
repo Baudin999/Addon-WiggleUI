@@ -218,7 +218,7 @@ end
 
 local function Build()
 	window = UI.Window({
-		name = "WarriorKitClutter",
+		name = "WiggleUIClutter",
 		title = "Clutter",
 		width = WIDTH,
 		zoom = function() return ns.Zoom("clutterZoom") end,
@@ -301,7 +301,7 @@ function Destroy.Toggle()
 	end
 end
 
--- One line for /wk status. It walks the bags, which is why nothing on a refresh
+-- One line for /wui status. It walks the bags, which is why nothing on a refresh
 -- path calls it.
 function Destroy.Describe()
 	local found, problem = ns.Clutter.Scan()

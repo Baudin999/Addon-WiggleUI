@@ -280,7 +280,7 @@ end
 -- holding. Optional, because the readers that came first only ever asked what
 -- was in the hands and never put it down. A carry with no id behind it places
 -- an empty slot, which is what a client with nothing on the cursor does.
-_G.WarriorKitCarrySpell = function(index, book, id)
+_G.WiggleUICarrySpell = function(index, book, id)
 	cursor = index and {
 		spell = index,
 		book = book or "spell",
@@ -442,7 +442,7 @@ end
 -- every slot on a fresh character and is why HasAction used to be constant
 -- false here.
 local slots = {}
-_G.WarriorKitSlots = slots
+_G.WiggleUISlots = slots
 
 _G.HasAction = function(slot) return slots[slot] ~= nil end
 -- What kind of thing is in the slot and which one, which is how
@@ -482,7 +482,7 @@ end
 -- Answers the name and not the id, which is one of the two shapes the live call
 -- takes. The other shape is driven from the section by writing a number here.
 local macroSpells = {}
-_G.WarriorKitMacroSpells = macroSpells
+_G.WiggleUIMacroSpells = macroSpells
 _G.GetMacroSpell = function(index)
 	return macroSpells[index]
 end
@@ -629,7 +629,7 @@ local BLIZZARD_BARS = {
 do
 	local main = region("frame", _G.UIParent, "MainActionBar")
 	main:SetFrameLevel(50)
-	-- TOOLTIP, which is what `/wk actionbars trace` read off the live client
+	-- TOOLTIP, which is what `/wui actionbars trace` read off the live client
 	-- and is the whole bug: it is the top strata there is, so a cloned bar
 	-- standing at MEDIUM 120 loses every hit test on that corner of the screen
 	-- no matter how high the level goes. Two fixes were written against a
@@ -691,7 +691,7 @@ end
 -- Whether a driver was registered for that frame and state, and the macro
 -- condition it was given, so a test can assert the conditions cover every
 -- stance rather than only that a call was made.
-_G.WarriorKitDriver = function(frame, state)
+_G.WiggleUIDriver = function(frame, state)
 	for index = 1, #drivers do
 		if drivers[index].frame == frame and drivers[index].state == state then
 			return drivers[index].macro
@@ -704,7 +704,7 @@ end
 -- visibility driver registered twice on one frame is two answers to the same
 -- question and the client keeps both, which is exactly the leak a re-apply
 -- would cause and exactly the leak nothing on screen would show.
-_G.WarriorKitDrivers = function(frame, state)
+_G.WiggleUIDrivers = function(frame, state)
 	local count = 0
 	for index = 1, #drivers do
 		if drivers[index].frame == frame and drivers[index].state == state then
@@ -715,7 +715,7 @@ _G.WarriorKitDrivers = function(frame, state)
 end
 
 -- One state transition, as the client would deliver it.
-_G.WarriorKitDriveState = function(frame, state, newstate)
+_G.WiggleUIDriveState = function(frame, state, newstate)
 	return H.snippet.State(frame, state, newstate)
 end
 
@@ -727,7 +727,7 @@ end
 -- The keys are the ones Layout.BAR1 names in its comment, because those are the
 -- keys this install actually has and a fixture nobody uses proves less.
 local bindings = {}
-_G.WarriorKitBindings = bindings
+_G.WiggleUIBindings = bindings
 
 local BAR1_KEYS = { "E", "Q", "Z", "X", "C", "V", "F", "1", "2", "3", "4", "5" }
 for index = 1, 12 do
@@ -816,7 +816,7 @@ end
 -- cannot see the failure this caused: every key the addon took was taken at
 -- login and thrown away a moment later, so it was dead before it could be
 -- pressed and rebinding by hand was the only thing that appeared to work.
-_G.WarriorKitRebuildBindings = function()
+_G.WiggleUIRebuildBindings = function()
 	overrides = {}
 	H.fire("UPDATE_BINDINGS")
 end
@@ -827,7 +827,7 @@ _G.IsControlKeyDown, _G.IsAltKeyDown = constant(false), constant(false)
 -- while shift is held cannot be tested against a false that never moves.
 local shift = false
 _G.IsShiftKeyDown = function() return shift end
-_G.WarriorKitShift = function(down)
+_G.WiggleUIShift = function(down)
 	shift = down and true or false
 	return shift
 end
@@ -841,7 +841,7 @@ end
 -- Form 1 and offset 1 is a warrior standing in battle stance, which is what the
 -- live client answered on Tusksfirst and is written down in docs/README.md.
 local shapeshift = { form = 1, bonus = 1 }
-_G.WarriorKitShapeshift = shapeshift
+_G.WiggleUIShapeshift = shapeshift
 _G.GetShapeshiftForm = function() return shapeshift.form end
 _G.GetBonusBarOffset = function() return shapeshift.bonus end
 _G.UISpecialFrames, _G.SlashCmdList, _G.Enum = {}, {}, {}

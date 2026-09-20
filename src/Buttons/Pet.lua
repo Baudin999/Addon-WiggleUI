@@ -127,7 +127,7 @@ end
 local function Square(index)
 	-- The release, for the reason the action bars give in Buttons/Bars.lua.
 	local w = Ability.Dress(ns.UI.Press.Button(bar,
-		("WarriorKitPetButton%d"):format(index), "up"), Ability.QUIET)
+		("WiggleUIPetButton%d"):format(index), "up"), Ability.QUIET)
 	w.slot = index
 	w:SetAttribute("type", "pet")
 	w:SetAttribute("action", index)

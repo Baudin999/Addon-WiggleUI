@@ -730,7 +730,7 @@ end
 --
 -- Not the path a key press takes. The two chat keys are the client's and go
 -- straight into FrameXML; this is for a click on a name in the log and for
--- `/wk chat`, where there is no key press to preserve and the line being opened
+-- `/wui chat`, where there is no key press to preserve and the line being opened
 -- is a whisper rather than a command.
 function Field.Open()
 	local box = Field.Box()

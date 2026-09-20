@@ -45,7 +45,7 @@ do
 	local Progress, Rails = ns.Progress, ns.ProgressRails
 	local Box = ns.UI.Tooltip
 
-	local frame = _G.WarriorKitProgress
+	local frame = _G.WiggleUIProgress
 	check(frame ~= nil, "no experience frame came up")
 
 	local xp, faction = Rails.Bar("xp"), Rails.Bar("faction")
@@ -67,7 +67,7 @@ do
 		progress.disabled, progress.ceiling = false, 70
 		progress.faction = { name = "Thrallmar", standing = 6,
 			low = 6000, high = 12000, value = 8400 }
-		_G.WarriorKitLevels.player = nil
+		_G.WiggleUILevels.player = nil
 		fire("UPDATE_FACTION")
 		-- The tally too, and after the reading rather than before it, because the
 		-- reading is what folds the fixture's own jump back to 12000 into it.
@@ -246,7 +246,7 @@ do
 		-- level, which is the shape this is written against.
 		advance(60)
 		progress.xp, progress.max = 500, 45000
-		_G.WarriorKitLevels.player = 63
+		_G.WiggleUILevels.player = 63
 		fire("PLAYER_LEVEL_UP")
 		check(ns.dbc.progressLevel == 63,
 			("the tally is still about level %s"):format(tostring(ns.dbc.progressLevel)))

@@ -78,7 +78,7 @@ local function BreakdownWord(arg)
 	-- yes` does it. The panel asks the same question by making you press twice.
 	if option == "reset" then
 		if value ~= "yes" then
-			ns.Print(("this would throw away %d abilities counted since %s. Type /wk breakdown reset yes.")
+			ns.Print(("this would throw away %d abilities counted since %s. Type /wui breakdown reset yes.")
 				:format(Breakdown.Count(), date("%d %b", Breakdown.Since())))
 			return
 		end

@@ -199,7 +199,7 @@ function Codec.Read(text)
 		return nil, "nothing was pasted"
 	end
 	if text:sub(1, #PREFIX) ~= PREFIX then
-		return nil, "that is not a WarriorKit profile string"
+		return nil, "that is not a WiggleUI profile string"
 	end
 	local raw = Decode(text:sub(#PREFIX + 1))
 	local sum = raw and tonumber(raw:sub(1, 8), 16)

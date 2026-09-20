@@ -308,7 +308,7 @@ end
 -- findable from a macro, and because the bag squares beside it are named for
 -- the same reason.
 local function Build(index)
-	local card = CreateFrame("Button", "WarriorKitMerchantSlot" .. index, canvas)
+	local card = CreateFrame("Button", "WiggleUIMerchantSlot" .. index, canvas)
 	card:SetHeight(ROW)
 	card.chips = {}
 

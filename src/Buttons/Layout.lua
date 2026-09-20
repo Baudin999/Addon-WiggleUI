@@ -165,7 +165,7 @@ end
 -- The plan is asked for first because it is the one refusal here that no amount
 -- of waiting fixes. Asked last, a hunter in combat was refused with "you are in
 -- combat", Describe read that as a wait and went on to page a plan that was
--- never written, and /wk status errored on the length of a nil.
+-- never written, and /wui status errored on the length of a nil.
 function Layout.CanApply()
 	if not Layout.Plan() then
 		return false, Layout.Refusal()
@@ -563,7 +563,7 @@ function Layout.Restore()
 	return true, { restored = restored, failed = failed }
 end
 
--- What the bars would be filled from, for the panel and for /wk status. Called
+-- What the bars would be filled from, for the panel and for /wui status. Called
 -- in combat and with something on the cursor, because both are ordinary states
 -- to read a status line in, so neither is reported as unavailability.
 --

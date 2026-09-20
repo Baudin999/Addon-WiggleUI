@@ -254,15 +254,15 @@ do
 	-- The same three things through the slash words, because the dispatcher is
 	-- where a word it does not know falls through to the bare on|off toggle,
 	-- switches the whole row off and reports that it did something else.
-	SlashCmdList.WARRIORKIT("cooldowns add 500002")
+	SlashCmdList.WIGGLEUI("cooldowns add 500002")
 	check(Cooldowns.ByWord("spell500002") ~= nil,
-		"/wk cooldowns add put nothing on the row")
-	SlashCmdList.WARRIORKIT("cooldowns line spell500002")
+		"/wui cooldowns add put nothing on the row")
+	SlashCmdList.WIGGLEUI("cooldowns line spell500002")
 	check(Cooldowns.ByWord("spell500002").layer == Cooldowns.ROTATION,
-		"/wk cooldowns line left the square on the line it was already on")
-	SlashCmdList.WARRIORKIT("cooldowns drop 500002")
+		"/wui cooldowns line left the square on the line it was already on")
+	SlashCmdList.WIGGLEUI("cooldowns drop 500002")
 	check(Cooldowns.ByWord("spell500002") == nil,
-		"/wk cooldowns drop left it on the row")
+		"/wui cooldowns drop left it on the row")
 	check(ns.db.cooldowns,
 		"one of the new words fell through and switched the whole row off")
 
@@ -365,7 +365,7 @@ end
 
 do
 	local Page = ns.CooldownPanel
-	local BOOK = _G.WarriorKitSpellBookIds
+	local BOOK = _G.WiggleUISpellBookIds
 	local baseline = Cooldowns.Count()
 
 	-- Open, and standing on the page, because the window lays out the section
@@ -391,7 +391,7 @@ do
 	-- and the drag landing on a square. The button carries the scripts, because
 	-- that is the frame the widget layer enables the mouse on.
 	local function drop(w, book)
-		_G.WarriorKitCarrySpell(book, "spell")
+		_G.WiggleUICarrySpell(book, "spell")
 		H.mouse.Give(w.button)
 	end
 

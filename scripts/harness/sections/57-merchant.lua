@@ -390,7 +390,7 @@ check(Stock.Batches(flask.entry) == 2,
 
 check(UI.Amounting() == nil, "the picker is on the screen before anything asked for it")
 
-_G.WarriorKitShift(true)
+_G.WiggleUIShift(true)
 local offered = #merchant.linked
 water:Click("LeftButton")
 check(UI.Amounting() == 1, "a shift-click on a stack did not put the picker up on one")
@@ -433,7 +433,7 @@ check(UI.Amounting() == nil,
 	"a shift-click on something sold one at a time put a picker up with one choice on it")
 check(state.purse == before, "a shift-click on the rod bought the rod")
 check(_G.GetCursorInfo() == nil, "a shift-click on the rod picked the rod up")
-_G.WarriorKitShift(false)
+_G.WiggleUIShift(false)
 
 water = card("Refreshing Spring Water")
 
@@ -600,9 +600,9 @@ check(_G.MerchantFrame:GetLeft() >= _G.UIParent:GetRight(),
 ----------------------------------------------------------------------
 
 -- With a picker up, because closing the window has to take it with it.
-_G.WarriorKitShift(true)
+_G.WiggleUIShift(true)
 card("Refreshing Spring Water"):Click("LeftButton")
-_G.WarriorKitShift(false)
+_G.WiggleUIShift(false)
 check(UI.Amounting() == 1, "the picker did not open for the walking-away check")
 
 Window.Hide()
@@ -622,14 +622,14 @@ check(_G.MerchantFrame:GetAlpha() == 1,
 -- The switch
 ----------------------------------------------------------------------
 
-SlashCmdList.WARRIORKIT("merchant off")
+SlashCmdList.WIGGLEUI("merchant off")
 merchant.open()
 check(not Window.Shown(), "the window came up with the feature switched off")
 check(_G.GetMerchantNumItems() == 5,
 	"the feature is off and the client no longer has a vendor either")
 merchant.close()
 
-SlashCmdList.WARRIORKIT("merchant on")
+SlashCmdList.WIGGLEUI("merchant on")
 merchant.open()
 check(Window.Shown(), "turning the window back on did not put it back on the vendor")
 merchant.close()

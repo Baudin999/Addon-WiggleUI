@@ -29,7 +29,7 @@ end
 
 -- A distinct link per number, so no two drops fold onto one row.
 local function link(index)
-	return _G.WarriorKitItemLink("Aegis", index)
+	return _G.WiggleUIItemLink("Aegis", index)
 end
 
 local function pour(from, to)

@@ -172,7 +172,7 @@ end
 local function BuildFooter()
 	local hint = Line(window.footer, M.small, C.quiet, "LEFT")
 	hint:SetPoint("LEFT")
-	hint:SetText("Escape closes this. /wk perf dips prints the same log to chat.")
+	hint:SetText("Escape closes this. /wui perf dips prints the same log to chat.")
 
 	local close = UI.Button(window.footer, { label = "close", width = 90,
 		height = M.row, onClick = Hud.Close })
@@ -185,7 +185,7 @@ end
 
 local function Build()
 	window = UI.Window({
-		name = "WarriorKitPerf",
+		name = "WiggleUIPerf",
 		title = "Performance",
 		width = WIDTH,
 		height = HEIGHT,

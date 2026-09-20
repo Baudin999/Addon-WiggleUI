@@ -61,7 +61,7 @@ end
 if #SLOTS == 0 then
 	check(Standing.Available() == false,
 		("a %s has no plan and the part says it is available"):format(PLAYER_CLASS))
-	check(_G.WarriorKitStanding == nil,
+	check(_G.WiggleUIStanding == nil,
 		("a %s built a row frame with nothing to put on it"):format(PLAYER_CLASS))
 	check(ns.UI.Ticking("standing") == nil,
 		("a %s armed the row's ticker with nothing to draw"):format(PLAYER_CLASS))
@@ -105,7 +105,7 @@ check(Standing.Count() == #SLOTS,
 	("a %s was given %d squares and its class file lists %d")
 		:format(PLAYER_CLASS, Standing.Count(), #SLOTS))
 
-check(_G.WarriorKitStanding ~= nil,
+check(_G.WiggleUIStanding ~= nil,
 	("a %s has a plan and no row frame was built"):format(PLAYER_CLASS))
 check(ns.UI.Ticking("standing") ~= nil, "the row registered no ticker")
 
@@ -236,7 +236,7 @@ fire("PLAYER_TOTEM_UPDATE")
 tick()
 check(Row.Mode() == "quiet",
 	("with nothing standing and no fight the row is %s"):format(tostring(Row.Mode())))
-check(_G.WarriorKitStanding:IsShown() == false,
+check(_G.WiggleUIStanding:IsShown() == false,
 	"a quiet row is still on the screen")
 
 ns.db.standingIdle = true

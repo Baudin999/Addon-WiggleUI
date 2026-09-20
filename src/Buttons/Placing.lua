@@ -20,7 +20,7 @@ ns.BarPlace = Place
 --
 -- Two locks reach these bars and they answer different questions.
 --
---   `ns.db.locked` is the addon's. /wk unlock puts every frame in the addon
+--   `ns.db.locked` is the addon's. /wui unlock puts every frame in the addon
 --   into placing mode at once, and every handle in here comes up with it.
 --
 --   `ns.db.barsLocked` is the bars' own, and it is what shift-dragging is. On,
@@ -232,7 +232,7 @@ function Place.Handle(entry)
 end
 
 -- Show or hide every handle. Registered as the buttons feature's `lock`, so
--- /wk unlock reaches the bars the same way it reaches the charge icon and the
+-- /wui unlock reaches the bars the same way it reaches the charge icon and the
 -- meters, and called again on every shift press once the bars are loose.
 --
 -- The order it was last given is kept, because the modifier below arrives as an

@@ -3,18 +3,18 @@ local ADDON, ns = ...
 -- The setup's registration: the one saved flag, the word, and the first login.
 --
 -- setupDone is a record rather than a setting, and Core/Core.lua's KEPT list
--- says so: `/wk defaults yes` puts your screen back without asking the four
+-- says so: `/wui defaults yes` puts your screen back without asking the four
 -- questions again, and scripts/bake-defaults.sh never ships a true, which would
 -- be a setup no new player ever saw.
 
 local Setup = ns.Setup
 
 -- Under the addon's own button in the game menu. The player who wants the
--- setup again is usually the one who skipped it and has not found /wk yet, and
+-- setup again is usually the one who skipped it and has not found /wui yet, and
 -- Escape is the one key everybody already presses.
 ns.GameMenu.Add({
-	name = "WarriorKitGameMenuSetup",
-	label = "WarriorKit Setup",
+	name = "WiggleUIGameMenuSetup",
+	label = "WiggleUI Setup",
 	tip = "The four first questions again: the mode, the colours, the unit frames and where tooltips open.",
 	open = function() Setup.Show() end,
 })

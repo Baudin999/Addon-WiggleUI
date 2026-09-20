@@ -36,7 +36,7 @@ ns.MarkKeys = Keys
 -- targeting and the camera drag.
 --------------------------------------------------------------------------
 
-local BUTTON_NAME = "WarriorKitMarkButton"
+local BUTTON_NAME = "WiggleUIMarkButton"
 
 -- Not a secure button, because marking is not a protected action.
 --
@@ -97,7 +97,7 @@ local keys = ns.UI.Bound.Keys({
 		return list
 	end,
 	refused = "this client would not take a mouse button for marking. Ctrl-targeting is doing the job instead.",
-	ignored = "this client accepted the marking keys and did not bind them. Clear them in /wk to put ctrl-targeting back.",
+	ignored = "this client accepted the marking keys and did not bind them. Clear them in /wui to put ctrl-targeting back.",
 })
 
 -- Returns whether any override is up. Marking.lua asks before running the

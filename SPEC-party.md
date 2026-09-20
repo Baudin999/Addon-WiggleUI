@@ -68,7 +68,7 @@ works and is a worse answer, because the dependency is real and would be hidden.
 
 Four sources, best answer first, cached per GUID.
 
-An override the player typed wins over everything. `/wk party role <name>
+An override the player typed wins over everything. `/wui party role <name>
 tank|healer|dps` and a picker in the panel, kept per character, because
 inspection fails in the exact case where you already know the answer.
 
@@ -108,13 +108,13 @@ same five slots in every group they are ever in together, whoever formed it and
 whoever zoned in first. Party index does not do that. Sorting by class does not
 either, because a class can be two roles.
 
-`/wk party order group` switches the raid to group number, which is what somebody
+`/wui party order group` switches the raid to group number, which is what somebody
 running a twenty five man with assignments per group actually wants. Party is
 always by role.
 
 Your own frame is not in the list by default. `Skin.lua` already draws you as a
 block, and two of your own frames on one screen is the exact complaint that
-`UnitFrames/Blizzard.lua` exists to answer. `/wk party self on` puts you in, at
+`UnitFrames/Blizzard.lua` exists to answer. `/wui party self on` puts you in, at
 your own role's slot.
 
 ## What one block draws

@@ -85,7 +85,7 @@ local Rows = CSV.Rows
 local function Wanted()
 	local ns = { DungeonBook = {} }
 	local chunk = assert(loadfile("src/Dungeons/Baked.lua"))
-	chunk("WarriorKit", ns)
+	chunk("WiggleUI", ns)
 	local order, seen = {}, {}
 	for _, dungeon in ipairs(ns.DungeonBook.DUNGEONS or {}) do
 		local place = dungeon.name:match("^([^:]+)") or dungeon.name

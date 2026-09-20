@@ -37,7 +37,7 @@ local ADDON, ns = ...
 -- The cost against the attic is honest and is why this is not the default
 -- anywhere else: a client that repositions the frame between our re-parks puts
 -- it back on the screen, where the attic could not. That failure is visible
--- rather than silent, and `/wk mail hide off` is the way out of it.
+-- rather than silent, and `/wui mail hide off` is the way out of it.
 --
 -- **Why it has to be re-parked.** MailFrame is a UIPanel and the client lays
 -- the panels out again whenever one opens or closes, which puts it back in the

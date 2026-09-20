@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # Bakes src/Core/Shipped.lua out of an install's saved variables, so that the
-# screen you play on is the screen the addon ships with and the one `/wk
+# screen you play on is the screen the addon ships with and the one `/wui
 # defaults yes` puts back.
 #
 #   in game     set it up, drag it where you want it, /reload
@@ -38,10 +38,10 @@ else
 	while IFS= read -r f; do
 		found+=("$f")
 	done < <(find "$WOW_ROOT/_${want}_/WTF/Account" -maxdepth 3 \
-		-path '*/SavedVariables/WarriorKit.lua' 2>/dev/null | sort)
+		-path '*/SavedVariables/WiggleUI.lua' 2>/dev/null | sort)
 
 	if [ "${#found[@]}" -eq 0 ]; then
-		echo "no WarriorKit saved variables under $WOW_ROOT/_${want}_." >&2
+		echo "no WiggleUI saved variables under $WOW_ROOT/_${want}_." >&2
 		echo "Log in once and /reload, or pass the file." >&2
 		exit 1
 	fi
@@ -58,15 +58,15 @@ fi
 # The character whose file was written last, which is the one you were playing
 # when you set the screen up. Named outright with CHARACTER=<name> where that
 # guess is wrong, and skipped entirely where the install has never seen one.
-account="${saved%/SavedVariables/WarriorKit.lua}"
+account="${saved%/SavedVariables/WiggleUI.lua}"
 character=""
 if [ -n "${CHARACTER:-}" ]; then
-	character=$(find "$account" -maxdepth 4 -path "*/$CHARACTER/SavedVariables/WarriorKit.lua" \
+	character=$(find "$account" -maxdepth 4 -path "*/$CHARACTER/SavedVariables/WiggleUI.lua" \
 		2>/dev/null | head -1)
 	[ -n "$character" ] || { echo "no saved variables for $CHARACTER under $account" >&2; exit 1; }
 else
 	character=$(find "$account" -mindepth 3 -maxdepth 4 \
-		-path '*/SavedVariables/WarriorKit.lua' -printf '%T@ %p\n' 2>/dev/null |
+		-path '*/SavedVariables/WiggleUI.lua' -printf '%T@ %p\n' 2>/dev/null |
 		sort -rn | head -1 | cut -d' ' -f2-)
 fi
 

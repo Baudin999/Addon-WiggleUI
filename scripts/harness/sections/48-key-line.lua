@@ -20,7 +20,7 @@ local ns, check = H.ns, H.check
 
 do
 	local Tip, Bound, Bars = ns.Tip, ns.Bound, ns.Bars
-	local slots = _G.WarriorKitSlots
+	local slots = _G.WiggleUISlots
 	local ART = "Interface\\Icons\\INV_Misc_Rune_01"
 	local link = "|cffffffff|Hitem:6948::::::::60:::::|h[Hearthstone]|h|r"
 
@@ -96,7 +96,7 @@ do
 
 	-- On a bar with no key on it: the item is on a bar and nothing presses it,
 	-- which is the one case the bag is the honest answer to.
-	local bindings = _G.WarriorKitBindings
+	local bindings = _G.WiggleUIBindings
 	local kept = bindings.ACTIONBUTTON3
 	bindings.ACTIONBUTTON3 = nil
 	Bars.ApplyBindings()

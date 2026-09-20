@@ -278,19 +278,19 @@ do
 		return false
 	end
 
-	_G.SlashCmdList.WARRIORKIT("quests tracker on")
+	_G.SlashCmdList.WIGGLEUI("quests tracker on")
 	check(ns.db.questsTrackerOff, "the typed word did not throw the switch")
 	check(questie.Enabled() == false, "the typed word did not reach Questie")
 	check(said("Questie's tracker is off, and this addon turned it off"),
 		"the typed word did not say which way the setting is or who put it there")
 
 	heard = {}
-	_G.SlashCmdList.WARRIORKIT("status")
+	_G.SlashCmdList.WIGGLEUI("status")
 	check(said("Questie's tracker is off, and this addon turned it off"),
-		"/wk status does not report a setting this addon moved in another addon")
+		"/wui status does not report a setting this addon moved in another addon")
 
 	heard = {}
-	_G.SlashCmdList.WARRIORKIT("quests tracker off")
+	_G.SlashCmdList.WIGGLEUI("quests tracker off")
 	check(ns.db.questsTrackerOff == false, "the typed word did not throw the switch back")
 	check(questie.Enabled(), "the typed word did not put Questie's tracker back")
 

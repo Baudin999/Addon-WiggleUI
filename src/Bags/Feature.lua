@@ -141,7 +141,7 @@ local function BagsWord(arg, rawArg)
 		ns.Print("the bag window is " .. (ns.db.bags and "on" or "off") .. ".")
 	elseif word == "" then
 		if not ns.db.bags then
-			ns.Print("the bag window is off. Type /wk bags on.")
+			ns.Print("the bag window is off. Type /wui bags on.")
 			return
 		end
 		ns.BagsWindow.Toggle()

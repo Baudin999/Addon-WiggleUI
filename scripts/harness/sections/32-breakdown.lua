@@ -216,7 +216,7 @@ check(Breakdown.Count() == held, "another player's damage was counted as yours")
 -- lands in one band and every rate becomes an average of unrelated fights.
 ----------------------------------------------------------------------
 
-_G.WarriorKitLevels.target = 65
+_G.WiggleUILevels.target = 65
 guids.target = MOB
 fire("PLAYER_TARGET_CHANGED")
 
@@ -262,7 +262,7 @@ check(Pane.Row(1).icon.texture ~= nil, "a row drew no icon")
 -- you can only close with the mouse, and nothing else would say so.
 local escapes = false
 for _, name in ipairs(_G.UISpecialFrames) do
-	if name == "WarriorKitBreakdown" then
+	if name == "WiggleUIBreakdown" then
 		escapes = true
 	end
 end

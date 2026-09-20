@@ -1,7 +1,7 @@
 # Handoff
 
 Items 8 and 9 are on main and neither has been confirmed in game. Four things
-have landed since and none has been seen in the game either: the `/wk hide`
+have landed since and none has been seen in the game either: the `/wui hide`
 switches that take the client's own copy of what this addon draws off the
 screen, your own cast bar, the five settings per cloned action bar, and the loot
 feed rebuild. That is the whole of where things stand.
@@ -11,7 +11,7 @@ feed rebuild. That is the whole of where things stand.
 - `0d1ad42` merges item 8, the frame link. The player block anchors the target
   block and the target block anchors target of target, so Edit Mode positions
   one frame and the addon owns every relationship between frames. Settings are
-  `/wk skin link|gap|level`, target of target keeps `TOT_GAP` at three pixels.
+  `/wui skin link|gap|level`, target of target keeps `TOT_GAP` at three pixels.
 - `a67c754` merges item 9, the target's aura rows, over `82ff746`, which was
   its first half.
 - `750cabe` settles item 9's open question: the new rows are the target's only.
@@ -19,10 +19,10 @@ feed rebuild. That is the whole of where things stand.
   appears at no aura index and `Buffs/Upkeep.lua:17` already says so.
 - `UnitFrames/Blizzard.lua` holds one switch per thing you can see twice, all
   of them shipping on: your buffs, your debuffs, the target's auras, the
-  target's cast bar and Blizzard's own cast bar. `/wk hide <word>` and a section
+  target's cast bar and Blizzard's own cast bar. `/wui hide <word>` and a section
   of the panel walk the same list.
 - `UnitFrames/PlayerCast.lua` is your own cast bar, under the swing timer and
-  the same width as it. `/wk cast on|off`, `cast width|height|zoom|reset`, its
+  the same width as it. `/wui cast on|off`, `cast width|height|zoom|reset`, its
   own section in the panel, and `hide playercast` for Blizzard's.
 - The loot feed is bare, filtered by chips and worth hovering. No word over the
   column and no line round it, both of them settings a stream now ships an
@@ -70,11 +70,11 @@ it. That re-hangs on the ticker rather than at layout, because the client shows
 and hides that frame with the unit. If target of target moves into the corridor,
 the rows come back up against the block on their own.
 
-Settings: `/wk skin auras on|off` and `skin aura <12-32>`. There is no count:
+Settings: `/wui skin auras on|off` and `skin aura <12-32>`. There is no count:
 each row draws every aura the client reports up to the client's own ceiling,
 16 debuffs and 32 buffs, and wraps away from the block when a line fills. Off
 leaves the target with no row at all, because the frame is the block and the
-client's own row would land in the gauge. `/wk skin off`
+client's own row would land in the gauge. `/wui skin off`
 gives it back, because that is what gives the frame its size back.
 
 ## The cast bar, as it landed
@@ -174,7 +174,7 @@ whether it goes red.
 
 Item 8: how this Edit Mode signals a drop, whether a frame anchored to another
 frame can still be dragged in it, and whether `EDIT_MODE_LAYOUTS_UPDATED` exists
-on this backport. The first two fail soft and `/wk skin link off` is the way out
+on this backport. The first two fail soft and `/wui skin link off` is the way out
 without a reload.
 
 Item 9: whether the client's own target aura buttons are protected on this

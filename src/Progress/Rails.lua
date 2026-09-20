@@ -54,7 +54,7 @@ local Progress = ns.Progress
 local Gauge = ns.UI.Gauge
 local Color = ns.Unit.Color
 
-local FRAME_NAME = "WarriorKitProgress"
+local FRAME_NAME = "WiggleUIProgress"
 
 -- One rail to the next. Two pixels, the same as the swing bars: one would put
 -- two hairlines against each other and read as a single thick line.
@@ -312,7 +312,7 @@ local function Build()
 	ns.UI.Hushable(frame)
 	unit = ns.UI.Unit(frame)
 	place = ns.UI.Placeable(frame, {
-		name = "WarriorKit experience",
+		name = "WiggleUI experience",
 		moved = function(anchor)
 			ns.db.progressPoint = anchor
 			Rails.Apply()
@@ -665,10 +665,10 @@ function Rails.Bar(which)
 	return (which == "faction") and faction.bar or xp.bar
 end
 
--- One line for /wk status and for the panel.
+-- One line for /wui status and for the panel.
 function Rails.Describe()
 	if not ns.db.progress then
-		return "off, and the client's own bars are wherever `/wk hide xp` left them"
+		return "off, and the client's own bars are wherever `/wui hide xp` left them"
 	end
 	local rows = {}
 	if shape.xp then

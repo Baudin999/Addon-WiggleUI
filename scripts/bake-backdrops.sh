@@ -422,7 +422,7 @@ for p in PAINTINGS:
 		lua.append("\t\tcover = true,")
 	for key in ("Middle", "Top", "Bottom", "Left", "Right", "TopLeft", "TopRight", "BottomLeft", "BottomRight"):
 		name, (dw, dh) = pieces[key]
-		lua.append(f"\t\t{key} = {{ \"Interface\\\\AddOns\\\\WarriorKit\\\\Media\\\\{name}\", {dw}, {dh} }},")
+		lua.append(f"\t\t{key} = {{ \"Interface\\\\AddOns\\\\WiggleUI\\\\Media\\\\{name}\", {dw}, {dh} }},")
 	lua.append("\t},")
 	print(f"baked {stem}: {W}x{H}, corner {drawn(c)}, tile {drawn(pw)}x{drawn(ph)}")
 

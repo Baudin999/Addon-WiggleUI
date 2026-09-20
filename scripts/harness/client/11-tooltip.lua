@@ -157,7 +157,7 @@ end
 -- The scanner above is a frame the addon made and never shows. This is the one
 -- the client owns: shared with quest text, with a link somebody clicked in
 -- chat, with the merchant window and with every other addon installed. The
--- world hover is the one place WarriorKit touches it, and what it does is take
+-- world hover is the one place WiggleUI touches it, and what it does is take
 -- it down again, so the two things the stub has to model are the two the
 -- suppression reads. GetUnit says what the tooltip is about, and Show and Hide
 -- have to be real, because the suppression hangs on OnShow and a swallowed one

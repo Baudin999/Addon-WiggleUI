@@ -54,7 +54,7 @@ local H = ...
 local ns, check = H.ns, H.check
 
 local Hover, Cast, Sheet = ns.Hover, ns.HoverCast, ns.HoverSheet
-local button = _G.WarriorKitHoverButton
+local button = _G.WiggleUIHoverButton
 
 -- The bar's side of the key this section binds first. The square SHIFT-BUTTON3
 -- presses, which is bar 1's first; what the binding layer says when the bar
@@ -153,7 +153,7 @@ check(Hover.Held() == nil, "the slot still holds the spell after the key was pre
 check(macro(1) == "/cast [@mouseover,harm,nodead] Rend\n"
 		.. ("/click [@mouseover,noharm][@mouseover,dead] %s LeftButton"):format(bar.square),
 	("the enemy binding carries %q"):format(tostring(macro(1))))
-check(bound("SHIFT-BUTTON3") == "CLICK WarriorKitHoverButton:wk1",
+check(bound("SHIFT-BUTTON3") == "CLICK WiggleUIHoverButton:wk1",
 	("SHIFT-BUTTON3 reads back as %q"):format(bound("SHIFT-BUTTON3")))
 check(Cast.Holding(1), "the binding layer took the key and the part says it did not")
 
@@ -294,7 +294,7 @@ check(not ok and said:find("Thunder Clap") ~= nil,
 	("a row took a key its neighbour holds: %s"):format(tostring(said)))
 
 check(Hover.Rebind(1, "CTRL-BUTTON1"), "a modified left click was refused as a new key")
-check(bound("CTRL-BUTTON1") == "CLICK WarriorKitHoverButton:wk1",
+check(bound("CTRL-BUTTON1") == "CLICK WiggleUIHoverButton:wk1",
 	("the rebound key reads back as %q"):format(bound("CTRL-BUTTON1")))
 check(macro(1) == "/cast [@mouseover,harm,nodead] Rend",
 	("off the bar's key the row carries %q"):format(tostring(macro(1))))
@@ -304,7 +304,7 @@ check(bound("SHIFT-BUTTON3") == bar.holds,
 	("the key the row moved off reads back as %q"):format(bound("SHIFT-BUTTON3")))
 check(ns.Bars.Keys() == bar.keys, ("with the key given back the bars hold %d"):format(ns.Bars.Keys()))
 check(Hover.Rebind(1, "SHIFT-BUTTON3"), "moving the row back was refused")
-check(bound("SHIFT-BUTTON3") == "CLICK WarriorKitHoverButton:wk1",
+check(bound("SHIFT-BUTTON3") == "CLICK WiggleUIHoverButton:wk1",
 	"the row moved back and the bar kept the key")
 
 ok, said = Hover.Rebind(1, "BUTTON1")
@@ -315,7 +315,7 @@ check(not ok and said:find("modifier") ~= nil,
 -- The list on screen
 --------------------------------------------------------------------------
 
-local sheet = _G.WarriorKitHoverSheet
+local sheet = _G.WiggleUIHoverSheet
 check(sheet ~= nil and sheet:IsShown(), "the list is off with four keys bound")
 check(Sheet.Shown() == 4, ("the list draws %d rows for four keys"):format(Sheet.Shown()))
 
@@ -374,12 +374,12 @@ inCombat = true
 check(Cast.Apply() == false, "a change in combat was not deferred")
 check(Cast.Describe():find("combat") ~= nil,
 	("in combat the keys read %q"):format(Cast.Describe()))
-check(bound("SHIFT-BUTTON3") == "CLICK WarriorKitHoverButton:wk1",
+check(bound("SHIFT-BUTTON3") == "CLICK WiggleUIHoverButton:wk1",
 	"the keys already up were dropped when combat refused a rewrite")
 
 inCombat = false
 H.fire("PLAYER_REGEN_ENABLED")
-check(bound("SHIFT-BUTTON3") == "CLICK WarriorKitHoverButton:wk1",
+check(bound("SHIFT-BUTTON3") == "CLICK WiggleUIHoverButton:wk1",
 	"the deferred change never landed when the fight ended")
 _G.InCombatLockdown = realLockdown
 
@@ -433,7 +433,7 @@ check(bound("SHIFT-BUTTON3") == bar.holds,
 check(sheet:IsShown() == false, "the part was switched off and the list stayed up")
 ns.db.hover = true
 Hover.Changed()
-check(bound("SHIFT-BUTTON3") == "CLICK WarriorKitHoverButton:wk1",
+check(bound("SHIFT-BUTTON3") == "CLICK WiggleUIHoverButton:wk1",
 	"the part was switched back on and the keys did not come back")
 
 check(Hover.Clear() == 3, "clearing did not report the number it took off")
@@ -512,14 +512,14 @@ local function deliver(key)
 end
 local function press(_, key)
 	deliver("LSHIFT")
-	_G.WarriorKitShift(true)
+	_G.WiggleUIShift(true)
 	local took = deliver(key)
-	_G.WarriorKitShift(false)
+	_G.WiggleUIShift(false)
 	return took
 end
 
 local function drop(index)
-	_G.WarriorKitCarrySpell(index, "spell")
+	_G.WiggleUICarrySpell(index, "spell")
 	draft.square.button:Click("LeftButton")
 end
 

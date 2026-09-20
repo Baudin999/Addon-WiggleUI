@@ -23,7 +23,7 @@ local Previews = ns.SetupPreviews
 -- Nothing is written until the last page. Skipping, closing the window or
 -- pressing Escape keeps what is there, which on a fresh install is the shipped
 -- screen, and the setup never comes up on its own again: it is under the game
--- menu as WarriorKit Setup, and /wk setup.
+-- menu as WiggleUI Setup, and /wui setup.
 --
 -- Three of the five are drawn at a /reload, for the reason Theme/Theme.lua
 -- gives, so finishing reloads when one of those three moved. The size and the
@@ -374,8 +374,8 @@ local function Build()
 		return window
 	end
 	window = UI.Window({
-		name = "WarriorKitSetup",
-		title = "WarriorKit Setup",
+		name = "WiggleUISetup",
+		title = "WiggleUI Setup",
 		width = WIDTH,
 		height = HEIGHT,
 	})
@@ -393,7 +393,7 @@ local function Build()
 		UI.SetGeneral(UI.ZoomSnap(ns.db.generalSize))
 		if not ns.db.setupDone then
 			ns.db.setupDone = true
-			ns.Print("the setup is under Escape, WarriorKit Setup, or /wk setup, whenever you want it.")
+			ns.Print("the setup is under Escape, WiggleUI Setup, or /wui setup, whenever you want it.")
 		end
 	end)
 	return window

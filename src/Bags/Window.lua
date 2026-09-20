@@ -296,7 +296,7 @@ end
 
 local function Build()
 	window = UI.Window({
-		name = "WarriorKitBags",
+		name = "WiggleUIBags",
 		title = "Bags",
 		width = Width(),
 		height = FLOOR,

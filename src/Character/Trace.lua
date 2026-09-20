@@ -6,7 +6,7 @@ ns.CharTrace = Trace
 --------------------------------------------------------------------------
 -- What a gear square did when you clicked it
 --
--- Off, and worth nothing until it is on. `/wk character trace` turns it on and
+-- Off, and worth nothing until it is on. `/wui character trace` turns it on and
 -- every click on a square then says what the client was asked and what it
 -- answered, in chat, in the order it happened.
 --

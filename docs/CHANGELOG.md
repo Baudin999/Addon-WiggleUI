@@ -2,6 +2,29 @@
 
 ## Unreleased
 
+### WarriorKit is WiggleUI now
+
+The addon stopped being a warrior addon a long time before it stopped being
+called one. It is an interface for TBC Anniversary and Classic Era that happens
+to have a Charge button in it, and the name it carries now is the gesture it is
+built around: shake the mouse and the whole screen swaps to the other theme.
+
+Read this part before you update. The folder in `Interface/AddOns` is
+`WiggleUI`, not `WarriorKit`, so your addon manager installs the new one and
+leaves the old one sitting beside it. Delete `Interface/AddOns/WarriorKit` by
+hand. If you do not, both copies load, both replace the same Blizzard frames,
+and what you get on screen is two addons fighting over one UI.
+
+Your settings do not come across. The client names the saved-variables file
+after the addon folder, so `WTF/.../SavedVariables/WarriorKit.lua` is not read
+by anything any more and WiggleUI starts on its defaults. You get the four
+setup questions again at your first login. Delete the old file with the old
+folder.
+
+The slash command is `/wui`, with `/wiggleui` and `/wiggle` as the long forms.
+`/wk` is gone. Every binding under WiggleUI in the key bindings screen is
+newly named, so the four of them need setting again.
+
 ### A delete list on the loot feed
 
 A row in the loot feed now has a trash can beside its cross. Press it and every

@@ -73,9 +73,9 @@ function Gauge.Flatten(bar)
 	if not fill or not fill.SetColorTexture then
 		return nil
 	end
-	local flat = fill.GetTexture and bar.wkFlat == fill and not fill:GetTexture()
+	local flat = fill.GetTexture and bar.wuiFlat == fill and not fill:GetTexture()
 	if not flat then
-		bar.wkFlat = fill
+		bar.wuiFlat = fill
 		fill:SetColorTexture(1, 1, 1, 1)
 	end
 	return fill
@@ -180,12 +180,12 @@ end
 -- compare the same thing; these two can and do.
 function Gauge.Paint(bar, track, color)
 	local r, g, b = color[1], color[2], color[3]
-	local set = bar and (bar.wkSetStatusBarColor or bar.SetStatusBarColor)
+	local set = bar and (bar.wuiSetStatusBarColor or bar.SetStatusBarColor)
 	if set then
 		set(bar, r, g, b, 1)
 	end
 	if track then
-		track:SetColorTexture(r * TRACK, g * TRACK, b * TRACK, bar and bar.wkTrackAlpha or TRACK_ALPHA)
+		track:SetColorTexture(r * TRACK, g * TRACK, b * TRACK, bar and bar.wuiTrackAlpha or TRACK_ALPHA)
 	end
 end
 
@@ -207,7 +207,7 @@ function Gauge.Floor(bar)
 	local floor = UI.Backdrop(bar, { frame = false })
 	if floor then
 		bar.floor = floor
-		bar.wkTrackAlpha = FLOOR_TINT
+		bar.wuiTrackAlpha = FLOOR_TINT
 	end
 	return floor
 end
@@ -222,7 +222,7 @@ function Gauge.ShowFloor(bar, on)
 		return false
 	end
 	bar.floor:SetAlpha(on and 1 or 0)
-	bar.wkTrackAlpha = on and FLOOR_TINT or nil
+	bar.wuiTrackAlpha = on and FLOOR_TINT or nil
 	return true
 end
 

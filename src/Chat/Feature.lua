@@ -240,7 +240,7 @@ local function RoomWord(arg)
 			return
 		end
 	end
-	ns.Print("no room called " .. arg .. ". /wk chat room lists them.")
+	ns.Print("no room called " .. arg .. ". /wui chat room lists them.")
 end
 
 -- A conversation off the rail, by the name on it.
@@ -267,7 +267,7 @@ end
 
 -- The saved conversation, thrown away.
 --
--- It reports on its own and only writes on `yes`, which is what `/wk defaults`
+-- It reports on its own and only writes on `yes`, which is what `/wui defaults`
 -- does and for the same reason: this is the one word in the part that destroys
 -- something nothing else keeps a copy of.
 --
@@ -277,7 +277,7 @@ end
 local function ForgetWord(sure)
 	if sure ~= "yes" then
 		ns.Print("chat: " .. ns.ChatHistory.Describe()
-			.. ". /wk chat forget yes throws it away.")
+			.. ". /wui chat forget yes throws it away.")
 		return
 	end
 	ns.ChatHistory.Wipe()
@@ -362,7 +362,7 @@ end
 local function GroupWord(arg, raw)
 	if not arg or arg == "" or arg == "list" then
 		if ns.People.Count() == 0 then
-			ns.Print("no groups. /wk group new <name>.")
+			ns.Print("no groups. /wui group new <name>.")
 			return
 		end
 		for index, group in ipairs(ns.People.All()) do
@@ -657,7 +657,7 @@ ns.Register({
 		end,
 			function() ns.ChatWindow.Show() end,
 			function() return ns.ChatWindow.Built() end)
-		ui.Hint("There is a key for it under WarriorKit in the client's own key bindings. Hiding Blizzard's window gives the enter key that job instead.")
+		ui.Hint("There is a key for it under WiggleUI in the client's own key bindings. Hiding Blizzard's window gives the enter key that job instead.")
 
 		ui.Reading("chat", function()
 			if not ns.ChatFeed.Installed() then

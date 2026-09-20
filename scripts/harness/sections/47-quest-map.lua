@@ -175,7 +175,7 @@ check(Window.Tab() == 1, "the middle column did not open on the quest")
 Window.Tab(2)
 check(Window.Tab() == 2, "the tab would not turn over to the map")
 
-local text, map = _G.WarriorKitQuestText, _G.WarriorKitQuestMap
+local text, map = _G.WiggleUIQuestText, _G.WiggleUIQuestMap
 check(text and map and not text:IsShown() and map:IsShown(),
 	"both sides of the tab are up at once, or neither is")
 
@@ -202,7 +202,7 @@ check(where == "Elwynn Forest" and dots == 4,
 -- Two frames down, not one. The board is a box that clips and the picture
 -- is a frame inside it that the wheel is allowed to make bigger than the
 -- box, so the tiles hang off the canvas and the canvas hangs off the port.
-local board = _G.WarriorKitQuestChart
+local board = _G.WiggleUIQuestChart
 local port = board and board:GetChildren()
 local canvas = port and port:GetChildren()
 check(canvas ~= nil, "the map has no canvas to draw the zone on")

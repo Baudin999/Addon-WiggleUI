@@ -48,7 +48,7 @@ do
 	-- state, and it is the state a link out of the chat log lands in.
 	------------------------------------------------------------------
 
-	local late = _G.WarriorKitItemLink("Late Arrival")
+	local late = _G.WiggleUIItemLink("Late Arrival")
 
 	Tip.Open(owner, { kind = "item", link = late }, "control")
 	check(Box.IsShown() == false,
@@ -124,7 +124,7 @@ do
 	-- reading of the same one.
 	------------------------------------------------------------------
 
-	local book = _G.WarriorKitItemLink("Master First Aid - Doctor in the House")
+	local book = _G.WiggleUIItemLink("Master First Aid - Doctor in the House")
 	local USE = "Use: Teaches you advanced first aid, allowing a maximum of 375 first aid skill."
 
 	-- Asked as whether the sentence is anywhere in the box rather than as a line

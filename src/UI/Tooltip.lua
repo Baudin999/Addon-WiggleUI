@@ -68,7 +68,7 @@ local C, M = UI.Color, UI.Metric
 -- part has something new to say, and the scanner changes when a client does.
 --------------------------------------------------------------------------
 
-local FRAME_NAME = "WarriorKitTooltip"
+local FRAME_NAME = "WiggleUITooltip"
 
 -- Every number here is a unit, which is one physical pixel inside a frame
 -- ns.UI.Adopt has taken onto the grid, and a whole block of them above zoom 1.

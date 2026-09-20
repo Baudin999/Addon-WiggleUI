@@ -42,7 +42,7 @@ end
 
 do
 	local Page = ns.BuffPanel
-	local BOOK = _G.WarriorKitSpellBookIds
+	local BOOK = _G.WiggleUISpellBookIds
 	local baseline = Upkeep.Count()
 
 	-- Open, and standing on the page. A square is in step only while the page it
@@ -65,7 +65,7 @@ do
 	-- square rather than handed to its handler, so a square under something else
 	-- refuses it here the way it would in the game.
 	local function drop(w, book)
-		_G.WarriorKitCarrySpell(book, "spell")
+		_G.WiggleUICarrySpell(book, "spell")
 		H.mouse.Give(w.button)
 	end
 

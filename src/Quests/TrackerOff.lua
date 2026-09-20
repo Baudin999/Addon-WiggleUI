@@ -25,7 +25,7 @@ ns.QuestTrackerOff = Off
 -- outlives this addon being uninstalled, and is a box the player may well have
 -- ticked themselves. A feature that moved it quietly is a feature that reads as
 -- Questie breaking, so it gets a switch with its own name on it and a clause in
--- `/wk status` saying which way the setting is and who put it there.
+-- `/wui status` saying which way the setting is and who put it there.
 --
 -- **Two ends and a record between them.** Quests/Blizzard.lua's rule is that
 -- the switch owns the state and the file's job is that the two ends agree, and
@@ -45,7 +45,7 @@ ns.QuestTrackerOff = Off
 -- **Neither call is made in combat.** Questie's own checkbox greys itself out
 -- on InCombatLockdown and the reason is on the other side of the call: Enable
 -- rebuilds the tracker's frames. Work refused here is held by ns.Lockdown to
--- the end of the fight, and `/wk status` says so while it is waiting.
+-- the end of the fight, and `/wui status` says so while it is waiting.
 --
 -- **Both calls reload the interface.** Questie's Disable ends in ReloadUI and
 -- its Enable hands ReloadUI to ThreadLib as the callback; its own checkbox says

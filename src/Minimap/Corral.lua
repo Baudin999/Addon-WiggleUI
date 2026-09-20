@@ -113,7 +113,7 @@ local BLIZZARD = {
 
 -- The addon's own frames, which are all named this way, and the border
 -- Shape.lua draws, which has no name at all and so never gets this far.
-local MINE = "WarriorKit"
+local MINE = "WiggleUI"
 
 -- The name with its trailing digits taken off, which is what a pool of pins
 -- has in common and what a button has to itself.
@@ -171,21 +171,21 @@ local order = {}      -- names, in the order they were taken, so the grid is sta
 local parked = {}     -- name -> what it looked like before it was taken
 
 local function Pin(button)
-	if button.wkPinned then
+	if button.wuiPinned then
 		return
 	end
-	button.wkPinned = true
-	button.wkSetPoint = button.SetPoint
+	button.wuiPinned = true
+	button.wuiSetPoint = button.SetPoint
 	button.SetPoint = function() end
 end
 
 local function Unpin(button)
-	if not button.wkPinned then
+	if not button.wuiPinned then
 		return
 	end
-	button.SetPoint = button.wkSetPoint
-	button.wkSetPoint = nil
-	button.wkPinned = nil
+	button.SetPoint = button.wuiSetPoint
+	button.wuiSetPoint = nil
+	button.wuiPinned = nil
 end
 
 local tray, face, countText, place
@@ -266,7 +266,7 @@ local function Layout()
 		local row = math.floor((index - 1) / COLUMNS)
 		-- Through the kept method, because the one on the button is the no-op
 		-- that stops it wandering back to the ring.
-		local setPoint = button.wkSetPoint or button.SetPoint
+		local setPoint = button.wuiSetPoint or button.SetPoint
 		button:ClearAllPoints()
 		setPoint(button, "TOPLEFT", tray, "TOPLEFT",
 			GAP + column * (CELL + GAP), -(GAP + row * (CELL + GAP)))
@@ -388,7 +388,7 @@ local function Build()
 		return false
 	end
 
-	face = CreateFrame("Button", "WarriorKitCorral", _G.UIParent)
+	face = CreateFrame("Button", "WiggleUICorral", _G.UIParent)
 	face:SetSize(FACE, FACE)
 	face.bg = ns.Fill(face, "BACKGROUND", UI.Color.control[1], UI.Color.control[2],
 		UI.Color.control[3], 1)

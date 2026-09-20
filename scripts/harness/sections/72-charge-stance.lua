@@ -26,9 +26,9 @@ local guids, inCombat, own = H.guids, H.inCombat, H.own
 if ns.Charge.Available() then
 
 local Charge = ns.Charge
-local button = _G.WarriorKitChargeButton
-local shapeshift = _G.WarriorKitShapeshift
-local friendlyUnits = _G.WarriorKitFriendlyUnits
+local button = _G.WiggleUIChargeButton
+local shapeshift = _G.WiggleUIShapeshift
+local friendlyUnits = _G.WiggleUIFriendlyUnits
 
 local MOB = "Creature-0-0-0-0-1234-00000077"
 local MATE = "Player-1-00000078"

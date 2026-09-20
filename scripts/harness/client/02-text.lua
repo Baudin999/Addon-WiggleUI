@@ -707,7 +707,7 @@ function _G.GetFramerate() return 97.5 end
 local heap = 300
 function _G.UpdateAddOnMemoryUsage() heap = heap + 2 end
 function _G.GetAddOnMemoryUsage(name)
-	return (name == "WarriorKit") and heap or 0
+	return (name == "WiggleUI") and heap or 0
 end
 
 -- nameplateMaxDistance starts where the Anniversary client starts it, and that

@@ -127,7 +127,7 @@ end
 -- walks again. Our fill on one of Blizzard's buttons is a texture of that
 -- button, so the next pass would find our own paint among theirs and strip it.
 local function Mine(region)
-	region.wkOurs = true
+	region.wuiOurs = true
 	return region
 end
 
@@ -149,15 +149,15 @@ end
 -- menu, and which one a given client uses is not worth finding out when
 -- keeping either costs the same.
 local function Keep(text)
-	if text.wkKept then
+	if text.wuiKept then
 		return
 	end
-	text.wkKept = true
-	text.wkFont = text:GetFontObject()
-	if not text.wkFont then
-		text.wkPath, text.wkSize, text.wkFlags = text:GetFont()
+	text.wuiKept = true
+	text.wuiFont = text:GetFontObject()
+	if not text.wuiFont then
+		text.wuiPath, text.wuiSize, text.wuiFlags = text:GetFont()
 	end
-	text.wkR, text.wkG, text.wkB, text.wkA = text:GetTextColor()
+	text.wuiR, text.wuiG, text.wuiB, text.wuiA = text:GetTextColor()
 end
 
 -- A button's label in the kit's face, and dimmed when the button is not
@@ -172,16 +172,16 @@ local function Restyle(text, enabled)
 end
 
 local function Restore(text)
-	if not text.wkKept then
+	if not text.wuiKept then
 		return
 	end
-	if text.wkFont then
-		text:SetFontObject(text.wkFont)
-	elseif text.wkPath then
-		text:SetFont(text.wkPath, text.wkSize, text.wkFlags)
+	if text.wuiFont then
+		text:SetFontObject(text.wuiFont)
+	elseif text.wuiPath then
+		text:SetFont(text.wuiPath, text.wuiSize, text.wuiFlags)
 	end
-	text:SetTextColor(text.wkR, text.wkG, text.wkB, text.wkA)
-	text.wkKept = nil
+	text:SetTextColor(text.wuiR, text.wuiG, text.wuiB, text.wuiA)
+	text.wuiKept = nil
 end
 
 --------------------------------------------------------------------------
@@ -193,26 +193,26 @@ end
 -- on the texture, because a hook cannot be taken off again: after the switch
 -- goes off these still run, and what they must do then is nothing.
 local function Lit(entry)
-	if entry.wkOn then
-		UI.Tint(entry.wkPaint, C.hover)
+	if entry.wuiOn then
+		UI.Tint(entry.wuiPaint, C.hover)
 	end
 end
 
 local function Dim(entry)
-	if entry.wkOn then
-		UI.Tint(entry.wkPaint, C.control)
+	if entry.wuiOn then
+		UI.Tint(entry.wuiPaint, C.control)
 	end
 end
 
 local function Dress(entry)
-	entry.wkPaint = Mine(ns.Fill(entry, "BACKGROUND",
+	entry.wuiPaint = Mine(ns.Fill(entry, "BACKGROUND",
 		C.control[1], C.control[2], C.control[3], 1))
-	entry.wkPaint:SetAllPoints()
-	entry.wkEdges = ns.Outline(entry, C.edge[1], C.edge[2], C.edge[3], 1)
+	entry.wuiPaint:SetAllPoints()
+	entry.wuiEdges = ns.Outline(entry, C.edge[1], C.edge[2], C.edge[3], 1)
 	for index = 1, 4 do
-		Mine(entry.wkEdges[index])
+		Mine(entry.wuiEdges[index])
 	end
-	ns.EdgeSize(entry.wkEdges, ns.Pixel(entry))
+	ns.EdgeSize(entry.wuiEdges, ns.Pixel(entry))
 	entry:HookScript("OnEnter", Lit)
 	entry:HookScript("OnLeave", Dim)
 end
@@ -224,7 +224,7 @@ local function Paint(entry)
 	-- edges below are textures of this button and the next pass would find
 	-- them among Blizzard's and strip the paint it had just put on.
 	for _, region in ipairs(Regions(entry)) do
-		local kind = not region.wkOurs and ns.Measure(region, "GetObjectType") or nil
+		local kind = not region.wuiOurs and ns.Measure(region, "GetObjectType") or nil
 		if kind == "Texture" then
 			complete = ns.Strip(region) and complete
 			stripped = stripped + 1
@@ -241,14 +241,14 @@ local function Paint(entry)
 		entry.topPadding = PAD - GAP
 	end
 
-	if not entry.wkPaint then
+	if not entry.wuiPaint then
 		Dress(entry)
 	end
-	entry.wkOn = true
-	Reveal(entry.wkPaint, true)
-	UI.Tint(entry.wkPaint, C.control)
+	entry.wuiOn = true
+	Reveal(entry.wuiPaint, true)
+	UI.Tint(entry.wuiPaint, C.control)
 	for index = 1, 4 do
-		Reveal(entry.wkEdges[index], true)
+		Reveal(entry.wuiEdges[index], true)
 	end
 	dressed = dressed + 1
 	return complete
@@ -257,7 +257,7 @@ end
 local function Bare(entry)
 	local complete = true
 	for _, region in ipairs(Regions(entry)) do
-		local kind = not region.wkOurs and ns.Measure(region, "GetObjectType") or nil
+		local kind = not region.wuiOurs and ns.Measure(region, "GetObjectType") or nil
 		if kind == "Texture" then
 			complete = ns.Unstrip(region) and complete
 		elseif kind == "FontString" then
@@ -265,11 +265,11 @@ local function Bare(entry)
 		end
 	end
 
-	entry.wkOn = false
-	if entry.wkPaint then
-		Reveal(entry.wkPaint, false)
+	entry.wuiOn = false
+	if entry.wuiPaint then
+		Reveal(entry.wuiPaint, false)
 		for index = 1, 4 do
-			Reveal(entry.wkEdges[index], false)
+			Reveal(entry.wuiEdges[index], false)
 		end
 	end
 	return complete
@@ -285,7 +285,7 @@ end
 -- headings in one place is worse than either.
 local function Cover(region)
 	local kind = ns.Measure(region, "GetObjectType")
-	if region.wkOurs or (kind ~= "Texture" and kind ~= "FontString") then
+	if region.wuiOurs or (kind ~= "Texture" and kind ~= "FontString") then
 		return true
 	end
 	if kind == "FontString" and not heading then
@@ -299,7 +299,7 @@ local function Cover(region)
 end
 
 local function Uncover(region)
-	if region.wkOurs then
+	if region.wuiOurs then
 		return true
 	end
 	return ns.Unstrip(region)

@@ -17,7 +17,7 @@ local C, M = UI.Color, UI.Metric
 -- profile and never a stray key.
 --------------------------------------------------------------------------
 
-local FRAME_NAME = "WarriorKitProfileString"
+local FRAME_NAME = "WiggleUIProfileString"
 local WIDTH, HEIGHT = 480, 320
 
 -- Letters per line of an export. The reader drops line breaks, so the string

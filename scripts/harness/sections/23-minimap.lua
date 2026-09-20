@@ -27,13 +27,13 @@ check(map:GetWidth() == ns.db.minimapSize,
 	("the map is %d wide and the setting says %d"):format(map:GetWidth(), ns.db.minimapSize))
 check(map.mask == "Interface\\Buttons\\WHITE8X8",
 	"the round mask is still on a map the addon calls square")
-check(_G.MinimapBorder.wkStripped, "the ring is still drawn round a square map")
-check(_G.MinimapZoomIn.wkStripped, "the zoom buttons are still on the arc")
+check(_G.MinimapBorder.wuiStripped, "the ring is still drawn round a square map")
+check(_G.MinimapZoomIn.wuiStripped, "the zoom buttons are still on the arc")
 
 -- The sun and the moon, which said whether it was day in a game whose sky
 -- says the same thing. Furniture the addon takes off rather than furniture
 -- it moves, so unlike the mail icon it is not on a corner and never was.
-check(_G.GameTimeFrame.wkStripped, "the sun and moon are still on the map")
+check(_G.GameTimeFrame.wuiStripped, "the sun and moon are still on the map")
 
 -- Blizzard's clock, and the piece that made any of this worth doing: it
 -- draws its numbers on a strip of the old stone minimap tile, so on a
@@ -47,7 +47,7 @@ check(_G.TimeManagerClockButton == nil,
 	"the fixture put Blizzard's clock up before the addon that owns it loaded")
 child("button", map, "TimeManagerClockButton")
 fire("ADDON_LOADED", "Blizzard_TimeManager")
-check(_G.TimeManagerClockButton.wkStripped,
+check(_G.TimeManagerClockButton.wuiStripped,
 	"Blizzard's clock loaded after login and the square never took it off")
 
 ----------------------------------------------------------------------
@@ -79,7 +79,7 @@ do
 	-- one row of pixels is what lets the seam be painted out and the
 	-- outline read as one silhouette rather than as a box with a box stuck
 	-- to it.
-	local tab = _G.WarriorKitClock
+	local tab = _G.WiggleUIClock
 	check(tab ~= nil, "the clock tab was never built")
 
 	point, relative, _, x, y = tab:GetPoint()
@@ -189,10 +189,10 @@ check(map:GetWidth() == BUILT_SIZE,
 	("turning the square off left the map %d wide, the client drew it at %d")
 		:format(map:GetWidth(), BUILT_SIZE))
 check(map.mask == "Textures\\MinimapMask", "the round mask did not come back")
-check(not _G.MinimapBorder.wkStripped, "the ring did not come back")
-check(not _G.MinimapZoomIn.wkStripped, "the zoom buttons did not come back")
-check(not _G.GameTimeFrame.wkStripped, "the sun and moon did not come back")
-check(not _G.TimeManagerClockButton.wkStripped,
+check(not _G.MinimapBorder.wuiStripped, "the ring did not come back")
+check(not _G.MinimapZoomIn.wuiStripped, "the zoom buttons did not come back")
+check(not _G.GameTimeFrame.wuiStripped, "the sun and moon did not come back")
+check(not _G.TimeManagerClockButton.wuiStripped,
 	"Blizzard's clock did not come back with the round map")
 check(not ns.MinimapShape.Bezel():IsShown(),
 	"the addon's own bezel is still drawn round a round map")
@@ -213,7 +213,7 @@ ns.MinimapShape.Apply()
 -- The corral
 ----------------------------------------------------------------------
 
-local corral = _G.WarriorKitCorral
+local corral = _G.WiggleUICorral
 check(corral ~= nil, "the corral button was never built")
 
 -- Three addon buttons on the fixture and nothing else. Blizzard's four are
@@ -236,7 +236,7 @@ check(pooled == 12,
 	("%d frames were read as a pool, the button-sized pool is 12"):format(pooled))
 check(refused == 0, ("%d buttons hit the ceiling and nothing should have"):format(refused))
 check(_G.QuestieFrame1:GetParent() == map, "a quest pin was collected as a button")
-check(_G.QuestieFrame1.wkPinned == nil,
+check(_G.QuestieFrame1.wuiPinned == nil,
 	"a quest pin had its SetPoint taken, so its addon can no longer move it")
 check(_G.GatherMatePin1:GetParent() == map,
 	"a pin pool drawn at a button's size got past the family rule")
@@ -276,7 +276,7 @@ ns.db.minimapCorral = false
 ns.Corral.Apply()
 check(ns.Corral.Count() == 0, "turning the corral off left it holding buttons")
 check(questie:GetParent() == map, "a released button was not handed back to the minimap")
-check(questie.wkPinned == nil, "a released button kept the no-op SetPoint")
+check(questie.wuiPinned == nil, "a released button kept the no-op SetPoint")
 questie:ClearAllPoints()
 questie:SetPoint("CENTER", map, "CENTER", 11, 22)
 local qx, qy = select(4, questie:GetPoint())

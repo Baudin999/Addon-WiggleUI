@@ -1,15 +1,16 @@
-![WarriorKit](art/warriorkit.jpg)
+![WiggleUI](art/wiggleui.jpg)
 
-# WarriorKit
+# WiggleUI
 
-A warrior addon for TBC Anniversary (2.5.6) and Classic Era (1.15.9).
+An interface for TBC Anniversary (2.5.6) and Classic Era (1.15.9), named
+after the mouse wiggle that swaps the whole screen between two themes.
 
 - **One Charge button.** It casts Charge, Intervene or Intercept depending on
   the stance you stand in and what you are looking at, and out of combat it
   aims by camera rather than by target.
 - **Easy raid marking.** Bind your raid target icons to simple buttons.
 - **One key that switches target and swings.** TAB cycles and stops there. Bind
-  a key in `/wk` and it takes the next enemy and starts the attack on it.
+  a key in `/wui` and it takes the next enemy and starts the attack on it.
 - **Weapon loadouts, one key each.** A press puts you in a stance and puts that
   loadout's pair of weapons in your hands. Three come ready, one per stance, and
   you can add your own, up to ten. Drag a weapon or a shield onto a hand on the
@@ -100,7 +101,7 @@ A warrior addon for TBC Anniversary (2.5.6) and Classic Era (1.15.9).
   whoever you are looking at. Somebody out of range, dead, offline or running
   back drains to the empty colour and their block says which. A member the
   client will not name a power for gets no rail rather than an empty one. Where
-  the addon guesses a role wrong, tell it: `/wk party role <name> healer` is
+  the addon guesses a role wrong, tell it: `/wui party role <name> healer` is
   kept for that character and beats everything the client thinks. Blizzard's
   party and raid frames go off the screen, and one tick box each puts them back.
 - **A nag for what you forgot.** A row of squares over your character when
@@ -177,7 +178,7 @@ A warrior addon for TBC Anniversary (2.5.6) and Classic Era (1.15.9).
   prices work, which is why they now show up on a mail attachment and not only
   on the loot row they were written for. The box docks in the corner the client
   keeps its own tooltip in, clear of the bags, so nothing you hover is covered
-  by what it says. `/wk tips beside` puts it back next to the thing itself.
+  by what it says. `/wui tips beside` puts it back next to the thing itself.
 
   A creature in the world gets the same box. It is the one hover nothing in the
   addon owns a frame for, since the cursor is over the world itself and the
@@ -204,11 +205,11 @@ A warrior addon for TBC Anniversary (2.5.6) and Classic Era (1.15.9).
   is the average of two unrelated things.
 
   It opens in a window of its own, from a click on the meter header or from
-  `/wk breakdown open`, and Escape closes it. `/wk breakdown` prints the top ten
+  `/wui breakdown open`, and Escape closes it. `/wui breakdown` prints the top ten
   to chat instead.
 - **A warrior bar loadout**, with a backup of whatever it replaced, plus an
   Edit Mode layout carried inside the addon.
-- **Your own action bars, redrawn.** `/wk actionbars on` reads whichever bars
+- **Your own action bars, redrawn.** `/wui actionbars on` reads whichever bars
   you have up, stands one of ours up for each on the same action slots, moves
   your keys onto it, and hides Blizzard's behind it. Bar 1 still pages by
   stance. Every icon is drawn at the one size this client can draw sharp, and
@@ -227,7 +228,7 @@ A warrior addon for TBC Anniversary (2.5.6) and Classic Era (1.15.9).
   press puts the lot back to plain. While the settings window is open, whichever
   bar you have picked wears a blue rim on the screen, so you are never editing
   the one you thought was the other one.
-- **Stripped bar art**, so the bars read as a row of icons. `/wk art on` puts
+- **Stripped bar art**, so the bars read as a row of icons. `/wui art on` puts
   the Blizzard art back.
 - **Your experience along the bottom, drawn here.** Two rails: how far into the
   level you are, and under it the faction you are watching, in the same flat
@@ -247,7 +248,7 @@ A warrior addon for TBC Anniversary (2.5.6) and Classic Era (1.15.9).
   press to open. Each is borrowed rather than taken: parent, position and the
   button's own anchoring are handed back the moment you turn it off.
 - **A chat window, and one tab for the people you play with.** Name your wife,
-  your kids or your guild officers in `/wk` and every line any of them says, in
+  your kids or your guild officers in `/wui` and every line any of them says, in
   any channel, is copied to one tab of its own, together with the whispers you
   send them. The tab is not drawn until there is a name on the list. Beside it
   are two more: everything anyone said, and whispers on their own. Nothing else
@@ -267,7 +268,7 @@ A warrior addon for TBC Anniversary (2.5.6) and Classic Era (1.15.9).
   when you group up and for a community one is when the first person joins. It only ever joins:
   nothing here leaves a channel, mutes anyone or moves a volume. Blizzard's
   voice chat has no channels you can name, so what there is to pick is short,
-  and `/wk` says so.
+  and `/wui` says so.
 - **A filter for the red text in the middle of the screen.** Tick the messages
   you do not need and they stop drawing. Nothing is hidden that you did not
   tick, the list is shared by every character on the account, and one press
@@ -280,21 +281,21 @@ A warrior addon for TBC Anniversary (2.5.6) and Classic Era (1.15.9).
   instead of 1.9. A stranger who buffs you in passing gets a whispered `ty`,
   once every ten minutes per person, and nobody in your party or raid is ever
   whispered.
-- **A fanfare when you level, if you supply the sound.** WarriorKit plays
+- **A fanfare when you level, if you supply the sound.** WiggleUI plays
   `Media/BestAround.mp3` over the client's own chime and does not ship that
   file: it is five seconds of a record somebody else made and is not ours to
   hand out. Install [BestAround](https://www.wowinterface.com/downloads/info18925-BestAround.html),
   which is where everybody who has heard this joke heard it, and copy its
-  `bestaround.mp3` into WarriorKit's `Media/` under that name. Any sound file
+  `bestaround.mp3` into WiggleUI's `Media/` under that name. Any sound file
   you like works just as well. With nothing there the fanfare is silent and
-  `/wk` says why. It plays on the master volume rather than the sound effects
+  `/wui` says why. It plays on the master volume rather than the sound effects
   slider, so combat noise turned down does not take it with it, and two levels
-  in one breath play it once. `/wk ding` plays it now, `/wk ding off` ends it.
-- **`/wk destroy` clears out finished quest items.** One card at a time, with
+  in one breath play it once. `/wui ding` plays it now, `/wui ding off` ends it.
+- **`/wui destroy` clears out finished quest items.** One card at a time, with
   the quest it came from written on it, and a destroy and a skip. It reads
   Questie's database to work out which quest, so it needs Questie installed.
 
-`/wk` opens the settings panel. Everything in it has a slash command too, and
+`/wui` opens the settings panel. Everything in it has a slash command too, and
 `/exit` quits the client, which the game itself only spells `/quit`.
 
 The Charge button, the bar loadout and the Slam band are warrior only, and on
@@ -306,7 +307,7 @@ hunter as it does on a warrior, the swing bars included.
 ## Install
 
 Unzip into `Interface/AddOns`, so that the folder is
-`Interface/AddOns/WarriorKit` with `WarriorKit.toc` directly inside it.
+`Interface/AddOns/WiggleUI` with `WiggleUI.toc` directly inside it.
 
 [Questie](https://www.curseforge.com/wow/addons/questie) is the one other addon
 this one asks anything, and it is worth having. Both TOCs name it under
@@ -336,7 +337,7 @@ in the addon folder would be dead weight.
 `src/` is what a client sees. Link it in rather than copying, so there is one
 copy to edit and every client loads it:
 
-    ln -s "$PWD/src" "/path/to/World of Warcraft/_anniversary_/Interface/AddOns/WarriorKit"
+    ln -s "$PWD/src" "/path/to/World of Warcraft/_anniversary_/Interface/AddOns/WiggleUI"
 
 ## Developing
 
@@ -348,7 +349,7 @@ and zero errors is the bar, and it passes, so any finding is yours.
 
     ./scripts/release.sh
 
-Builds `dist/WarriorKit-<version>.zip`. Add `--upload` to publish it to
+Builds `dist/WiggleUI-<version>.zip`. Add `--upload` to publish it to
 CurseForge. It refuses to build anything if `check.sh` fails.
 
 There is no commit hook. There was one, and it ran `check.sh` and the harness

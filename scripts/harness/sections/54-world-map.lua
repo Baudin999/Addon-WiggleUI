@@ -204,7 +204,7 @@ do
 	check(Box.Place("control") == Box.RIGHT,
 		"controls are not on the corner, so a pin landing beside its mark proves nothing")
 
-	local probe = ns.UI.Chart.New(_G.UIParent, "WarriorKitMapHoverProbe")
+	local probe = ns.UI.Chart.New(_G.UIParent, "WiggleUIMapHoverProbe")
 	probe:Fit(400, 300)
 	probe:Draw(WESTFALL, points)
 	check(probe:Hover(1), "the board would not put the pointer on its first mark")

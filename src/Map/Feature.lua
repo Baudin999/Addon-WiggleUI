@@ -197,7 +197,7 @@ local function MapWord(arg, rawArg)
 		ns.Print("the world map is " .. (ns.db.worldMap and "on" or "off") .. ".")
 	elseif word == "" then
 		if not ns.db.worldMap then
-			ns.Print("the world map is off. Type /wk map on.")
+			ns.Print("the world map is off. Type /wui map on.")
 			return
 		end
 		ns.MapWindow.Toggle()

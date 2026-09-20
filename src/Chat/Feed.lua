@@ -379,7 +379,7 @@ end
 -- reaches it here.
 --
 -- One kind of line is told apart from the rest, and it is this addon's own. It
--- goes to the WarriorKit room rather than to System, because a line the addon
+-- goes to the WiggleUI room rather than to System, because a line the addon
 -- said is an answer to something you just did and System is forty lines of
 -- loot deep by the time you look for it.
 --
@@ -457,7 +457,7 @@ end
 -- what the close box on this window used to do. One press took the
 -- conversation off the screen, the closed state was saved, and Feed.Apply runs
 -- again at every login, so every say, party, guild, raid and whisper line
--- stayed deleted until the player found /wk chat. The close box is gone for
+-- stayed deleted until the player found /wui chat. The close box is gone for
 -- that reason, and the claim below is still tied to something being drawn.
 --
 -- The claim is also asked for at ADDON_LOADED, which is before the window

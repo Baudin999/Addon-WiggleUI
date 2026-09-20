@@ -25,7 +25,7 @@ local C, M = UI.Color, UI.Metric
 -- put on did. The skills followed it into that column: a weapon skill under the
 -- cap is the number the miss badge at the head of the column is computed from,
 -- and the two had been on separate pages since the sheet was built. Reputation
--- went to a window of its own on /wk reputation, which Character/RepWindow.lua
+-- went to a window of its own on /wui reputation, which Character/RepWindow.lua
 -- still hosts. What is left here is one window with one pane in it, and
 -- Character/Paperdoll.lua is that pane.
 --
@@ -144,7 +144,7 @@ end
 -- a reader following how the sheet is assembled has to step through.
 local function Sheet()
 	return UI.Window({
-		name = "WarriorKitCharacter",
+		name = "WiggleUICharacter",
 		-- Against the right hand edge of the monitor until the player moves it,
 		-- with no title bar and no line round the outside, never lifted so every
 		-- window the player opens flows over the top of it.
@@ -318,7 +318,7 @@ end
 -- which key opens this window and hands the key back when the switch is off.
 --------------------------------------------------------------------------
 
-local KEY = "WarriorKitCharacterKey"
+local KEY = "WiggleUICharacterKey"
 
 -- Built with the window and never before it: the snippet is handed the frame it
 -- acts on, because a snippet may only touch what it has been given a reference

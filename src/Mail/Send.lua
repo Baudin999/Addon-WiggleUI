@@ -259,7 +259,7 @@ function Send.Note()
 	return note
 end
 
--- What a mail window puts under its send button, and what `/wk status` says.
+-- What a mail window puts under its send button, and what `/wui status` says.
 function Send.Describe()
 	if running then
 		return ("sending %d of %d"):format(at, total)

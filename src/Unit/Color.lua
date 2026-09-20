@@ -515,14 +515,14 @@ end
 
 -- Every fill the palette owns, so the harness can hold all of them to the
 -- ceiling rather than to the five it happens to know the names of, and so
--- `/wk colors` can print the lot.
+-- `/wui colors` can print the lot.
 Color.fills = fills
 Color.tokens = tokens
 
 
 -- The whole palette as the player can check it: what each class fills a bar
 -- with and how far the name on top of it is from the fill under it. Printed by
--- `/wk colors`, and it exists because a rule with no readout is a rule nobody
+-- `/wui colors`, and it exists because a rule with no readout is a rule nobody
 -- can argue with. The worst line is the one to read.
 function Color.Describe()
 	local rows, names = {}, {}

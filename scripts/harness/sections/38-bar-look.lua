@@ -197,23 +197,23 @@ ns.Bars.Restyle()
 -- When it is up
 --------------------------------------------------------------------------
 
-check(_G.WarriorKitDriver(one.frame, "visibility") == nil,
+check(_G.WiggleUIDriver(one.frame, "visibility") == nil,
 	"a bar nobody has given hours is already having its visibility decided for it")
 
 Look.SetCombat(def, true)
 check(ns.Bars.Restyle(), "the restyle reported combat deferring the driver")
-check(_G.WarriorKitDriver(one.frame, "visibility") == "[combat] hide; show",
+check(_G.WiggleUIDriver(one.frame, "visibility") == "[combat] hide; show",
 	("the combat switch registered %q"):format(
-		tostring(_G.WarriorKitDriver(one.frame, "visibility"))))
+		tostring(_G.WiggleUIDriver(one.frame, "visibility"))))
 
 -- Registered again on every restyle, and the count is the point: two drivers on
 -- one frame is two answers to the same question, the client keeps both, and
 -- nothing on the screen says which one is talking.
 ns.Bars.Restyle()
 ns.Bars.Restyle()
-check(_G.WarriorKitDrivers(one.frame, "visibility") == 1,
+check(_G.WiggleUIDrivers(one.frame, "visibility") == 1,
 	("%d visibility drivers are on bar 1 after three restyles")
-		:format(_G.WarriorKitDrivers(one.frame, "visibility")))
+		:format(_G.WiggleUIDrivers(one.frame, "visibility")))
 
 -- A key beats the combat switch rather than being read alongside it. A bar you
 -- hold a key for is down unless you are holding the key, in a fight or out of
@@ -221,9 +221,9 @@ check(_G.WarriorKitDrivers(one.frame, "visibility") == 1,
 check(Look.SetKey(def, "shift"), "shift was refused and it is one of the three")
 check(not Look.SetKey(def, "tab"), "a key that is not a modifier was taken")
 ns.Bars.Restyle()
-check(_G.WarriorKitDriver(one.frame, "visibility") == "[mod:shift] show; hide",
+check(_G.WiggleUIDriver(one.frame, "visibility") == "[mod:shift] show; hide",
 	("a bar with both set registered %q"):format(
-		tostring(_G.WarriorKitDriver(one.frame, "visibility"))))
+		tostring(_G.WiggleUIDriver(one.frame, "visibility"))))
 check(Look.Hours(def) == "up only while shift is held",
 	("the readout says %q"):format(Look.Hours(def)))
 
@@ -232,11 +232,11 @@ check(Look.Hours(def) == "up only while shift is held",
 -- show it the next time the macro changed its mind.
 ns.WhichBars.Want("bar1", false)
 check(ns.Bars.Apply(), "unticking the bar reported combat deferring it")
-check(_G.WarriorKitDriver(one.frame, "visibility") == nil,
+check(_G.WiggleUIDriver(one.frame, "visibility") == nil,
 	"a bar that was handed back is still having its visibility decided for it")
 ns.WhichBars.Want("bar1", true)
 check(ns.Bars.Apply(), "ticking the bar back reported combat deferring it")
-check(_G.WarriorKitDriver(one.frame, "visibility") == "[mod:shift] show; hide",
+check(_G.WiggleUIDriver(one.frame, "visibility") == "[mod:shift] show; hide",
 	"the bar came back and the client was not told when to show it again")
 
 --------------------------------------------------------------------------
@@ -248,7 +248,7 @@ check(_G.WarriorKitDriver(one.frame, "visibility") == "[mod:shift] show; hide",
 -- that reports success and changes something else.
 --------------------------------------------------------------------------
 
-check(pcall(SlashCmdList.WARRIORKIT, "actionbars rows bottomleft 2"),
+check(pcall(SlashCmdList.WIGGLEUI, "actionbars rows bottomleft 2"),
 	"actionbars rows raised")
 check(Look.Rows(ns.BarLook.Find("bottomleft")) == 2,
 	("the word left the bottom left bar on %d rows"):format(
@@ -260,17 +260,17 @@ check(ns.BarLook.Find("bottom left") == ns.BarLook.Find("bottomleft"),
 	"the label the tab strip carries does not name the same bar as the plan's key")
 check(ns.BarLook.Find("nothing") == nil, "a bar nobody has is a bar the word found")
 
-check(pcall(SlashCmdList.WARRIORKIT, "actionbars combat bottomleft on"),
+check(pcall(SlashCmdList.WIGGLEUI, "actionbars combat bottomleft on"),
 	"actionbars combat raised")
 check(Look.Combat(ns.BarLook.Find("bottomleft")),
 	"combat on left the bar staying up in combat")
-SlashCmdList.WARRIORKIT("actionbars combat bottomleft off")
+SlashCmdList.WIGGLEUI("actionbars combat bottomleft off")
 check(not Look.Combat(ns.BarLook.Find("bottomleft")),
 	"combat off left the bar going down in combat")
 
 -- A value the setting cannot take changes nothing, which is the half a
 -- dispatcher gets wrong: refusing loudly and writing anyway.
-SlashCmdList.WARRIORKIT("actionbars rows bottomleft 5")
+SlashCmdList.WIGGLEUI("actionbars rows bottomleft 5")
 check(Look.Rows(ns.BarLook.Find("bottomleft")) == 2,
 	"a row count that is not a shape was refused and written")
 
@@ -367,7 +367,7 @@ end
 local wasLocked, wasBars = ns.db.locked, ns.db.barsLocked
 ns.db.locked = true
 ns.db.barsLocked = true
-_G.WarriorKitShift(true)
+_G.WiggleUIShift(true)
 fire("MODIFIER_STATE_CHANGED", "LSHIFT", 1)
 check(handles() == 0, ("shift put %d handles up on bars that are locked"):format(handles()))
 check(not ns.BarPlace.Loose(), "the bars report themselves loose while they are locked")
@@ -379,7 +379,7 @@ check(handles() == #bars,
 		:format(handles(), #bars))
 check(ns.BarPlace.Loose(), "the bars are loose and shift is held and they still refuse to move")
 
-_G.WarriorKitShift(false)
+_G.WiggleUIShift(false)
 fire("MODIFIER_STATE_CHANGED", "LSHIFT", 0)
 check(handles() == 0, ("%d handles stayed up after shift came off"):format(handles()))
 
@@ -471,7 +471,7 @@ do
 			tostring(bar:GetWidth()), tostring(bar:GetHeight()), width, height))
 
 	check(Look.SetKey(Pet.DEF, "shift") and Pet.Restyle(), "the pet bar would not wait on shift")
-	local macro = _G.WarriorKitDriver(bar, "visibility")
+	local macro = _G.WiggleUIDriver(bar, "visibility")
 	check(macro == "[nopet] hide; [mod:shift] show; hide",
 		("the pet bar on shift is driven by %q"):format(tostring(macro)))
 
@@ -496,7 +496,7 @@ do
 
 	check(Look.SetRows(Pet.DEF, 1) and Look.SetKey(Pet.DEF, "none") and Pet.Restyle(),
 		"the pet bar would not go back to its shipping look")
-	check(_G.WarriorKitDriver(bar, "visibility") == "[nopet] hide; show",
+	check(_G.WiggleUIDriver(bar, "visibility") == "[nopet] hide; show",
 		"the pet bar lost its pet gate going back to its shipping look")
 end
 
@@ -513,7 +513,7 @@ width, height = shape(12, 1)
 check(one.frame:GetWidth() == width and one.frame:GetHeight() == height,
 	("plain left bar 1 at %s by %s and the plan says %d by %d"):format(
 		tostring(one.frame:GetWidth()), tostring(one.frame:GetHeight()), width, height))
-check(_G.WarriorKitDriver(one.frame, "visibility") == nil,
+check(_G.WiggleUIDriver(one.frame, "visibility") == nil,
 	"plain left the client still deciding when to show bar 1")
 check(one.frame.edges[1]:GetAlpha() == 1, "plain left bar 1 without its hairline")
 

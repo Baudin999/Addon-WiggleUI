@@ -22,7 +22,7 @@ local ns, fire, check = H.ns, H.fire, H.check
 local AdHoc, Bars = ns.AdHoc, ns.AdHocBars
 
 local function frame(index)
-	return _G[("WarriorKitAdHoc%d"):format(index)]
+	return _G[("WiggleUIAdHoc%d"):format(index)]
 end
 
 local function key(index)
@@ -125,7 +125,7 @@ check(f ~= nil and f:GetAttribute("wk-count") == 0, "an empty ring tells its sni
 -- What lands on a square
 --------------------------------------------------------------------------
 
-_G.WarriorKitCarrySpell(1, "spell")
+_G.WiggleUICarrySpell(1, "spell")
 local rend, why = AdHoc.Carry(_G.GetCursorInfo())
 check(rend ~= nil and rend.kind == "spell" and rend.name == "Rend" and rend.icon ~= nil,
 	("a spell off the book read as %s"):format(tostring(rend and rend.name or why)))
@@ -138,7 +138,7 @@ check(s1:GetAttribute("type") == "spell" and s1:GetAttribute("spell") == "Rend",
 check(Bars.Entry(1).count == 1 and square(1, 2):IsShown() == false,
 	"a bar of one spell drew a second square")
 
-_G.WarriorKitCarrySpell(2, "spell")
+_G.WiggleUICarrySpell(2, "spell")
 local clap = AdHoc.Carry(_G.GetCursorInfo())
 _G.ClearCursor()
 check(AdHoc.Put(1, 9, clap) == true, "a spell dropped past the end was refused")

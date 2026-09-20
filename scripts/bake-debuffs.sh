@@ -21,7 +21,7 @@ CLIENT="wow_anniversary"
 
 EXPORTS="${1:-}"
 if [ -z "$EXPORTS" ]; then
-	EXPORTS="${TMPDIR:-/tmp}/warriorkit-debuff-exports"
+	EXPORTS="${TMPDIR:-/tmp}/wiggleui-debuff-exports"
 	mkdir -p "$EXPORTS" || exit 1
 
 	fetch() {

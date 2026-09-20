@@ -485,7 +485,7 @@ ns.Register({
 
 		-- One row per type, in the order UI.Tooltip.TYPES lists them. The
 		-- page is the only place the whole table is on screen at once, and
-		-- /wk tips prints the same list.
+		-- /wui tips prints the same list.
 		for _, each in ipairs(ns.UI.Tooltip.TYPES) do
 			local sort = each.key
 			ui.Picker(each.label,

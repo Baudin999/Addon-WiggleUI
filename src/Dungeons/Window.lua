@@ -671,13 +671,13 @@ local function BuildSheet()
 	-- button that draws correctly and answers no press is invisible to
 	-- everything except a person clicking it, and scripts/harness.lua has to be
 	-- able to press this one.
-	local button = UI.Button(sheet, { name = "WarriorKitDungeonBack",
+	local button = UI.Button(sheet, { name = "WiggleUIDungeonBack",
 		label = BACK_LABEL, width = BACK,
 		onClick = function() Window.Back() end })
 	button:SetPoint("TOPLEFT", M.pad, -M.pad)
 
 	list = UI.List(sheet, {
-		name = "WarriorKitDungeonList",
+		name = "WiggleUIDungeonList",
 		onSelect = Select,
 		onBack = function() Window.Back() end,
 		marks = true,
@@ -696,7 +696,7 @@ local function BuildSheet()
 	-- The fourth argument is the map's own step-out gesture, which every other
 	-- board in the addon uses to leave a zone for the continent it is on. Here
 	-- it leaves a dungeon for the shelf, which is the same move.
-	board = Chart.New(sheet, "WarriorKitDungeonChart", nil, function()
+	board = Chart.New(sheet, "WiggleUIDungeonChart", nil, function()
 		Window.Back()
 	end)
 	board.frame:SetPoint("TOPLEFT", heading, "BOTTOMLEFT", 0, -M.rowGap)
@@ -722,7 +722,7 @@ local function BuildSheet()
 	note:SetSpacing(2)
 
 	drops = { pool = {}, at = 0 }
-	drops.frame = CreateFrame("Frame", "WarriorKitDungeonDrops", sheet)
+	drops.frame = CreateFrame("Frame", "WiggleUIDungeonDrops", sheet)
 	drops.view = UI.ScrollView(drops.frame)
 	drops.view.frame:SetPoint("TOPLEFT")
 	drops.stack = UI.Stack(drops.view.canvas)
@@ -735,7 +735,7 @@ function Window.Build()
 	end
 
 	window = UI.Window({
-		name = "WarriorKitDungeons",
+		name = "WiggleUIDungeons",
 		title = "Adventure Guide",
 		width = WIDTH,
 		height = HEIGHT,
@@ -763,7 +763,7 @@ function Window.Build()
 		end
 	end)
 
-	shelf = { frame = CreateFrame("Frame", "WarriorKitDungeonShelf", window.content) }
+	shelf = { frame = CreateFrame("Frame", "WiggleUIDungeonShelf", window.content) }
 	shelf.frame:SetPoint("TOPLEFT", M.pad, -M.pad)
 	shelf.view = UI.ScrollView(shelf.frame)
 	shelf.view.frame:SetPoint("TOPLEFT")

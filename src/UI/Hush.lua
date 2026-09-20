@@ -44,7 +44,7 @@ local UI = ns.UI
 --
 -- **The row's own answer is untouched.** IsShown on a child of a hidden frame
 -- still reads back what its owner last wrote, so the nag goes on deciding it
--- has three squares to draw, /wk status goes on saying so, and the row is
+-- has three squares to draw, /wui status goes on saying so, and the row is
 -- exactly as it was the moment the sheet comes off it. Nothing here has to be
 -- told what any of these frames are for.
 --
@@ -143,7 +143,7 @@ local QUIET = [[
 
 local function Guard()
 	if not guard then
-		guard = CreateFrame("Frame", "WarriorKitHushGuard", UIParent,
+		guard = CreateFrame("Frame", "WiggleUIHushGuard", UIParent,
 			"SecureHandlerAttributeTemplate")
 		guard:SetAttribute("_onattributechanged", QUIET)
 	end
@@ -240,7 +240,7 @@ local function Arm()
 	if pulse then
 		return
 	end
-	pulse = CreateFrame("Frame", "WarriorKitHushPulse")
+	pulse = CreateFrame("Frame", "WiggleUIHushPulse")
 	pulse:Hide()
 	UI.Ticker(pulse, INTERVAL, "hush", Sweep)
 end
@@ -304,7 +304,7 @@ function UI.Hush(who, on)
 	return quiet
 end
 
--- Whether any window has asked. For /wk status, which reports the setting
+-- Whether any window has asked. For /wui status, which reports the setting
 -- rather than the picture: what is actually standing down is now a different
 -- answer per part and UI.Hushing below is where a caller asks that.
 function UI.Hushed()

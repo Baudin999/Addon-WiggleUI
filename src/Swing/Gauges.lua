@@ -57,7 +57,7 @@ ns.SwingGauges = SwingGauges
 
 local Gauge = ns.UI.Gauge
 
-local FRAME_NAME = "WarriorKitSwing"
+local FRAME_NAME = "WiggleUISwing"
 
 -- One bar to the next. One pixel would put two hairlines against each other
 -- and read as a single thick line between the bars.
@@ -170,7 +170,7 @@ local function Build()
 	ns.UI.Hushable(frame)
 	unit = ns.UI.Unit(frame)
 	place = ns.UI.Placeable(frame, {
-		name = "WarriorKit swing",
+		name = "WiggleUI swing",
 		moved = function(anchor)
 			ns.db.swingPoint = anchor
 			SwingGauges.Apply()

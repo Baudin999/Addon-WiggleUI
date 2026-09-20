@@ -58,7 +58,7 @@ guids.player = "Player-0-0000000f"
 swing.mainhand = itemLink("Arcanite Reaper")
 swing.main, swing.off, swing.offhand = 3.4, nil, nil
 swing.talent = 5
-_G.WarriorKitSpellCast[SLAM] = 1500
+_G.WiggleUISpellCast[SLAM] = 1500
 ns.Slam.Forget()
 -- The section above cast a Slam and the number it took off it is still held.
 -- A respec is what drops one, and this section starts from a character who has
@@ -344,7 +344,7 @@ end
 guids.player = nil
 swing.mainhand, swing.offhand, swing.off = nil, nil, nil
 swing.main, swing.talent, swing.cast = 3.4, 0, nil
-_G.WarriorKitSpellCast[SLAM] = nil
+_G.WiggleUISpellCast[SLAM] = nil
 ns.Slam.Forget()
 fire("CHARACTER_POINTS_CHANGED")
 fire("UNIT_INVENTORY_CHANGED", "player")

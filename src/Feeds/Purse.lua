@@ -21,7 +21,7 @@ local C = ns.UI.Color
 -- **Why the account total is written down rather than asked for.** The client
 -- will only ever tell you about the character you are standing in. Every other
 -- character's gold is a number this addon recorded the last time you logged out
--- of them, which is why the ledger lives in WarriorKitDB, the account's table,
+-- of them, which is why the ledger lives in WiggleUIDB, the account's table,
 -- and not in the per character one beside it.
 --
 -- The key is name and realm, not name. The client will let you make the same

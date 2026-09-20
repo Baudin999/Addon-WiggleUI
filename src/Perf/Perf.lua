@@ -7,7 +7,7 @@ ns.Perf = Perf
 -- What the addon costs
 --
 -- GetAddOnMemoryUsage answers one number for the whole addon, and one number
--- for the whole addon is close to useless: "WarriorKit, 341 KB" names nothing
+-- for the whole addon is close to useless: "WiggleUI, 341 KB" names nothing
 -- you can switch off. What is worth measuring is the four tickers, because each
 -- one maps to a setting on the page next to this one.
 --

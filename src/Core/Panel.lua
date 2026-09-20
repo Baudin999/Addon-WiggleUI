@@ -268,7 +268,7 @@ end
 --
 -- A match is against the label, the section title, the group name, the part's
 -- own name and every slash word it answers to. That last one is what makes
--- typing `skin` find the frame controls, because `/wk skin` is what drives them
+-- typing `skin` find the frame controls, because `/wui skin` is what drives them
 -- and it is the word somebody who already knows the addon will reach for.
 --------------------------------------------------------------------------
 
@@ -608,8 +608,8 @@ end
 
 local function Build()
 	window = UI.Window({
-		name = "WarriorKitOptions",
-		title = "WarriorKit",
+		name = "WiggleUIOptions",
+		title = "WiggleUI",
 		width = WINDOW_W,
 		height = WINDOW_H,
 		zoom = function() return ns.Zoom("panelZoom") end,
@@ -710,7 +710,7 @@ local function Build()
 	end
 
 	local reset = UI.Button(window.footer, { label = "reset positions", width = 160, height = M.row,
-		onClick = function() SlashCmdList.WARRIORKIT("reset") end })
+		onClick = function() SlashCmdList.WIGGLEUI("reset") end })
 	reset:SetPoint("RIGHT")
 
 	chrome[#chrome + 1] = lock

@@ -66,7 +66,7 @@ ns.WhichBars = Which
 -- this feature reads an absent one as "the plan", and a capture that carried
 -- the drags would say every bar on a fresh install had been moved.
 -- scripts/bake-defaults.lua steps over the three keys for that reason and says
--- so; `/wk bars where` prints a dragged position in the shape of a line here.
+-- so; `/wui bars where` prints a dragged position in the shape of a line here.
 Which.PLAN = {
 	{ key = "bar1", label = "bar 1", tab = "bar 1", pages = true,
 		buttons = "ActionButton%d", command = "ACTIONBUTTON%d",

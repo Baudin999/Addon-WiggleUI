@@ -192,7 +192,7 @@ local function FrameEntry(word, label)
 		end }
 end
 
--- The words `/wk hide` answers to, off the same list the panel draws from so
+-- The words `/wui hide` answers to, off the same list the panel draws from so
 -- the two cannot drift.
 local function Words()
 	local words = {}
@@ -266,7 +266,7 @@ local SkinWord = ns.Command.Word({
 				.. " yours first so a raid cannot push your Rend off the end."
 			or "neither frame now carries an aura row at all. Each is the size"
 				.. " of its block, so the client's own rows would hang inside the"
-				.. " gauges; /wk skin off gives both frames back their size and"
+				.. " gauges; /wui skin off gives both frames back their size and"
 				.. " their rows with it."
 	  end },
 
@@ -330,7 +330,7 @@ local CastWord = ns.Command.Word({
 		return "your cast bar " .. (on and "on" or "off")
 				.. ": " .. ns.PlayerCast.Describe() .. ".",
 			(not on and ns.db.hideBlizzPlayerCast)
-				and "Blizzard's own is hidden by `/wk hide playercast`, so nothing"
+				and "Blizzard's own is hidden by `/wui hide playercast`, so nothing"
 					.. " is drawing your casts at all."
 				or nil
 	  end },
@@ -578,7 +578,7 @@ ns.Register({
 		-- how far out a bar can be seen: a bar is drawn on a plate, so nothing
 		-- here can appear before one does. 41 is as far as either of these two
 		-- clients goes; ask for more and it clamps, which is why the panel and
-		-- `/wk status` report the CVar and never this number. Not a yard over
+		-- `/wui status` report the CVar and never this number. Not a yard over
 		-- it either: Plates.ApplyDistance saves the clamped figure back into
 		-- this setting so the panel shows what the client is holding rather
 		-- than what somebody typed at a wall, so a default of 60 would be a
@@ -635,7 +635,7 @@ ns.Register({
 		-- The target block hung off the player block: you place the player
 		-- and this addon positions everything against it. On by default for
 		-- the reason the frames themselves are, and it is the point of the
-		-- part rather than an extra. `/wk skin link off` puts the target on
+		-- part rather than an extra. `/wui skin link off` puts the target on
 		-- the corner above, without a reload.
 		skinLink = true,
 
@@ -1026,7 +1026,7 @@ ns.Register({
 		-- Reset means put the frames back, and the client's own copies are
 		-- frames this part took down. Somebody who put one back deliberately
 		-- loses that in a reset, which is the same trade every other setting
-		-- here makes and the reason `/wk reset` prints what it did.
+		-- here makes and the reason `/wui reset` prints what it did.
 		for _, switch in ipairs(ns.BlizzHide.Switches()) do
 			ns.db[switch.key] = ns.DefaultCopy(switch.key)
 		end

@@ -330,7 +330,7 @@ do
 	-- registered for, which is the whole failure this is here to catch.
 	Window.Select(VANCLEEF)
 	check(Window.Page() == "dungeon", "the window would not open a dungeon's page")
-	local row = Under(_G.WarriorKitDungeonList, function(one)
+	local row = Under(_G.WiggleUIDungeonList, function(one)
 		return one.kind == "button" and one.id ~= nil
 	end)
 	check(row ~= nil, "the boss column drew no rows to right click")
@@ -342,7 +342,7 @@ do
 	-- The right click on the map, which is the world map's own step-out gesture
 	-- and the reason UI/Chart.lua takes a fourth argument at all.
 	Window.Select(VANCLEEF)
-	local port = Under(_G.WarriorKitDungeonChart, function(one)
+	local port = Under(_G.WiggleUIDungeonChart, function(one)
 		return one.scripts.OnMouseUp ~= nil
 	end)
 	check(port ~= nil, "the map has nothing on it that answers the mouse")
@@ -352,8 +352,8 @@ do
 
 	-- And the button, which is the one of the three that says what it does.
 	Window.Select(VANCLEEF)
-	check(_G.WarriorKitDungeonBack ~= nil, "the page has no button back to the shelf")
-	check(_G.WarriorKitDungeonBack:Click("LeftButton"), "the button refused a press")
+	check(_G.WiggleUIDungeonBack ~= nil, "the page has no button back to the shelf")
+	check(_G.WiggleUIDungeonBack:Click("LeftButton"), "the button refused a press")
 	check(Window.Page() == "shelf",
 		("the button left the window on the %s page"):format(Window.Page()))
 	check((select(3, Window.Says())):find("Pick a dungeon") ~= nil,

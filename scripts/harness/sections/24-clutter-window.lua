@@ -196,7 +196,7 @@ ns.Destroy.Show()
 
 local clutter
 for _, held in ipairs(ns.UI.Windows) do
-	if held.frame and held.frame:GetName() == "WarriorKitClutter" then
+	if held.frame and held.frame:GetName() == "WiggleUIClutter" then
 		clutter = held
 	end
 end

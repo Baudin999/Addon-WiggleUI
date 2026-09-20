@@ -28,7 +28,7 @@ ns.DungeonKey = Key
 -- the whole point of it not being secure.
 --------------------------------------------------------------------------
 
-local BUTTON_NAME = "WarriorKitDungeonsButton"
+local BUTTON_NAME = "WiggleUIDungeonsButton"
 Key.BUTTON_NAME = BUTTON_NAME
 
 -- No size and no anchor, the shape every other global button in the addon has.

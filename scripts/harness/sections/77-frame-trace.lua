@@ -90,7 +90,7 @@ check(why:match("^unknown"),
 ----------------------------------------------------------------------
 
 for _ = 1, 250 do
-	Census.Count("WARRIORKIT_HARNESS_EVENT")
+	Census.Count("WIGGLEUI_HARNESS_EVENT")
 end
 frame:Beat(0.150)
 _, _, why = Trace.Dip(1)
@@ -160,7 +160,7 @@ _G.EnumerateFrames = function(after)
 	return fakes[fakeAt[after] + 1]
 end
 
-local memoryNames, memoryKB = { "Details", "Questie", "WarriorKit" }, { 1000, 3000, 300 }
+local memoryNames, memoryKB = { "Details", "Questie", "WiggleUI" }, { 1000, 3000, 300 }
 local clientUsage, clientUpdate = _G.GetAddOnMemoryUsage, _G.UpdateAddOnMemoryUsage
 _G.UpdateAddOnMemoryUsage = function() end
 _G.GetAddOnMemoryUsage = function(index) return memoryKB[index] or 0 end
@@ -209,14 +209,14 @@ end
 
 -- Five of one event and two of another inside the minute. Both names are met
 -- and the ranking asked once before it, so the roll finds nothing new to keep.
-Census.Count("WARRIORKIT_HARNESS_EVENT")
-Census.Count("WARRIORKIT_HARNESS_OTHER")
+Census.Count("WIGGLEUI_HARNESS_EVENT")
+Census.Count("WIGGLEUI_HARNESS_OTHER")
 Census.Top()
 for _ = 1, 5 do
-	Census.Count("WARRIORKIT_HARNESS_EVENT")
+	Census.Count("WIGGLEUI_HARNESS_EVENT")
 end
 for _ = 1, 2 do
-	Census.Count("WARRIORKIT_HARNESS_OTHER")
+	Census.Count("WIGGLEUI_HARNESS_OTHER")
 end
 
 collectgarbage("collect")
@@ -298,16 +298,16 @@ check(log.oursAlloc[row] >= 0,
 -- One column per addon over 2 MB, and the sum of all of them.
 check(log.addons.Questie[row] == 3900,
 	("Questie holds 3900 KB and its column says %s"):format(tostring(log.addons.Questie[row])))
-check(log.addons.Details == nil and log.addons.WarriorKit == nil,
+check(log.addons.Details == nil and log.addons.WiggleUI == nil,
 	"an addon under 2 MB was given a column of its own")
 check(log.addonsKB[row] == 5300,
 	("1100, 3900 and 300 KB sum to %s"):format(tostring(log.addonsKB[row])))
 -- Questie's combat queue, counted. The wrapper went on when watching started
 -- above, and three askings inside the minute are three in the row.
-check(log.topEvent[row] == "WARRIORKIT_HARNESS_EVENT" and log.topEvents[row] == 5,
+check(log.topEvent[row] == "WIGGLEUI_HARNESS_EVENT" and log.topEvents[row] == 5,
 	("five of one event in the minute and the row names %q at %s")
 		:format(tostring(log.topEvent[row]), tostring(log.topEvents[row])))
-check(log.nextEvent[row] == "WARRIORKIT_HARNESS_OTHER" and log.nextEvents[row] == 2,
+check(log.nextEvent[row] == "WIGGLEUI_HARNESS_OTHER" and log.nextEvents[row] == 2,
 	("two of another and the runner up reads %q at %s")
 		:format(tostring(log.nextEvent[row]), tostring(log.nextEvents[row])))
 check(ran == 3, ("the count over Questie's queue called through %d times out of 3"):format(ran))
@@ -329,7 +329,7 @@ check(Trace.Dips() == dipsAtRoll + 1, "a slow frame after the one that paid for 
 
 local script = 0
 local cpu = { 0, 0, 0 }
-local names = { "Details", "Questie", "WarriorKit" }
+local names = { "Details", "Questie", "WiggleUI" }
 _G.GetScriptCPUUsage = function() return script end
 _G.UpdateAddOnCPUUsage = function() end
 _G.GetAddOnCPUUsage = function(index) return cpu[index] or 0 end

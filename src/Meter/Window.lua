@@ -32,7 +32,7 @@ ns.MeterWindow = MeterWindow
 -- is locked, or it is not a control.
 --------------------------------------------------------------------------
 
-local FRAME_NAME = "WarriorKitMeter"
+local FRAME_NAME = "WiggleUIMeter"
 
 -- Every one of these is a unit, and a unit is one physical pixel at zoom 1 and
 -- a whole block of them at any higher whole zoom. Nothing here is multiplied by
@@ -234,7 +234,7 @@ local function BuildPane(clickable, percent)
 		ns.Tip.Hang(button, function()
 			return {
 				kind = "note",
-				title = "WarriorKit meters",
+				title = "WiggleUI meters",
 				lines = { "One row per player, as long as their share of the top row." },
 			}
 		end, "control")
@@ -320,7 +320,7 @@ local function Build()
 	-- than with a rule written down anywhere. It rounds now, along with all of
 	-- them.
 	place = ns.UI.Placeable(frame, {
-		name = "WarriorKit meters",
+		name = "WiggleUI meters",
 		moved = function(anchor)
 			ns.db.meterPoint = anchor
 		end,
