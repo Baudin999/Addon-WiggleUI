@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2ZQNQSB9QAQ6675T5GSANNM
 type: feature
-status: todo
+status: doing
 title: "The breakdown drills into one ability, and the bands become a graph"
 ---
 
