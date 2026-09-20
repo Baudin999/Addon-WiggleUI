@@ -6,19 +6,33 @@ of the answer on every card.
 1. **How big should everything be.** Picking a card sizes the real screen behind
    the window while you look at it. Four stops, from smaller to largest, and
    every part can still be sized on its own later.
+
+   ![The size page: Smaller, As shipped, Larger, Largest, each drawn at its own scale](../../assets/docs-screenshots/setup-page-01.png)
+
 2. **How much of the addon do you want on the screen.** This is the theme:
    immersive, exploration or informational. They run from the one that shows
    least to the one that shows most, which is also from the player who knows the
    game best to the one who is new to it.
+
+   ![The mode page: immersive nearly empty, exploration and informational filling up](../../assets/docs-screenshots/setup-page-02.png)
+
 3. **Which colours should the addon wear.** Dark, forest, desert, arcane, horde,
    alliance, fire or parchment. All but dark carry a painted frame round every
    window; parchment's is a sheet of paper with a torn, scorched edge.
+
+   ![The colours page: the same bag window drawn in all eight palettes](../../assets/docs-screenshots/setup-page-03.png)
+
 4. **How should your unit frames look.** Modern is shaded bars stacked tight
    with one dark edge and no portrait, the bars taking the portrait's room. Flat
    is flat fills with a hairline round each and your portrait beside them.
+
+   ![The frames page: modern with the bars taking the portrait's room, flat with the portrait beside them](../../assets/docs-screenshots/setup-page-04.png)
+
 5. **Where should a tooltip open.** In the corner the game keeps its own tooltip
    in, or attached to whatever you hovered. A map pin is attached either way,
    because a box in the screen's corner is a long way from the pin it names.
+
+   ![The tooltips page: the box in the screen's corner, or on the thing it describes](../../assets/docs-screenshots/setup-page-05.png)
 
 Nothing is written until you finish the last page. Skipping, closing the window
 or pressing Escape keeps what you have, which on a fresh install is the shipped
@@ -33,8 +47,6 @@ informational one with things hidden.
 To answer them again, type `/wui setup`, or press Escape and take **WiggleUI
 Setup** from the game menu. It starts on your current answers rather than on the
 shipped ones.
-
-> **Screenshot wanted:** `setup-mode.png`, the mode card page, with the three previews drawn.
 
 ## Getting around
 

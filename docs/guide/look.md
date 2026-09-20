@@ -18,7 +18,7 @@ holding the right button to turn the camera.
 
 `/wui wiggle <theme>` sets what the theme you are in swaps to, and `/wui wiggle
 none` turns the gesture off, which also stops the addon reading the mouse at
-all. The full mechanics are under [themes](look.md#themes-palettes-and-the-wiggle),
+all. The full mechanics are under [themes](#themes-palettes-and-the-wiggle),
 below.
 
 > **Screenshot wanted:** `theme-exploration.png` and `theme-immersive.png`,
@@ -75,8 +75,14 @@ The three themes:
 Each of the three, and the two other choices drawn at the same moment:
 
     /wui theme informational|immersive|exploration
-    /wui palette dark|forest|desert|arcane|horde|alliance|fire
+    /wui palette dark|forest|desert|arcane|horde|alliance|fire|parchment
     /wui gauges flat|modern
+
+![The eight palettes, the same bag window drawn in each](../../assets/docs-screenshots/setup-page-03.png)
+
+The colours card of the [first login](first-run.md) draws all eight against the
+same window, which is the fastest way to pick one. `/wui palette` is the same
+choice later.
 
 All three take effect at the next `/reload`, and that is on purpose. Reading the
 choice once at load is what keeps a theme costing nothing after the loading
@@ -125,5 +131,3 @@ favourites, the errors you muted, the flasks you track and the gold ledger.
 `defaults` on its own only reports. It is also how a default that moved in an
 update reaches you, since your saved answer wins until you ask for the shipped
 one.
-
-> **Screenshot wanted:** `palettes.png`, one window in four palettes, parchment among them so the torn edge shows.
