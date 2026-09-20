@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2YZJVD8A4N8A5GZ6YSJ3CNT
 type: bug
-status: todo
+status: doing
 title: The setup's colours page is drawn out of the bottom of its window
 ---
 
