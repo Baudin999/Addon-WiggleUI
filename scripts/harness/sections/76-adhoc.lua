@@ -414,6 +414,62 @@ do
 end
 
 --------------------------------------------------------------------------
+-- How big a ring is drawn, and what moves it
+--
+-- Two separate promises, and the second is the one that has been broken twice
+-- in this addon already, in the enemy bars and then here. A square is written
+-- in design units, and the grid in UI/Pixel.lua turns one unit into the
+-- screen's height over the author's times the general size times this ring's
+-- own zoom. So the units never move and the scale carries the whole of it: a
+-- design that reached for UI.Pixel and multiplied its own numbers by it would
+-- divide itself straight back out and the size slider would be inert.
+--------------------------------------------------------------------------
+
+do
+	local ring, first = frame(1), square(1, 1)
+
+	local function drawn()
+		return first:GetWidth() * ring:GetEffectiveScale()
+	end
+
+	check(ns.UI.OnGrid(ring) == true,
+		"the ring is not on the pixel grid, so no size the player sets reaches it")
+	check(first:GetWidth() == 54 and first:GetHeight() == 54,
+		("a square is %s units across, and the big sharp size is 54")
+			:format(tostring(first:GetWidth())))
+
+	local want = ns.UI.Scale() * ns.UI.ScreenZoom() * ns.db.adhocZoom
+	check(math.abs(ring:GetScale() - want) < 1e-9,
+		("the ring is drawn at %.4f where the grid and its own zoom say %.4f")
+			:format(ring:GetScale(), want))
+
+	-- The ring's own row on the zoom page.
+	local before = drawn()
+	ns.db.adhocZoom = 2
+	Bars.Apply()
+	check(math.abs(drawn() - before * 2) < 1e-6,
+		("doubling the ring's zoom drew the square at %.2f where %.2f was wanted")
+			:format(drawn(), before * 2))
+	check(first:GetWidth() == 54,
+		"the zoom was spent on the square's units rather than on the frame's scale")
+	ns.db.adhocZoom = 1
+	Bars.Apply()
+	check(math.abs(drawn() - before) < 1e-9, "putting the ring's zoom back did not put its size back")
+
+	-- Everything, which is the one the setup asks for and the one every other
+	-- row multiplies. It moves the grid rather than this ring, so the proof is
+	-- that the ring followed without being told.
+	ns.UI.SetGeneral(2)
+	check(math.abs(drawn() - before * 2) < 1e-6,
+		("the general size drew the square at %.2f where %.2f was wanted")
+			:format(drawn(), before * 2))
+	check(first:GetWidth() == 54,
+		"the general size was spent on the square's units rather than on the frame's scale")
+	ns.UI.SetGeneral(1)
+	check(math.abs(drawn() - before) < 1e-9, "putting the general size back did not put the ring back")
+end
+
+--------------------------------------------------------------------------
 -- The foot: nothing held, nothing on the screen
 --------------------------------------------------------------------------
 

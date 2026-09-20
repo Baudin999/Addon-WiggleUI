@@ -89,13 +89,15 @@ ns.Register({
 
 	defaults = {
 		adhoc = true,
-		-- 1.4, not 1. Every other zoom in the addon starts at 1 because every
-		-- other part is on the screen all the time and a part you read all
-		-- night wants to be small. A bar is on the screen for the second your
-		-- thumb is on its key, and a square you have that long has to be read
-		-- in one look. 1.4 puts the 27-unit square at 38, which is the size the
-		-- client's own action bar draws at.
-		adhocZoom = 1.4,
+		-- 1, like every other zoom in the addon. It was 1.4, to push a 27 unit
+		-- square up to the size the client's own action bar draws at, and that
+		-- was the wrong lever: a fractional zoom resamples every icon on the
+		-- ring, and it only reached a player who had never typed `adhoc zoom`,
+		-- because a saved 1 overrides a default of 1.4 and says nothing about
+		-- it. The square is 54 units now, which is the size it should have been
+		-- and is sharp, and this row is back to being what it says it is: the
+		-- number you turn when you want a ring bigger than the one it ships at.
+		adhocZoom = 1,
 	},
 
 	-- A bar is the character's: a trade skill belongs to one character and a

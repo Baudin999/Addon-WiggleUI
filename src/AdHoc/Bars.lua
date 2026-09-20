@@ -57,16 +57,38 @@ local C = ns.UI.Color
 local MAX = ns.AdHoc.MAX
 local PER_BAR = ns.AdHoc.PER_BAR
 
--- 27, the sharp size, for the reason Buttons/Look.lua gives at length: it is
--- the one drawn size where a stored texel lands on a pixel. The zoom is how you
--- make a ring bigger, and it scales the whole frame rather than resampling the
--- art inside it, which is why the default zoom in AdHoc/Feature.lua is not 1.
-local SIZE = 27
+-- 54, the big sharp size. UI.IconSizes answers { 54, 27 } and those two are
+-- the drawn sizes where a stored texel lands on a pixel, which is the reason
+-- Buttons/Look.lua gives at length. A bar takes the small one because a bar is
+-- on the screen all night and a part you read all night wants to be small. A
+-- ring is up for the second your thumb is on its key and has to be read in one
+-- look, so it takes the big one.
+--
+-- It was 27 with a default zoom of 1.4 over it, which is 38 and is neither of
+-- the two sharp sizes: every icon on the ring was resampled, and a player whose
+-- saved zoom was 1, which is every player who ever typed `adhoc zoom`, got a
+-- ring of 27 pixel squares in the middle of a 1440 pixel screen.
+--
+-- Units, not pixels. UI.Adopt puts the ring on the grid in UI/Pixel.lua, which
+-- multiplies one unit by the screen's height over the author's times the
+-- general size, so this is 54 physical pixels on the author's monitor and the
+-- same share of the screen everywhere else. `Everything` on the zoom page moves
+-- it, and so does this ring's own row.
+local SIZE = 54
 
 -- The circle the squares sit on, in units at zoom one. Never tighter than
 -- RADIUS, so three squares are a ring and not a cluster, and otherwise wide
 -- enough that every square has SIZE plus SPACE of the circumference to itself.
-local RADIUS, SPACE = 44, 10
+-- Both are a share of SIZE and not free numbers: RADIUS is far enough out that
+-- the name in the middle is clear of the squares, and SPACE is the gap between
+-- two neighbours at the widest a ring gets.
+local RADIUS, SPACE = math.floor(SIZE * 1.6), math.floor(SIZE * 0.37)
+
+-- The one line in the middle of the ring, naming what the cursor points at. A
+-- share of the square for the same reason the circle is: it was 12 against a
+-- 27 unit square, and a number left behind while everything round it doubled
+-- is the way this ring ended up unreadable the first time.
+local NAME_FONT = math.floor(SIZE * 0.44)
 
 -- How far the cursor has to travel before a release picks anything, in units of
 -- the screen frame. Twenty is a flick; less than that is a thumb letting go of a
@@ -334,12 +356,14 @@ local function Build(index)
 	entries[index] = entry
 
 	-- The name of what the cursor points at, in the middle of the ring, and the
-	-- plain frame whose OnUpdate keeps it and the lit square current.
+	-- plain frame whose OnUpdate keeps it and the lit square current. Sized
+	-- against the square rather than written as a number of its own, so the one
+	-- line you read while the ring is up grows with the ring.
 	local aim = CreateFrame("Frame", nil, frame)
 	aim:SetAllPoints()
 	aim.entry = entry
 	aim:SetScript("OnUpdate", Aiming)
-	entry.name = UI.Label(aim, 12, nil, "CENTER", UI.SHADOW)
+	entry.name = UI.Label(aim, NAME_FONT, nil, "CENTER", UI.SHADOW)
 	entry.name:SetPoint("CENTER")
 
 	for at = 1, PER_BAR do
