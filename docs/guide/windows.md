@@ -91,6 +91,17 @@ back says what moved, what was already on and what it could not find. A set may
 name one of your two talent groups, and pressing that one switches your talents
 first and puts the gear on after.
 
+Under them sits one more toggle, a ring with a plus in it instead of a spec
+icon, and that one is drawn before you have saved anything. This is where the
+first set comes from. Press it and a small window asks for a name, which starts
+out as the spec you are standing in, so pressing enter is usually all you want.
+One tick box under the name says whether the new set starts from what you are
+wearing. Leave it ticked and the set is a photograph of all nineteen slots. Take
+it off and the set is made with nothing in it, which is what you want for a five
+piece resist set you are going to build by clicking circles. The save button
+stays dim while the name is blank or already in use, and the line under it says
+which.
+
 Armour cannot be equipped in a fight and the client refuses it, not the addon.
 Weapons can, so a weapon swap in a set works mid pull.
 

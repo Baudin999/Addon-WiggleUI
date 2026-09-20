@@ -100,6 +100,16 @@ local AIR = 4
 -- small.
 local BAR = M.hairline * 2
 
+-- The mark the empty toggle wears instead of a picture, and how far across it
+-- reaches. A plus drawn as two bars rather than a glyph or a file: the addon
+-- ships no plus art, and a letter in the middle of a thirty-six pixel disc is
+-- text in a stack that has none anywhere else.
+local MARK = 14
+
+-- What the empty toggle is called. A word for the thing it does and not a
+-- name, because it is the one toggle in the stack that is not a set.
+local MAKE = "new set"
+
 -- How many sets are worth drawing, which is none at all on an inspect page.
 local NOBODY = {}
 
@@ -112,13 +122,17 @@ end
 
 -- How much taller a gear row is for carrying a line of circles.
 --
--- Nothing at one set and nothing at none, which is the promise this feature
--- made to everybody who does not use it: a page with one set on it is the page
--- that shipped, to the pixel. One circle under a row answers no question
--- either, because the question this line is for is which of your sets
--- disagrees with what you have on, and that takes two.
+-- Nothing at none, and a line from the first set on. A character who has never
+-- saved one opens the page that shipped, to the pixel, which is the promise
+-- this feature made to everybody who does not use it.
+--
+-- It waited for the second set for a while and that was backwards. One saved
+-- set you are not fully wearing is the case the circles exist for: the row
+-- whose circle disagrees with the disc above it is the piece that did not go
+-- on, and a page that hid that until you saved something else was a page that
+-- said nothing about the one set you had.
 function SetRow.Band(pane)
-	return #Listed(pane) > 1 and LANE or 0
+	return #Listed(pane) > 0 and LANE or 0
 end
 
 -- How much of the top of the page the toggles take.
@@ -128,10 +142,13 @@ end
 -- over the top of the page without this would be a stack laid across the first
 -- two rows of the left column, which is a mouse fight with two secure squares.
 function SetRow.Crown(pane)
-	local count = #Listed(pane)
-	if count == 0 then
+	if pane.inspect then
 		return 0
 	end
+	-- Your sets, and the empty one under them. Never nought on your own sheet:
+	-- the empty toggle is drawn on a page with no sets at all, because it is
+	-- the only thing anywhere on the page that says a set can be made here.
+	local count = #Listed(pane) + 1
 	return count * TOGGLE + (count - 1) * AIR + M.gutter
 end
 
@@ -147,6 +164,14 @@ local function Held(circle)
 	return { set = circle.set, slot = circle.slot, link = circle.link }
 end
 
+-- A link into the slot a circle stands for, which is what all three of the
+-- gestures that fill one come down to. One place rather than three, so the
+-- set, the slot and the link are read off the circle the same way whether the
+-- piece came from a click, from the bags or from another circle.
+local function Put(circle, link)
+	return ns.Sets.Put(circle.set, circle.slot, link)
+end
+
 -- A click, which is the gesture a set is actually built with: whatever is in
 -- that slot right now goes into that set. Holding something on the cursor
 -- makes it the drop instead, because that is what every square in the game
@@ -155,7 +180,7 @@ end
 local function Clicked(circle)
 	local kind, _, link = GetCursorInfo()
 	if kind == "item" and type(link) == "string" then
-		ns.Sets.Put(circle.set, circle.slot, link)
+		Put(circle, link)
 		ClearCursor()
 		return true
 	end
@@ -169,7 +194,7 @@ local function Dropped(circle)
 	if kind ~= "item" or type(link) ~= "string" then
 		return false
 	end
-	ns.Sets.Put(circle.set, circle.slot, link)
+	Put(circle, link)
 	-- The cursor is put down here and not left holding the piece. A drop that
 	-- filled the slot and left the item on the cursor is a player one click
 	-- away from dropping their own helmet on the ground.
@@ -214,7 +239,7 @@ local function Took(circle, thing)
 	if type(thing) ~= "table" or type(thing.link) ~= "string" then
 		return false
 	end
-	ns.Sets.Put(circle.set, circle.slot, thing.link)
+	Put(circle, thing.link)
 	return true
 end
 
@@ -334,11 +359,11 @@ end
 -- One row's circles, on the repaint that drew the row.
 --
 -- Answers how many are showing, which is nothing on an inspect page, nothing
--- on the ammo row and nothing at all until there are two sets to disagree.
+-- on the ammo row and nothing at all on a character with no sets.
 function SetRow.Paint(box, worn)
 	local pane = box.pane
 	local sets = Listed(pane)
-	local count = #sets > 1 and math.min(#sets, MOST) or 0
+	local count = math.min(#sets, MOST)
 	if box.entry.ammo then
 		count = 0
 	end
@@ -401,7 +426,7 @@ end
 local function Pressed(toggle)
 	local set = toggle.set
 	if not set then
-		return false
+		return SetRow.Make()
 	end
 	if set.group and set.group ~= ns.Class.Spec.Group() then
 		return ns.Sets.Swap(set.group)
@@ -433,6 +458,21 @@ local function Toggle(stack, index)
 	toggle.art:SetPoint("TOPLEFT", 3, -3)
 	toggle.art:SetPoint("BOTTOMRIGHT", toggle.ring, "BOTTOMRIGHT", -3, 3)
 
+	-- Built on every toggle and not only on the last one, because which toggle
+	-- is the empty one moves: saving a set turns the third into that set's and
+	-- makes the fourth the empty one, and a mark that only the last toggle owned
+	-- would be a mark on the wrong disc from then on.
+	toggle.plus = {
+		ns.Fill(toggle, "ARTWORK", C.text[1], C.text[2], C.text[3], 1),
+		ns.Fill(toggle, "ARTWORK", C.text[1], C.text[2], C.text[3], 1),
+	}
+	toggle.plus[1]:SetSize(MARK, BAR)
+	toggle.plus[2]:SetSize(BAR, MARK)
+	for mark = 1, 2 do
+		toggle.plus[mark]:SetPoint("CENTER", toggle.ring, "CENTER")
+		toggle.plus[mark]:Hide()
+	end
+
 	toggle.name = UI.Label(toggle, M.font, C.text, "LEFT", UI.SHADOW)
 	UI.Wrap(toggle.name, false)
 	toggle.name:SetPoint("LEFT", toggle.ring, "RIGHT", M.gutter, 0)
@@ -445,35 +485,74 @@ local function Toggle(stack, index)
 	return toggle
 end
 
--- The stack again, and which of them is lit.
+-- One toggle wearing a set, and whether it is the one you have on.
 --
 -- The active one takes the accent and the rest sit at rest, which is one
 -- question answered in one glance: a page open on a character whose talents
 -- say fury and whose clothes say prot is a page with a lit toggle that is not
 -- the one the figure is wearing.
+local function PaintToggle(toggle, set, active)
+	toggle.set = set
+	toggle.art:SetTexture(ns.SpecArt(set.group) or PieceArt(set.name))
+	toggle.art:Show()
+	toggle.plus[1]:Hide()
+	toggle.plus[2]:Hide()
+	toggle.name:SetText(set.name)
+
+	local on = active ~= nil and active.name == set.name
+	local tone = on and C.accent or C.edge
+	toggle.ring:SetVertexColor(tone[1], tone[2], tone[3], on and 1 or M.rest)
+	toggle.name:SetTextColor(on and C.text[1] or C.dim[1],
+		on and C.text[2] or C.dim[2], on and C.text[3] or C.dim[3])
+	toggle.art:SetAlpha(on and 1 or M.rest)
+	toggle:Show()
+end
+
+-- The one at the foot of the stack, which is not a set.
+--
+-- Never lit, because there is nothing to be wearing. It is the ring the others
+-- are and the plus instead of a picture, so the stack still reads as one
+-- column and the odd one out is obvious at the same glance.
+local function PaintMaker(toggle)
+	toggle.set = nil
+	toggle.art:SetTexture(nil)
+	toggle.art:Hide()
+	toggle.plus[1]:Show()
+	toggle.plus[2]:Show()
+	toggle.name:SetText(MAKE)
+	toggle.ring:SetVertexColor(C.edge[1], C.edge[2], C.edge[3], M.rest)
+	toggle.name:SetTextColor(C.dim[1], C.dim[2], C.dim[3])
+	toggle:Show()
+end
+
+-- The stack again.
+--
+-- Answers how many sets there are rather than how many toggles were drawn,
+-- because the empty one is not a set and every caller of this is asking about
+-- sets.
 function SetRow.PaintStack(stack)
 	if not stack then
 		return 0
 	end
-	local sets = ns.Sets.All()
+	-- Through the page's own answer rather than the store's, which is the same
+	-- list: a stack only exists on your own sheet.
+	local sets = Listed(stack.pane)
 	local active = ns.Sets.Active()
 	for index = 1, #sets do
-		local set = sets[index]
 		local toggle = stack.toggles[index] or Toggle(stack, index)
 		stack.toggles[index] = toggle
-		toggle.set = set
-		toggle.art:SetTexture(ns.SpecArt(set.group) or PieceArt(set.name))
-		toggle.name:SetText(set.name)
-
-		local on = active ~= nil and active.name == set.name
-		local tone = on and C.accent or C.edge
-		toggle.ring:SetVertexColor(tone[1], tone[2], tone[3], on and 1 or M.rest)
-		toggle.name:SetTextColor(on and C.text[1] or C.dim[1],
-			on and C.text[2] or C.dim[2], on and C.text[3] or C.dim[3])
-		toggle.art:SetAlpha(on and 1 or M.rest)
-		toggle:Show()
+		PaintToggle(toggle, sets[index], active)
 	end
-	for index = #sets + 1, #stack.toggles do
+
+	-- And the empty one under them, drawn on a page with no sets as well as on
+	-- one with four. That is the whole of how a set gets made from the page:
+	-- before it there was a stack that drew nothing until you had already saved
+	-- something at the slash prompt, which is a feature you had to be told about
+	-- to find.
+	local last = #sets + 1
+	stack.toggles[last] = stack.toggles[last] or Toggle(stack, last)
+	PaintMaker(stack.toggles[last])
+	for index = last + 1, #stack.toggles do
 		stack.toggles[index]:Hide()
 	end
 	return #sets
@@ -532,4 +611,205 @@ function SetRow.Place(stack, x, y, width)
 	stack:SetPoint("TOPLEFT", stack:GetParent(), "TOPLEFT", x, -y)
 	stack:SetSize(width, math.max(SetRow.Crown(stack.pane) - M.gutter, 1))
 	return true
+end
+
+--------------------------------------------------------------------------
+-- Making one
+--
+-- The window the empty toggle opens: a name, one question about what goes into
+-- the set, and a button that is refused before the press rather than after it.
+--
+-- **Not UI.Ask.** Ask is a sentence answered yes or no. A text field and a tick
+-- box bolted onto it would be two windows wearing one name, which is the
+-- argument UI/Amount.lua's header already makes for being its own window.
+--
+-- **One question and one tick.** Whether the set starts from what you have on
+-- is a yes and a no, so it is a box that is ticked or not and never two chips
+-- to choose between. It is written as the positive, because a switch named for
+-- what it does not do is a sentence read twice.
+--
+-- **One window, reused.** Every popup in this addon is built once and
+-- repainted, for the reason UI/Widgets.lua's dropdown gives: this client cannot
+-- destroy a frame, so a window built per press is a window leaked per press.
+--------------------------------------------------------------------------
+
+local NAMER = 248
+
+-- What a control that cannot be pressed is painted, which is UI/Widgets.lua's
+-- own number for a control it has disabled.
+local REFUSED = 0.4
+
+local namer = nil
+
+-- The name in the field, trimmed, and the reason it cannot be saved.
+--
+-- Asked before the press and not by making the set. ns.Sets.New answers these
+-- same two refusals, but it answers them by being called, and the call that
+-- does not refuse has already written the set: a window that found out at the
+-- accept would be a window saying "there is already a set called that" over
+-- one it just made.
+local function Wanted(typed)
+	local name = (typed or ""):match("^%s*(.-)%s*$")
+	if name == "" then
+		return nil, "a set needs a name."
+	end
+	if ns.Sets.Get(name) then
+		return nil, ("there is already a set called %q."):format(name)
+	end
+	return name
+end
+
+-- The window told what is in its field now, which is every keystroke.
+--
+-- The refusal is the line under the tick and the dimmed button together. Both
+-- and not one: a button that is simply dead says you cannot press it and never
+-- says why, and a line on its own is a sentence under a button that still
+-- looks pressable.
+local function Refresh()
+	local name, why = Wanted(namer.field.edit:GetText())
+	namer.note:SetText(why or "")
+	namer.accept:SetAlpha(name and 1 or REFUSED)
+	namer.accept:EnableMouse(name ~= nil)
+	return name
+end
+
+local function Accept()
+	local name = Refresh()
+	if not name then
+		return false
+	end
+	local record, why = ns.Sets.New(name)
+	if not record then
+		-- Both of the refusals this window draws were caught above, so what is
+		-- left is the store: the saved variables are not up yet. That goes to
+		-- the chat line rather than under the field, because there is nothing
+		-- the player can retype to get past it.
+		ns.Print(why)
+		return false
+	end
+	local worn = namer.worn.on
+	if worn then
+		ns.Sets.Capture(record.name)
+	end
+	namer.window:Hide()
+	ns.Print(worn and ("saved what you have on as %q."):format(record.name)
+		or ("made %q with nothing in it. a click on its circle under a row puts that slot in.")
+			:format(record.name))
+	return true
+end
+
+-- The one question the window asks besides the name.
+--
+-- Ticked when it opens, because the set you are making is nearly always the
+-- clothes you are standing in and the empty one is the deliberate choice.
+local function Worn(parent)
+	local row = CreateFrame("Button", nil, parent)
+	row:SetHeight(M.control)
+	UI.Press.Clicks(row, "up", "LeftButton")
+
+	local box = UI.TickBox(row)
+	box:SetPoint("LEFT")
+	row.tick = box.tick
+
+	row.text = UI.Label(row, M.font, C.text, "LEFT", UI.FLAT)
+	row.text:SetPoint("LEFT", box, "RIGHT", M.gutter, 0)
+	row.text:SetPoint("RIGHT")
+	UI.Wrap(row.text, false)
+	row.text:SetText("start from what you are wearing")
+
+	row:SetScript("OnClick", function(self)
+		self.on = not self.on
+		self.tick:SetShown(self.on and true or false)
+	end)
+	return row
+end
+
+-- How tall it came out: the chrome, the field, the tick and the line under
+-- them. Written as its pieces rather than as a number, so a metric moving
+-- moves the window.
+local function Tall()
+	return M.title + M.footer + M.pad * 2 + M.control * 2 + M.rowGap * 2 + M.small
+end
+
+local function Built()
+	if namer then
+		return namer
+	end
+	local window = UI.Window({
+		name = "WiggleUINewSet",
+		title = "new set",
+		width = NAMER,
+		height = Tall(),
+		-- Over the sheet that raised it, for the reason UI/Amount.lua asks for
+		-- the same strata: every other window in the addon is on DIALOG.
+		strata = "FULLSCREEN_DIALOG",
+	})
+	namer = { window = window }
+
+	namer.field = UI.Field(window.content, {
+		width = NAMER - M.pad * 2,
+		onType = function() Refresh() end,
+		-- Enter is this window's accept rather than a commit. UI/Widgets.lua
+		-- commits a field by clearing its focus, and a field that did both ran
+		-- the thing behind it twice on one press, which is what item 44 was.
+		onEnter = function() Accept() end,
+	})
+	namer.field:SetPoint("TOPLEFT", M.pad, -M.pad)
+
+	-- Escape closes the window rather than only stepping out of the field. The
+	-- window's name is in UISpecialFrames either way, but a focused field takes
+	-- the first press, and a dialog you have to press escape at twice reads as
+	-- stuck.
+	namer.field.edit:SetScript("OnEscapePressed", function(self)
+		self:ClearFocus()
+		window:Hide()
+	end)
+
+	namer.worn = Worn(window.content)
+	namer.worn:SetPoint("TOPLEFT", M.pad, -(M.pad + M.control + M.rowGap))
+	namer.worn:SetPoint("RIGHT", -M.pad, 0)
+
+	namer.note = UI.Label(window.content, M.small, C.dim, "LEFT", UI.FLAT)
+	namer.note:SetPoint("TOPLEFT", M.pad, -(M.pad + M.control * 2 + M.rowGap * 2))
+	namer.note:SetWidth(NAMER - M.pad * 2)
+	UI.Wrap(namer.note, false)
+
+	namer.accept = UI.Button(window.footer, { label = "save", width = 92,
+		tone = C.accent, onClick = function() Accept() end })
+	namer.accept:SetPoint("RIGHT", 0, 0)
+
+	namer.refuse = UI.Button(window.footer, { label = "cancel", width = 76,
+		onClick = function() window:Hide() end })
+	namer.refuse:SetPoint("RIGHT", namer.accept, "LEFT", -M.rowGap, 0)
+	return namer
+end
+
+-- The empty toggle pressed.
+--
+-- The spec you are standing in is already in the field and already selected, so
+-- the player who wanted that name presses enter and the one who did not types
+-- over it without reaching for backspace. A character with no spec resolved
+-- gets an empty field, which is the same window with one more word to type.
+function SetRow.Make()
+	local window = Built().window
+	namer.field.edit:SetText(ns.Class.Spec.Label() or "")
+	namer.worn.on = true
+	namer.worn.tick:SetShown(true)
+	Refresh()
+	-- Shown before the focus, because a field inside a hidden frame gives the
+	-- keyboard straight back.
+	window:Show()
+	namer.field.edit:SetFocus()
+	namer.field.edit:HighlightText()
+	return true
+end
+
+-- The window on the screen now, or nothing. Public for the reason UI.Amounting
+-- is: the page can tell whether the player has dealt with it, and a test reads
+-- it without naming its frames.
+function SetRow.Naming()
+	if namer and namer.window:IsShown() then
+		return namer
+	end
+	return nil
 end

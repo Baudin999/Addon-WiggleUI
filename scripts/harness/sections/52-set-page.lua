@@ -7,11 +7,19 @@
 --
 -- **The page a character with no sets opens is the page that shipped.** That
 -- is the promise the growth makes to everybody who never saves one, and it is
--- the first block below: a row is thirty-six until there are two sets to
--- disagree with each other, and forty-eight after. One set grows nothing,
--- because one circle answers no question. The number is read off the row rather
+-- the first block below: a row is thirty-six until a set exists and forty-eight
+-- from the first one on. One set is where the line starts and not two, because
+-- one saved set you are not fully wearing is exactly what a circle that
+-- disagrees with the disc above it is for. The number is read off the row rather
 -- than off the constant, so a layout that grew the page and forgot the rows,
 -- or grew the rows and left the figure standing on the old block, fails here.
+--
+-- **A set is made from the page or it may as well not exist.** The stack ends
+-- in a toggle that is not a set, drawn on a page with no sets at all, and it
+-- opens the window the rest of this section drives: a name, a tick for whether
+-- the set starts from what you have on, and a button refused before the press
+-- rather than after it. What shipped first had none of that, and the only way
+-- to make a set was a slash command nobody was ever shown.
 --
 -- **The four states are four different pictures and that is the whole feature.**
 -- A set naming the piece you already have on is the one that has to be dimmer
@@ -43,6 +51,7 @@ local ns, check = H.ns, H.check
 local mouse, itemLink = H.mouse, H.itemLink
 
 local Window, Theirs, Sets = ns.CharWindow, ns.InspectWindow, ns.Sets
+local SetRow = ns.SetRow
 
 -- The head slot, which is the row every block below drives. One slot and not
 -- nineteen: what is under test is the row, and the row is the same row twenty
@@ -51,6 +60,10 @@ local HEAD = 1
 
 -- What a row is worth before and after the circles land on it.
 local PLAIN, GROWN = 36, 48
+
+-- What the toggle at the foot of the stack says. A word for what it does and
+-- not a name, because it is the one toggle in the column that is not a set.
+local MAKE = "new set"
 
 -- Dimmed, which is the theme's own word for a control that is not the one you
 -- are looking at.
@@ -92,7 +105,7 @@ local function showing(box)
 end
 
 ----------------------------------------------------------------------
--- Nothing until there are two sets
+-- Nothing until there is a set, and a way to make one either way
 ----------------------------------------------------------------------
 
 Window.Show()
@@ -111,26 +124,114 @@ check(head:GetHeight() == PLAIN,
 check(showing(head) == 0,
 	("%d circles were drawn for no sets at all"):format(showing(head)))
 
-do
-	-- One set, and the page does not move. One circle under a row says which
-	-- of your sets disagrees with what you have on out of a field of one, which
-	-- is not a question anybody has, and the row it would be drawn on belongs
-	-- to the twenty rows of everybody who never saves a set.
-	Sets.New("prot")
-	check(head:GetHeight() == PLAIN,
-		("one set grew the row to %d and one set is not worth a line"):format(head:GetHeight()))
-	check(showing(head) == 0,
-		("%d circles were drawn for a single set"):format(showing(head)))
+-- The stack, on a character who has never saved anything. One toggle, and it
+-- is not a set: without it the page draws nothing at all about sets and the
+-- feature is reachable only by typing a command nobody was shown.
+local stack = pane.sets
+check(stack ~= nil and stack.toggles[1] ~= nil and stack.toggles[1]:IsShown(),
+	"a page with no sets drew nothing that makes one")
+check(stack.toggles[1].set == nil,
+	"the toggle on a page with no sets is carrying a set")
+check(stack.toggles[1].name:GetText() == MAKE,
+	("the empty toggle reads %q"):format(tostring(stack.toggles[1].name:GetText())))
 
-	-- The toggle is there all the same, because a set you cannot press is a set
-	-- you can only put on by typing. It is the store's write that put it there:
-	-- nothing below fires an event or repaints the page by hand.
-	check(pane.sets ~= nil and pane.sets.toggles[1] ~= nil
-		and pane.sets.toggles[1]:IsShown(),
-		"saving the first set drew no toggle over the left column")
-	check(pane.sets.toggles[1].name:GetText() == "prot",
-		("the toggle reads %q and the set is called prot")
-			:format(tostring(pane.sets.toggles[1].name:GetText())))
+----------------------------------------------------------------------
+-- The window a set is made in
+----------------------------------------------------------------------
+
+do
+	-- The press opens the window and writes nothing. A toggle that saved on the
+	-- press would be a set named for you, and naming a set is the one thing
+	-- about it you cannot do from this page afterwards.
+	mouse.On(stack.toggles[1], "LeftButton")
+	local namer = SetRow.Naming()
+	check(namer ~= nil, "pressing the empty toggle opened no window")
+	check(#Sets.All() == 0,
+		("the press made %d sets before anything was typed"):format(#Sets.All()))
+
+	-- The spec you are standing in is already in the field, so the player who
+	-- wanted that name presses enter. A class run whose spec did not resolve
+	-- gets an empty field, which is the same window with a word to type.
+	local label = ns.Class.Spec.Label()
+	check(namer.field.edit:GetText() == (label or ""),
+		("the field opened on %q and the spec is %s")
+			:format(tostring(namer.field.edit:GetText()), tostring(label)))
+	check(namer.worn.on == true,
+		"the box that starts the set from what you are wearing was not ticked")
+
+	-- A name that cannot be saved is refused before the press, with the reason
+	-- under the tick. Both halves: a button that is simply dead never says why,
+	-- and a sentence on its own sits under a button that still looks pressable.
+	namer.field.edit:SetText("")
+	check((namer.note:GetText() or "") ~= "", "an empty name was refused in silence")
+	check(namer.accept:GetAlpha() < 1, "an empty name left the save button lit")
+
+	namer.field.edit:SetText("prot")
+	check((namer.note:GetText() or "") == "",
+		("a name nothing is using was refused with %q"):format(tostring(namer.note:GetText())))
+	check(namer.accept:GetAlpha() == 1, "a name nothing is using left the save button dim")
+
+	mouse.On(namer.accept, "LeftButton")
+	check(SetRow.Naming() == nil, "the window stayed up after the set was saved")
+	check(#Sets.All() == 1,
+		("accepting the window made %d sets"):format(#Sets.All()))
+	check(Sets.All()[1].name == "prot",
+		("the set is called %q and the field said prot"):format(tostring(Sets.All()[1].name)))
+
+	-- Ticked, so the set is a photograph of what you have on rather than an
+	-- empty list: all nineteen slots and not the one row this section drives.
+	local state, link = Sets.Entry("prot", HEAD)
+	check(state == "item" and link == worn,
+		("the set holds %q in the head slot and you are wearing %s")
+			:format(tostring(state), tostring(worn)))
+
+	-- And the row grew on the first set, which is the case the circles exist
+	-- for: one saved set you are not fully wearing is a column of circles that
+	-- disagree with the discs above them.
+	check(head:GetHeight() == GROWN,
+		("one saved set left the row at %d and the line needs %d")
+			:format(head:GetHeight(), GROWN))
+	check(showing(head) == 1,
+		("%d circles were drawn for one set"):format(showing(head)))
+
+	-- The stack moved down one: the set took the top and the empty toggle is
+	-- under it, which is what keeps the column reading as one thing.
+	check(stack.toggles[1].name:GetText() == "prot",
+		("the first toggle reads %q and the set is called prot")
+			:format(tostring(stack.toggles[1].name:GetText())))
+	check(stack.toggles[2] ~= nil and stack.toggles[2]:IsShown()
+		and stack.toggles[2].set == nil,
+		"saving a set left no way to make another one")
+end
+
+do
+	-- A name already in use, said before the press rather than after it. The
+	-- store answers the same refusal, but it answers by being called and the
+	-- call that does not refuse has already written the set.
+	mouse.On(stack.toggles[2], "LeftButton")
+	local namer = SetRow.Naming()
+	check(namer ~= nil, "the empty toggle under a set opened no window")
+	namer.field.edit:SetText("prot")
+	check((namer.note:GetText() or ""):find("already", 1, true) ~= nil,
+		("a name already in use was refused with %q")
+			:format(tostring(namer.note:GetText())))
+	check(namer.accept:GetAlpha() < 1, "a name already in use left the save button lit")
+	check(#Sets.All() == 1,
+		("%d sets exist and only prot was ever accepted"):format(#Sets.All()))
+
+	-- Unticked, which is the other half of the one question this window asks.
+	-- The set is made and every slot in it is unset, so it is built by clicking
+	-- circles rather than by undressing.
+	namer.field.edit:SetText("fury")
+	mouse.On(namer.worn, "LeftButton")
+	check(namer.worn.on == false, "the tick did not come off when it was clicked")
+	check(namer.accept:GetAlpha() == 1, "a free name with the tick off left the button dim")
+
+	mouse.On(namer.accept, "LeftButton")
+	check(#Sets.All() == 2, ("accepting made %d sets"):format(#Sets.All()))
+	check(Sets.Entry("fury", HEAD) == "unset",
+		("an unticked set holds %q in the head slot and it was never told about one")
+			:format(tostring(Sets.Entry("fury", HEAD))))
 end
 
 ----------------------------------------------------------------------
@@ -138,7 +239,6 @@ end
 ----------------------------------------------------------------------
 
 do
-	Sets.New("fury")
 	Sets.New("resist")
 	check(head:GetHeight() == GROWN,
 		("a row with three sets on it is %d and the line needs %d")
@@ -269,5 +369,5 @@ check(showing(head) == 0,
 
 Window.Hide()
 
-print(("sets   a row grows %d to %d for three sets, four states drawn on one slot, and none of it on an inspect page")
+print(("sets   a set made from the page in a window, a row grows %d to %d on the first one, four states drawn on one slot, and none of it on an inspect page")
 	:format(PLAIN, GROWN))

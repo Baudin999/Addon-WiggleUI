@@ -28,7 +28,12 @@ The toggles are a stack at the top left, one per set, each wearing the icon of
 the spec it is worn for. Press one and the set goes on. Press one that names
 your other talent group and the talents go first, then the gear, in that order,
 because the talent switch is a cast and the gear is a server round trip per
-piece.
+piece. At the foot of the stack is a toggle that is not a set, a ring with a
+plus in it, drawn before you have saved anything. It opens a window that asks
+for a name and for one thing more, whether the new set starts from what you are
+wearing or starts with nothing in it. The name begins as the spec you are
+standing in, so enter is often the whole of it, and the save button refuses a
+blank name or one already in use and says which.
 
 Which brings the other half. This client has dual spec, and the addon was not
 listening for it: a shaman clicking from restoration to enhancement kept the
