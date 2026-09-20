@@ -2,7 +2,7 @@
 revision: 5
 id: 01M301EPSBHQZFFKP9PBSED0B4
 type: bug
-status: todo
+status: doing
 title: The addon keeps the old spec after a dual spec swap
 parent: 01M1Y4JDFMVHEB87QK9R1KP4BJ
 ---
