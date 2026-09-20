@@ -8,12 +8,24 @@ cd "$(dirname "$0")/../src"
 
 status=0
 
+# How many of this file's own checks came back with something. Every check
+# below calls `fail` rather than setting the status by hand, so the line at the
+# foot of this script can say a number instead of leaving the reader to take
+# luacheck's tally, which counts luacheck and nothing else, for the verdict of
+# the whole gate. That is what it looked like for a year: "0 warnings / 0
+# errors" printed under a run that had just refused the commit.
+failed=0
+fail() {
+	failed=$((failed + 1))
+	status=1
+}
+
 # find rather than a glob, because the addon is split across feature folders
 # and a glob would silently stop covering the files that moved.
 while IFS= read -r f; do
 	if ! lua5.1 -e "assert(loadfile('$f'))"; then
 		echo "syntax FAIL $f"
-		status=1
+		fail
 	fi
 done < <(find . -name '*.lua' -type f | sort)
 
@@ -31,12 +43,12 @@ reference_name=""
 while IFS= read -r toc; do
 	toc="${toc#./}"
 
-	grep -qE '^## Interface: [0-9]+' "$toc" || { echo "$toc declares no interface version"; status=1; }
+	grep -qE '^## Interface: [0-9]+' "$toc" || { echo "$toc declares no interface version"; fail; }
 
 	toc_files=$(grep -E '^[A-Za-z].*\.lua' "$toc" | tr -d '\r' | tr '\\' '/' | sort)
 
 	while IFS= read -r listed; do
-		[ -f "$listed" ] || { echo "$toc lists a missing file: $listed"; status=1; }
+		[ -f "$listed" ] || { echo "$toc lists a missing file: $listed"; fail; }
 	done <<< "$toc_files"
 
 	while IFS= read -r f; do
@@ -44,7 +56,7 @@ while IFS= read -r toc; do
 		# Exact line match, not a substring: Core.lua must not satisfy Core/Core.lua.
 		if ! grep -qxF "$f" <<< "$toc_files"; then
 			echo "not loaded by $toc: $f"
-			status=1
+			fail
 		fi
 	done < <(find . -name '*.lua' -type f | sort)
 
@@ -54,7 +66,7 @@ while IFS= read -r toc; do
 	elif [ "$toc_files" != "$reference" ]; then
 		echo "$toc and $reference_name do not load the same files:"
 		diff <(printf '%s\n' "$reference") <(printf '%s\n' "$toc_files") | sed 's/^/  /'
-		status=1
+		fail
 	fi
 done < <(find . -maxdepth 1 -name 'WiggleUI*.toc' -type f | sort)
 
@@ -63,7 +75,7 @@ done < <(find . -maxdepth 1 -name 'WiggleUI*.toc' -type f | sort)
 # Core said 1.2, and nothing anywhere could tell. Interface is deliberately not
 # compared, because differing is the whole point of having two files.
 core_version=$(sed -n 's/^ns\.version = "\(.*\)"$/\1/p' Core/Core.lua)
-[ -n "$core_version" ] || { echo "Core/Core.lua declares no ns.version"; status=1; }
+[ -n "$core_version" ] || { echo "Core/Core.lua declares no ns.version"; fail; }
 
 for field in Version Title Notes IconTexture; do
 	first_value=""
@@ -76,13 +88,13 @@ for field in Version Title Notes IconTexture; do
 			first_toc="$toc"
 		elif [ "$value" != "$first_value" ]; then
 			echo "$toc and $first_toc disagree on ## $field: '$value' vs '$first_value'"
-			status=1
+			fail
 		fi
 	done < <(find . -maxdepth 1 -name 'WiggleUI*.toc' -type f | sort)
 
 	if [ "$field" = "Version" ] && [ "$first_value" != "$core_version" ]; then
 		echo "$first_toc says ## Version: $first_value, Core/Core.lua says ns.version = $core_version"
-		status=1
+		fail
 	fi
 done
 
@@ -92,7 +104,7 @@ done
 for table_name in $(grep -hE '^## SavedVariables(PerCharacter)?:' WiggleUI*.toc | sed 's/^[^:]*: *//' | tr ',' ' ' | sort -u); do
 	grep -qrE "\b$table_name\b" --include='*.lua' . || {
 		echo "TOC declares $table_name, no Lua file touches it"
-		status=1
+		fail
 	}
 done
 
@@ -113,9 +125,9 @@ while IFS= read -r declared; do
 	path=$(printf '%s' "$declared" | tr -d '\r' | tr '\\' '/')
 	case "$path" in
 		Interface/AddOns/WiggleUI/*) path="${path#Interface/AddOns/WiggleUI/}" ;;
-		*) echo "a TOC names a texture outside the addon: $declared"; status=1; continue ;;
+		*) echo "a TOC names a texture outside the addon: $declared"; fail; continue ;;
 	esac
-	[ -f "$path" ] || { echo "a TOC names a missing texture: $declared"; status=1; }
+	[ -f "$path" ] || { echo "a TOC names a missing texture: $declared"; fail; }
 done < <(grep -hE '^## IconTexture:' WiggleUI*.toc | sed 's/^[^:]*: *//' | sort -u)
 
 # And the same the other way round, for the paths that are in the code rather
@@ -141,14 +153,14 @@ done < <(grep -hE '^## IconTexture:' WiggleUI*.toc | sed 's/^[^:]*: *//' | sort 
 UNSHIPPED="BestAround.mp3"
 if git ls-files --error-unmatch "Media/$UNSHIPPED" >/dev/null 2>&1; then
 	echo "Media/$UNSHIPPED is tracked, and it is not ours to publish"
-	status=1
+	fail
 fi
 
 while IFS= read -r named; do
 	[ -n "$named" ] || continue
 	[ "$named" = "$UNSHIPPED" ] && continue
 	[ -f "Media/$named" ] \
-		|| { echo "a Lua file names Media\\$named and it is not there"; status=1; }
+		|| { echo "a Lua file names Media\\$named and it is not there"; fail; }
 done < <(grep -rhoE 'Media\\\\[A-Za-z0-9_.-]+' --include='*.lua' . | sed 's/.*\\//' | sort -u)
 
 # Four kinds of file live in Media/ and each has its own rule.
@@ -192,19 +204,19 @@ while IFS= read -r asset; do
 			named=0
 			stem="${asset%-LICENSE.txt}"
 			[ -f "$stem.ttf" ] || [ -f "$stem.ogg" ] || [ -f "$stem.mp3" ] \
-				|| { echo "$asset is a licence for nothing that is here"; status=1; }
+				|| { echo "$asset is a licence for nothing that is here"; fail; }
 			;;
-		*) echo "$asset is not a format the client reads"; status=1; continue ;;
+		*) echo "$asset is not a format the client reads"; fail; continue ;;
 	esac
 
 	if [ "$named" -eq 1 ]; then
 		grep -qrF "$(basename "$asset")" --include='*.lua' --include='*.toc' --include='*.xml' . \
-			|| { echo "nothing in the addon names $asset"; status=1; }
+			|| { echo "nothing in the addon names $asset"; fail; }
 	fi
 
 	if [ "$kind" = "font" ] || [ "$kind" = "sound" ]; then
 		[ -f "${asset%.*}-LICENSE.txt" ] \
-			|| { echo "$asset ships with no ${asset%.*}-LICENSE.txt beside it"; status=1; }
+			|| { echo "$asset ships with no ${asset%.*}-LICENSE.txt beside it"; fail; }
 	fi
 
 	[ "$kind" = "texture" ] || continue
@@ -214,13 +226,13 @@ while IFS= read -r asset; do
 		for side in "$w" "$h"; do
 			if [ "$side" -lt 1 ] || [ $(( side & (side - 1) )) -ne 0 ]; then
 				echo "$asset is ${w}x${h}, and both sides have to be powers of two"
-				status=1
+				fail
 				break
 			fi
 		done
 	else
 		echo "identify missing, so no texture in Media/ was measured: install imagemagick"
-		status=1
+		fail
 		break
 	fi
 done < <(find Media -type f 2>/dev/null | sort)
@@ -245,10 +257,10 @@ baked=$(sed -n 's/^[[:space:]]*0x[0-9A-Fa-f]*: "\(.\)",.*/\1/p' ../scripts/bake-
 declared=$(sed -n 's/^UI\.GLYPHS = "\(.*\)"$/\1/p' UI/Text.lua)
 if [ -z "$baked" ] || [ -z "$declared" ]; then
 	echo "the glyph alphabet is not declared in both UI/Text.lua and scripts/bake-glyphs.sh"
-	status=1
+	fail
 elif [ "$baked" != "$declared" ]; then
 	echo "UI.GLYPHS says '$declared' and scripts/bake-glyphs.sh bakes '$baked'"
-	status=1
+	fail
 fi
 
 # Every write on a ticker path is guarded against the value already on the
@@ -347,7 +359,7 @@ fi
 # nothing had ever scanned.
 HOT=$(lua5.1 ../scripts/hot.lua .) || {
 	echo "scripts/hot.lua could not derive the tick paths"
-	status=1
+	fail
 }
 
 # The four exemptions this scan honours, each one allow-listed by name.
@@ -481,7 +493,7 @@ UnitFrames/EnemyBars.lua:1:the threat wording, built where PaintThreat found one
 
 markers=$(lua5.1 ../scripts/hot.lua --markers .) || {
 	echo "scripts/hot.lua could not read the markers"
-	status=1
+	fail
 }
 
 # One entry, split into its path, its count and the rest. The reason is whatever
@@ -498,13 +510,13 @@ marker_entry() {
 	case "$entry_count" in
 		*[!0-9]* | "")
 			echo "$list carries an entry with no count: $entry"
-			status=1
+			fail
 			return 1
 			;;
 	esac
 	[ -f "$entry_path" ] || {
 		echo "$list names $entry_path, which is not a file in src/"
-		status=1
+		fail
 		return 1
 	}
 	return 0
@@ -529,12 +541,12 @@ marker_list() {
 		reason=${entry_why#"$fn"}
 		[ -n "${reason# }" ] || {
 			echo "$list allow-lists $entry_path:$fn with no reason given"
-			status=1
+			fail
 		}
 
 		if ! grep -qxF "$entry_path $fn" <<< "$derived"; then
 			echo "$list names $entry_path:$fn and there is no $kind: marker on it: a marker renamed or moved comes off the list in the same commit"
-			status=1
+			fail
 			continue
 		fi
 
@@ -542,7 +554,7 @@ marker_list() {
 		if [ "$held" -ne "$entry_count" ] && ! grep -qxF "$entry_path" <<< "$counted"; then
 			counted="$counted$entry_path"$'\n'
 			echo "$list says $entry_path carries $entry_count $kind: markers and it carries $held: one added needs the count raised and defending, one retired needs it lowered in the same commit"
-			status=1
+			fail
 		fi
 
 		listed="$listed$entry_path $fn"$'\n'
@@ -552,7 +564,7 @@ marker_list() {
 		[ -n "$entry" ] || continue
 		grep -qxF "$entry" <<< "$listed" || {
 			echo "src/${entry% *} carries a $kind: marker on ${entry#* } that $list does not hold: add an entry with its reason"
-			status=1
+			fail
 		}
 	done <<< "$derived"
 }
@@ -574,13 +586,13 @@ exemption_list() {
 
 		[ -n "${entry_why# }" ] || {
 			echo "$list allow-lists $entry_path with no reason given"
-			status=1
+			fail
 		}
 
 		held=$(grep -c -e "-- $tag:" "$entry_path")
 		if [ "$held" -ne "$entry_count" ]; then
 			echo "$list says $entry_path carries $entry_count lines marked $tag: and it carries $held: one added needs the count raised and defending, one retired needs it lowered in the same commit"
-			status=1
+			fail
 		fi
 
 		listed="$listed$entry_path"$'\n'
@@ -590,7 +602,7 @@ exemption_list() {
 		[ -n "$entry" ] || continue
 		grep -qxF "$entry" <<< "$listed" || {
 			echo "src/$entry carries a line marked $tag: that $list does not hold: add an entry with its count and its reason"
-			status=1
+			fail
 		}
 	done <<< "$derived"
 }
@@ -881,11 +893,11 @@ while IFS=: read -r fixture_fn fixture_want; do
 	fixture_said=$(awk -v target="$fixture_fn" "$hot_scan" "$hot_fixture")
 	if [ "$fixture_want" = refused ] && [ -z "$fixture_said" ]; then
 		echo "the hot path scan passes $fixture_fn and the fixture in check.sh says it must refuse it"
-		status=1
+		fail
 	fi
 	if [ "$fixture_want" = passed ] && [ -n "$fixture_said" ]; then
 		echo "the hot path scan refuses $fixture_fn and the fixture in check.sh says it must pass it: $fixture_said"
-		status=1
+		fail
 	fi
 done <<HOTFIXLIST
 EveryArm:refused
@@ -911,7 +923,7 @@ while IFS=: read -r file fn; do
 	found=$(awk -v target="$(printf '%s' "$fn" | sed 's/\./[.]/g')" "$hot_scan" "$file")
 	if [ -n "$found" ]; then
 		echo "$found"
-		status=1
+		fail
 	fi
 done <<HOTEOF
 $HOT
@@ -937,7 +949,7 @@ HOTEOF
 # GameTooltip is a file that thinks it still owns one.
 while IFS= read -r bad; do
 	echo "only UI/Scan.lua may name GameTooltip, and this is a tooltip drawn in two designs: $bad"
-	status=1
+	fail
 done < <(grep -rn 'GameTooltip' --include='*.lua' . \
 	| grep -v '^\./UI/Scan\.lua:' || true)
 
@@ -958,12 +970,12 @@ done < <(grep -rn 'GameTooltip' --include='*.lua' . \
 # Comments are read too, for the reason the GameTooltip rule reads them.
 while IFS= read -r bad; do
 	echo "only UI/Press.lua may build a secure action button or name the edge it fires on, use UI.Press.Button: $bad"
-	status=1
+	fail
 done < <(grep -rnE 'SecureActionButtonTemplate|SecureAuraHeaderTemplate|useOnKeyDown' --include='*.lua' . \
 	| grep -v '^\./UI/Press\.lua:' || true)
 while IFS= read -r bad; do
 	echo "only UI/ may build a snippet button, use UI.Press.Key for a bound key: $bad"
-	status=1
+	fail
 done < <(grep -rn 'SecureHandlerClickTemplate' --include='*.lua' . \
 	| grep -v '^\./UI/' || true)
 
@@ -976,7 +988,7 @@ done < <(grep -rn 'SecureHandlerClickTemplate' --include='*.lua' . \
 # the method on a button the client built.
 while IFS= read -r bad; do
 	echo "only UI/Press.lua may register a button's clicks, use UI.Press.Clicks: $bad"
-	status=1
+	fail
 done < <(grep -rn ':RegisterForClicks(' --include='*.lua' . \
 	| grep -v '^\./UI/Press\.lua:' || true)
 
@@ -991,7 +1003,7 @@ done < <(grep -rn ':RegisterForClicks(' --include='*.lua' . \
 # of this gate and drives the order both ways.
 while IFS= read -r bad; do
 	echo "only UI/Press.lua may hand a mouse button on, use UI.PassCamera or UI.HoverOnly: $bad"
-	status=1
+	fail
 done < <(grep -rnE 'SetPassThroughButtons|SetMouseClickEnabled' --include='*.lua' . \
 	| grep -v '^\./UI/Press\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
 
@@ -1008,7 +1020,7 @@ done < <(grep -rnE 'SetPassThroughButtons|SetMouseClickEnabled' --include='*.lua
 # several files explain what the layer holds.
 while IFS= read -r bad; do
 	echo "only UI/Bound.lua may take a key or read the binding layer, use ns.UI.Bound: $bad"
-	status=1
+	fail
 done < <(grep -rnE 'GetBindingAction|BUTTON1 = true|cannot be rebound in combat|Displaced = displaced' \
 	--include='*.lua' . | grep -v '^\./UI/Bound\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
 
@@ -1027,7 +1039,7 @@ done < <(grep -rnE 'GetBindingAction|BUTTON1 = true|cannot be rebound in combat|
 # Comment lines are skipped.
 while IFS= read -r bad; do
 	echo "only UI/Bound.lua may write the override layer, use ns.UI.Bound.Hold, Command, Drop or Keys: $bad"
-	status=1
+	fail
 done < <(grep -rnE 'SetOverrideBinding|ClearOverrideBindings|heldAny' \
 	--include='*.lua' . | grep -v '^\./UI/Bound\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
 
@@ -1040,7 +1052,7 @@ done < <(grep -rnE 'SetOverrideBinding|ClearOverrideBindings|heldAny' \
 #   Buttons/Pet.lua    only reads keys to draw them in the square's corner
 while IFS= read -r bad; do
 	echo "take a key back through ns.Rebind, not a frame of your own on UPDATE_BINDINGS: $bad"
-	status=1
+	fail
 done < <(grep -rn 'RegisterEvent("UPDATE_BINDINGS")' --include='*.lua' . \
 	| grep -vE '^\./(Core/Core|Buttons/Bars|Buttons/Pet)\.lua:' || true)
 
@@ -1050,7 +1062,7 @@ done < <(grep -rn 'RegisterEvent("UPDATE_BINDINGS")' --include='*.lua' . \
 # button whose registration nobody wrote.
 while IFS= read -r bad; do
 	echo "only UI/Press.lua writes a button's edge, build the button with UI.Press: $bad"
-	status=1
+	fail
 done < <(grep -rnE '\bwkEdge\b' --include='*.lua' . \
 	| grep -vE '^\./UI/(Press|Bound)\.lua:' | grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
 
@@ -1066,7 +1078,7 @@ done < <(grep -rnE '\bwkEdge\b' --include='*.lua' . \
 # subject is refused here because nothing reads it any more.
 while IFS= read -r bad; do
 	echo "a worn item or an aura is ns.Tip.Worn or ns.Tip.Aura, and where a box opens is an argument to Tip.Open or Tip.Hang: $bad"
-	status=1
+	fail
 done < <(grep -rnE 'kind = "(inventory|buff|debuff)"|(^[[:space:]]*|[{,][[:space:]]*)place = [^=]*(Tooltip\.|BESIDE|ANCHOR|DOCK)|above = true' \
 	--include='*.lua' . | grep -v '^\./UI/Tip\.lua:' || true)
 
@@ -1085,7 +1097,7 @@ done < <(grep -rnE 'kind = "(inventory|buff|debuff)"|(^[[:space:]]*|[{,][[:space
 # a call site's.
 while IFS= read -r bad; do
 	echo "a hover passes its type of tooltip, one of UI.Tooltip.TYPES, and the player picks the place: $bad"
-	status=1
+	fail
 done < <(grep -rnE 'Tooltip\.(DOCK|BESIDE)\b|Tooltip\.(RIGHT|LEFT|ATTACHED|ANCHOR)\b' \
 	--include='*.lua' . | grep -vE '^\./(UI/Tooltip|Settings/Settings|Settings/Feature|Setup/Setup|Setup/Previews)\.lua:' \
 	| grep -vE '^[^:]*:[0-9]+:[[:space:]]*--' || true)
@@ -1122,18 +1134,18 @@ while IFS= read -r file; do
 	[ "$file" = "Core/Lockdown.lua" ] && continue
 	if ! grep -q "^$file	" <<< "$regen_allowed"; then
 		echo "only Core/Lockdown.lua may listen for PLAYER_REGEN_ENABLED, owe the work with ns.Lockdown.Held or ns.Lockdown.Done, or add $file to regen_allowed with what it does there: $file"
-		status=1
+		fail
 	fi
 done < <(grep -rlF 'RegisterEvent("PLAYER_REGEN_ENABLED")' --include='*.lua' . | sort)
 while IFS= read -r file; do
 	if ! grep -qsF 'RegisterEvent("PLAYER_REGEN_ENABLED")' "$file"; then
 		echo "regen_allowed lists $file, which no longer listens for PLAYER_REGEN_ENABLED: take it off"
-		status=1
+		fail
 	fi
 done < <(sed -n 's/^\([^	]*\)	.*/\1/p' <<< "$regen_allowed")
 while IFS= read -r bad; do
 	echo "a lockdown test followed by a flag is ns.Lockdown.Held by hand, use it: $bad"
-	status=1
+	fail
 done < <(find . -name '*.lua' -type f ! -path './Core/Lockdown.lua' | sort | xargs awk '
 	FNR == 1 { armed = 0 }
 	/InCombatLockdown\(\)/ { armed = 8; at = FNR; next }
@@ -1167,7 +1179,7 @@ done < <(find . -name '*.lua' -type f ! -path './Core/Lockdown.lua' | sort | xar
 # explaining what ImportModule does is a file about to do it.
 while IFS= read -r bad; do
 	echo "only Core/Core.lua may name QuestieLoader, and ns.Questie is the probe: $bad"
-	status=1
+	fail
 done < <(grep -rnE 'QuestieLoader|ImportModule' --include='*.lua' . \
 	| grep -v '^\./Core/Core\.lua:' || true)
 
@@ -1246,13 +1258,13 @@ probe_list() {
 
 		[ -n "${entry_why# }" ] || {
 			echo "$list allow-lists $entry_path with no reason given"
-			status=1
+			fail
 		}
 
 		held=$(grep -cE 'type\(_G[.[]' "$entry_path")
 		if [ "$held" -ne "$entry_count" ]; then
 			echo "$list says $entry_path probes the client $entry_count times and it probes $held: one added needs the count raised and defending, one moved into Core needs it lowered in the same commit"
-			status=1
+			fail
 		fi
 
 		listed="$listed$entry_path"$'\n'
@@ -1262,7 +1274,7 @@ probe_list() {
 		[ -n "$entry" ] || continue
 		grep -qxF "$entry" <<< "$listed" || {
 			echo "src/$entry probes the client for a call it means to make, and only Core/ may: put the probe in Core/Core.lua beside ns.Questie, or add an entry with its count and its reason"
-			status=1
+			fail
 		}
 	done <<< "$derived"
 }
@@ -1307,13 +1319,13 @@ while IFS= read -r entry; do
 
 	[ -n "${entry_why# }" ] || {
 		echo "QUEST_SORT_ALLOWED allow-lists $entry_path with no reason given"
-		status=1
+		fail
 	}
 
 	held=$(quest_sorts "$entry_path")
 	if [ "$held" -ne "$entry_count" ]; then
 		echo "QUEST_SORT_ALLOWED says $entry_path sorts $entry_count times and it sorts $held: one added needs the count raised and defending as something other than a route, one removed needs it lowered in the same commit"
-		status=1
+		fail
 	fi
 
 	quest_listed="$quest_listed$entry_path"$'\n'
@@ -1323,13 +1335,13 @@ while IFS= read -r entry; do
 	[ -n "$entry" ] || continue
 	grep -qxF "$entry" <<< "$quest_listed" || {
 		echo "src/$entry puts the quest log in an order: the tracker is filed by zone, so add an entry saying what this orders and why it is not a route"
-		status=1
+		fail
 	}
 done <<< "$quest_sorted"
 
 while IFS= read -r bad; do
 	echo "nothing in Quests/ orders the log by how far, how much or how high, because that is the sort that makes this a levelling addon: $bad"
-	status=1
+	fail
 done < <(grep -rniE '(sort|order|rank)[a-z]*[[:space:]]+([a-z]+[[:space:]]+){0,3}by[[:space:]]+(the[[:space:]]+)?(distance|yard|nearest|closest|xp|experience|reward|level)' \
 	--include='*.lua' ./Quests || true)
 
@@ -1356,7 +1368,7 @@ if [ "$quest_walker_count" -ne 1 ] \
 	if [ -n "$quest_walkers" ]; then
 		printf '%s\n' "$quest_walkers" | sed 's/^/  /'
 	fi
-	status=1
+	fail
 fi
 
 # No tooltip carries a blue line naming a switch.
@@ -1381,7 +1393,7 @@ fi
 # constructor puts them at rather than any mention of the word.
 while IFS= read -r bad; do
 	echo "the tooltip's blue hint line is gone, and a subject may not carry one: $bad"
-	status=1
+	fail
 done < <(grep -rnE '^[[:space:]]+hint = ' --include='*.lua' . 	| grep -v '^\./UI/Widgets\.lua:' 	| grep -v '^\./Core/BlizzHide\.lua:' 	| grep -v '^\./Buffs/Upkeep\.lua:' 	| grep -v '^\./Class/' || true)
 
 # The drawing layer does not know the name of a setting.
@@ -1407,7 +1419,7 @@ done < <(grep -rnE '^[[:space:]]+hint = ' --include='*.lua' . 	| grep -v '^\./UI
 # own explanation in Placeable.lua's header.
 while IFS= read -r bad; do
 	echo "src/UI/ may not name a setting, and a widget takes a getter rather than a key: $bad"
-	status=1
+	fail
 done < <(grep -rn 'ns\.db' --include='*.lua' ./UI 	| grep -v '^\./UI/Window\.lua:.*is held here rather than read out of ns\.db' 	| grep -v '^\./UI/Tooltip\.lua:.*ns\.db for the reason UI\.Size is' 	| grep -v '^\./UI/Placeable\.lua:.*so ns\.db stays' || true)
 
 # A frame handler names a function, and never opens a closure.
@@ -1422,7 +1434,7 @@ done < <(grep -rn 'ns\.db' --include='*.lua' ./UI 	| grep -v '^\./UI/Window\.lua
 # not ticks, the drag follow in UI/Placeable.lua and the one-shot in Core.
 while IFS= read -r bad; do
 	echo "a frame handler takes a named function, not a closure written in place: $bad"
-	status=1
+	fail
 done < <(grep -rnE 'SetScript\("OnUpdate", *function|UI\.Ticker\([^)]*, *function' \
 	--include='*.lua' . | grep -v '^\./UI/Ticker\.lua:.*function UI\.Ticker' || true)
 
@@ -1455,11 +1467,11 @@ timed=$(sed -n '/^local ORDER = {/,/}/p' Perf/Perf.lua \
 	| grep -oE '"[a-z]+"' | tr -d '"' | sort -u)
 if [ -z "$armed" ] || [ -z "$timed" ]; then
 	echo "the ticker names or Perf's slot list are no longer a list this gate can read"
-	status=1
+	fail
 elif [ "$armed" != "$timed" ]; then
 	echo "the tickers and Perf's slot list disagree:"
 	diff <(printf '%s\n' "$armed") <(printf '%s\n' "$timed") | sed 's/^/  /'
-	status=1
+	fail
 fi
 
 # A tick that never stops hangs off one frame, and which frame stays the
@@ -1513,13 +1525,13 @@ while IFS= read -r entry; do
 
 	[ -n "${entry_why# }" ] || {
 		echo "FRAMED_TICKERS_ALLOWED allow-lists $entry_path with no reason given"
-		status=1
+		fail
 	}
 
 	held=$(framed_count "$entry_path")
 	if [ "$held" -ne "$entry_count" ]; then
 		echo "FRAMED_TICKERS_ALLOWED says $entry_path hangs $entry_count ticks off a frame of its own and it hangs $held: one added needs the count raised and defending, one moved to ns.UI.Forever needs it lowered in the same commit"
-		status=1
+		fail
 	fi
 
 	framed_listed="$framed_listed$entry_path"$'\n'
@@ -1529,7 +1541,7 @@ while IFS= read -r entry; do
 	[ -n "$entry" ] || continue
 	grep -qxF "$entry" <<< "$framed_listed" || {
 		echo "src/$entry arms a ticker on a frame of its own: hang it off ns.UI.Forever, or add an entry with its count and why that frame can hide"
-		status=1
+		fail
 	}
 done <<< "$framed_derived"
 
@@ -1578,7 +1590,7 @@ while IFS='|' read -r pattern instead; do
 	hits=$(grep -rnE "$pattern" --include='*.lua' . | grep -v '^\./UI/Widgets\.lua:' || true)
 	if [ -n "$hits" ]; then
 		printf '%s\n' "$hits" | sed "s|^|use $instead -- |"
-		status=1
+		fail
 	fi
 done <<PANELEOF
 $PANEL_RULES
@@ -1588,7 +1600,7 @@ PANELEOF
 # would load and then fail at login, which is later than it needs to.
 while IFS= read -r bad; do
 	echo "a section names no group: $bad"
-	status=1
+	fail
 done < <(grep -rnE 'ui\.Section\("[^"]*"\)' --include='*.lua' . || true)
 
 # A font size is a pixel height, never a unit measurement.
@@ -1612,7 +1624,7 @@ done < <(grep -rnE 'ui\.Section\("[^"]*"\)' --include='*.lua' . || true)
 # short enough that nobody wraps it.
 while IFS= read -r bad; do
 	echo "a font size is multiplied by a unit, and a font size is already pixels: $bad"
-	status=1
+	fail
 done < <(grep -rnE 'UI\.(Label|Glyph|Font|GlyphFont|NumberFont)\([^)]*\*[[:space:]]*[A-Za-z_.]*unit' \
 	--include='*.lua' . || true)
 
@@ -1673,7 +1685,7 @@ while IFS= read -r f; do
 	found=$(awk "$font_roles" "$f")
 	if [ -n "$found" ]; then
 		echo "$found"
-		status=1
+		fail
 	fi
 done < <(find . -name '*.lua' -type f | sort)
 
@@ -1804,7 +1816,7 @@ metric_px=$(sed -n '/^UI.Metric = {/,/^}/s/^\t\([A-Za-z][A-Za-z0-9]*\) *= *\([0-
 	UI/Theme.lua | tr -d '\n')
 if [ -z "$floor_px" ]; then
 	echo "UI/Text.lua: the outline floor is no longer a number this gate can read"
-	status=1
+	fail
 fi
 
 while IFS= read -r f; do
@@ -1816,7 +1828,7 @@ while IFS= read -r f; do
 	found=$(awk -v floor="${floor_px:-14}" -v metrics="$metric_px" "$outline_floor" "$f" "$f")
 	if [ -n "$found" ]; then
 		echo "$found"
-		status=1
+		fail
 	fi
 done < <(find . -name '*.lua' -type f | sort)
 
@@ -1843,11 +1855,11 @@ done < <(find . -name '*.lua' -type f | sort)
 # function costs, so the same three numbers hold it.
 if [ -f ../scripts/shape.lua ]; then
 	if ! lua5.1 ../scripts/shape.lua $(find . ../scripts/harness -name '*.lua' -type f | sort); then
-		status=1
+		fail
 	fi
 else
 	echo "scripts/shape.lua is missing and nothing is measuring the code's shape"
-	status=1
+	fail
 fi
 
 # Which tree is allowed to name which.
@@ -1860,11 +1872,11 @@ fi
 # freely, and carries the reason for every crossing that is allowed.
 if [ -f ../scripts/trees.lua ]; then
 	if ! lua5.1 ../scripts/trees.lua $(find . -name '*.lua' -type f | sort); then
-		status=1
+		fail
 	fi
 else
 	echo "scripts/trees.lua is missing and a feature can reach into any other"
-	status=1
+	fail
 fi
 
 # And which way the numbers in those gates are allowed to move.
@@ -1886,14 +1898,14 @@ if [ -f ../scripts/ratchet.lua ]; then
 			committed=$(mktemp)
 			if git show "HEAD:$watched" > "$committed" 2>/dev/null; then
 				lua5.1 ../scripts/ratchet.lua "$watched" "$committed" "../$watched" \
-					|| status=1
+					|| fail
 			fi
 			rm -f "$committed"
 		done
 	fi
 else
 	echo "scripts/ratchet.lua is missing and a ceiling can be raised by the change it blocks"
-	status=1
+	fail
 fi
 
 # The addon, loaded and driven under a stub of the client. Syntax and lint say
@@ -1948,7 +1960,7 @@ if [ -f ../scripts/harness.lua ]; then
 	classes=$(sed -n 's/^ns\.Class\.Register("\([A-Z_]*\)".*/\1/p' Class/*.lua | sort)
 	if [ -z "$classes" ]; then
 		echo "no file in Class/ calls ns.Class.Register, so no class shape is covered"
-		status=1
+		fail
 	fi
 
 	# One run per spec, and one run for a class that registered none. A spec
@@ -1986,14 +1998,14 @@ if [ -f ../scripts/harness.lua ]; then
 				echo "harness FAIL as $run, before it finished:"
 				tail -n 15 "$harness_log" | sed 's/^/  /'
 			fi
-			status=1
+			fail
 		fi
 	done
 	rm -f "$harness_log"
 	echo "harness  1 whole run and $((harness_runs - 1)) class runs"
 else
 	echo "scripts/harness.lua is missing"
-	status=1
+	fail
 fi
 
 # The harness itself, held to the shape it was split into.
@@ -2090,7 +2102,7 @@ if [ "$listed" != "$ondisk" ]; then
 	harness_status=1
 fi
 
-[ "$harness_status" -eq 0 ] || status=1
+[ "$harness_status" -eq 0 ] || fail
 
 # Every element a theme names is worn by a part, and every key a part wears is
 # an element.
@@ -2108,15 +2120,15 @@ theme_calls=$(grep -rhE 'Theme\.Wear\(' --include='*.lua' . | grep -v '^[[:space
 	| grep -vcE 'Theme\.Wear\("[a-z]+"|function Theme\.Wear\(' || true)
 if [ -z "$theme_elements" ]; then
 	echo "Theme/Themes.lua lists no elements this gate can read"
-	status=1
+	fail
 elif [ "$theme_elements" != "$theme_worn" ]; then
 	echo "the elements in Theme/Themes.lua and the keys the parts wear disagree (< listed, > worn):"
 	diff <(printf '%s\n' "$theme_elements") <(printf '%s\n' "$theme_worn") | grep '^[<>]' | sed 's/^/  /'
-	status=1
+	fail
 fi
 if [ "${theme_calls:-0}" -gt 0 ]; then
 	echo "$theme_calls ns.Theme.Wear call(s) pass a key that is not a literal, which the element gate cannot read"
-	status=1
+	fail
 fi
 
 # The guide's two baked files. docs/guide/commands.md is the help table out of
@@ -2133,7 +2145,7 @@ fi
 # has cd'd to by now.
 for bake in bake-guide-commands bake-guide-nav; do
 	if ! (cd .. && "./scripts/$bake.sh" --check); then
-		status=1
+		fail
 	fi
 done
 
@@ -2164,16 +2176,30 @@ old_name=$(grep -rIlE 'WarriorKit|WARRIORKIT|warriorkit|/wk\b|\bwk[A-Z]' .. \
 if [ -n "$old_name" ]; then
 	echo "the old name is back in:"
 	printf '%s\n' "$old_name" | sed 's|^\.\./|  |'
-	status=1
+	fail
 fi
 
 luacheck=$(command -v luacheck || echo "$HOME/.luarocks/bin/luacheck")
 if [ -x "$luacheck" ]; then
 	# -q: a file with nothing to say is not listed. The tally and every warning still are.
-	"$luacheck" -q . || status=1
+	"$luacheck" -q . || fail
 else
 	echo "luacheck missing: luarocks install --local --lua-version 5.1 luacheck"
-	status=1
+	fail
+fi
+
+# The last line, and the only one that speaks for the whole gate. luacheck
+# prints a "Total:" of its own directly above this and it is true of luacheck:
+# it counts lint in the Lua and knows nothing about the TOCs, the theme
+# elements, the baked guide, the harness or the old name. Reading it as the
+# verdict is how a run that exited 1 could look clean, so this says which it
+# was in its own words.
+if [ "$failed" -eq 0 ]; then
+	echo "check.sh  every check passed"
+elif [ "$failed" -eq 1 ]; then
+	echo "check.sh  1 check failed, above"
+else
+	echo "check.sh  $failed checks failed, above"
 fi
 
 exit $status
