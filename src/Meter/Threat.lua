@@ -31,6 +31,14 @@ ns.MeterThreat = ThreatMeter
 -- Both of those only climb, so each is measured across the last three seconds
 -- on its own and the closing speed is the difference between them.
 --
+-- What it is about is the mob the player is aiming at, which is not the same
+-- question as "what is targeted". With action targeting on, the client picks
+-- the enemy in front of the camera and answers for it under `softenemy`, and
+-- unless SoftTargetForce is honoured nothing is selected at all. Asking for
+-- "target" is how this pane spent whole fights saying "no target" to a warrior
+-- who was swinging the entire time. It asks Unit.Aimed now, which is the one
+-- place in the addon that knows about both.
+--
 -- On a client with no threat API this whole file answers nothing and the pane
 -- says so. Vanilla computes no threat at all, which is why every Classic
 -- threat meter is a combat log simulation with a table of every spell's
@@ -89,12 +97,30 @@ function ThreatMeter.Ready()
 	return ns.HasThreat()
 end
 
--- Whether there is anything to measure against. A friendly target, a corpse or
--- nothing at all are all the same answer, and the pane draws the reason rather
--- than an empty list.
+-- The mob there is something to measure against, or nil. A friendly target, a
+-- corpse and nothing at all are the same answer, and the pane draws the reason
+-- rather than an empty list.
 function ThreatMeter.Watching()
-	return UnitExists("target") and UnitCanAttack("player", "target")
-		and not UnitIsDead("target")
+	return ns.Unit.Aimed()
+end
+
+-- The mob the samples are about, and everything behind forgotten when it
+-- changes.
+--
+-- Called on the tick as well as off the target changing, because the camera's
+-- soft target moves with no event of its own: the tick is the only thing that
+-- sees a player swing round onto the next mob without selecting it. The event
+-- is kept because it is the half that is instant, and it goes through the same
+-- comparison so that losing a held target to a soft one that is the same mob
+-- does not throw the window away mid fight.
+local function Aim()
+	local unit = ThreatMeter.Watching()
+	local guid = unit and UnitGUID(unit)
+	if guid ~= target then
+		target = guid
+		Forget()
+	end
+	return unit
 end
 
 --------------------------------------------------------------------------
@@ -119,13 +145,13 @@ local function Mark(slot, value, limit, now)
 	values[count], limits[count], times[count] = value, limit, now
 end
 
-local function Sample(unit, now)
+local function Sample(unit, mob, now)
 	local guid = UnitGUID(unit)
 	if not guid then
 		return
 	end
 
-	local isTanking, status, pct, _, value = ns.Threat(unit, "target")
+	local isTanking, status, pct, _, value = ns.Threat(unit, mob)
 	local slot = Slot(guid)
 
 	if status == nil or pct == nil then
@@ -183,12 +209,8 @@ function ThreatMeter.Update()
 		return
 	end
 
-	local guid = UnitGUID("target")
-	if guid ~= target then
-		target = guid
-		Forget()
-	end
-	if not ThreatMeter.Watching() then
+	local mob = Aim()
+	if not mob then
 		return
 	end
 
@@ -196,7 +218,7 @@ function ThreatMeter.Update()
 	tanking = nil
 	local units = ns.Unit.Roster.Fighters()
 	for index = 1, #units do
-		Sample(units[index], now)
+		Sample(units[index], mob, now)
 	end
 end
 
@@ -253,7 +275,4 @@ end
 
 local events = CreateFrame("Frame")
 events:RegisterEvent("PLAYER_TARGET_CHANGED")
-events:SetScript("OnEvent", function()
-	target = UnitGUID("target")
-	Forget()
-end)
+events:SetScript("OnEvent", Aim)

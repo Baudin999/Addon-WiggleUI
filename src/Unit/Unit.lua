@@ -46,6 +46,9 @@ local UnitHealthMax = UnitHealthMax
 local UnitPower = UnitPower
 local UnitPowerMax = UnitPowerMax
 local UnitPowerType = UnitPowerType
+local UnitExists = UnitExists
+local UnitIsDead = UnitIsDead
+local UnitCanAttack = UnitCanAttack
 
 -- Current, maximum, and the whole percent that actually gets drawn.
 --
@@ -98,4 +101,68 @@ function Unit.TargetToken(unit)
 		targetTokens[unit] = token
 	end
 	return token
+end
+
+-- Whether the player may swing at this unit: it is there, it is alive, and the
+-- client calls it hostile. The three go together and were written out twice,
+-- in Charge/Charge.lua and in the threat meter, which is one copy too many for
+-- the predicate that decides whether a whole readout has anything to say.
+function Unit.Attackable(unit)
+	return UnitExists(unit) and not UnitIsDead(unit) and UnitCanAttack("player", unit)
+end
+
+--------------------------------------------------------------------------
+-- What the player is aiming at
+--
+-- Action targeting, which the game's own options call it and which
+-- Targeting/Aim.lua switches on, has the client pick the enemy in front of the
+-- camera and answer for it under `softenemy`. That token is not the target.
+-- SoftTargetForce is what copies one to the other, and a client that is not
+-- honouring it leaves a player swinging all night with nothing selected.
+--
+-- So every readout that wants to know which mob this is has to ask for both,
+-- and the threat meter is the one that proved it: it asked the client for
+-- "target", the client said there was none, and the pane said "no target"
+-- through a whole fight the player was winning.
+--
+-- The probe came from Charge/Charge.lua and the reasons it is a probe are its:
+-- no addon on this install reads the token, the wiki marks it Dragonflight,
+-- and an unknown unit token is not promised to be a polite nil on every build.
+-- The first time it answers, it is supported.
+--------------------------------------------------------------------------
+
+local softProven = false
+
+function Unit.Soft()
+	local ok, exists = pcall(UnitExists, "softenemy")
+	if not ok or not exists then
+		return nil
+	end
+	softProven = true
+	return "softenemy"
+end
+
+-- Whether the token has ever answered, which is a different question from
+-- whether there is a mob under it now. Targeting's reading is the only caller
+-- and it needs the difference: a client with no soft target at all and a
+-- player looking at empty ground read the same otherwise.
+function Unit.SoftProven()
+	return softProven
+end
+
+-- The mob the player is acting on, or nil.
+--
+-- The held target first, because holding one is a decision and a camera angle
+-- is not, and because SoftTargetMatchLocked pins the soft token to a held
+-- target anyway, so on a client where both halves work the two answers are the
+-- same unit and this costs one call to find out.
+function Unit.Aimed()
+	if Unit.Attackable("target") then
+		return "target"
+	end
+	local soft = Unit.Soft()
+	if soft and Unit.Attackable(soft) then
+		return soft
+	end
+	return nil
 end

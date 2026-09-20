@@ -701,6 +701,50 @@ meterTicker:Beat(0.25)
 check(threatPane.right:GetText() ~= "no target",
 	"the target came back and the header was still reading no target")
 
+-- Action targeting, which is the whole of this pane's worst bug. The client
+-- picks the enemy in front of the camera and answers for it under `softenemy`,
+-- and on a client that is not copying that onto the target there is nothing
+-- selected at all. The pane asked the client about "target", got nothing back,
+-- and said "no target" through fights the player was winning.
+do
+	local readerWas = state.threatReader
+	local asked
+	state.threatReader = function(source, mob)
+		asked = mob
+		return readerWas(source, mob)
+	end
+
+	guids.target = nil
+	guids.softenemy = "Creature-0-0000-000-camera"
+	meterTicker:Beat(0.25)
+	check(asked == "softenemy",
+		("nothing is targeted and the pane sampled %q"):format(tostring(asked)))
+	check(threatPane.right:GetText() ~= "no target",
+		"a mob under the camera and the threat header still reads no target")
+	check(threatPane.rows[1]:IsShown(), "a mob under the camera and the pane drew no rows")
+
+	-- A held target beats the camera, because holding one is a decision and an
+	-- angle is not.
+	guids.target = "Creature-0-0000-000-boss"
+	meterTicker:Beat(0.25)
+	check(asked == "target", ("a target is held and the pane sampled %q"):format(tostring(asked)))
+
+	-- And a corpse under the camera is nothing to measure against, the same as
+	-- a corpse held.
+	guids.target = nil
+	_G.WiggleUIDeadUnits.softenemy = true
+	meterTicker:Beat(0.25)
+	check(threatPane.right:GetText() == "no target",
+		("the mob under the camera is dead and the header says %q")
+			:format(tostring(threatPane.right:GetText())))
+
+	_G.WiggleUIDeadUnits.softenemy = nil
+	guids.softenemy = nil
+	guids.target = "Creature-0-0000-000-boss"
+	state.threatReader = readerWas
+	meterTicker:Beat(0.25)
+end
+
 ----------------------------------------------------------------------
 -- Allocation
 ----------------------------------------------------------------------

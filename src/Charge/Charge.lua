@@ -151,9 +151,10 @@ local function PlateUnit(plate)
 	return plate.namePlateUnitToken or (plate.UnitFrame and plate.UnitFrame.unit)
 end
 
-local function Attackable(unit)
-	return UnitExists(unit) and not UnitIsDead(unit) and UnitCanAttack("player", unit)
-end
+-- Unit/Unit.lua's, because the threat meter asks the same question of the same
+-- mob and two copies of "may I swing at this" is how the two readouts end up
+-- disagreeing about a corpse. Held as a local for the 20 Hz pick below.
+local Attackable = ns.Unit.Attackable
 
 -- Matches the `help` macro conditional closely enough to colour by. An
 -- Intervene the game refuses shows as out of range rather than as ready,
@@ -181,34 +182,20 @@ end
 -- here: plate frames are restricted regions and GetCenter raises rather than
 -- answering. See the README. This is strictly the better mechanism anyway.
 --
--- Whether the token exists on 2.5.6 is not settled. SoftTargetEnemy is
--- definitely a live CVar, it persists to config-cache.wtf on this install, but
--- no installed addon reads the token and the wiki marks it Dragonflight. So
--- probe rather than assume, the same way BuildBinder probes for the state
--- driver: the first time the token answers, it is supported, and until then
--- the pick falls through to the cursor. Both paths are correct, so a client
--- without it loses camera aiming rather than breaking.
-local softProven = false
-
--- Whether the token resolves at all. That is a different question from whether
--- the unit under it is one Charge could take, and both are worth asking
--- separately: Pick wants the second, and SoftTargetState wants the first, so
--- the panel's reading can prove the token against a critter or a corpse rather
--- than staying dark and looking like a client that has no token.
+-- Whether the token exists on 2.5.6 is not settled, so it is probed rather than
+-- assumed, the same way BuildBinder probes for the state driver: the first time
+-- it answers, it is supported, and until then the pick falls through to the
+-- cursor. Both paths are correct, so a client without it loses camera aiming
+-- rather than breaking.
 --
--- pcalled because an unknown unit token is not guaranteed to be a polite nil on
--- every build, and this is called 20 times a second.
-function Charge.SoftUnit()
-	local ok, exists = pcall(UnitExists, "softenemy")
-	if not ok or not exists then
-		return nil
-	end
-	softProven = true
-	return "softenemy"
-end
+-- The probe itself is Unit/Unit.lua's now. It moved because the threat meter
+-- needs the same token for the same reason: a player aiming with the camera
+-- has no target for a readout to ask about, and a second copy of the probe
+-- would be a second answer to "which mob is this".
+local Soft = ns.Unit.Soft
 
 local function SoftEnemy()
-	if not Charge.SoftUnit() then
+	if not Soft() then
 		return nil
 	end
 	if Attackable("softenemy") then
@@ -221,7 +208,7 @@ end
 -- "unproven" while neither has happened. Only "off" is worth telling anyone
 -- about, because only "off" is something they can fix.
 function Charge.SoftTargetState()
-	if softProven then
+	if ns.Unit.SoftProven() then
 		return "on"
 	end
 	-- Anything that is not a positive number counts as off, nil included. A

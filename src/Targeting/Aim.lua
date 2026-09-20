@@ -32,9 +32,12 @@ ns.Aim = Aim
 -- off one second into a fight takes the target that was forced from it with it.
 -- The symptom was a mob you had just charged and could no longer attack.
 --
--- What is still Charge's: whether the token resolves at all. Charge.SoftUnit
--- probes it and Charge.SoftTargetState reports it, because that is a question
--- about the marker's aiming rather than about the CVars underneath it.
+-- What is not this file's: whether the token resolves at all. Unit/Unit.lua's
+-- Unit.Soft probes it and Charge.SoftTargetState reports it, because that is a
+-- question about the mob under the camera rather than about the CVars
+-- underneath it. The probe sits in Unit because the threat meter wants the same
+-- token: with forcing off there is no target for it to ask about, and the pane
+-- said "no target" through fights the player was winning.
 --
 -- So the addon owns these two while the setting is on, and puts back whatever
 -- it found when you turn the setting off. Both are scoped per character, so the
