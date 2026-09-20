@@ -285,6 +285,145 @@ check(qx == 11 and qy == 22, "a released button still cannot move itself")
 ns.db.minimapCorral = true
 ns.Corral.Apply()
 
-print(("minimap %s; corral %s, %d of %d children collected")
-	:format(ns.MinimapShape.Describe(), ns.Corral.Describe(),
-		ns.Corral.Count(), select("#", map:GetChildren())))
+----------------------------------------------------------------------
+-- Where the map sits
+--
+-- The one frame /wui unlock could not move, because the client hands
+-- MinimapCluster to Edit Mode and the lock never reached it.
+--
+-- Two halves, and the second is the one that took the work. The drag is taken
+-- by the map and moves the cluster above it, which is what a player does. Then
+-- the same frame is put under a miniature Edit Mode, because the three methods
+-- Place.lua hooks are the whole of how the two ways of moving this frame are
+-- kept from contradicting each other, and none of them exists on a stub that
+-- was never given one.
+----------------------------------------------------------------------
+
+-- The whole of it in one scope, for the reason the runner's header asks every
+-- section to take one: Lua gives a chunk two hundred locals and this file is
+-- the third longest of them.
+do
+
+	local cluster = _G.MinimapCluster
+
+	-- Locked, which is how a session starts.
+	ns.db.locked = true
+	ns.Each("lock")
+	local startX, startY = H.mouse.Point(map)
+	local under, dragging = H.mouse.Drag(startX, startY, startX - 180, startY - 140)
+	check(under == map, "the pointer found something other than the map over the middle of the map")
+	check(not dragging, "the map answered a drag while the frames were locked")
+
+	-- Unlocked, and the drag is delivered to the map while what moves is the
+	-- cluster: the zone text, Blizzard's corner buttons and the addon's own bezel
+	-- all hang off it, so moving the map alone would tear the map off its frame.
+	ns.db.locked = false
+	ns.Each("lock")
+	local homeLeft, homeBottom = cluster:GetLeft(), cluster:GetBottom()
+	local mapLeft, mapBottom = map:GetLeft(), map:GetBottom()
+	local _, moved = H.mouse.Drag(startX, startY, startX - 180, startY - 140)
+	local wentX, wentY = cluster:GetLeft() - homeLeft, cluster:GetBottom() - homeBottom
+	check(moved, "the map did not answer a drag with the frames unlocked")
+	check(wentX < 0 and wentY < 0,
+		("a drag down and to the left moved the cluster %d by %d"):format(wentX, wentY))
+	-- Within a thousandth rather than exactly, because the two are read off
+	-- different sums of the same anchor and the last bit of a float is not a fact
+	-- about whether the map moved.
+	check(math.abs((map:GetLeft() - mapLeft) - wentX) < 0.001
+		and math.abs((map:GetBottom() - mapBottom) - wentY) < 0.001,
+		"the cluster moved and the map inside it did not go with it")
+
+	local anchor = ns.db.minimapPoint
+	check(anchor and anchor[1] ~= nil, "a drag on the map wrote no anchor down")
+	check(anchor[2] == "UIParent", "the map was saved against something other than the screen")
+	check(anchor[4] == math.floor(anchor[4]) and anchor[5] == math.floor(anchor[5]),
+		"the map's anchor was saved in fractions of a unit")
+	check(ns.MinimapPlace.Moved(), "the map was dragged and the reset is still not offered")
+
+	local landedLeft, landedBottom = cluster:GetLeft(), cluster:GetBottom()
+
+	----------------------------------------------------------------------
+
+	-- Enough of Edit Mode to have an opinion about this frame: the anchor it puts
+	-- on, the drag it makes, the reset it offers, and the hooksecurefunc the addon
+	-- takes all three with. Installed here and taken away again at the end of the
+	-- block, the way 08-bars-zoom.lua stands up a nameplate driver.
+	--
+	-- Delivered on ADDON_LOADED rather than at login on purpose. Blizzard_EditMode
+	-- can load on demand, so a method that is not there when the addon comes up may
+	-- be there later, and the retry that covers it is only reachable this way.
+	do
+		local layout = { point = "TOPRIGHT", x = 0, y = 0 }
+
+		function cluster:ApplySystemAnchor()
+			self:ClearAllPoints()
+			self:SetPoint(layout.point, _G.UIParent, layout.point, layout.x, layout.y)
+		end
+
+		function cluster:ResetToDefaultPosition()
+			layout.x, layout.y = 0, 0
+			self:ApplySystemAnchor()
+		end
+
+		-- The client's own drag ends here, and what it moved is already on the
+		-- frame by the time it runs.
+		function cluster:OnDragStop() end
+
+		_G.hooksecurefunc = function(target, name, post)
+			local base = target[name]
+			target[name] = function(...)
+				local result = base(...)
+				post(...)
+				return result
+			end
+		end
+		fire("ADDON_LOADED", "Blizzard_EditMode")
+
+		-- The layout arriving from the server, which at login happens after the
+		-- addon has already put the map where it was dragged to.
+		cluster:ApplySystemAnchor()
+		check(math.abs(cluster:GetLeft() - landedLeft) <= 1
+			and math.abs(cluster:GetBottom() - landedBottom) <= 1,
+			"Edit Mode anchored the cluster and the drag did not go back on top of it")
+
+		-- A drag made inside Edit Mode instead. It is written down as the addon's
+		-- own, so the two never hold different answers.
+		cluster:ClearAllPoints()
+		cluster:SetPoint("TOPRIGHT", _G.UIParent, "TOPRIGHT", -40, -60)
+		cluster:OnDragStop()
+		check(ns.db.minimapPoint[4] == -40 and ns.db.minimapPoint[5] == -60,
+			"a drag made in Edit Mode was not written down as the addon's own")
+		cluster:ApplySystemAnchor()
+		check(select(4, cluster:GetPoint()) == -40,
+			"the addon fought the drag that had just been made in Edit Mode")
+
+		-- And Edit Mode's own reset still means something, which it would not if
+		-- the addon put its anchor back over the top of it.
+		cluster:ResetToDefaultPosition()
+		check(not ns.MinimapPlace.Moved(),
+			"Edit Mode reset the map and the addon still holds an anchor for it")
+		check(cluster:GetLeft() == homeLeft and cluster:GetBottom() == homeBottom,
+			"Edit Mode reset the map and it did not go back to where the layout puts it")
+
+		-- The addon's own reset is the same hand back, from the panel's button and
+		-- from /wui reset.
+		cluster:ClearAllPoints()
+		cluster:SetPoint("TOPRIGHT", _G.UIParent, "TOPRIGHT", -40, -60)
+		ns.db.minimapPoint = { "TOPRIGHT", "UIParent", "TOPRIGHT", -40, -60 }
+		ns.MinimapPlace.Reset()
+		check(not ns.MinimapPlace.Moved(), "the addon's reset left an anchor behind")
+		check(cluster:GetLeft() == homeLeft and cluster:GetBottom() == homeBottom,
+			"the addon's reset did not hand the map back to the layout")
+
+		_G.hooksecurefunc = nil
+	end
+
+	ns.db.locked = true
+	ns.Each("lock")
+	check(not map:IsDraggable(), "locking the frames again left the map taking drags")
+
+end
+
+print(("minimap %s, %s; corral %s, %d of %d children collected")
+	:format(ns.MinimapShape.Describe(), ns.MinimapPlace.Describe(),
+		ns.Corral.Describe(), ns.Corral.Count(), select("#", map:GetChildren())))

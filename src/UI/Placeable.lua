@@ -248,11 +248,21 @@ function UI.Placeable(frame, opts)
 
 	place.secure = opts.secure == true
 
-	-- What the drag is delivered to. The frame itself, unless a secure caller
-	-- names a strip of its own; Secure says why one would.
+	-- What the drag is delivered to. The frame itself unless the caller names
+	-- another, and there are two reasons to name one. A secure frame is dragged
+	-- by a strip along its edge, which Secure says why of. The minimap is the
+	-- other: what has to move is MinimapCluster, and what fills it and answers
+	-- the mouse is the map inside, so the drag is taken there and acted on one
+	-- frame up.
+	--
+	-- A rim and a name are drawn on the frame and the mouse for them is enabled
+	-- on the frame, so a grip would leave the mouse on the wrong one. The two
+	-- options mean opposite things about where the pointer goes, and a frame
+	-- with a grip is a frame you can already see.
 	place.grip = frame
 	if opts.grip then
-		assert(place.secure, "UI.Placeable: a grip is only for a frame dragged from a snippet")
+		assert(not opts.name,
+			"UI.Placeable: a frame dragged by a grip carries no placing rim: " .. tostring(opts.name))
 		place.grip = opts.grip
 	end
 
@@ -279,7 +289,10 @@ function UI.Placeable(frame, opts)
 		return Finish(place, frame, opts)
 	end
 
-	frame:SetScript("OnDragStart", function(self)
+	-- On the grip, which is the frame itself everywhere but the minimap, and
+	-- acting on the frame either way: what the client delivers a drag to and
+	-- what moves are two questions.
+	place.grip:SetScript("OnDragStart", function()
 		-- RegisterForDrag already refuses this while locked. The flag is read
 		-- again because a frame that starts moving and is never told to stop
 		-- follows the cursor for the rest of the session, and being sure costs
@@ -294,11 +307,11 @@ function UI.Placeable(frame, opts)
 		if place.combat == false and InCombatLockdown() then
 			return
 		end
-		self:StartMoving()
+		frame:StartMoving()
 	end)
-	frame:SetScript("OnDragStop", function(self)
-		self:StopMovingOrSizing()
-		Landed(place, self)
+	place.grip:SetScript("OnDragStop", function()
+		frame:StopMovingOrSizing()
+		Landed(place, frame)
 	end)
 
 	return Finish(place, frame, opts)
@@ -320,9 +333,9 @@ function Placeable:Lock(unlocked)
 		self.title:SetShown(self.unlocked)
 	end
 	if self.unlocked then
-		self.frame:RegisterForDrag("LeftButton")
+		self.grip:RegisterForDrag("LeftButton")
 	else
-		self.frame:RegisterForDrag()
+		self.grip:RegisterForDrag()
 	end
 end
 

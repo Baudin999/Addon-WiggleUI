@@ -61,6 +61,12 @@ ns.Register({
 		-- defaults table never carries, so the setting could not be reset to
 		-- anything and /wui reset would have nothing to put back.
 		corralPoint = {},
+
+		-- Where the map itself has been dragged to, and empty for the same
+		-- reason corralPoint is: the absence of a position has to survive the
+		-- merge with the defaults. Empty means the client's own layout decides,
+		-- which on this flavour is the Edit Mode layout. See Place.lua.
+		minimapPoint = {},
 	},
 
 	words = {
@@ -120,15 +126,18 @@ ns.Register({
 	},
 
 	status = function()
-		return ("%s; buttons %s"):format(ns.MinimapShape.Describe(), ns.Corral.Describe())
+		return ("%s, %s; buttons %s"):format(ns.MinimapShape.Describe(),
+			ns.MinimapPlace.Describe(), ns.Corral.Describe())
 	end,
 
 	lock = function()
 		ns.Corral.Lock()
+		ns.MinimapPlace.Lock()
 	end,
 
 	reset = function()
 		ns.Corral.Reset()
+		ns.MinimapPlace.Reset()
 	end,
 
 	panel = function(ui)
@@ -140,7 +149,16 @@ ns.Register({
 			SetSize)
 		ui.Hint("The width only applies while the square is on. Round, the map is left at whatever this client draws it at.")
 
+		ui.Action(function() return "put the map back where the client had it" end,
+			function()
+				ns.MinimapPlace.Reset()
+				ns.Options.Refresh()
+			end,
+			ns.MinimapPlace.Moved)
+		ui.Hint("Unlock the frames and the map drags like every other frame here. The client hands this one to Edit Mode, which is why the lock could not move it; drag it in either place now and both agree after.")
+
 		ui.Reading("minimap", ns.MinimapShape.Describe)
+		ui.Reading("where it sits", ns.MinimapPlace.Describe)
 		ui.Reading("the clock", function()
 			return ns.MinimapClock.Describe() or "not drawn until the square is on"
 		end)

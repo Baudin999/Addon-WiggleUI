@@ -787,14 +787,17 @@ Progress\Rails.lua
 Progress\Feature.lua
 
 # The minimap. Shape.lua makes the frame square and as wide as you asked for,
-# Corral.lua holds the other addons' buttons behind one square, and Feature.lua
-# last as everywhere else. Shape first because the corral's default position is
-# a corner of the map and the map has to have been resized before that corner
-# means anything. Next to Artwork because it is the same job on another of
-# Blizzard's frames: furniture off, everything reversible in one call.
+# Corral.lua holds the other addons' buttons behind one square, Place.lua puts
+# the map itself where /wui unlock dragged it rather than where Edit Mode did,
+# and Feature.lua last as everywhere else. Shape first because the corral's
+# default position is a corner of the map and the map has to have been resized
+# before that corner means anything. Next to Artwork because it is the same job
+# on another of Blizzard's frames: furniture off, everything reversible in one
+# call.
 Minimap\Shape.lua
 Minimap\Clock.lua
 Minimap\Corral.lua
+Minimap\Place.lua
 Minimap\Feature.lua
 
 # The chores. Nothing here is on the combat path, and the first five draw

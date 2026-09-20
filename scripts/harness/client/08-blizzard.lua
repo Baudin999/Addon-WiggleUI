@@ -236,18 +236,24 @@ end
 -- the wheel has to do their work, and a stub without them would let a square
 -- that cannot be zoomed pass.
 do
-	local map = region("frame", _G.UIParent, "Minimap")
+	-- The cluster first and the map inside it, which is the client's own tree:
+	-- Minimap.xml hangs the map off MinimapCluster through a container frame,
+	-- and the rest of the interface anchors under the cluster rather than under
+	-- the map. A fixture with the two side by side passed every question the
+	-- square asks and none of the one Place.lua asks, which is whether moving
+	-- the cluster takes the map with it.
+	local cluster = region("frame", _G.UIParent, "MinimapCluster")
+	cluster:SetPoint("TOPRIGHT", _G.UIParent, "TOPRIGHT", 0, 0)
+
+	local map = region("frame", cluster, "Minimap")
 	map:SetSize(140, 140)
 	-- Where the client puts it, and it takes the mouse, because both are what
 	-- the wheel that replaced the zoom buttons needs: a frame with no anchor
 	-- sits on UIParent's top left corner along with everything else that has
 	-- none, and a frame that does not answer the mouse is not there as far as a
 	-- pointer is concerned.
-	map:SetPoint("TOPRIGHT", _G.UIParent, "TOPRIGHT", -20, -20)
+	map:SetPoint("CENTER", cluster, "CENTER", 0, 0)
 	map:EnableMouse(true)
-
-	local cluster = region("frame", _G.UIParent, "MinimapCluster")
-	cluster:SetPoint("TOPRIGHT", _G.UIParent, "TOPRIGHT", 0, 0)
 	map.zoom, map.zoomLevels = 2, 5
 	map.GetZoom = function(self) return self.zoom end
 	map.GetZoomLevels = function(self) return self.zoomLevels end
