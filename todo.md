@@ -102,6 +102,7 @@ untested list.
 98. The line that says why not finish this one. `dbf2168`
 99. What the friend will not do, held by a gate rather than by a comment. `116ae93`
 100. A feed row draws a whole word or none of it. `b003b3c`
+101. A theme of your own, made by pointing at the screen. `cd0dbd3`
 
 The options window's prose budget was deleted rather than raised again, at
 `4bed7d6`. It counted every sentence in the window against a number that had
