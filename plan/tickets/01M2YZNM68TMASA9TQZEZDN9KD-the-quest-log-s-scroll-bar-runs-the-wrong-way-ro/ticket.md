@@ -2,7 +2,7 @@
 revision: 5
 id: 01M2YZNM68TMASA9TQZEZDN9KD
 type: bug
-status: doing
+status: done
 title: The quest log's scroll bar runs the wrong way round
 ---
 
