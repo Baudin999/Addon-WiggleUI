@@ -1026,6 +1026,7 @@ Character\Reputation.lua
 Character\Theirs.lua
 Character\Readout.lua
 Character\Trace.lua
+Character\SetRow.lua
 Character\Paperdoll.lua
 Character\Window.lua
 Character\RepWindow.lua
@@ -1034,6 +1035,26 @@ Character\InspectWindow.lua
 Character\Blizzard.lua
 Character\InspectBlizzard.lua
 Character\Feature.lua
+
+# Named sets of gear, and putting one on.
+#
+# Sets.lua is the model and the readers: what a set is, how an item in one is
+# written down so that it goes on matching itself, and how much of one you have
+# on. Wear.lua is the plan and the queue, which is the decision the whole folder
+# is shaped around: the plan calls nothing that changes anything and is handed
+# the world rather than asking for it, so two rings trading places is a thing
+# that can be measured without a client, and the queue then runs it one cursor
+# operation per event because every one of them is a server round trip.
+# Feature.lua last, as everywhere else.
+#
+# After Character, because a set is nineteen of Character\Worn.lua's twenty
+# slots and it asks that file for them rather than writing the numbers down a
+# second time. Core\Gear.lua, which answers which slots an item lands in, and
+# Class\Spec.lua, which answers which talent group is live, are both far above
+# this line. Nothing in here draws, so no file in UI\ is needed by any of it.
+Sets\Sets.lua
+Sets\Wear.lua
+Sets\Feature.lua
 
 # The talent window. All three trees side by side, every talent on the screen
 # at once, in place of the client's one-tree-at-a-time frame.
