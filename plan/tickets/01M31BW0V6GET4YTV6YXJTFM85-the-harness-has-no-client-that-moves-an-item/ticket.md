@@ -2,7 +2,7 @@
 revision: 5
 id: 01M31BW0V6GET4YTV6YXJTFM85
 type: task
-status: todo
+status: done
 title: The harness has no client that moves an item
 parent: 01M1Y4JDFMVHEB87QK9R1KP4BJ
 ---
