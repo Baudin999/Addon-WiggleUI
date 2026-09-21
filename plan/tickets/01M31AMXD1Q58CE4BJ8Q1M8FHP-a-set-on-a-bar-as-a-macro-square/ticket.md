@@ -5,6 +5,7 @@ type: task
 status: todo
 title: "A set on a bar, as a macro square"
 parent: 01M1Y4JDFMVHEB87QK9R1KP4BJ
+depends: [01M31AK99MY4K51D0XX9YM59SD]
 ---
 
 Drag a set onto a bar and press it there. One mechanism in both places, and the
