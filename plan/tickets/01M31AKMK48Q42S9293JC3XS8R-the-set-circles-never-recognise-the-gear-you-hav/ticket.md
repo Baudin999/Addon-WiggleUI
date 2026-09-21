@@ -2,7 +2,7 @@
 revision: 5
 id: 01M31AKMK48Q42S9293JC3XS8R
 type: bug
-status: todo
+status: done
 title: The set circles never recognise the gear you have on
 parent: 01M1Y4JDFMVHEB87QK9R1KP4BJ
 ---
