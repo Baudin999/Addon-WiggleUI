@@ -106,22 +106,44 @@ One line comes back:
 
 ## The phases
 
-Five, each one a vertical you can use in game on its own.
+Two landed on 2026-09-20 and the rest of the list was rewritten on 2026-09-21,
+after a night of playing the thing.
 
-1. `01M1Y4JJ5PT1EHD89PXR22QRYG` A set you can save and put on. Slash only,
-   no UI.
-2. `01M1Y4JJ84Y3J1NRFFSDMT3TDV` The sets on the character page.
-3. `01M1Y4JJADXT00H6V1Z6660YBG` Editing a set on the doll.
-4. `01M1Y4JJCMRCGEMB0DT4MET6W7` A key on a set, and the swap that waits for
-   the fight.
-5. `01M1Y4JJF3NH511BGFDH3N7JY9` The set that follows your spec.
+1. `01M1Y4JJ5PT1EHD89PXR22QRYG` done. A set you can save and put on. Slash
+   only, no UI.
+2. `01M1Y4JJ84Y3J1NRFFSDMT3TDV` done. The sets on the character page: a row
+   of circles under every gear row and a stack of toggles over the left
+   column.
 
-Phase 5 is the weakest and it should be built last or not at all. TBC has no
-dual spec. You respec at a trainer for gold, maybe once a week, and that is
-already an out of combat moment with time to click a chip. The key in phase 4
-is what gets pressed forty times a night. Specs are why you name the sets,
-not why you switch them.
+What shipped does not work. Pressing a set moves nothing at all, and every
+circle claims you are not wearing gear you are standing in. Both are cards and
+both are first:
 
-Held back until the five land: remembering where a missing piece was last
+3. `01M31BW0V6GET4YTV6YXJTFM85` The harness has no client that moves an item.
+   Before either bug, because neither can be gated without it.
+4. `01M31AK99MY4K51D0XX9YM59SD` Pressing a set does not swap any gear.
+5. `01M31AKMK48Q42S9293JC3XS8R` The set circles never recognise the gear you
+   have on.
+
+Then the three the player asked for:
+
+6. `01M31AM52HJ1XBNRTTSNT3M4KB` In a fight a set swaps the weapons and
+   nothing else. Silently. Everybody playing this game knows armour does not
+   change in a fight.
+7. `01M31AMXD1Q58CE4BJ8Q1M8FHP` A set on a bar, as a macro square.
+8. `01M31ANC6PVA8V9FAV6CBXDCE6` Forget a set from the character page.
+
+Two of the original five are dropped. `01M1Y4JJADXT00H6V1Z6660YBG`, editing a
+set on the doll, shipped as the circles instead and the comment on it says why
+that is the better answer. `01M1Y4JJCMRCGEMB0DT4MET6W7`, a key on a set and
+the swap that waits for the fight, is wrong on both halves: the swap does not
+wait, and the key comes free with the bar square.
+
+`01M1Y4JJF3NH511BGFDH3N7JY9`, the set that follows your spec, stands and is
+still the weakest. Dual spec turns out to be on this client, so the card is no
+longer arguing against the flavour, but the point holds: a spec swap is an out
+of combat moment with time to press a toggle. Build it last or not at all.
+
+Held back until the rest land: remembering where a missing piece was last
 seen, so "not in your bags" becomes "in your bank"; and marking a set's items
 in the bag window, the way Baganator marks Blizzard's.
