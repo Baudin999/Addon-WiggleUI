@@ -2,7 +2,7 @@
 revision: 5
 id: 01M31B5GCDS1KHDV8CZ3HTW7K8
 type: task
-status: todo
+status: done
 title: "The guide is a site, baked out of the addon's own palettes"
 ---
 
