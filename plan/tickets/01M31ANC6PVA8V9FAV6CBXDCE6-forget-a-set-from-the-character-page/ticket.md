@@ -2,7 +2,7 @@
 revision: 5
 id: 01M31ANC6PVA8V9FAV6CBXDCE6
 type: task
-status: todo
+status: done
 title: Forget a set from the character page
 parent: 01M1Y4JDFMVHEB87QK9R1KP4BJ
 ---
