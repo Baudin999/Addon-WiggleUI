@@ -21,7 +21,7 @@ Baganator guards its own set tracker with `not IsEra and not IsBC` and the
 comment "Wrath onwards", which is the proof: `C_EquipmentSet` is not there
 and every part of this is built from nothing.
 
-**Armour cannot be equipped in a fight.** `Character/Worn.lua:327` already
+**Armour cannot be equipped in a fight.** `Character/Worn.lua:463` already
 holds the rule. Slots 16, 17 and 18 are the three combat allows, and the
 server refuses the rest with its own message.
 
@@ -41,7 +41,7 @@ items, a swap is item moves, and item moves are plain Lua.
 `Spec.Token` and `Spec.All`, and already runs a pass when your talents move.
 
 **The word "loadout" is taken.** `Class/*.lua` calls its bar plan a loadout
-and the removal commit calls out the clash. The slash word here is `/wk set`
+and the removal commit calls out the clash. The slash word here is `/wui set`
 and the folder is `src/Sets/`.
 
 ## What a set is
@@ -55,7 +55,7 @@ this client. A full nineteen slot set is only the case where nothing is
 unset. Deliberately empty is the third because taking the shield off is a
 thing a set has to be able to say.
 
-Sets are per character, in `WarriorKitCharDB`. Gear is a fact about one
+Sets are per character, in `WiggleUICharDB.gearSets`. Gear is a fact about one
 character.
 
 Nineteen and not twenty: the ammo slot is not in `Worn.SLOTS` and no hunter
