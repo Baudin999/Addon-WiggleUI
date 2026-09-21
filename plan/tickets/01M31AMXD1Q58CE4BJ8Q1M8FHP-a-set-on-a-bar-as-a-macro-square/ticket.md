@@ -2,7 +2,7 @@
 revision: 5
 id: 01M31AMXD1Q58CE4BJ8Q1M8FHP
 type: task
-status: todo
+status: done
 title: "A set on a bar, as a macro square"
 parent: 01M1Y4JDFMVHEB87QK9R1KP4BJ
 depends: [01M31AK99MY4K51D0XX9YM59SD]
