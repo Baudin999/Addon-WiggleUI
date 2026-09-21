@@ -1,14 +1,3 @@
-# The CurseForge project page
-
-This file is the text of the Description tab on the CurseForge project, id
-1675955. The API that `scripts/deploy.sh` uploads through can send a file and a
-changelog and nothing else, so the description is pasted by hand. Edit it here
-first, then paste, so the page and the repo do not drift.
-
-Everything below the line is the page.
-
----
-
 # WiggleUI
 
 An interface for TBC Anniversary (2.5.6) and Classic Era (1.15.9). It draws
