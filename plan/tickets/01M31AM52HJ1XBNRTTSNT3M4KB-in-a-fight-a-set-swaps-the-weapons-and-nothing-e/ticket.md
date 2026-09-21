@@ -2,7 +2,7 @@
 revision: 5
 id: 01M31AM52HJ1XBNRTTSNT3M4KB
 type: task
-status: todo
+status: done
 title: In a fight a set swaps the weapons and nothing else
 parent: 01M1Y4JDFMVHEB87QK9R1KP4BJ
 depends: [01M31AK99MY4K51D0XX9YM59SD]
