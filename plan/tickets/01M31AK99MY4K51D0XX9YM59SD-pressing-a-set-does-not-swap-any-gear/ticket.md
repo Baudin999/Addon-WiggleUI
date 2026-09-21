@@ -2,7 +2,7 @@
 revision: 5
 id: 01M31AK99MY4K51D0XX9YM59SD
 type: bug
-status: todo
+status: done
 title: Pressing a set does not swap any gear
 parent: 01M1Y4JDFMVHEB87QK9R1KP4BJ
 depends: [01M31BW0V6GET4YTV6YXJTFM85]
