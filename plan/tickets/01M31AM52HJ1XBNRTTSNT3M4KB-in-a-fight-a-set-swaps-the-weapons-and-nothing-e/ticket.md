@@ -5,6 +5,7 @@ type: task
 status: todo
 title: In a fight a set swaps the weapons and nothing else
 parent: 01M1Y4JDFMVHEB87QK9R1KP4BJ
+depends: [01M31AK99MY4K51D0XX9YM59SD]
 ---
 
 Press a set in a fight and the weapons go on. Nothing else moves, and nothing
