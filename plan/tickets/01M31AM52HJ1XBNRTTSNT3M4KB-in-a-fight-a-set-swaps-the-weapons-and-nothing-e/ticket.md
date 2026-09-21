@@ -12,7 +12,7 @@ is said about it.
 
 ## What lands
 
-`Allowed` (`src/Sets/Wear.lua:621`) refuses the whole run when any operation
+`Allowed` (`src/Sets/Wear.lua:537`) refuses the whole run when any operation
 touches a slot the fight holds shut. That is the wrong answer. The press drops
 every operation on a slot `Worn.Free` refuses, keeps the rest, and runs.
 
@@ -36,7 +36,7 @@ state machine, which is the argument the file header already makes.
 
 ## The arithmetic moves with it
 
-`Room` and `Touched` are counted off `plan.ops` (`Wear.lua:313` and `:325`), so
+`Room` and `Touched` are counted off `plan.ops` (`Wear.lua:313` and `:333`), so
 the refused operations have to come out of the plan before those run, not at
 the moment the queue reaches them. Otherwise a press in a fight asks for bag
 room to stow armour it is never going to lift.
