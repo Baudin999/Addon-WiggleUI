@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="dark">
+<head>
+<!-- Written by scripts/bake-guide-site.sh out of docs/guide. Do not edit. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The first login - WiggleUI</title>
+<meta name="description" content="The first login, from the WiggleUI guide.">
+<link rel="stylesheet" href="../wiggle.css">
+<script>try{var p=localStorage.getItem("wiggle-palette");if(p)document.documentElement.dataset.palette=p}catch(e){}</script>
+</head>
+<body>
+<div class="window">
+	<header class="titlebar">
+		<a class="brand" href="../index.html">WiggleUI</a>
+		<div class="search">
+			<input id="find" type="search" placeholder="Search the guide" autocomplete="off" spellcheck="false">
+			<div id="hits" class="hits" hidden></div>
+		</div>
+		<label class="palette">
+			<span class="sr">Palette</span>
+			<select id="palette"><option value="alliance">Alliance</option><option value="arcane">Arcane</option><option value="dark">Dark</option><option value="desert">Desert</option><option value="fire">Fire</option><option value="forest">Forest</option><option value="horde">Horde</option><option value="parchment">Parchment</option></select>
+		</label>
+	</header>
+	<div class="split">
+		<nav class="rail">
+<a class="rail-row" href="../index.html">All pages</a>
+<a class="rail-row" href="install.html">Install</a>
+<a class="rail-row on" href="first-run.html">The first login</a>
+<a class="rail-row" href="look.html">Themes, placing and profiles</a>
+<a class="rail-row" href="fighting.html">Fighting</a>
+<a class="rail-row" href="bars.html">Action bars</a>
+<a class="rail-row" href="frames.html">Frames</a>
+<a class="rail-row" href="windows.html">Windows</a>
+<a class="rail-row" href="feeds.html">Feeds and meters</a>
+<a class="rail-row" href="chores.html">Chores</a>
+<a class="rail-row" href="screen.html">The screen itself</a>
+<a class="rail-row" href="commands.html">Every command</a>
+<a class="rail-row" href="troubleshooting.html">When something is wrong</a>
+			<p class="rail-note">Shake the mouse sideways to change the palette, the way the addon changes theme. <button type="button" id="wiggle-off" class="linky"></button></p>
+		</nav>
+		<main class="page">
+<h1>The first login</h1>
+<p>The first time you log in, five cards come up, one question each, with a picture of the answer on every card.</p>
+<ol><li><p><strong>How big should everything be.</strong> Picking a card sizes the real screen behind the window while you look at it. Four stops, from smaller to largest, and every part can still be sized on its own later.</p>
+<figure><a href="../img/setup-page-01.webp"><img src="../img/setup-page-01.webp" alt="The size page: Smaller, As shipped, Larger, Largest, each drawn at its own scale" width="862" height="648" loading="lazy" decoding="async"></a><figcaption>The size page: Smaller, As shipped, Larger, Largest, each drawn at its own scale</figcaption></figure></li><li><p><strong>How much of the addon do you want on the screen.</strong> This is the theme: immersive, exploration or informational. They run from the one that shows least to the one that shows most, which is also from the player who knows the game best to the one who is new to it.</p>
+<figure><a href="../img/setup-page-02.webp"><img src="../img/setup-page-02.webp" alt="The mode page: immersive nearly empty, exploration and informational filling up" width="862" height="647" loading="lazy" decoding="async"></a><figcaption>The mode page: immersive nearly empty, exploration and informational filling up</figcaption></figure></li><li><p><strong>Which colours should the addon wear.</strong> Dark, forest, desert, arcane, horde, alliance, fire or parchment. All but dark carry a painted frame round every window; parchment's is a sheet of paper with a torn, scorched edge.</p>
+<figure><a href="../img/setup-page-03.webp"><img src="../img/setup-page-03.webp" alt="The colours page: the same bag window drawn in all eight palettes" width="865" height="648" loading="lazy" decoding="async"></a><figcaption>The colours page: the same bag window drawn in all eight palettes</figcaption></figure></li><li><p><strong>How should your unit frames look.</strong> Modern is shaded bars stacked tight with one dark edge and no portrait, the bars taking the portrait's room. Flat is flat fills with a hairline round each and your portrait beside them.</p>
+<figure><a href="../img/setup-page-04.webp"><img src="../img/setup-page-04.webp" alt="The frames page: modern with the bars taking the portrait's room, flat with the portrait beside them" width="864" height="646" loading="lazy" decoding="async"></a><figcaption>The frames page: modern with the bars taking the portrait's room, flat with the portrait beside them</figcaption></figure></li><li><p><strong>Where should a tooltip open.</strong> In the corner the game keeps its own tooltip in, or attached to whatever you hovered. A map pin is attached either way, because a box in the screen's corner is a long way from the pin it names.</p>
+<figure><a href="../img/setup-page-05.webp"><img src="../img/setup-page-05.webp" alt="The tooltips page: the box in the screen's corner, or on the thing it describes" width="860" height="648" loading="lazy" decoding="async"></a><figcaption>The tooltips page: the box in the screen's corner, or on the thing it describes</figcaption></figure></li></ol>
+<p>Nothing is written until you finish the last page. Skipping, closing the window or pressing Escape keeps what you have, which on a fresh install is the shipped screen, and the setup never comes up on its own again.</p>
+<p>Finishing reloads the interface if the mode, the colours or the frames moved, because those three are drawn once at load. It also lays the chosen mode's shipped screen over this character's profile, windows and sizes included, so picking immersive gives you the author's immersive screen rather than the informational one with things hidden.</p>
+<p>To answer them again, type <code>/wui setup</code>, or press Escape and take <strong>WiggleUI Setup</strong> from the game menu. It starts on your current answers rather than on the shipped ones.</p>
+<h2 id="getting-around"><a class="anchor" href="#getting-around">Getting around</a></h2>
+<p><code>/wui</code> opens the settings window and <code>/wui</code> again closes it.</p>
+<p>Down the left is a rail of nine groups, and a tenth named after your class if your class has pages nobody else does. A group is a thing you can point at on the screen or a job you came to do: On and off, Fighting, Action bars, Frames, Windows, Feeds and meters, Chores, The screen, Under the hood. The group you are in stands open with its sections listed under it and the rest stay one line each.</p>
+<figure><a href="../img/theme-002.webp"><img src="../img/theme-002.webp" alt="The settings window: the rail of nine groups down the left, the search field in the title bar, and the Theme page open" width="797" height="591" loading="lazy" decoding="async"></a><figcaption>The settings window: the rail of nine groups down the left, the search field in the title bar, and the Theme page open</figcaption></figure>
+<p>The window opens on <strong>On and off</strong>, which is one switch per part of the addon and a sentence saying what turning it on puts on your screen. Nothing else is on that page: no numbers, no ranges. Turn things on, go and look at your screen, come back. The same switch sits at the top of that part's own page with its numbers under it.</p>
+<p>There is a search field above the page. Type into it and it lists every control in the window that matches, wherever it lives, and taking one takes you to its page with the control marked. It takes the keyboard when you click it and at no other time.</p>
+<p>Two commands are worth knowing before the rest:</p>
+<pre><code>/wui help      every word the addon answers, one line each
+/wui status    what every part is doing right now</code></pre>
+<p><code>/wui</code> is also <code>/wiggleui</code> and <code>/wiggle</code>, if the short one is taken.</p>
+		</main>
+	</div>
+	<footer class="footer">
+		<span>The WiggleUI guide, page 3 of 13</span>
+		<span><a href="https://github.com/Baudin999/Addon-WiggleUI" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://github.com/Baudin999/Addon-WiggleUI/issues" target="_blank" rel="noopener">Report a bug</a></span>
+	</footer>
+</div>
+<script src="../wiggle.js"></script>
+</body>
+</html>

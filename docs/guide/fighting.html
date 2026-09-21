@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="dark">
+<head>
+<!-- Written by scripts/bake-guide-site.sh out of docs/guide. Do not edit. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fighting - WiggleUI</title>
+<meta name="description" content="Fighting, from the WiggleUI guide.">
+<link rel="stylesheet" href="../wiggle.css">
+<script>try{var p=localStorage.getItem("wiggle-palette");if(p)document.documentElement.dataset.palette=p}catch(e){}</script>
+</head>
+<body>
+<div class="window">
+	<header class="titlebar">
+		<a class="brand" href="../index.html">WiggleUI</a>
+		<div class="search">
+			<input id="find" type="search" placeholder="Search the guide" autocomplete="off" spellcheck="false">
+			<div id="hits" class="hits" hidden></div>
+		</div>
+		<label class="palette">
+			<span class="sr">Palette</span>
+			<select id="palette"><option value="alliance">Alliance</option><option value="arcane">Arcane</option><option value="dark">Dark</option><option value="desert">Desert</option><option value="fire">Fire</option><option value="forest">Forest</option><option value="horde">Horde</option><option value="parchment">Parchment</option></select>
+		</label>
+	</header>
+	<div class="split">
+		<nav class="rail">
+<a class="rail-row" href="../index.html">All pages</a>
+<a class="rail-row" href="install.html">Install</a>
+<a class="rail-row" href="first-run.html">The first login</a>
+<a class="rail-row" href="look.html">Themes, placing and profiles</a>
+<a class="rail-row on" href="fighting.html">Fighting</a>
+<a class="rail-row" href="bars.html">Action bars</a>
+<a class="rail-row" href="frames.html">Frames</a>
+<a class="rail-row" href="windows.html">Windows</a>
+<a class="rail-row" href="feeds.html">Feeds and meters</a>
+<a class="rail-row" href="chores.html">Chores</a>
+<a class="rail-row" href="screen.html">The screen itself</a>
+<a class="rail-row" href="commands.html">Every command</a>
+<a class="rail-row" href="troubleshooting.html">When something is wrong</a>
+			<p class="rail-note">Shake the mouse sideways to change the palette, the way the addon changes theme. <button type="button" id="wiggle-off" class="linky"></button></p>
+		</nav>
+		<main class="page">
+<h1>Fighting</h1>
+<p><strong>One Charge button.</strong> It casts Charge, Intervene or Intercept depending on the stance you stand in and what you are looking at, and out of combat it aims by camera rather than by target.</p>
+<pre><code>/wui charge on|off, charge always|ready
+/wui charge marker on|off, marker size &lt;16-96&gt;, marker offset &lt;-60-60&gt;
+/wui charge bind &lt;key|none&gt;, charge weapon &lt;name|none&gt;</code></pre>
+<p><strong>Raid marking on a held key and a click.</strong> Bind skull, cross and moon to keys and the icon goes on whatever is under the cursor.</p>
+<pre><code>/wui mark on|off, markkey &lt;skull|cross|moon&gt; &lt;key|none&gt;, targetmark on|off</code></pre>
+<p><strong>One key that switches target and swings.</strong> TAB cycles and stops there. Bind a key here and it takes the next enemy and starts the attack on it. The other half of the page lets the camera pick the enemy in front of you and makes that the one you are targeting.</p>
+<pre><code>/wui switch &lt;key|none&gt;
+/wui aim on|off</code></pre>
+<p><strong>Casting on what the mouse is over.</strong> Drop a spell into the slot on the page and press a key, and that key casts it on whatever the pointer is on, without dropping the target you already had. New bindings default to friendly, because an enemy key is a key you press on what you are already swinging at and the client targets that for you anyway. The list of what is bound can be drawn over the world as a small caption. Bindings are per character, since a spell is something one character knows.</p>
+<pre><code>/wui hover on|off, hover show, hover remove &lt;key&gt;, hover clear
+/wui hover list on|off, the sheet over the world</code></pre>
+<p><strong>A swing timer for the weapon you are holding.</strong> One bar per hand, filling towards the next swing off the combat log. A two hander gets one bar, a pair gets two, a shield gets one, and nothing in your main hand gets none. Nothing is drawn on the bars: no band, no numbers, no mark to aim at.</p>
+<p>It follows the weapon the whole way. Flurry landing mid swing shortens the bar in flight instead of restarting it. A Heroic Strike or a Cleave eats the white swing and starts the bar again, which is what a swing timer built on white hits alone gets wrong, and so does a finished Slam. Swapping a weapon in a fight throws the swing away and starts a fresh one, because that is what the game does.</p>
+<pre><code>/wui swing on|off, swing width 180, height 10, zoom 1 to 3</code></pre>
+<p><strong>A nag for what you forgot.</strong> A row of squares over your character when something that should be up is not: a sharpening stone worn off either hand, Battle Shout lapsed, no food. It is not there at all when nothing is wrong, so seeing it is the whole message. A shield is never nagged about. Hover a square and it tells you what is missing and what fixes it; click it and the options window opens on the row's own page.</p>
+<p>The row has two lines. The out line is checked between fights, because a stone and a plate of food are things you put on before the pull. The in line is checked during one: the racial you own and have not pressed, Blood Fury on an orc and Berserking on a troll pulsing in the middle of your screen until you spend them, and whatever you dragged there because it lapses mid swing, a shaman's shield being the case it was built for. An entry can stand on both lines, and a shield does. Drag a spell out of your spellbook onto either line, drag a square onto the other line to check it there as well, or drag one off. Every entry has its own tick box too, per character, because a bank alt that will never own a sharpening stone does not need to be told about one forever. Add a flask by spell id where there is nothing to drag, because these clients will not say that an aura came from one.</p>
+<pre><code>/wui buffs on|off, buffs weapon|offhand|shout|food|racial on|off
+/wui buffs line &lt;name or id&gt; in|out|both
+/wui buffs list, buffs add|remove &lt;spell id&gt;
+/wui buffs pulse on|off, resting on|off, zoom 1 to 3</code></pre>
+<p><strong>Two rows of cooldowns over your character.</strong> Seconds on the top line, minutes docked under it, up for the whole fight. Your class and your trinkets fill it; drag a spell from your spellbook onto a line, across lines, or off the row.</p>
+<pre><code>/wui cooldowns on|off, cooldowns list, cooldowns &lt;name&gt; on|off
+/wui cooldowns add|drop &lt;spell id&gt;, cooldowns left|right|line &lt;name&gt;
+/wui cooldowns idle on|off, zoom 1 to 3</code></pre>
+<p><strong>A totem bar with a hole where a totem is missing.</strong> The client draws the totems you have out as a row as long as the number of them, so the square in the second place is a different totem every time you look and the one thing it can never say is which slot is empty. This is the four slots instead, always in the same order and always in the same place: earth, fire, water, air, which is Blizzard's own order. A filled slot is the totem's art with the seconds over it and a sweep that fills as it runs out; an empty one is a hole with the element's colour on its edge. After a week you stop reading names, because the second square is Windfury and Windfury being a hole is a sentence. It is up in a fight and afterwards while anything is still standing, and gone once everything has run out. Nothing in the part knows what a totem is: the slots, their order and their colours are a plan in <code>Class/Shaman.lua</code>, so a warrior's three stances are one more plan and one more reader rather than a second feature.</p>
+<pre><code>/wui totems on|off (or /wui stances), totems list, totems idle on|off, zoom 1 to 3</code></pre>
+<h2 id="the-class-pages"><a class="anchor" href="#the-class-pages">The class pages</a></h2>
+<p>The Charge button and the warrior bar loadout are warrior only, and on any other class they are not there at all: no button, no icon in the world, no key taken, and your action targeting setting left exactly where you had it. The rail in the settings window grows a group named after your class only if your class has pages nobody else does.</p>
+<p>Everything else in this guide works the same on a hunter as it does on a warrior, the swing bars included. The totem row is a shaman's and the same file draws a warrior's stances, because both are a plan in <code>Class/&lt;yours&gt;.lua</code> and one reader.</p>
+<!-- **Screenshot wanted:** `charge-marker.png`, the marker over a mob with the button lit. -->
+		</main>
+	</div>
+	<footer class="footer">
+		<span>The WiggleUI guide, page 5 of 13</span>
+		<span><a href="https://github.com/Baudin999/Addon-WiggleUI" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://github.com/Baudin999/Addon-WiggleUI/issues" target="_blank" rel="noopener">Report a bug</a></span>
+	</footer>
+</div>
+<script src="../wiggle.js"></script>
+</body>
+</html>

@@ -12,9 +12,16 @@ it is named after, and [the guide](docs/guide/README.md) starts there.
 
 ## The guide
 
-The player guide used to be this file, all eight hundred lines of it. It is
-[docs/guide/](docs/guide/README.md) now, one page per group in the settings
-window, because a single page is a single page whatever you put on it.
+Read it at **https://baudin999.github.io/Addon-WiggleUI/**, which is the same
+pages drawn in the addon's own palettes, with a search field and the
+screenshots at a size a browser will pull down. `scripts/bake-guide-site.sh`
+writes it into `docs/` out of the markdown below and the colours in
+`src/Theme/`, and `scripts/check.sh` refuses a commit that leaves it stale.
+
+The markdown is the source either way. The player guide used to be this file,
+all eight hundred lines of it. It is [docs/guide/](docs/guide/README.md) now,
+one page per group in the settings window, because a single page is a single
+page whatever you put on it.
 
 - [Install](docs/guide/install.md), and what Questie adds
 - [The first login](docs/guide/first-run.md)

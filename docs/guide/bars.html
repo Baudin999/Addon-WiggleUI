@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="dark">
+<head>
+<!-- Written by scripts/bake-guide-site.sh out of docs/guide. Do not edit. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Action bars - WiggleUI</title>
+<meta name="description" content="Action bars, from the WiggleUI guide.">
+<link rel="stylesheet" href="../wiggle.css">
+<script>try{var p=localStorage.getItem("wiggle-palette");if(p)document.documentElement.dataset.palette=p}catch(e){}</script>
+</head>
+<body>
+<div class="window">
+	<header class="titlebar">
+		<a class="brand" href="../index.html">WiggleUI</a>
+		<div class="search">
+			<input id="find" type="search" placeholder="Search the guide" autocomplete="off" spellcheck="false">
+			<div id="hits" class="hits" hidden></div>
+		</div>
+		<label class="palette">
+			<span class="sr">Palette</span>
+			<select id="palette"><option value="alliance">Alliance</option><option value="arcane">Arcane</option><option value="dark">Dark</option><option value="desert">Desert</option><option value="fire">Fire</option><option value="forest">Forest</option><option value="horde">Horde</option><option value="parchment">Parchment</option></select>
+		</label>
+	</header>
+	<div class="split">
+		<nav class="rail">
+<a class="rail-row" href="../index.html">All pages</a>
+<a class="rail-row" href="install.html">Install</a>
+<a class="rail-row" href="first-run.html">The first login</a>
+<a class="rail-row" href="look.html">Themes, placing and profiles</a>
+<a class="rail-row" href="fighting.html">Fighting</a>
+<a class="rail-row on" href="bars.html">Action bars</a>
+<a class="rail-row" href="frames.html">Frames</a>
+<a class="rail-row" href="windows.html">Windows</a>
+<a class="rail-row" href="feeds.html">Feeds and meters</a>
+<a class="rail-row" href="chores.html">Chores</a>
+<a class="rail-row" href="screen.html">The screen itself</a>
+<a class="rail-row" href="commands.html">Every command</a>
+<a class="rail-row" href="troubleshooting.html">When something is wrong</a>
+			<p class="rail-note">Shake the mouse sideways to change the palette, the way the addon changes theme. <button type="button" id="wiggle-off" class="linky"></button></p>
+		</nav>
+		<main class="page">
+<h1>Action bars</h1>
+<p><strong>Your own action bars, redrawn.</strong> <code>/wui actionbars on</code> reads whichever bars you have up, stands one of ours up for each on the same action slots, moves your keys onto it, and hides Blizzard's behind it. Bar 1 still pages by stance. Every icon is drawn at the one size this client can draw sharp, and the border says whether a press would land. Your keybindings are read and never written.</p>
+<p><strong>One flag, and off is the interface the client shipped.</strong> <code>use WiggleUI's bars</code> is the switch at the top of the page, and <code>off</code> puts the whole bottom bar back: the twelve-button rows and their keys, the gryphons, the metal strip, the page arrows, the micro menu, the bag bar and the experience bar. No reload, and what is in your action slots is untouched either way. If you want one piece rather than the lot, each of those still has its own tick box: the art on this page, the micro menu, the bag bar and the experience bars on Frames. Untick the five bars one at a time in the strip below to hand back the buttons and keep the art stripped.</p>
+<p>Then every bar is yours to shape. Fold its twelve into 1, 2, 3, 4, 6 or 12 rows, so a bar is a row along the bottom or a column down the side. Pick the colour of the ground under the squares and how much of it you see, down to nothing, which leaves the icons standing on the world. Send a bar off the screen when a fight starts, or keep it off the screen until you hold shift, ctrl or alt, with its keys working the whole time either way. Unlock the bars and shift-drag one where you want it, or put its middle on the middle of the screen with a button, one axis at a time. Make the squares bigger or smaller, 16 pixels to 54, and the panel says which sizes draw sharp. Every bar answers for itself, and one press puts the lot back to plain. While the settings window is open, whichever bar you have picked wears a blue rim on the screen, so you are never editing the one you thought was the other one.</p>
+<pre><code>/wui actionbars on|off, actionbars match, actionbars plain
+/wui actionbars rows|square|colour|background|combat|key &lt;bar&gt; &lt;value&gt;
+/wui actionbars centre &lt;bar&gt; across|down
+/wui actionbars lock|unlock, actionbars where, actionbars reset
+/wui actionbars trace, for a square that will not take a drop</code></pre>
+<p><strong>A ring of your own on a key.</strong> Hold the key and a ring of squares comes up around the pointer; push toward one and let go and it fires. Six bars is the cap and sixteen squares is the width of a ring. This is what the theme calls the loadout bars, and it stays drawn in exploration, because a bar that came up only while its key was held and then waited for the pointer as well would be a key that shows nothing.</p>
+<pre><code>/wui adhoc, adhoc add &lt;name&gt;, adhoc &lt;bar&gt; &lt;key|none&gt;, adhoc zoom 1.5, adhoc on|off</code></pre>
+<p><strong>A warrior bar loadout</strong>, with a backup of whatever it replaced. It writes action slots and never a keybinding, because the bar 1 and bar 2 keys are already bound and the slots those keys point at are the whole job.</p>
+<pre><code>/wui buttons apply, buttons restore, buttons status</code></pre>
+<p><strong>Stripped bar art</strong>, so the bars read as a row of icons rather than a metal strip with gryphons on the ends.</p>
+<pre><code>/wui art on|off</code></pre>
+<!-- **Screenshot wanted:** `actionbars.png`, two bars at different row counts and backgrounds, one hidden behind shift. -->
+		</main>
+	</div>
+	<footer class="footer">
+		<span>The WiggleUI guide, page 6 of 13</span>
+		<span><a href="https://github.com/Baudin999/Addon-WiggleUI" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://github.com/Baudin999/Addon-WiggleUI/issues" target="_blank" rel="noopener">Report a bug</a></span>
+	</footer>
+</div>
+<script src="../wiggle.js"></script>
+</body>
+</html>

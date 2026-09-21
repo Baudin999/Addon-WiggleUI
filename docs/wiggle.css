@@ -1,0 +1,632 @@
+/* Written by scripts/bake-guide-site.sh out of the addon's own tables. Do not edit. */
+/* The colours are src/Theme/*.lua and the numbers are UI.Metric in src/UI/Theme.lua. */
+
+:root {
+	--m-bar: 8;
+	--m-chatPad: 4;
+	--m-check: 14;
+	--m-control: 18;
+	--m-entry: 18;
+	--m-field: 16;
+	--m-font: 12;
+	--m-footer: 30;
+	--m-glyph: 10;
+	--m-gutter: 8;
+	--m-hairline: 1;
+	--m-heading: 13;
+	--m-indent: 12;
+	--m-pad: 12;
+	--m-rail: 216;
+	--m-railRow: 22;
+	--m-rest: 0.55;
+	--m-roomIcon: 14;
+	--m-roomRow: 18;
+	--m-rooms: 24;
+	--m-row: 20;
+	--m-rowGap: 4;
+	--m-small: 11;
+	--m-tab: 22;
+	--m-tally: 14;
+	--m-thumb: 24;
+	--m-title: 24;
+}
+
+[data-palette="alliance"] {
+	--c-accent: #5294ff;
+	--c-band: rgba(82, 148, 255, 0.2);
+	--c-bandAlt: rgba(82, 148, 255, 0.09);
+	--c-chrome: #0f1a33;
+	--c-control: #172447;
+	--c-dim: #99abd1;
+	--c-edge: #334d85;
+	--c-hairline: #213059;
+	--c-heading: #f2c466;
+	--c-hint: #b3dbff;
+	--c-hover: #26386b;
+	--c-quiet: #7587b3;
+	--c-rail: #0d1426;
+	--c-selected: #1f2e59;
+	--c-shadow: rgba(0, 0, 0, 0.55);
+	--c-sunken: #050812;
+	--c-text: #e0e8f7;
+	--c-window: rgba(8, 13, 28, 0.97);
+	--u-backdrop: rgba(5, 8, 18, 0.85);
+	--u-bar: #5c99f2;
+	--u-iron: #425275;
+	--u-seam: #03040a;
+	--u-swingMain: #ebbd5c;
+	--u-swingOff: #80b3f2;
+}
+[data-palette="arcane"] {
+	--c-accent: #a880ff;
+	--c-band: rgba(168, 128, 255, 0.2);
+	--c-bandAlt: rgba(168, 128, 255, 0.09);
+	--c-chrome: #17172e;
+	--c-control: #212140;
+	--c-dim: #a3a3d1;
+	--c-edge: #403d6b;
+	--c-hairline: #2b294d;
+	--c-heading: #ebd185;
+	--c-hint: #9ee0ff;
+	--c-hover: #363361;
+	--c-quiet: #8585b8;
+	--c-rail: #121224;
+	--c-selected: #2b2952;
+	--c-shadow: rgba(0, 0, 0, 0.55);
+	--c-sunken: #080812;
+	--c-text: #e0e0f7;
+	--c-window: rgba(13, 13, 26, 0.97);
+	--u-backdrop: rgba(8, 8, 18, 0.85);
+	--u-bar: #66b8f2;
+	--u-iron: #424261;
+	--u-seam: #04040a;
+	--u-swingMain: #cca8ff;
+	--u-swingOff: #73cce6;
+}
+[data-palette="dark"] {
+	--c-accent: #409ef2;
+	--c-band: rgba(64, 158, 242, 0.2);
+	--c-bandAlt: rgba(64, 158, 242, 0.09);
+	--c-chrome: #1a1a1f;
+	--c-control: #24242b;
+	--c-dim: #8f8f9e;
+	--c-edge: #383845;
+	--c-hairline: #292930;
+	--c-heading: #ffd133;
+	--c-hint: #8cb8ff;
+	--c-hover: #363642;
+	--c-quiet: #6b6b78;
+	--c-rail: #121217;
+	--c-selected: #2b2b36;
+	--c-shadow: rgba(0, 0, 0, 0.55);
+	--c-sunken: #08080a;
+	--c-text: #dedee8;
+	--c-window: rgba(13, 13, 15, 0.97);
+	--u-backdrop: rgba(10, 10, 13, 0.85);
+	--u-bar: #8c52db;
+	--u-iron: #3d404a;
+	--u-seam: #050508;
+	--u-swingMain: #dbb84d;
+	--u-swingOff: #6b99db;
+}
+[data-palette="desert"] {
+	--c-accent: #eb9942;
+	--c-band: rgba(235, 153, 66, 0.2);
+	--c-bandAlt: rgba(235, 153, 66, 0.09);
+	--c-chrome: #241a12;
+	--c-control: #302417;
+	--c-dim: #a89478;
+	--c-edge: #59422b;
+	--c-hairline: #3d2e1f;
+	--c-heading: #ffdb85;
+	--c-hint: #fac785;
+	--c-hover: #4a3624;
+	--c-quiet: #806e57;
+	--c-rail: #1a140d;
+	--c-selected: #3d2b1c;
+	--c-shadow: rgba(0, 0, 0, 0.55);
+	--c-sunken: #0d0a08;
+	--c-text: #f0e3cc;
+	--c-window: rgba(20, 15, 10, 0.97);
+	--u-backdrop: rgba(15, 11, 8, 0.85);
+	--u-bar: #b86685;
+	--u-iron: #4f4233;
+	--u-seam: #080504;
+	--u-swingMain: #ebb352;
+	--u-swingOff: #859eb8;
+}
+[data-palette="fire"] {
+	--c-accent: #ff6b1a;
+	--c-band: rgba(255, 107, 26, 0.2);
+	--c-bandAlt: rgba(255, 107, 26, 0.09);
+	--c-chrome: #1f1412;
+	--c-control: #2b1712;
+	--c-dim: #b89480;
+	--c-edge: #662b17;
+	--c-hairline: #421f14;
+	--c-heading: #ffc766;
+	--c-hint: #ffa866;
+	--c-hover: #472114;
+	--c-quiet: #856657;
+	--c-rail: #170f0d;
+	--c-selected: #3b1c12;
+	--c-shadow: rgba(0, 0, 0, 0.55);
+	--c-sunken: #0a0605;
+	--c-text: #f5e6d6;
+	--c-window: rgba(18, 13, 11, 0.97);
+	--u-backdrop: rgba(13, 8, 6, 0.85);
+	--u-bar: #d9471f;
+	--u-iron: #574d47;
+	--u-seam: #080403;
+	--u-swingMain: #ff9933;
+	--u-swingOff: #cc664d;
+}
+[data-palette="forest"] {
+	--c-accent: #6bc261;
+	--c-band: rgba(107, 194, 97, 0.2);
+	--c-bandAlt: rgba(107, 194, 97, 0.09);
+	--c-chrome: #141f17;
+	--c-control: #1f2b21;
+	--c-dim: #8c9e87;
+	--c-edge: #334a36;
+	--c-hairline: #243326;
+	--c-heading: #ebd16b;
+	--c-hint: #9edb94;
+	--c-hover: #2e4230;
+	--c-quiet: #667563;
+	--c-rail: #0f1712;
+	--c-selected: #263829;
+	--c-shadow: rgba(0, 0, 0, 0.55);
+	--c-sunken: #050a08;
+	--c-text: #dbe6d4;
+	--c-window: rgba(10, 18, 13, 0.97);
+	--u-backdrop: rgba(8, 13, 9, 0.85);
+	--u-bar: #4d9e85;
+	--u-iron: #384a3b;
+	--u-seam: #040805;
+	--u-swingMain: #c7b357;
+	--u-swingOff: #66a385;
+}
+[data-palette="horde"] {
+	--c-accent: #f26129;
+	--c-band: rgba(242, 97, 41, 0.2);
+	--c-bandAlt: rgba(242, 97, 41, 0.09);
+	--c-chrome: #29120d;
+	--c-control: #381a12;
+	--c-dim: #b38f78;
+	--c-edge: #6b3321;
+	--c-hairline: #472117;
+	--c-heading: #ffcc5c;
+	--c-hint: #ffb380;
+	--c-hover: #54261a;
+	--c-quiet: #8a6654;
+	--c-rail: #1f0d0a;
+	--c-selected: #451f14;
+	--c-shadow: rgba(0, 0, 0, 0.55);
+	--c-sunken: #0d0504;
+	--c-text: #f2e3cc;
+	--c-window: rgba(23, 10, 8, 0.97);
+	--u-backdrop: rgba(18, 8, 5, 0.85);
+	--u-bar: #c74d33;
+	--u-iron: #5c3829;
+	--u-seam: #090403;
+	--u-swingMain: #f2a842;
+	--u-swingOff: #b87a5c;
+}
+[data-palette="parchment"] {
+	--c-accent: #dba84d;
+	--c-band: rgba(219, 168, 77, 0.2);
+	--c-bandAlt: rgba(219, 168, 77, 0.09);
+	--c-chrome: #30291f;
+	--c-control: #453829;
+	--c-dim: #baad94;
+	--c-edge: #7a6140;
+	--c-hairline: #574530;
+	--c-heading: #ffe099;
+	--c-hint: #bdd9fc;
+	--c-hover: #69573d;
+	--c-quiet: #8c806b;
+	--c-rail: #3d3326;
+	--c-selected: #574733;
+	--c-shadow: rgba(15, 10, 8, 0.55);
+	--c-sunken: #211c14;
+	--c-text: #f2ebd9;
+	--c-window: rgba(77, 66, 51, 0.97);
+	--u-backdrop: rgba(41, 33, 26, 0.85);
+	--u-bar: #8557b8;
+	--u-iron: #63523b;
+	--u-seam: #140f0d;
+	--u-swingMain: #e6b857;
+	--u-swingOff: #7a9ec7;
+}
+
+/*
+ * The static half of the site's stylesheet. The variables above this line are
+ * written by scripts/bake-guide-site.lua out of the addon's own tables, so
+ * nothing below may write a colour or a measurement of its own.
+ *
+ * Every token is used for what the addon says it means. `hint` is the line in
+ * a tooltip that tells you what to type, so inline code wears it. `band` and
+ * `bandAlt` are the two tones a dense list of numbers alternates between, so
+ * table rows wear them. `heading` is a title, `quiet` is a line you are meant
+ * to skip. A page that used `accent` for a heading because the blue looked
+ * nice would be the first step back to a second palette.
+ *
+ * --zoom is the one number here that is not the addon's. The addon's grid
+ * scales its twelve unit font by the height of your monitor; a browser will
+ * not, and twelve pixels of prose is not a thing anybody reads a guide in. So
+ * every measurement below is the addon's number times this, and the ratios
+ * between them are the addon's.
+ */
+
+:root {
+	--zoom: 1.5;
+	--px: calc(var(--zoom) * 1px);
+
+	--pad: calc(var(--m-pad) * var(--px));
+	--gutter: calc(var(--m-gutter) * var(--px));
+	--indent: calc(var(--m-indent) * var(--px));
+	--row-gap: calc(var(--m-rowGap) * var(--px));
+	--rail-w: calc(var(--m-rail) * var(--px));
+	--rail-row: calc(var(--m-railRow) * var(--px));
+	--title-h: calc(var(--m-title) * var(--px));
+	--footer-h: calc(var(--m-footer) * var(--px));
+	--font: calc(var(--m-font) * var(--px));
+	--small: calc(var(--m-small) * var(--px));
+	--heading: calc(var(--m-heading) * var(--px));
+
+	/* The one thing the addon draws in physical pixels whatever the scale. */
+	--hairline: 1px;
+
+	--sans: "WiggleUI Sans", "Noto Sans", system-ui, sans-serif;
+	--mono: ui-monospace, "SF Mono", "Cascadia Mono", Menlo, Consolas, monospace;
+}
+
+@font-face {
+	font-family: "WiggleUI Sans";
+	src: url("Sans.ttf") format("truetype");
+	font-weight: 400 700;
+	font-display: swap;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html { color-scheme: dark; }
+
+body {
+	margin: 0;
+	min-height: 100vh;
+	font: var(--font)/1.65 var(--sans);
+	color: var(--c-text);
+	background: var(--c-sunken);
+}
+
+/* The window is translucent, so something has to be behind it or the alpha
+ * the palette carries means nothing. In the game that is the world. Here it is
+ * one screenshot of the world, blurred past reading so it cannot compete with
+ * the page.
+ *
+ * Two fixed layers rather than one `background-attachment: fixed`. That
+ * property repaints the whole image on every scroll frame, which on a 2733
+ * pixel window was enough to stop the renderer answering a screenshot, and
+ * iOS Safari ignores it entirely. A fixed element is composited once. */
+body::before,
+body::after {
+	content: "";
+	position: fixed;
+	inset: 0;
+	z-index: -1;
+	pointer-events: none;
+}
+
+body::before { background: var(--c-sunken) url("scene.webp") center / cover no-repeat; }
+body::after { background: var(--c-sunken); opacity: 0.72; }
+
+::selection { background: var(--c-accent); color: var(--c-window); }
+
+a { color: var(--c-accent); text-decoration-color: color-mix(in srgb, var(--c-accent) 40%, transparent); }
+a:hover { text-decoration-thickness: 2px; }
+
+/* ---------------------------------------------------------------- window */
+
+.window {
+	max-width: calc(1280px * var(--zoom) / 1.5);
+	margin: calc(var(--pad) * 2) auto;
+	background: var(--c-window);
+	border: var(--hairline) solid var(--c-edge);
+	box-shadow: 0 calc(var(--pad) / 2) calc(var(--pad) * 3) var(--c-shadow);
+	display: flex;
+	flex-direction: column;
+	min-height: calc(100vh - var(--pad) * 4);
+}
+
+.titlebar {
+	display: flex;
+	align-items: center;
+	gap: var(--pad);
+	min-height: var(--title-h);
+	padding: calc(var(--gutter) / 2) var(--pad);
+	background: var(--c-chrome);
+	border-bottom: var(--hairline) solid var(--c-hairline);
+	position: sticky;
+	top: 0;
+	z-index: 5;
+}
+
+.brand {
+	font-size: var(--heading);
+	color: var(--c-heading);
+	text-decoration: none;
+	letter-spacing: 0.02em;
+	white-space: nowrap;
+}
+
+.footer {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: space-between;
+	gap: var(--gutter);
+	align-items: center;
+	min-height: var(--footer-h);
+	padding: calc(var(--gutter) / 2) var(--pad);
+	background: var(--c-chrome);
+	border-top: var(--hairline) solid var(--c-hairline);
+	font-size: var(--small);
+	color: var(--c-quiet);
+}
+
+.split { display: flex; align-items: stretch; flex: 1; min-width: 0; }
+
+/* ------------------------------------------------------------------ rail */
+
+.rail {
+	flex: 0 0 var(--rail-w);
+	width: var(--rail-w);
+	background: var(--c-rail);
+	border-right: var(--hairline) solid var(--c-hairline);
+	padding: var(--gutter) 0;
+	align-self: stretch;
+}
+
+.rail-row {
+	display: block;
+	min-height: var(--rail-row);
+	padding: calc(var(--row-gap) / 2) var(--pad);
+	color: var(--c-dim);
+	text-decoration: none;
+	border-left: calc(var(--hairline) * 3) solid transparent;
+}
+
+.rail-row:hover { background: var(--c-hover); color: var(--c-text); }
+
+.rail-row.on {
+	background: var(--c-selected);
+	border-left-color: var(--c-accent);
+	color: var(--c-text);
+}
+
+.rail-note {
+	margin: var(--pad) var(--pad) 0;
+	padding-top: var(--gutter);
+	border-top: var(--hairline) solid var(--c-hairline);
+	font-size: var(--small);
+	color: var(--c-quiet);
+	line-height: 1.5;
+}
+
+.linky {
+	background: none;
+	border: 0;
+	padding: 0;
+	font: inherit;
+	color: var(--c-accent);
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+/* ------------------------------------------------------------------ page */
+
+.page {
+	flex: 1;
+	min-width: 0;
+	padding: calc(var(--pad) * 1.5) calc(var(--pad) * 2) calc(var(--pad) * 3);
+}
+
+.page > * { max-width: 68ch; }
+.page > figure, .page > pre, .page > table { max-width: 80ch; }
+
+h1 {
+	margin: 0 0 var(--pad);
+	font-size: calc(var(--heading) * 1.8);
+	line-height: 1.2;
+	font-weight: 400;
+	color: var(--c-heading);
+}
+
+h2 {
+	margin: calc(var(--pad) * 2.5) 0 var(--gutter);
+	font-size: calc(var(--heading) * 1.15);
+	font-weight: 400;
+	color: var(--c-heading);
+	padding-bottom: calc(var(--gutter) / 2);
+	border-bottom: var(--hairline) solid var(--c-hairline);
+}
+
+h2 .anchor { color: inherit; text-decoration: none; }
+h2 .anchor:hover::after {
+	content: " #";
+	color: var(--c-quiet);
+}
+
+p { margin: 0 0 var(--pad); }
+
+ul, ol { margin: 0 0 var(--pad); padding-left: calc(var(--indent) * 1.8); }
+li { margin-bottom: var(--row-gap); }
+
+strong { font-weight: 600; color: var(--c-text); }
+
+/* The line that tells you what to type, which is what `hint` is for. */
+code {
+	font-family: var(--mono);
+	font-size: 0.92em;
+	color: var(--c-hint);
+	background: var(--c-control);
+	border-radius: 2px;
+	padding: 0.05em 0.25em;
+}
+
+pre {
+	margin: 0 0 var(--pad);
+	padding: var(--pad);
+	background: var(--c-sunken);
+	border: var(--hairline) solid var(--c-hairline);
+	border-left: calc(var(--hairline) * 3) solid var(--c-accent);
+	overflow-x: auto;
+	line-height: 1.55;
+}
+
+/* The command tables in the guide are aligned by column, so the block keeps a
+ * monospace and drops the pill the inline spans wear. */
+pre code {
+	background: none;
+	padding: 0;
+	color: var(--c-hint);
+	font-size: var(--small);
+}
+
+blockquote {
+	margin: 0 0 var(--pad);
+	padding: var(--gutter) var(--pad);
+	background: var(--c-bandAlt);
+	border-left: calc(var(--hairline) * 3) solid var(--c-edge);
+}
+
+blockquote p { margin: 0; }
+
+figure { margin: 0 0 calc(var(--pad) * 1.5); }
+
+figure img {
+	display: block;
+	width: 100%;
+	height: auto;
+	border: var(--hairline) solid var(--c-edge);
+	background: var(--c-sunken);
+}
+
+figcaption {
+	margin-top: calc(var(--row-gap) * 1.5);
+	font-size: var(--small);
+	color: var(--c-dim);
+	line-height: 1.5;
+}
+
+table {
+	width: 100%;
+	margin: 0 0 var(--pad);
+	border-collapse: collapse;
+	font-size: var(--small);
+}
+
+th, td { padding: calc(var(--row-gap) * 1.5) var(--gutter); text-align: left; }
+thead th { background: var(--c-chrome); color: var(--c-heading); font-weight: 400; }
+tbody tr:nth-child(odd) { background: var(--c-bandAlt); }
+tbody tr:nth-child(even) { background: var(--c-band); }
+
+/* ------------------------------------------------------- search, palette */
+
+.search { position: relative; flex: 1; min-width: 0; }
+
+.search input {
+	width: 100%;
+	font: var(--small)/1.4 var(--sans);
+	color: var(--c-text);
+	background: var(--c-sunken);
+	border: var(--hairline) solid var(--c-hairline);
+	padding: calc(var(--row-gap) * 1.2) var(--gutter);
+}
+
+.search input:focus { outline: none; border-color: var(--c-accent); }
+.search input::placeholder { color: var(--c-quiet); }
+
+.hits {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: calc(100% + var(--row-gap));
+	max-height: 60vh;
+	overflow-y: auto;
+	background: var(--c-window);
+	border: var(--hairline) solid var(--c-edge);
+	box-shadow: 0 calc(var(--gutter) / 2) var(--pad) var(--c-shadow);
+	z-index: 10;
+}
+
+.hit {
+	display: block;
+	padding: var(--gutter) var(--pad);
+	text-decoration: none;
+	color: var(--c-text);
+	border-bottom: var(--hairline) solid var(--c-hairline);
+}
+
+.hit:last-child { border-bottom: 0; }
+.hit:hover, .hit.on { background: var(--c-hover); }
+.hit b { color: var(--c-heading); font-weight: 400; display: block; }
+.hit span { font-size: var(--small); color: var(--c-quiet); }
+.hit mark { background: none; color: var(--c-hint); }
+
+.hits .none { padding: var(--gutter) var(--pad); color: var(--c-quiet); font-size: var(--small); }
+
+.palette select {
+	font: var(--small)/1.4 var(--sans);
+	color: var(--c-text);
+	background: var(--c-control);
+	border: var(--hairline) solid var(--c-hairline);
+	padding: calc(var(--row-gap) * 1.2) var(--gutter);
+}
+
+.palette select:focus { outline: none; border-color: var(--c-accent); }
+
+.sr {
+	position: absolute;
+	width: 1px; height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- narrow */
+
+@media (max-width: 900px) {
+	:root { --zoom: 1.25; }
+
+	.window { margin: 0; min-height: 100vh; border: 0; }
+	.split { flex-direction: column; }
+
+	.rail {
+		flex: none;
+		width: 100%;
+		display: flex;
+		gap: var(--row-gap);
+		overflow-x: auto;
+		padding: var(--gutter) var(--gutter);
+		border-right: 0;
+		border-bottom: var(--hairline) solid var(--c-hairline);
+	}
+
+	.rail-row {
+		white-space: nowrap;
+		border-left: 0;
+		border-bottom: calc(var(--hairline) * 3) solid transparent;
+	}
+
+	.rail-row.on { border-bottom-color: var(--c-accent); }
+	.rail-note { display: none; }
+
+	.page { padding: var(--pad); }
+	.brand { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+	* { scroll-behavior: auto !important; }
+}

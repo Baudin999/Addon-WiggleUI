@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="dark">
+<head>
+<!-- Written by scripts/bake-guide-site.sh out of docs/guide. Do not edit. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Install - WiggleUI</title>
+<meta name="description" content="Install, from the WiggleUI guide.">
+<link rel="stylesheet" href="../wiggle.css">
+<script>try{var p=localStorage.getItem("wiggle-palette");if(p)document.documentElement.dataset.palette=p}catch(e){}</script>
+</head>
+<body>
+<div class="window">
+	<header class="titlebar">
+		<a class="brand" href="../index.html">WiggleUI</a>
+		<div class="search">
+			<input id="find" type="search" placeholder="Search the guide" autocomplete="off" spellcheck="false">
+			<div id="hits" class="hits" hidden></div>
+		</div>
+		<label class="palette">
+			<span class="sr">Palette</span>
+			<select id="palette"><option value="alliance">Alliance</option><option value="arcane">Arcane</option><option value="dark">Dark</option><option value="desert">Desert</option><option value="fire">Fire</option><option value="forest">Forest</option><option value="horde">Horde</option><option value="parchment">Parchment</option></select>
+		</label>
+	</header>
+	<div class="split">
+		<nav class="rail">
+<a class="rail-row" href="../index.html">All pages</a>
+<a class="rail-row on" href="install.html">Install</a>
+<a class="rail-row" href="first-run.html">The first login</a>
+<a class="rail-row" href="look.html">Themes, placing and profiles</a>
+<a class="rail-row" href="fighting.html">Fighting</a>
+<a class="rail-row" href="bars.html">Action bars</a>
+<a class="rail-row" href="frames.html">Frames</a>
+<a class="rail-row" href="windows.html">Windows</a>
+<a class="rail-row" href="feeds.html">Feeds and meters</a>
+<a class="rail-row" href="chores.html">Chores</a>
+<a class="rail-row" href="screen.html">The screen itself</a>
+<a class="rail-row" href="commands.html">Every command</a>
+<a class="rail-row" href="troubleshooting.html">When something is wrong</a>
+			<p class="rail-note">Shake the mouse sideways to change the palette, the way the addon changes theme. <button type="button" id="wiggle-off" class="linky"></button></p>
+		</nav>
+		<main class="page">
+<h1>Install</h1>
+<p>Unzip into <code>Interface/AddOns</code>, so that the folder is <code>Interface/AddOns/WiggleUI</code> with <code>WiggleUI.toc</code> directly inside it.</p>
+<p>If you end up with <code>Interface/AddOns/WiggleUI/WiggleUI/WiggleUI.toc</code>, move the inner folder up one level. The client will not load it from the extra level.</p>
+<p>Both clients are served by the same folder, and nothing has to be picked by hand. The TBC Anniversary client reads <code>WiggleUI.toc</code> and the Classic Era client reads <code>WiggleUI_Vanilla.toc</code>.</p>
+<table><thead><tr><th>Client</th><th>Version</th><th>Interface</th></tr></thead><tbody><tr><td>TBC Anniversary</td><td>2.5.6</td><td>20506</td></tr><tr><td>Classic Era</td><td>1.15.9</td><td>11509</td></tr></tbody></table>
+<p>There is no retail TOC in the folder, so a retail client will not load it.</p>
+<p><a href="https://www.curseforge.com/wow/addons/questie" target="_blank" rel="noopener">Questie</a> is the one other addon this one asks anything of, and it is worth having. Both TOCs name it under <code>## OptionalDeps</code> and the CurseForge upload declares it an optional dependency, so an addon manager offers it alongside this download and the client loads it first where it is there. Install it by hand if you took the zip. Nothing here needs it; the section on <a href="#what-questie-adds">Questie</a> says what it adds.</p>
+<h2 id="what-questie-adds"><a class="anchor" href="#what-questie-adds">What Questie adds</a></h2>
+<p>The quest log window, the tracker, the map and the bag lanes all draw off the client on their own. What <a href="https://www.curseforge.com/wow/addons/questie" target="_blank" rel="noopener">Questie</a> adds is the map pin for where a quest is turned in, the drop rate under an item something wanted, a party member's progress on a quest you share, the places on the map you can tick on and off, and the quest a finished item belongs to on a clutter card. Each of those says in the panel that Questie is not answering rather than showing you a blank.</p>
+<!-- **Screenshot wanted:** `install-addons-list.png`, the character select addon list with WiggleUI ticked. -->
+		</main>
+	</div>
+	<footer class="footer">
+		<span>The WiggleUI guide, page 2 of 13</span>
+		<span><a href="https://github.com/Baudin999/Addon-WiggleUI" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://github.com/Baudin999/Addon-WiggleUI/issues" target="_blank" rel="noopener">Report a bug</a></span>
+	</footer>
+</div>
+<script src="../wiggle.js"></script>
+</body>
+</html>

@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="dark">
+<head>
+<!-- Written by scripts/bake-guide-site.sh out of docs/guide. Do not edit. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The WiggleUI guide</title>
+<meta name="description" content="An interface for TBC Anniversary (2.5.6) and Classic Era (1.15.9). It draws your unit frames, your action bars, your bags, your character sheet, your quest log,">
+<link rel="stylesheet" href="wiggle.css">
+<script>try{var p=localStorage.getItem("wiggle-palette");if(p)document.documentElement.dataset.palette=p}catch(e){}</script>
+</head>
+<body>
+<div class="window">
+	<header class="titlebar">
+		<a class="brand" href="index.html">WiggleUI</a>
+		<div class="search">
+			<input id="find" type="search" placeholder="Search the guide" autocomplete="off" spellcheck="false">
+			<div id="hits" class="hits" hidden></div>
+		</div>
+		<label class="palette">
+			<span class="sr">Palette</span>
+			<select id="palette"><option value="alliance">Alliance</option><option value="arcane">Arcane</option><option value="dark">Dark</option><option value="desert">Desert</option><option value="fire">Fire</option><option value="forest">Forest</option><option value="horde">Horde</option><option value="parchment">Parchment</option></select>
+		</label>
+	</header>
+	<div class="split">
+		<nav class="rail">
+<a class="rail-row on" href="index.html">All pages</a>
+<a class="rail-row" href="guide/install.html">Install</a>
+<a class="rail-row" href="guide/first-run.html">The first login</a>
+<a class="rail-row" href="guide/look.html">Themes, placing and profiles</a>
+<a class="rail-row" href="guide/fighting.html">Fighting</a>
+<a class="rail-row" href="guide/bars.html">Action bars</a>
+<a class="rail-row" href="guide/frames.html">Frames</a>
+<a class="rail-row" href="guide/windows.html">Windows</a>
+<a class="rail-row" href="guide/feeds.html">Feeds and meters</a>
+<a class="rail-row" href="guide/chores.html">Chores</a>
+<a class="rail-row" href="guide/screen.html">The screen itself</a>
+<a class="rail-row" href="guide/commands.html">Every command</a>
+<a class="rail-row" href="guide/troubleshooting.html">When something is wrong</a>
+			<p class="rail-note">Shake the mouse sideways to change the palette, the way the addon changes theme. <button type="button" id="wiggle-off" class="linky"></button></p>
+		</nav>
+		<main class="page">
+<h1>The WiggleUI guide</h1>
+<p>An interface for TBC Anniversary (2.5.6) and Classic Era (1.15.9). It draws your unit frames, your action bars, your bags, your character sheet, your quest log, your map, your mail and most of the other windows the client has, and about a dozen readouts neither client has ever had.</p>
+<p>This is a guide rather than a feature list. It starts at the install, goes through the five questions the addon asks the first time you log in, and then walks the screen in the order you meet it. Every section names the slash command for what it just described, because everything in the settings window has one.</p>
+<h2 id="start-here"><a class="anchor" href="#start-here">Start here</a></h2>
+<ol><li><a href="guide/install.html">Install</a>, and what Questie adds.</li><li><a href="guide/first-run.html">The first login</a>. Five cards, then the settings window.</li><li><a href="guide/look.html">Themes, placing and profiles</a>. Where the wiggle comes in.</li></ol>
+<h2 id="the-screen-in-the-order-you-meet-it"><a class="anchor" href="#the-screen-in-the-order-you-meet-it">The screen, in the order you meet it</a></h2>
+<ul><li><a href="guide/fighting.html">Fighting</a>. The Charge button, raid marking, casting on what the mouse is over, the swing timer, the nag row, cooldowns and the totem bar.</li><li><a href="guide/bars.html">Action bars</a>. Your own bars on your own slots, and the rings.</li><li><a href="guide/frames.html">Frames</a>. You, your target, the party, the raid and the enemy bars.</li><li><a href="guide/windows.html">Windows</a>. The character sheet, sockets, dungeon log, quest log, map, talents, spell book, bags, merchant, mail and chat.</li><li><a href="guide/feeds.html">Feeds and meters</a>. Loot and combat, damage and threat, and the breakdown of what your character actually does.</li><li><a href="guide/chores.html">Chores</a>. Looting, selling, repairs and the rest of what it does for you.</li><li><a href="guide/screen.html">The screen itself</a>. The minimap, the experience rails, tooltips and the Edit Mode layout.</li></ul>
+<h2 id="reference"><a class="anchor" href="#reference">Reference</a></h2>
+<ul><li><a href="guide/commands.html">Every command</a>, baked out of the addon's own help tables.</li><li><a href="guide/troubleshooting.html">When something is wrong</a>.</li></ul>
+<h2 id="this-is-a-beta"><a class="anchor" href="#this-is-a-beta">This is a beta</a></h2>
+<p>Everything here is built, has a switch of its own and gets played every day. What it has not had is a wide test. Install it to help find what is broken rather than an hour before a raid.</p>
+<p>Bugs and requests go to <a href="https://github.com/Baudin999/Addon-WiggleUI/issues" target="_blank" rel="noopener">GitHub issues</a>, not to the comments on the CurseForge page. Comments there are not tracked and get lost between file uploads.</p>
+		</main>
+	</div>
+	<footer class="footer">
+		<span>The WiggleUI guide, page 1 of 13</span>
+		<span><a href="https://github.com/Baudin999/Addon-WiggleUI" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://github.com/Baudin999/Addon-WiggleUI/issues" target="_blank" rel="noopener">Report a bug</a></span>
+	</footer>
+</div>
+<script src="wiggle.js"></script>
+</body>
+</html>

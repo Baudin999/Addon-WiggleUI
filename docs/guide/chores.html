@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="dark">
+<head>
+<!-- Written by scripts/bake-guide-site.sh out of docs/guide. Do not edit. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chores - WiggleUI</title>
+<meta name="description" content="Chores, from the WiggleUI guide.">
+<link rel="stylesheet" href="../wiggle.css">
+<script>try{var p=localStorage.getItem("wiggle-palette");if(p)document.documentElement.dataset.palette=p}catch(e){}</script>
+</head>
+<body>
+<div class="window">
+	<header class="titlebar">
+		<a class="brand" href="../index.html">WiggleUI</a>
+		<div class="search">
+			<input id="find" type="search" placeholder="Search the guide" autocomplete="off" spellcheck="false">
+			<div id="hits" class="hits" hidden></div>
+		</div>
+		<label class="palette">
+			<span class="sr">Palette</span>
+			<select id="palette"><option value="alliance">Alliance</option><option value="arcane">Arcane</option><option value="dark">Dark</option><option value="desert">Desert</option><option value="fire">Fire</option><option value="forest">Forest</option><option value="horde">Horde</option><option value="parchment">Parchment</option></select>
+		</label>
+	</header>
+	<div class="split">
+		<nav class="rail">
+<a class="rail-row" href="../index.html">All pages</a>
+<a class="rail-row" href="install.html">Install</a>
+<a class="rail-row" href="first-run.html">The first login</a>
+<a class="rail-row" href="look.html">Themes, placing and profiles</a>
+<a class="rail-row" href="fighting.html">Fighting</a>
+<a class="rail-row" href="bars.html">Action bars</a>
+<a class="rail-row" href="frames.html">Frames</a>
+<a class="rail-row" href="windows.html">Windows</a>
+<a class="rail-row" href="feeds.html">Feeds and meters</a>
+<a class="rail-row on" href="chores.html">Chores</a>
+<a class="rail-row" href="screen.html">The screen itself</a>
+<a class="rail-row" href="commands.html">Every command</a>
+<a class="rail-row" href="troubleshooting.html">When something is wrong</a>
+			<p class="rail-note">Shake the mouse sideways to change the palette, the way the addon changes theme. <button type="button" id="wiggle-off" class="linky"></button></p>
+		</nav>
+		<main class="page">
+<h1>Chores</h1>
+<p>Five things done for you, each its own switch:</p>
+<ul><li>Corpses empty in one go instead of one slot at a time, with a filter for the colours, the kinds and the prices you asked for, and an option to loot and destroy the rest so a corpse can still be skinned.</li><li>Grey items sell themselves at every merchant.</li><li>Damaged gear pays for its own repair at any merchant who mends, out of the guild bank where your rank allows it and out of your purse where it does not. Hold shift as you open a merchant to skip the selling and the repair both.</li><li>The camera pulls back four times the base distance instead of 1.9.</li><li>A stranger who buffs you in passing gets a whispered <code>ty</code>, once every ten minutes per person, and nobody in your party or raid is ever whispered.</li></ul>
+<p>One command each, in that order:</p>
+<pre><code>/wui loot on|off, filter on|off, leftovers on|off, reagents list|clear
+/wui sell on|off
+/wui repair, repair on|off
+/wui zoom on|off
+/wui thanks on|off, thanks &lt;word&gt;</code></pre>
+<p><strong>A filter for the red text in the middle of the screen.</strong> Tick the messages you do not need and they stop drawing. Nothing is hidden that you did not tick, the list is shared by every character on the account, and one press silences what a missed charge shouts at you.</p>
+<pre><code>/wui errors on|off, errors list|clear, errors charge</code></pre>
+<p><strong><code>/wui destroy</code> clears out finished quest items.</strong> One card at a time, with the quest it came from written on it, and a destroy and a skip. It reads Questie's database to work out which quest, so it needs Questie installed. <code>/wui bags clear</code> is the same review from the bag window.</p>
+<p><strong>A fanfare when you level, if you supply the sound.</strong> WiggleUI plays <code>Media/BestAround.mp3</code> over the client's own chime and does not ship that file: it is five seconds of a record somebody else made and is not ours to hand out. Install <a href="https://www.wowinterface.com/downloads/info18925-BestAround.html" target="_blank" rel="noopener">BestAround</a>, which is where everybody who has heard this joke heard it, and copy its <code>bestaround.mp3</code> into WiggleUI's <code>Media/</code> under that name. Any sound file you like works just as well. With nothing there the fanfare is silent and <code>/wui</code> says why. It plays on the master volume rather than the sound effects slider, so combat noise turned down does not take it with it, and two levels in one breath play it once.</p>
+<pre><code>/wui ding, ding on|off</code></pre>
+<!-- **Screenshot wanted:** `bags-vendor.png`, the same bag window as on [windows](windows.md), but with a vendor open so the row that sells your greys and pays your mending is on it. -->
+		</main>
+	</div>
+	<footer class="footer">
+		<span>The WiggleUI guide, page 10 of 13</span>
+		<span><a href="https://github.com/Baudin999/Addon-WiggleUI" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://github.com/Baudin999/Addon-WiggleUI/issues" target="_blank" rel="noopener">Report a bug</a></span>
+	</footer>
+</div>
+<script src="../wiggle.js"></script>
+</body>
+</html>

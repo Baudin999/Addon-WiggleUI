@@ -2132,11 +2132,16 @@ if [ "${theme_calls:-0}" -gt 0 ]; then
 	fail
 fi
 
-# The guide's two baked files. docs/guide/commands.md is the help table out of
-# every Feature.lua, and the previous/next footer on each page is the order the
-# index links them in. Both are generated, so both can be stale, and a stale
-# generated file is worse than a hand written one: it looks authoritative and
-# nobody edits it.
+# The guide's three baked files. docs/guide/commands.md is the help table out
+# of every Feature.lua, the previous/next footer on each page is the order the
+# index links them in, and docs/ is the site GitHub Pages serves, HTML and
+# stylesheet and search index. All three are generated, so all three can be
+# stale, and a stale generated file is worse than a hand written one: it looks
+# authoritative and nobody edits it.
+#
+# The site is the one with a reader on the other end of it. A guide page added
+# and not baked is a page the rail does not list and search cannot find, and
+# nothing on the site says so.
 #
 # This is the half of the gate a commit cannot skip. The other half is the
 # pre-commit hook, which runs this whole file. Neither is CI and neither wants
@@ -2144,7 +2149,7 @@ fi
 #
 # The check runs from the repo root, not from src/, which is where this script
 # has cd'd to by now.
-for bake in bake-guide-commands bake-guide-nav; do
+for bake in bake-guide-commands bake-guide-nav bake-guide-site; do
 	if ! (cd .. && "./scripts/$bake.sh" --check); then
 		fail
 	fi

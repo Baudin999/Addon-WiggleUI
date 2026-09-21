@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="en" data-palette="dark">
+<head>
+<!-- Written by scripts/bake-guide-site.sh out of docs/guide. Do not edit. -->
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>When something is wrong - WiggleUI</title>
+<meta name="description" content="When something is wrong, from the WiggleUI guide.">
+<link rel="stylesheet" href="../wiggle.css">
+<script>try{var p=localStorage.getItem("wiggle-palette");if(p)document.documentElement.dataset.palette=p}catch(e){}</script>
+</head>
+<body>
+<div class="window">
+	<header class="titlebar">
+		<a class="brand" href="../index.html">WiggleUI</a>
+		<div class="search">
+			<input id="find" type="search" placeholder="Search the guide" autocomplete="off" spellcheck="false">
+			<div id="hits" class="hits" hidden></div>
+		</div>
+		<label class="palette">
+			<span class="sr">Palette</span>
+			<select id="palette"><option value="alliance">Alliance</option><option value="arcane">Arcane</option><option value="dark">Dark</option><option value="desert">Desert</option><option value="fire">Fire</option><option value="forest">Forest</option><option value="horde">Horde</option><option value="parchment">Parchment</option></select>
+		</label>
+	</header>
+	<div class="split">
+		<nav class="rail">
+<a class="rail-row" href="../index.html">All pages</a>
+<a class="rail-row" href="install.html">Install</a>
+<a class="rail-row" href="first-run.html">The first login</a>
+<a class="rail-row" href="look.html">Themes, placing and profiles</a>
+<a class="rail-row" href="fighting.html">Fighting</a>
+<a class="rail-row" href="bars.html">Action bars</a>
+<a class="rail-row" href="frames.html">Frames</a>
+<a class="rail-row" href="windows.html">Windows</a>
+<a class="rail-row" href="feeds.html">Feeds and meters</a>
+<a class="rail-row" href="chores.html">Chores</a>
+<a class="rail-row" href="screen.html">The screen itself</a>
+<a class="rail-row" href="commands.html">Every command</a>
+<a class="rail-row on" href="troubleshooting.html">When something is wrong</a>
+			<p class="rail-note">Shake the mouse sideways to change the palette, the way the addon changes theme. <button type="button" id="wiggle-off" class="linky"></button></p>
+		</nav>
+		<main class="page">
+<h1>When something is wrong</h1>
+<h2 id="a-part-of-the-addon-is-simply-missing"><a class="anchor" href="#a-part-of-the-addon-is-simply-missing">A part of the addon is simply missing</a></h2>
+<p>The client hides Lua errors unless you ask for them, so a feature that fails to load vanishes without a word.</p>
+<pre><code>/console scriptErrors 1
+/reload</code></pre>
+<p>Then look again. If there is an error, it is worth more than the rest of a bug report put together.</p>
+<p><code>/wui status</code> prints one line per part. A part that is missing from that list never loaded. A part that is in it but says something odd is a setting rather than a crash.</p>
+<h2 id="a-window-is-off-the-bottom-of-the-screen"><a class="anchor" href="#a-window-is-off-the-bottom-of-the-screen">A window is off the bottom of the screen</a></h2>
+<pre><code>/wui reset</code></pre>
+<p>That puts positions, size, width and offset back. If only one thing is lost, the part usually has a reset of its own, listed in <a href="look.html#moving-things-and-how-big-they-are">Moving things</a>.</p>
+<h2 id="something-else-is-drawing-over-it"><a class="anchor" href="#something-else-is-drawing-over-it">Something else is drawing over it</a></h2>
+<pre><code>/wui replaces</code></pre>
+<p>This says what else you have running that this addon already draws. Two addons drawing the same frame is the most common cause of a screen that looks broken on a fresh install.</p>
+<pre><code>/wui hide probe</code></pre>
+<p>That says which of Blizzard's own frames the addon has put away and what is actually on screen right now.</p>
+<h2 id="a-key-does-nothing"><a class="anchor" href="#a-key-does-nothing">A key does nothing</a></h2>
+<p>The Charge key, the target switch key, the marking keys and a ring's key are override bindings. They never touch your saved bindings and never appear in the Key Bindings panel. That is on purpose.</p>
+<pre><code>/wui hover show     every key the hover casting holds, and the macro on it
+/wui status         every part, including which keys it has taken</code></pre>
+<p>If another addon took the key after login, rebinding it through WiggleUI wins, because an override sits above the saved set.</p>
+<h2 id="a-frame-is-missing-on-one-client-and-not-the-other"><a class="anchor" href="#a-frame-is-missing-on-one-client-and-not-the-other">A frame is missing on one client and not the other</a></h2>
+<pre><code>/wui skin probe</code></pre>
+<p>That prints what this client answered for each unit frame. The two clients do not load the same frames, and a row the client will not answer is left out rather than guessed.</p>
+<h2 id="the-screen-is-stuttering"><a class="anchor" href="#the-screen-is-stuttering">The screen is stuttering</a></h2>
+<pre><code>/wui perf                 the frame trace, or Ctrl-R
+/wui perf dips            the frames that went wrong, and what made each
+/wui perf dip 50          how long a frame has to be to count as one
+/wui perf watch on|off    whether the trace runs while the window is shut
+/wui perf sweep [minutes] one feature off at a time, so the log can be split
+/wui perf sweep stop      put everything back
+/wui perf show            what each ticker costs</code></pre>
+<p><code>perf sweep</code> is the one to reach for when you know it is the addon but not which part. It turns one feature off at a time on a timer and the log says which window the dips fell in.</p>
+<h2 id="running-a-line-of-lua"><a class="anchor" href="#running-a-line-of-lua">Running a line of Lua</a></h2>
+<pre><code>/wui console            the console page, under Under the hood
+/wui console run &lt;lua&gt;  one line, and what it printed, in chat</code></pre>
+<h2 id="putting-everything-back"><a class="anchor" href="#putting-everything-back">Putting everything back</a></h2>
+<pre><code>/wui defaults        what is not the answer the addon ships with
+/wui defaults yes    put all of it back, and reload</code></pre>
+<p><code>defaults yes</code> cannot be undone, which is why it asks twice. Your groups, your mail favourites and your muted errors are kept.</p>
+<p>To go back further, turn the addon off in the character select addon list. Your settings are still in SavedVariables when you turn it on again.</p>
+<h2 id="reporting-a-bug"><a class="anchor" href="#reporting-a-bug">Reporting a bug</a></h2>
+<p>https://github.com/Baudin999/Addon-WiggleUI/issues</p>
+<p>Open an issue rather than a comment on the CurseForge page. Comments there are not tracked and get lost between file uploads.</p>
+<p>A report that can be acted on says:</p>
+<ol><li>Which client. TBC Anniversary 2.5.6 or Classic Era 1.15.9.</li><li>Your class, and your level if it might matter.</li><li>What you did just before it happened.</li><li>The Lua error text, if <code>/console scriptErrors 1</code> produced one.</li></ol>
+<p>Point 4 is worth more than the other three together.</p>
+		</main>
+	</div>
+	<footer class="footer">
+		<span>The WiggleUI guide, page 13 of 13</span>
+		<span><a href="https://github.com/Baudin999/Addon-WiggleUI" target="_blank" rel="noopener">GitHub</a> &middot; <a href="https://github.com/Baudin999/Addon-WiggleUI/issues" target="_blank" rel="noopener">Report a bug</a></span>
+	</footer>
+</div>
+<script src="../wiggle.js"></script>
+</body>
+</html>

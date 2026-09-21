@@ -181,8 +181,11 @@ would ask says so in the panel when Questie is not answering.
 
 ## The guide
 
-Every window and every command, one page per thing:
-https://github.com/Baudin999/Addon-WiggleUI/blob/master/docs/guide/README.md
+Every window and every command, one page per thing, with the screenshots:
+https://baudin999.github.io/Addon-WiggleUI/
+
+The site is drawn in the addon's own eight palettes and wears whichever one you
+pick. Shake the mouse sideways on it and it swaps, the same way the addon does.
 
 ## Bugs and requests
 
@@ -195,5 +198,5 @@ is fixed. Say which client you are on (TBC Anniversary 2.5.6 or Classic Era
 
 ## Licence
 
-MIT. Source, issues and the full guide:
+MIT. Source and issues:
 https://github.com/Baudin999/Addon-WiggleUI
