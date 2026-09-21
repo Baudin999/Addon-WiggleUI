@@ -189,6 +189,10 @@ local ALLOWED = {
 	  why = "a unit frame draws the raid mark that Marking put on the unit" },
 	{ from = "Sets", sym = "Worn", uses = 2,
 	  why = "a gear set is nineteen of the sheet's twenty slots, read and swapped through the one file that owns them" },
+	{ from = "Sets", sym = "AdHoc", uses = 1,
+	  why = "a set on a bar is a macro square naming the set, so renaming one rewrites the squares pointing at it, through one local" },
+	{ from = "AdHoc", sym = "Sets", uses = 1,
+	  why = "a square holding a set arms the one line that puts it on, which the file that owns the word writes" },
 }
 
 --------------------------------------------------------------------------

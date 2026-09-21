@@ -318,6 +318,14 @@ do
 				:format(tostring(moved.picked[#moved.picked])))
 		H.hold(nil)
 
+		-- And both slots put back, because the client's swap is a real swap now:
+		-- the arrows landed on eighteen and the helmet landed on nought, which
+		-- is the client accepting what it was sent and the server's business to
+		-- refuse. A fixture left on your body here is read by every section
+		-- under this one.
+		H.wear(0, nil)
+		H.wear(18, nil)
+
 		-- And taking the quiver off is the ordinary call at the ordinary number:
 		-- an empty cursor on this square is a click that picks the arrows up,
 		-- and the client answers that at the slot it answers every read at.

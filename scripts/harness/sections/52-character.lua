@@ -256,6 +256,14 @@ do
 	check(#moved.used == used and #moved.macros == macros,
 		"a left click used the helmet instead of swapping it")
 
+	-- And the helmet put back, because the click really took it off. The client
+	-- puts a cancelled pickup back in the slot it came out of, which is the
+	-- gesture a player makes when they change their mind; without it the piece
+	-- rides the cursor into the next block and is equipped in the main hand.
+	ClearCursor()
+	check(Worn.Link(1) ~= nil,
+		"the helmet was picked up and the cancel did not put it back")
+
 	-- And in a fight, where the client refuses the swap silently. The page has
 	-- to refuse first and say why, because a slot that does nothing when you
 	-- click it is worse than one that will not let you.

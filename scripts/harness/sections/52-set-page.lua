@@ -48,6 +48,19 @@
 -- toggle that never registered the right button fails here rather than passing
 -- on a handler called by name.
 --
+-- **A set is dropped from the page or it is dropped at a slash prompt.** Shift
+-- and the right button, because the two plain buttons are spent on wearing and
+-- re-taking, with the question in front of the write and the store's own snapshot
+-- behind it. Forgetting the last set has to put the page back to the pixel it
+-- shipped at, which is what the foot of this section reads.
+--
+-- **A set leaves the page on the pointer, not on the cursor.** There is nothing
+-- about a set the client's cursor has a kind for, and gear riding the real
+-- cursor is one misplaced release from being equipped or dropped, so the drag
+-- goes through UI/Carry.lua and what lands on a bar is a macro square. The line
+-- that square carries is the line the hover offers, and 76-adhoc.lua reads it
+-- back by typing it.
+--
 -- **A set with nothing in it says so.** Wearing one used to report "0 changed,
 -- 0 already on", which is the sentence a set you are already wearing gets and
 -- says nothing about which of the two happened. The refusal names the gesture
@@ -64,7 +77,8 @@
 
 local H = ...
 local ns, check = H.ns, H.check
-local mouse, itemLink = H.mouse, H.itemLink
+local mouse, itemLink, fire = H.mouse, H.itemLink, H.fire
+local ITEMS, wornLinks = H.ITEMS, H.worn
 
 local Window, Theirs, Sets = ns.CharWindow, ns.InspectWindow, ns.Sets
 local SetRow = ns.SetRow
@@ -279,6 +293,34 @@ do
 		("the circle for the piece you have on drew at %s and rest is %s")
 			:format(tostring(mine and mine.art:GetAlpha()), tostring(REST)))
 
+	-- And it stays dim once the piece has moved.
+	--
+	-- `uniqueId` is field eight of an item link and it changes as a piece goes
+	-- between your bags and your body, which is the whole reason Sets.Key
+	-- exists. This comparison was two raw links for a while, and the window
+	-- repaints on three events that all fire the moment anything touches your
+	-- gear: the first swap after a capture lit all nineteen circles at once,
+	-- which is the page's headline reading gone.
+	--
+	-- The link is written out here rather than taken off the stub, because the
+	-- stub hands back one string per item and a scene built on it agrees with
+	-- any comparison at all.
+	local piece = worn:match("%[(.-)%]")
+	local shifted = ("|cffff8000|Hitem:%d:0:0:0:0:0:0:114514:60|h[%s]|h|r")
+		:format(ITEMS[piece].id, piece)
+	check(shifted ~= worn and Sets.Key(shifted) == Sets.Key(worn),
+		("the moved link this block rests on keys %s against %s")
+			:format(tostring(Sets.Key(shifted)), tostring(Sets.Key(worn))))
+
+	wornLinks[HEAD] = shifted
+	fire("UNIT_INVENTORY_CHANGED", "player")
+	local moved = circle(head, "prot")
+	check(moved ~= nil and moved.art:GetAlpha() == REST,
+		("the helmet moved and its own circle went to %s, which is full strength")
+			:format(tostring(moved and moved.art:GetAlpha())))
+	wornLinks[HEAD] = worn
+	fire("UNIT_INVENTORY_CHANGED", "player")
+
 	-- A set naming something else in that slot. The same picture at full
 	-- strength, which is the one a glance down the column is meant to stop on.
 	--
@@ -413,6 +455,110 @@ do
 end
 
 ----------------------------------------------------------------------
+-- Forgetting a set, and carrying one off the page
+--
+-- A set could be made from the page and only dropped with a slash command
+-- nothing on the page mentions, which is the same hole the empty toggle was
+-- made to close.
+--
+-- Shift and the right button, because the two plain buttons are spent: left
+-- wears the set and right re-takes it. Shift is already the modifier this page
+-- uses for a second reading on a hover, so it is the modifier a second reading
+-- of a press belongs on. A dropdown would buy room for rename and "follow this
+-- spec" too, and that is the shape to reach for the moment a third thing wants
+-- a home on a toggle; it is more window than one gesture needs.
+--
+-- Driven through the pointer with the button named, so a toggle that never
+-- registered the right button fails here rather than passing on a handler
+-- called by name.
+----------------------------------------------------------------------
+
+do
+	local toggle = stack.toggles[3]
+	check(toggle ~= nil and toggle.set ~= nil and toggle.set.name == "resist",
+		("the third toggle carries %q"):format(
+			tostring(toggle and toggle.set and toggle.set.name)))
+
+	-- The question comes first and the write comes after it. A gesture that
+	-- dropped nineteen saved slots on a press of shift would be one misclick
+	-- from a set you spent a raid night building.
+	_G.WiggleUIShift(true)
+	mouse.On(toggle, "RightButton")
+	_G.WiggleUIShift(false)
+	check(ns.UI.Asking() ~= nil, "shift and a right click on a toggle asked nothing")
+	check(tostring(ns.UI.Asking()):find("resist", 1, true) ~= nil,
+		("the question reads %q and it has to name the set")
+			:format(tostring(ns.UI.Asking())))
+	check(#Sets.All() == 3,
+		("%d sets are left and the question has not been answered yet"):format(#Sets.All()))
+
+	check(ns.UI.Answer(false), "the question would not be answered")
+	check(#Sets.All() == 3, ("saying no dropped a set anyway, leaving %d"):format(#Sets.All()))
+
+	_G.WiggleUIShift(true)
+	mouse.On(toggle, "RightButton")
+	_G.WiggleUIShift(false)
+	check(ns.UI.Answer(true), "the question would not be answered")
+	check(#Sets.All() == 2 and Sets.Get("resist") == nil,
+		("%d sets are left and resist %s")
+			:format(#Sets.All(), Sets.Get("resist") and "is still one of them" or "is gone"))
+
+	-- Which is what makes it a light confirm rather than a scary one: the store
+	-- took its snapshot on the way out and the question said so.
+	check(Sets.Undo() and Sets.Get("resist") ~= nil,
+		"undo did not put the forgotten set back")
+	check(#Sets.All() == 3, ("%d sets after the undo"):format(#Sets.All()))
+
+	-- And the plain right button is still the re-take, which is the gesture
+	-- shift is layered over.
+	local plain = #Sets.All()
+	mouse.On(stack.toggles[3], "RightButton")
+	check(ns.UI.Asking() == nil and #Sets.All() == plain,
+		"a right click with no shift asked to forget the set")
+end
+
+do
+	-- A set carried off its toggle, which is how one gets onto a bar of your
+	-- own. The client's cursor stays empty the whole way: there is nothing
+	-- about a set for the client to hold, and a piece of gear riding the real
+	-- cursor is one misplaced release away from being equipped or dropped on
+	-- the ground.
+	local toggle = stack.toggles[1]
+	local x, y = mouse.Point(toggle)
+	local took, dragging = mouse.Grab(x, y)
+	check(took == toggle and dragging,
+		"a toggle takes no left drag, so no set can be carried off this page")
+
+	local held = ns.UI.Carry.Held()
+	check(type(held) == "table" and held.kind == "set" and held.name == toggle.set.name,
+		("a drag off a toggle carries %s"):format(tostring(held and held.kind)))
+	check(_G.GetCursorInfo() == nil,
+		"a drag off a toggle put a set on the client's own cursor")
+
+	mouse.Drop(-5000, 5000)
+	check(ns.UI.Carry.Held() == nil,
+		"the pointer was left carrying a set after the button came up")
+
+	-- And the line, on the hover, because Blizzard's own bars hold spells,
+	-- items and macros and nothing an addon can invent. Read off the box rather
+	-- than compared to a string written here, so a line the word does not
+	-- answer fails rather than agreeing with its own copy.
+	mouse.Deliver(toggle, "OnEnter")
+	local Box = ns.UI.Tooltip
+	local offered = nil
+	for index = 1, Box.Lines() do
+		local text = Box.Text(index) or ""
+		if text:find("^/wui ") then
+			offered = text
+		end
+	end
+	ns.Tip.Close()
+	check(offered == Sets.Line(toggle.set.name),
+		("the toggle's hover offers %q and the word is %q")
+			:format(tostring(offered), tostring(Sets.Line(toggle.set.name))))
+end
+
+----------------------------------------------------------------------
 -- Nobody else's sheet
 ----------------------------------------------------------------------
 
@@ -438,7 +584,14 @@ end
 
 Sets.Remove("prot")
 Sets.Remove("fury")
-Sets.Remove("resist")
+
+-- And the last one through the gesture rather than through the store, because
+-- what the page owes is that dropping the last set takes the line off every row
+-- and puts the page back to the pixel it shipped at.
+_G.WiggleUIShift(true)
+mouse.On(stack.toggles[1], "RightButton")
+_G.WiggleUIShift(false)
+check(ns.UI.Answer(true), "the last set's question was never asked")
 
 check(#Sets.All() == 0,
 	("%d sets were left behind"):format(#Sets.All()))
@@ -449,5 +602,5 @@ check(showing(head) == 0,
 
 Window.Hide()
 
-print(("sets   a set made from the page in a window, a row grows %d to %d on the first one, four states drawn on one slot, a right click cycling a circle through the last two and another taking the whole character into a set, an empty set refused with the way to fill it, and none of it on an inspect page")
+print(("sets   a set made from the page in a window, a row grows %d to %d on the first one, four states drawn on one slot and the dim one still dim after the piece has moved, a right click cycling a circle through the last two and another taking the whole character into a set, shift and a right click forgetting one behind a question that undo answers, a set carried off its toggle with the line a macro takes, an empty set refused with the way to fill it, and none of it on an inspect page")
 	:format(PLAIN, GROWN))

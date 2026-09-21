@@ -81,6 +81,13 @@ helm.button:Click("LeftButton")
 check(not Window.Shown(),
 	"an unmodified click on the helmet opened the socketing window instead of taking it off")
 
+-- And put back, because taking it off is what that click really does: the
+-- client's swap lifts the piece onto the cursor and leaves the slot bare, and
+-- everything below is about the holes in the helmet you are wearing.
+_G.ClearCursor()
+check(ns.Worn.Link(HEAD) ~= nil,
+	"the click took the helmet off and the cancel did not put it back")
+
 _G.WiggleUIShift(true)
 helm.button:Click("LeftButton")
 _G.WiggleUIShift(false)

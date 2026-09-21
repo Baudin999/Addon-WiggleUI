@@ -28,7 +28,9 @@ ns.AdHoc = AdHoc
 -- property and a bar built here gets it for free. Hover/Hover.lua makes the
 -- argument at length. An item is held by name for the same reason, with its id
 -- beside it because the cooldown call wants a number. A macro is held by name
--- because a macro index moves every time you make or delete one.
+-- because a macro index moves every time you make or delete one. A gear set is
+-- held by name too, and the line that puts it on is built at every apply rather
+-- than saved, so renaming the set rewrites the square rather than breaking it.
 --------------------------------------------------------------------------
 
 -- Six bars is the cap and sixteen squares is the most one ring holds. Both are caps
@@ -141,6 +143,21 @@ end
 --------------------------------------------------------------------------
 
 function AdHoc.Carry(kind, a, b, c)
+	-- A gear set, which is the one kind the client's cursor cannot hold: there
+	-- is nothing to pick up, so it arrives through UI/Carry.lua off a toggle on
+	-- the character page and `a` is the set's name rather than an index.
+	--
+	-- A macro square with one line in it, decided in Bars.Arm rather than here,
+	-- because the record is what is saved and the line is what is armed: a
+	-- record holding the text would be a square that kept working after the set
+	-- was renamed and stopped working after the next reload.
+	if kind == "set" then
+		if type(a) ~= "string" or a == "" then
+			return nil, "that is not a set."
+		end
+		return { kind = "set", name = a, icon = b }
+	end
+
 	if kind == "macro" then
 		if type(GetMacroInfo) ~= "function" then
 			return nil, "this client would not say which macro that was."
@@ -155,7 +172,7 @@ function AdHoc.Carry(kind, a, b, c)
 	local pick, why = ns.Hover.Carry(kind, a, b, c)
 	if not pick then
 		if kind then
-			return nil, ("a %s is not something a bar holds. Drop a spell, an item or a macro."):format(kind)
+			return nil, ("a %s is not something a bar holds. Drop a spell, an item, a macro or a gear set."):format(kind)
 		end
 		return nil, why
 	end
@@ -228,6 +245,31 @@ end
 function AdHoc.Squares(index)
 	local bar = AdHoc.Get(index)
 	return bar and bar.buttons or nil
+end
+
+-- A set renamed, and every square that points at it moved with it.
+--
+-- The one cost of holding a set on a bar as a macro square: a macro is text,
+-- and the text names the set. Sets.Rename calls this before the name moves, and
+-- answers how many squares it rewrote, because a rewrite of nothing and a
+-- rewrite of four have to be tellable apart from outside.
+--
+-- Matched without regard to case, which is how the store matches a set's name
+-- everywhere else: a square written "bling" points at the set called "Bling".
+function AdHoc.Renamed(old, new)
+	local wanted, count = tostring(old or ""):lower(), 0
+	for _, bar in ipairs(AdHoc.All()) do
+		for _, record in ipairs(bar.buttons) do
+			if record.kind == "set" and record.name:lower() == wanted then
+				record.name = new
+				count = count + 1
+			end
+		end
+	end
+	if count > 0 then
+		Apply()
+	end
+	return count
 end
 
 --------------------------------------------------------------------------

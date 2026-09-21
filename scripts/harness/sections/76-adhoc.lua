@@ -8,8 +8,10 @@
 -- in; that holding the key, pushing toward a square and letting go casts that
 -- square and only that square; that a key is read back off the binding layer
 -- rather than trusted; that a fight defers the whole apply; that deleting a
--- bar moves the bar under it, key and all, onto a different frame; and that a
--- square on a shown ring is drawn on the tick.
+-- bar moves the bar under it, key and all, onto a different frame; that a gear
+-- set carried off the character page lands as a macro square whose line the
+-- slash word answers, and follows the set through a rename; and that a square
+-- on a shown ring is drawn on the tick.
 --
 -- The snippets run, through 21-restricted.lua, and the key is pressed through
 -- the binding layer on both edges. What this cannot prove is that the client's
@@ -524,6 +526,72 @@ do
 		"the square a drop lands on is not empty in the middle of the circle")
 	check(middle.at == count + 1,
 		"the middle square is not the place after the last one, so a drop would replace rather than add")
+
+	--------------------------------------------------------------------------
+	-- A gear set on a bar, as a macro square
+	--
+	-- One mechanism in both places a set can be pressed, and the mechanism is a
+	-- macro. A set cannot ride the client's cursor, because there is nothing to
+	-- pick up, so it comes off the character page's toggle stack through
+	-- UI/Carry.lua and lands here as a square with one line in it.
+	--
+	-- The line is read off the square and then typed at the slash prompt rather
+	-- than compared to a string written out here. That is the failure worth
+	-- catching: a square carrying a line the word does not answer presses
+	-- perfectly and does nothing.
+	--------------------------------------------------------------------------
+
+	do
+		local Sets = ns.Sets
+		check(Sets.New("bling") ~= nil, "the set this block puts on a bar could not be made")
+
+		local at = middle.at
+		ns.UI.Carry.Lift({ kind = "set", name = "bling",
+			icon = "Interface\\Icons\\INV_Chest_Plate01" })
+		H.mouse.Place(H.mouse.Point(middle.button))
+		check(ns.UI.Carry.Land(), "a set let go over a bar square was not taken")
+
+		local record = AdHoc.Squares(shown)[at]
+		check(record ~= nil and record.kind == "set" and record.name == "bling",
+			("the square took %s rather than the set"):format(
+				record and tostring(record.kind) or "nothing"))
+		check(square(shown, at):GetAttribute("type") == "macro"
+			and square(shown, at):GetAttribute("macrotext") == "/wui set wear bling",
+			("a set square arms %q"):format(
+				tostring(square(shown, at):GetAttribute("macrotext"))))
+
+		-- Renamed, and every square pointing at it moves with it. That is the
+		-- one cost of holding a set as macro text: the text names the set, so a
+		-- rename either rewrites the squares or leaves them pointing at a name
+		-- nobody has. The bars are ours, so it rewrites them.
+		check(Sets.Rename("bling", "shiny"), "the set would not be renamed")
+		check(AdHoc.Squares(shown)[at].name == "shiny",
+			("the square still points at %q after the rename")
+				:format(tostring(AdHoc.Squares(shown)[at].name)))
+		check(square(shown, at):GetAttribute("macrotext") == "/wui set wear shiny",
+			("a renamed set left the square arming %q")
+				:format(tostring(square(shown, at):GetAttribute("macrotext"))))
+
+		-- And forgotten while the square is still on the bar. The square stays,
+		-- because a bar is yours and nothing here may quietly edit one, and the
+		-- press says so in a sentence rather than doing nothing.
+		check(Sets.Remove("shiny"), "the set would not be forgotten")
+		local line = tostring(square(shown, at):GetAttribute("macrotext"))
+		local typed = line:match("^/wui%s+(.*)$")
+		check(typed ~= nil,
+			("a set square arms %q, which is not a line /wui answers"):format(line))
+
+		local heard = _G.ChatFrame1.messages or {}
+		local quiet = #heard
+		_G.SlashCmdList.WIGGLEUI(typed)
+		check(#heard > quiet
+			and tostring(heard[#heard].text):find("no set called", 1, true) ~= nil,
+			("a square pointing at a set nobody has said %q")
+				:format(tostring(heard[#heard] and heard[#heard].text)))
+
+		AdHoc.Take(shown, at)
+		ns.Options.Refresh()
+	end
 
 	while #AdHoc.Squares(shown) > 1 do
 		AdHoc.Take(shown, #AdHoc.Squares(shown))

@@ -180,8 +180,16 @@ end
 -- gestures that fill one come down to. One place rather than three, so the
 -- set, the slot and the link are read off the circle the same way whether the
 -- piece came from a click, from the bags or from another circle.
+--
+-- And the refusal is read here, because all three callers threw it away: a
+-- helmet dropped on a ring circle did nothing and said nothing, which is the
+-- one gesture on this page that looks broken rather than refused.
 local function Put(circle, link)
-	return ns.Sets.Put(circle.set, circle.slot, link)
+	local ok, why = ns.Sets.Put(circle.set, circle.slot, link)
+	if not ok and why then
+		ns.Print(why)
+	end
+	return ok
 end
 
 -- The two ways a slot holds nothing, one door each.
@@ -204,6 +212,27 @@ end
 -- the disc above it, and no slot is the whole character going in at once.
 local function Capture(name, slot)
 	return ns.Sets.Capture(name, slot)
+end
+
+-- A set dropped, with the confirm in front of it rather than behind it. The
+-- store takes its own snapshot on the way out, so `/wui set undo` puts the set
+-- back and the confirm is a light one that says so.
+local function Forget(name)
+	return ns.Sets.Remove(name)
+end
+
+-- What a set says about one slot, and whether that is the piece on the disc
+-- above the circle. The worn link is handed in rather than read again: the
+-- repaint above has it already.
+--
+-- Three answers out of one call and not two calls, because comparing what the
+-- set saved against what you are wearing is a comparison of item keys and the
+-- store is the one file that knows how an item is written down. This line
+-- compared two raw links for a while, which is the `uniqueId` field moving the
+-- first time anything touched your gear: all nineteen circles lit at once and
+-- the page's headline reading went with them.
+local function Entry(name, slot, worn)
+	return ns.Sets.Entry(name, slot, worn)
 end
 
 -- A click, which is the gesture a set is actually built with: whatever is in
@@ -411,17 +440,15 @@ end
 -- One circle told which set it is drawing and what that set says about this
 -- slot.
 --
--- The worn link is handed in rather than read again. The repaint above has it
--- already, and the one comparison this line is for is against exactly that:
--- the same link means the set's piece is the piece on the disc above, and a
--- circle repeating the picture at full strength would draw the eye to the one
--- row that has nothing to say.
+-- The worn link is handed in rather than read again: the repaint above has it
+-- already, and it goes straight through to the store, which answers whether the
+-- set's piece is the piece on the disc above. A circle repeating that picture
+-- at full strength would draw the eye to the one row with nothing to say.
 local function PaintCircle(circle, name, worn)
-	local state, link = ns.Sets.Entry(name, circle.slot)
+	local state, link, on = Entry(name, circle.slot, worn)
 	circle.set, circle.state, circle.link = name, state or "unset", link or nil
 
 	local icon = link and select(2, ns.ItemInfo(link)) or nil
-	local on = link ~= nil and link == worn
 	circle.art:SetTexture(icon)
 	circle.art:SetShown(icon and true or false)
 	circle.art:SetAlpha(on and M.rest or 1)
@@ -491,7 +518,7 @@ end
 -- emblem as a list of nineteen has.
 local function PieceArt(name)
 	for slot = 1, SLOTS do
-		local state, link = ns.Sets.Entry(name, slot)
+		local state, link = Entry(name, slot)
 		if state == "item" and link then
 			local _, icon = ns.ItemInfo(link)
 			if icon then
@@ -504,21 +531,18 @@ end
 
 -- A toggle pressed.
 --
--- Two calls and the set says which. A set that follows the talent group you
--- are not standing in is a talent switch and then a change of clothes, in that
--- order and never together: the talents are a cast and the gear is a round
--- trip to the server per piece, and running the two at once is how a set lands
--- half on. A set with no group, or one whose group you are already in, is just
--- the clothes.
+-- One call, and the store decides which of the two it is. A set that follows
+-- the talent group you are not standing in is a talent switch and then a change
+-- of clothes, in that order and never together; a set with no group, or one
+-- whose group you are already in, is just the clothes. That rule lived here
+-- while the slash word did it differently, which is one sentence with two
+-- readings, and it is Sets.Press now.
 local function Pressed(toggle)
 	local set = toggle.set
 	if not set then
 		return SetRow.Make()
 	end
-	if set.group and set.group ~= ns.Class.Spec.Group() then
-		return ns.Sets.Swap(set.group)
-	end
-	local ok, why = ns.Sets.Wear(set.name)
+	local ok, why = ns.Sets.Press(set.name)
 	if not ok and why then
 		ns.Print(why)
 	end
@@ -551,6 +575,59 @@ local function Refilled(toggle)
 	return true
 end
 
+-- A toggle shift right clicked: that set forgotten, with a question in front
+-- of it.
+--
+-- The gesture the page shipped without. A set could be made here and only
+-- dropped with `/wui set forget <name>`, a command nothing on the page
+-- mentions, which is the same hole the empty toggle was made to close.
+--
+-- Shift and the right button, not a dropdown. The two obvious buttons are spent
+-- -- left wears the set and right re-takes it -- and shift is already the
+-- modifier this page uses for a second reading on a hover, so it is the
+-- modifier a second reading of a press belongs on. A dropdown buys room for
+-- rename and "follow this spec" as well, and that is the shape to reach for the
+-- moment a third thing wants a home on a toggle; it is more window than one
+-- gesture needs today.
+--
+-- A light confirm and not a scary one, because the store takes a snapshot on
+-- the way out and the question says so.
+local function Forgotten(toggle)
+	local set = toggle.set
+	if not set then
+		return false
+	end
+	local name = set.name
+	UI.Ask({
+		title = "forget a set",
+		question = ("Forget %q? set undo puts it back."):format(name),
+		accept = "forget it",
+		onAccept = function()
+			local ok, why = Forget(name)
+			ns.Print(ok and ("forgot %q. set undo puts it back."):format(name) or why)
+		end,
+	})
+	return true
+end
+
+-- The start of a drag off a toggle, which is how a set gets onto a bar.
+--
+-- Through UI/Carry.lua and never the client's cursor, for the reason a circle
+-- goes that way: there is nothing about a set the client's cursor has a kind
+-- for, and a piece of gear riding the real cursor is one misplaced release away
+-- from being equipped or dropped on the ground. What lands on an ad hoc bar is
+-- a macro square whose one line is the same line you would paste into a
+-- Blizzard macro.
+local function Carried(toggle)
+	local set = toggle.set
+	if not set then
+		return false
+	end
+	UI.Carry.Lift({ kind = "set", name = set.name, icon = toggle.art:GetTexture() },
+		toggle.art:GetTexture())
+	return true
+end
+
 -- What a toggle says to a hover.
 --
 -- The stack draws a picture, a name and an accent, and none of the three says
@@ -572,6 +649,14 @@ local function ToggleSays(toggle)
 	lines[#lines + 1] = { "Click puts it on.", color = C.dim }
 	lines[#lines + 1] = { "Right click saves everything you are wearing into it.",
 		color = C.dim }
+	lines[#lines + 1] = { "Shift right click forgets it.", color = C.dim }
+	-- The line itself, because Blizzard's own bars hold spells, items and macros
+	-- and nothing an addon can invent. Drag the toggle onto one of your own bars
+	-- and it lands as a macro square carrying this; for one of theirs, this is
+	-- what goes in the macro.
+	lines[#lines + 1] = { "Drag it onto a bar of your own, or put this in a macro:",
+		color = C.dim }
+	lines[#lines + 1] = { ns.Sets.Line(set.name), color = C.text }
 	return { kind = "note", title = set.name, lines = lines }
 end
 
@@ -618,10 +703,16 @@ local function Toggle(stack, index)
 	toggle:SetScript("OnClick", function(self, button)
 		UI.CloseDropdown()
 		if button == "RightButton" then
-			return Refilled(self)
+			return IsShiftKeyDown() and Forgotten(self) or Refilled(self)
 		end
 		return Pressed(self)
 	end)
+	-- The drag that takes a set off this page and onto a bar. The client's
+	-- cursor stays empty the whole way, so a release anywhere but on a square
+	-- that takes one is a release that did nothing.
+	toggle:RegisterForDrag("LeftButton")
+	toggle:SetScript("OnDragStart", function(self) Carried(self) end)
+	toggle:SetScript("OnDragStop", function() UI.Carry.Land() end)
 	-- Beside the stack rather than over it, unlike a circle: a toggle is
 	-- thirty-six pixels and the cursor is not standing on the whole of it.
 	toggle:SetScript("OnEnter", function(self)

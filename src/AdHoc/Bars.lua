@@ -324,7 +324,7 @@ local function Says(w)
 	local record = w.record
 	if not record then
 		return { kind = "note", title = "an empty square",
-			lines = { "Drag a spell, an item or a macro here." } }
+			lines = { "Drag a spell, an item, a macro or a gear set here." } }
 	end
 	return { kind = "note", title = record.name,
 		lines = { "Push toward it and let the key go, or click it.",
@@ -508,6 +508,14 @@ local function Arm(entry, bar)
 		elseif record and record.kind == "macro" then
 			w:SetAttribute("type", "macro")
 			w:SetAttribute("macro", record.name)
+		elseif record and record.kind == "set" then
+			-- The same line a player would paste into a Blizzard macro, built
+			-- here on every apply rather than saved on the record, so a set
+			-- renamed is a square rearmed and never a square holding stale text.
+			-- Nothing in a gear swap is protected, so this needs no new
+			-- attribute, no new press path and no secure button of its own.
+			w:SetAttribute("type", "macro")
+			w:SetAttribute("macrotext", ns.Sets.Line(record.name))
 		end
 	end
 	-- One empty square on a bar with nothing on it, so a ring you just made and

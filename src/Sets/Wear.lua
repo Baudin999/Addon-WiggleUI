@@ -304,6 +304,41 @@ local function Carried(world, from, goesTo, plan)
 	end
 end
 
+-- Every operation on a slot the fight holds shut, out of the plan.
+--
+-- Dropped rather than refusing the whole run, which is what shipped: a press
+-- mid pull put the weapons on and nothing else, and said nothing, because the
+-- first armour slot in the list refused all nineteen. Slots 16, 17 and 18 are
+-- the three a fight allows and Worn.Free already holds that rule per slot.
+--
+-- Dropped rather than held for the end of the fight. A set half applied thirty
+-- seconds later, when you have already moved on, is worse than a set that did
+-- the two things you asked for and stopped, and it keeps the queue one state
+-- machine rather than a queue and a waiting room.
+--
+-- Whole gestures and never single operations. A grab whose drop was dropped is
+-- a piece left hanging on the cursor, and a drop whose grab was dropped is a
+-- pickup: it would take the piece out of the slot the set was trying to fill.
+--
+-- Out of the plan and not out of the run, because Room and Touched are counted
+-- off plan.ops. A press in a fight that dropped its armour at the queue would
+-- still have asked for the bag room to stow armour it was never going to lift.
+local function Allowed(ops)
+	local shut, kept = {}, {}
+	for index = 1, #ops do
+		local op = ops[index]
+		if op.slot and not Worn.Free(op.slot) then
+			shut[op.gesture] = true
+		end
+	end
+	for index = 1, #ops do
+		if not shut[ops[index].gesture] then
+			kept[#kept + 1] = ops[index]
+		end
+	end
+	return kept
+end
+
 -- How many free bag slots the run needs at its tightest moment.
 --
 -- A grab frees one and a stow spends one, so the number to check is not the
@@ -386,6 +421,7 @@ function Sets.Plan(name, world)
 	Chains(world, goesTo, filled, plan)
 	Carried(world, from, goesTo, plan)
 
+	plan.ops = Allowed(plan.ops)
 	plan.room = Room(plan.ops)
 	plan.changed = Touched(plan.ops)
 	plan.short = plan.room > world.free
@@ -483,8 +519,14 @@ local function Run(op)
 		return ns.PickupContainerItem(op.bag, op.index)
 	end
 	if op.op == "stow" then
-		Ask("ClearCursor")
-		return true
+		-- ns.Stow and never ClearCursor. ClearCursor cancels a pickup and hands
+		-- the piece back to the slot it was lifted out of, which is a no-op
+		-- dressed as a move: every lift and stow pair in Strip and Displaced
+		-- did nothing at all, so the half of a set that takes a piece off you
+		-- never took anything off. Core already carries the call this wants,
+		-- which is the backpack button followed by each bag button with a look
+		-- at the cursor between them.
+		return ns.Stow()
 	end
 	-- A lift and a drop are one client call. PickupInventoryItem puts whatever
 	-- is on the cursor into the slot and picks up what was there, so which of
@@ -515,7 +557,13 @@ local function Step()
 	run.at = run.at + 1
 	if not Fresh(op) then
 		Skip(run, op)
-		return
+		-- Straight on to the next gesture rather than back out to the event
+		-- loop. Skip makes no client call, so nothing fires the event that
+		-- would resume the run: a single refused gesture left `running` set for
+		-- the rest of the session, every later set answered "X is still going
+		-- on", and a refusal on the first operation meant the word did nothing
+		-- at all.
+		return Step()
 	end
 	if not Run(op) then
 		Stop()
@@ -525,28 +573,6 @@ end
 events:SetScript("OnEvent", Step)
 
 --------------------------------------------------------------------------
-
--- The three slots a fight allows, said out loud rather than left to the server.
--- Worn.Free holds the rule per slot; a weapon swap mid pull is a thing the game
--- is happy about and everything else is refused silently, which is the worst
--- version of a word you typed.
---
--- Waiting for PLAYER_REGEN_ENABLED is phase 4's and it is deliberately not here.
--- A queue that fired thirty seconds after the word was typed is a queue that
--- puts your tanking set on in the middle of the next pull.
-local function Allowed(plan)
-	for index = 1, #plan.ops do
-		local slot = plan.ops[index].slot
-		if slot then
-			local free, why = Worn.Free(slot)
-			if not free then
-				return false, ("%s The main hand, the off hand and the bow are all a fight allows.")
-					:format(why)
-			end
-		end
-	end
-	return true
-end
 
 function Sets.Wear(name)
 	local plan, why = Sets.Plan(name)
@@ -567,10 +593,6 @@ function Sets.Wear(name)
 			:format(plan.name)
 	end
 
-	local allowed, refused = Allowed(plan)
-	if not allowed then
-		return false, refused
-	end
 	if plan.short then
 		return false, ("%s needs %d free bag slot%s to swap into.")
 			:format(plan.name, plan.room, plan.room == 1 and "" or "s")
@@ -653,4 +675,24 @@ function Sets.Swap(group)
 	waiting = set.name
 	ns.SetActiveSpecGroup(group)
 	return true
+end
+
+-- One set pressed: the clothes, and the talents first where the set follows a
+-- group you are not standing in.
+--
+-- Here rather than on the page. Which of the two calls a press is is a fact
+-- about the set, not about the toggle that was clicked, and the page holding
+-- the rule meant the rule existed in exactly one place that draws. The order is
+-- not negotiable either way: the talent switch is a cast of a few seconds and
+-- the gear is a round trip per piece, so Sets.Swap waits for
+-- ACTIVE_TALENT_GROUP_CHANGED before the clothes start.
+function Sets.Press(name)
+	local record = Sets.Get(name)
+	if not record then
+		return false, ("there is no set called %q."):format(tostring(name))
+	end
+	if record.group and record.group ~= Sets.Group() then
+		return Sets.Swap(record.group)
+	end
+	return Sets.Wear(record.name)
 end

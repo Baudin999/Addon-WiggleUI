@@ -288,13 +288,41 @@ _G.WiggleUICarrySpell = function(index, book, id)
 	} or nil
 end
 
-_G.ClearCursor = function() cursor = nil end
+-- Let go, and what was in the hands goes back where it was lifted from.
+--
+-- Not a drop and not a delete. ClearCursor cancels a pickup, which the client
+-- answers by putting the piece back in the slot it never really left, and
+-- Core/Sockets.lua says so in as many words. A stub that quietly emptied the
+-- cursor would be a stub that agreed with a queue which used this call to put
+-- gear in the bags, which is exactly the bug the gear set queue shipped with.
+--
+-- A bag slot needs nothing put back: a pickup out of a bag leaves the item
+-- where it is and the cursor holds a reference to the slot, which is the model
+-- PickupContainerItem and the drop below already share. A worn slot is left
+-- bare by the pickup, so that one is filled again here.
+_G.ClearCursor = function()
+	local held = cursor
+	cursor = nil
+	if not held or not held.link then
+		return
+	end
+	if held.worn then
+		H.wear(held.worn, held.link)
+	end
+	H.fire("ITEM_LOCK_CHANGED")
+end
 
 -- Put anything at all in the hands, for a client file that models a pickup of
 -- its own. 17-merchant.lua writes a vendor's batch through this rather than
 -- onto a cursor of its own, for the reason PickupAction below writes onto this
 -- one: one upvalue is what every question about the hands reads.
 H.hold = function(held) cursor = held end
+
+-- And read it back, whole. GetCursorInfo answers the three values the client
+-- answers and no more, and 13-character.lua's swap needs the two fields that
+-- say where the piece came from: a bag slot to empty when it lands, or a worn
+-- slot to put it back in. One upvalue, one reader, for the same reason.
+H.held = function() return cursor end
 
 -- Counted, because the window has two independent guards against destroying
 -- the wrong item and the counter is the only way to tell which one fired. The
@@ -342,7 +370,12 @@ _G.PickupContainerItem = function(bag, slot)
 		drop(bag, slot, held)
 		return
 	end
-	cursor = { id = ITEMS[held].id, link = itemLink(held), bag = bag, slot = slot }
+	cursor = { id = ITEMS[held].id, link = itemLink(held), name = held,
+		bag = bag, slot = slot }
+	-- The event the client sends when a slot is held, which is what drives the
+	-- gear set queue from one cursor operation to the next. A stub that moved
+	-- items in silence would test the plan and never the queue.
+	H.fire("ITEM_LOCK_CHANGED")
 end
 
 -- Part of a stack onto the cursor, and the rest left in the slot.
@@ -368,8 +401,8 @@ _G.SplitContainerItem = function(bag, slot, amount)
 		return
 	end
 	counted(bag, slot, have - amount)
-	cursor = { id = ITEMS[held].id, link = itemLink(held), bag = bag, slot = slot,
-		amount = amount }
+	cursor = { id = ITEMS[held].id, link = itemLink(held), name = held,
+		bag = bag, slot = slot, amount = amount }
 end
 
 -- The drop on a bag rather than on a slot, which is what the two bag buttons
@@ -379,20 +412,44 @@ end
 -- one bag, and a bag with no room leaves it on the cursor and says nothing,
 -- which is what makes the addon's walk from bag to bag reachable. The answer
 -- is whether the cursor had an item at all, because that is what the client's
--- own backpack button reads to decide between a drop and a toggle. Only a slot
--- picked out of a bag can be on this cursor, so that is all that can land.
+-- own backpack button reads to decide between a drop and a toggle.
+--
+-- A piece lifted off your body lands here too, and it is the case this was
+-- written without: a gear set takes the shield off and has nowhere to put it
+-- unless a cursor with no bag behind it can land in one. What it came out of
+-- is emptied only where there is something to empty, which is a bag slot: a
+-- worn slot was left bare by the pickup itself.
+--
+-- A bag that will not take the thing is not room. A quiver has free slots and
+-- none of them will take a helmet, so a stub that filled any bag with anything
+-- would let a plan that counted a quiver as room pass. The family is the
+-- client's own answer, the one GetContainerNumFreeSlots hands back.
 local function stow(bag)
-	if not cursor or not cursor.bag then
+	if not cursor or not cursor.name then
 		return false
+	end
+	if (H.FAMILY[bag] or 0) ~= 0 then
+		return true
 	end
 	local held = CARRIED[bag]
 	for slot = 1, held and #held or 0 do
 		if held[slot] == false then
-			held[slot] = CARRIED[cursor.bag][cursor.slot]
-			counted(bag, slot, counted(cursor.bag, cursor.slot))
-			counted(cursor.bag, cursor.slot, 1)
-			CARRIED[cursor.bag][cursor.slot] = false
+			held[slot] = cursor.name
+			counted(bag, slot, cursor.bag and counted(cursor.bag, cursor.slot) or 1)
+			local emptied = cursor.bag
+			if emptied then
+				counted(cursor.bag, cursor.slot, 1)
+				CARRIED[cursor.bag][cursor.slot] = false
+			end
 			cursor = nil
+			-- Every event after the move, never in the middle of it. Anything
+			-- driven by them runs while this call is still on the stack, so a
+			-- world half moved is a world they read.
+			if emptied and emptied ~= bag then
+				H.fire("BAG_UPDATE", emptied)
+			end
+			H.fire("BAG_UPDATE", bag)
+			H.fire("ITEM_LOCK_CHANGED")
 			return true
 		end
 	end

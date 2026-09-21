@@ -168,7 +168,16 @@ function Sets.Get(name)
 	return (Find(name))
 end
 
-function Sets.Entry(name, slot)
+-- What one set says about one slot, and whether that is what you have on.
+--
+-- The third answer is only there where the caller hands in the worn link, and
+-- it is here rather than at the call site because it is a comparison of keys
+-- and there is exactly one file that knows how an item is written down. The
+-- gear page compared two raw links, which is the field `uniqueId` moving the
+-- first time anything touches your gear: every circle under every row lit up
+-- together and the page's headline reading went with them. Standing above and
+-- Wearing below both compare keys; that one line did not.
+function Sets.Entry(name, slot, worn)
 	local record = Find(name)
 	local entry = record and record.slots[slot]
 	if entry == nil then
@@ -177,7 +186,7 @@ function Sets.Entry(name, slot)
 	if entry == false then
 		return "empty"
 	end
-	return "item", entry.link
+	return "item", entry.link, entry.key == Key(worn)
 end
 
 --------------------------------------------------------------------------
@@ -318,6 +327,15 @@ function Sets.Rename(old, new)
 		return false, ("there is already a set called %q."):format(clean)
 	end
 	Remember()
+	-- Every square on an ad hoc bar that points at this set, rewritten before
+	-- the name moves. A set on a bar is a macro square whose body names the set,
+	-- and a macro is text: renaming the set would otherwise leave a square that
+	-- refuses with "no set called Bling" for a set you are still looking at.
+	-- The bars are ours, so this is a rewrite rather than a warning.
+	local bars = ns.AdHoc
+	if bars then
+		bars.Renamed(record.name, clean)
+	end
 	record.name = clean
 	Told()
 	return true

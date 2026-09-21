@@ -141,6 +141,18 @@ local VERBS = {
 	list = List,
 }
 
+-- The one line that puts a set on from anywhere that runs macro text.
+--
+-- A set dropped on an ad hoc bar is a macro square carrying this, and the
+-- toggle's hover offers the same line to paste into a Blizzard macro, because
+-- Blizzard's own bars hold spells, items and macros and nothing an addon can
+-- invent. One writer for both, here, because this file owns the word: a second
+-- copy of the string somewhere that draws is a square that goes on working
+-- after the word is renamed and stops working after the next reload.
+function Sets.Line(name)
+	return ("/wui set wear %s"):format(name)
+end
+
 local function Word(arg, rawArg)
 	local verb, rest = arg:match("^(%S*)%s*(.-)%s*$")
 	local run = VERBS[verb:lower()]

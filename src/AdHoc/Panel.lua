@@ -25,10 +25,10 @@ ns.AdHocPanel = Panel
 -- got, every square would shuffle round as you dropped onto it, and the circle
 -- you were looking at would never be the circle you got.
 --
--- Drag a spell out of the book, an item out of a bag or a macro onto the
--- middle to add it, onto a square to replace what is there, from one square to
--- another to move it round the circle, and off the ring to take it away. A
--- right click takes it away too.
+-- Drag a spell out of the book, an item out of a bag, a macro or a gear set
+-- off the character page onto the middle to add it, onto a square to replace
+-- what is there, from one square to another to move it round the circle, and
+-- off the ring to take it away. A right click takes it away too.
 --
 -- The circle here and the ring on the screen are two pictures of one list.
 -- Nothing on this page draws a cooldown or a colour, because this is where you
@@ -97,6 +97,19 @@ local function Take(kind, a, b, c)
 	return record
 end
 
+-- A drag the client's cursor cannot hold, which is a gear set off the toggle
+-- stack on the character page. There is nothing to pick up for one, so
+-- UI/Carry.lua carries the name and the picture and this turns them into a
+-- record. Anything else carried that way, a circle off a gear row among them,
+-- is not something a bar holds and is refused in silence: the drag came from
+-- another window and landing on the wrong square is not a mistake worth a line.
+local function Carried(held)
+	if type(held) ~= "table" or held.kind ~= "set" then
+		return nil
+	end
+	return Take("set", held.name, held.icon)
+end
+
 --------------------------------------------------------------------------
 -- The two ends of a drag
 --------------------------------------------------------------------------
@@ -150,7 +163,7 @@ local function Says(w)
 	local record = w.record
 	if not record then
 		return { kind = "note", title = "the middle",
-			lines = { "Drag a spell out of your book, an item out of a bag or a macro here.",
+			lines = { "Drag a spell out of your book, an item out of a bag, a macro or a gear set here.",
 				"It goes on the end of the ring and the circle opens up to take it." } }
 	end
 	return { kind = "note", title = record.name,
@@ -166,6 +179,7 @@ local function Square(frame)
 		return Drop(w, record)
 	end, {
 		take = Take,
+		carried = Carried,
 		after = ns.Options.Refresh,
 		drag = function() Lift(w) end,
 		landed = Landed,

@@ -105,6 +105,16 @@ how a set is brought up to date after you replace a piece: one press instead of
 nineteen circles, and it says what it took. Wearing a set that names nothing at
 all is refused and the line points back at this.
 
+Shift right click a toggle to forget that set. A box asks first, and it says
+that `set undo` puts the set back, which it does.
+
+Drag a toggle onto one of your own ad hoc bars and the set lands there as a
+square you push toward, so a set is one gesture away without the sheet open.
+Blizzard's own bars hold spells, items and macros and nothing an addon can
+invent, so for one of those the toggle's hover offers the line to paste into a
+macro. Renaming a set rewrites the squares on your own bars that point at it; a
+macro you typed yourself is yours to fix.
+
 Under them sits one more toggle, a ring with a plus in it instead of a spec
 icon, and that one is drawn before you have saved anything. This is where the
 first set comes from. Press it and a small window asks for a name, which starts
@@ -116,8 +126,12 @@ piece resist set you are going to build by clicking circles. The save button
 stays dim while the name is blank or already in use, and the line under it says
 which.
 
-Armour cannot be equipped in a fight and the client refuses it, not the addon.
-Weapons can, so a weapon swap in a set works mid pull.
+Press a set in a fight and the weapons go on and the armour does not. The two
+hands and the bow are the three slots the client allows mid pull, so everything
+else is dropped from the run before it starts and the line counts what actually
+changed. Nothing is held back for the end of the fight: a set half applied
+thirty seconds later, when you have moved on, is worse than one that did the two
+things you asked for.
 
     /wui set, the sets on this character and how much of each you have on
     /wui set save <name>, /wui set wear <name>, /wui set forget <name>

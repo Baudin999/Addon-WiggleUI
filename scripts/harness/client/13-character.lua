@@ -122,10 +122,14 @@ worn[2] = itemLink("Onyxia Tooth Pendant")
 worn[5] = itemLink("Breastplate of Might")
 worn[11] = itemLink("Band of the Eternal")
 
--- The two calls the gear page clicks with, counted rather than performed.
--- Neither moves anything: what the page is answerable for is whether it refused
--- in a fight and whether it called at all, and a stub that shuffled items
--- between bag and slot would be modelling the server.
+-- The two calls the gear page clicks with. One of them moves gear now and the
+-- other still only counts.
+--
+-- Counting was right while the only question was whether the page called at
+-- all: a stub that shuffled items between bag and slot would have been
+-- modelling the server for nothing. It is wrong for Sets/Wear.lua, which is a
+-- queue of cursor operations whose whole correctness is where the pieces end
+-- up, and a run that did nothing at all shipped green under the old stub.
 local moved = { picked = {}, used = {}, macros = {}, targeting = false }
 
 -- The state the page has to answer differently, and the one that had no stub:
@@ -136,8 +140,53 @@ _G.SpellCanTargetItem = function()
 	return moved.targeting
 end
 
+-- The one call that changes what you have on, and it is a swap rather than a
+-- pickup.
+--
+-- Whichever of the two it is depends on the cursor and never on the call. With
+-- empty hands it takes the worn piece and leaves the slot bare. With a piece in
+-- them it puts that one on and hands back whatever was there, which is the
+-- client behaviour a pair of rings trades places through in three operations
+-- rather than four, and the behaviour Sets/Wear.lua's whole chain ordering
+-- rests on.
+--
+-- Still counted, because 52-character.lua and 52-gear-page.lua read the list
+-- and ask whether the page called at all.
+--
+-- A spell or a vendor's batch in the hands is not a swap. The client answers a
+-- click on a gear slot with one of those by landing the spell on the item, and
+-- nothing here models that; what it must not do is equip a spell.
 _G.PickupInventoryItem = function(slot)
 	moved.picked[#moved.picked + 1] = slot
+	local held = H.held()
+	if held and not held.link then
+		return
+	end
+	local was = _G.GetInventoryItemLink("player", slot)
+	H.wear(slot, held and held.link or nil)
+	-- The bag slot the piece came out of is emptied as it lands, not as it is
+	-- picked up: a pickup leaves the item where it is and the cursor holding a
+	-- reference to the slot, which is the model PickupContainerItem is written
+	-- to and what makes a cancelled pickup cost nothing.
+	local emptied = nil
+	if held and held.bag then
+		H.CARRIED[held.bag][held.slot] = false
+		emptied = held.bag
+	end
+	local name = was and was:match("%[(.-)%]") or nil
+	H.hold(was and {
+		id = ITEMS[name] and ITEMS[name].id, link = was, name = name, worn = slot,
+	} or nil)
+	-- Both events last, after the swap has finished, because the swap is one
+	-- thing the server does and the events are what it says afterwards. Fired
+	-- from the middle of it, a queue driven by them would be handed a world half
+	-- moved: the gear set queue runs its next operation inside the event, and
+	-- with the cursor still holding the piece that had just been equipped it
+	-- stowed a copy of it.
+	if emptied then
+		H.fire("BAG_UPDATE", emptied)
+	end
+	H.fire("ITEM_LOCK_CHANGED")
 end
 _G.UseInventoryItem = function(slot)
 	moved.used[#moved.used + 1] = slot

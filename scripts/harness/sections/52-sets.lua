@@ -38,11 +38,18 @@
 -- every naive model of this, and the difference is whether a resist set that
 -- names five pieces takes your rings off.
 --
--- **The queue is not driven here.** It is one cursor operation per server
--- event, and a stub for that would be a model of the server rather than of the
--- addon; what the addon owes is the plan the queue walks, and that is what is
--- read. The refusal in a fight is asserted, because that one is a call into
--- Character/Worn.lua rather than a round trip.
+-- **A fight takes operations out of the plan rather than refusing the run.**
+-- Slots 16, 17 and 18 are the three the client allows mid pull, so a set
+-- pressed in a fight puts the weapons on and leaves the armour where it is. It
+-- is asserted on the plan and not on the run, because Room and Touched are both
+-- counted off plan.ops: a plan still carrying the armour would ask for the bag
+-- room to stow armour it was never going to lift.
+--
+-- **The queue is driven, at the foot, against the client.** It was not for a
+-- while, and that is how a run which did nothing at all shipped green: the plan
+-- is a table and the queue is four cursor operations, and where the pieces end
+-- up is the whole of what the queue is answerable for. The last block stands a
+-- character up in real gear and presses a set at them.
 --
 -- Every fixture this section adds is taken out again at the foot. The item
 -- lookup in client/04-hands.lua walks ITEMS by id and refuses two fixtures
@@ -310,17 +317,68 @@ do
 end
 
 ----------------------------------------------------------------------
+-- A fight takes the armour out of the plan and leaves the hands in
+--
+-- Pressing a set mid pull used to refuse the whole run, because the first
+-- operation on a slot the fight holds shut refused all nineteen. A warrior who
+-- presses a weapon swap between two pulls got nothing and a sentence about
+-- armour.
+--
+-- The refused operations come out of the plan and not out of the run, and that
+-- is the half worth asserting: Room and Touched are both counted off plan.ops,
+-- so a plan that carried the cloak's lift and stow would ask for a free bag
+-- slot to put armour in that it was never going to lift, and refuse a weapon
+-- swap on a full bag for it.
+--
+-- Nothing is held for the end of the fight. A set half applied thirty seconds
+-- later, when you have moved on, is worse than a set that did the two things
+-- you asked for and stopped.
+----------------------------------------------------------------------
+
+do
+	local name = saved("pull", { [16] = "Gorehowl", [15] = false })
+	local world = scene({
+		[15] = "Shroud of Dominion",
+		[16] = "Quel'Serrar",
+	}, { "Gorehowl" }, 1)
+
+	local calm = Sets.Plan(name, world)
+	check(reads(calm) == "lift 15, stow, grab, drop 16, stow",
+		("out of a fight that set planned %q"):format(reads(calm)))
+	check(calm.room == 1,
+		("out of a fight it asked for %d bag slots"):format(calm.room))
+
+	local real = _G.InCombatLockdown
+	_G.InCombatLockdown = function() return true end
+
+	local plan = Sets.Plan(name, world)
+	check(reads(plan) == "grab, drop 16, stow",
+		("in a fight that set planned %q"):format(reads(plan)))
+	check(plan.changed == 1,
+		("%d slots would change in a fight and only the main hand is allowed"):format(plan.changed))
+	check(plan.room == 0,
+		("in a fight it asked for %d bag slots and the weapon swap needs none")
+			:format(plan.room))
+
+	-- And with the bags shut. The cloak's stow is the only thing in that plan
+	-- that wanted a bag slot, so a weapon swap mid pull with nowhere to put a
+	-- cloak is a weapon swap that runs.
+	local tight = Sets.Plan(name, scene({
+		[15] = "Shroud of Dominion",
+		[16] = "Quel'Serrar",
+	}, { "Gorehowl" }, 0))
+	check(not tight.short,
+		"a weapon swap in a fight was refused for want of the room the armour needed")
+
+	_G.InCombatLockdown = real
+end
+
+----------------------------------------------------------------------
 -- The two readers that ask the client rather than a scene
 --
--- Wearing and Wear read what is on you now, because there is nothing to hand
--- them: the question they answer is about the character. So this block puts a
--- cloak on the stub and takes it off again, and it is the only place in this
--- file where the world is the client's.
---
--- The fight is what the block is really for. Character/Worn.lua holds the rule
--- per slot -- the two hands and the bow may be changed mid pull and nothing
--- else may -- and a word that quietly did nothing is the worst version of this,
--- so the sentence is read back rather than the return.
+-- Wearing reads what is on you now, because there is nothing to hand it: the
+-- question it answers is about the character. So this block puts a cloak on the
+-- stub and takes it off again.
 ----------------------------------------------------------------------
 
 do
@@ -331,28 +389,274 @@ do
 	check(Sets.Wearing("quiet") == false,
 		"a set naming a ring nobody has on reads as worn")
 
-	local real = _G.InCombatLockdown
-	_G.InCombatLockdown = function() return true end
-
-	local done, why = Sets.Wear("bare")
-	check(done == false, "a cloak was taken off in the middle of a fight")
-	check(tostring(why):find("fight", 1, true) ~= nil,
-		("wearing a set in a fight was refused with %q"):format(tostring(why)))
-
-	_G.InCombatLockdown = real
 	worn[15] = nil
+end
+
+----------------------------------------------------------------------
+-- The queue, against the client
+--
+-- Everything above hands the planner a table. This block hands the queue a
+-- character: gear on the doll, a bag with room in it, and the four cursor calls
+-- the stub now really makes. What is asserted is where the pieces ended up,
+-- because that is the whole of what a queue is for and it is what nothing could
+-- assert before -- a run that made every call and moved nothing passed every
+-- line above.
+--
+-- A bag of its own, bag three, put up here and taken down at the foot. The
+-- three bags the stub ships with are full and belong to other sections: bag
+-- zero is what the charge macro picks a weapon out of, bag one is what the
+-- vendor sweep sells and bag two is the quest items. A section that emptied a
+-- slot in one of them to make room would be moving what three other sections
+-- count.
+--
+-- Which bag a stow lands in is the client's business and not this section's.
+-- ns.Stow offers the backpack and then each bag in turn, so a piece taken off
+-- lands wherever there is first a hole; what is asserted is that it is in a bag
+-- at all and off the cursor, which is the whole of what the stow owes.
+----------------------------------------------------------------------
+
+do
+	local CARRIED = H.CARRIED
+	local BAG = 3
+
+	-- Six slots, which is two more than the deepest any run below goes. The
+	-- count matters: Sets.World counts the free slots in this bag as the room a
+	-- plan may spend, so a bag exactly the size of the plan would leave the
+	-- arithmetic reading as luck.
+	local function bag(...)
+		CARRIED[BAG] = { false, false, false, false, false, false }
+		for index, name in ipairs({ ... }) do
+			CARRIED[BAG][index] = name
+		end
+	end
+
+	-- Which bag and slot a piece is in, anywhere in the bags.
+	local function holding(name)
+		for which = 0, 4 do
+			local slots = CARRIED[which] or {}
+			for index = 1, #slots do
+				if slots[index] == name then
+					return which, index
+				end
+			end
+		end
+		return nil
+	end
+
+	local function wearing(slot)
+		local link = ns.Worn.Link(slot)
+		return link and link:match("%[(.-)%]") or nil
+	end
+
+	-- The slots this block moves, read off the client and put back at the foot.
+	-- Through Worn.Link and H.wear rather than the worn table, because two of
+	-- the five are the hands and the stub answers those out of the swing
+	-- timer's table: a two hander written into `worn` would be a weapon nothing
+	-- can see.
+	local was = {}
+	for _, slot in ipairs({ 11, 12, 15, 16, 17 }) do
+		was[slot] = ns.Worn.Link(slot)
+	end
+
+	------------------------------------------------------------------
+	-- A stow puts the piece in a bag, and never back where it came from
+	------------------------------------------------------------------
+
+	-- The bug this block was written for. The stow operation ran ClearCursor,
+	-- which cancels a pickup and hands the piece back to the slot it was lifted
+	-- out of, so every lift and stow pair was a round trip that changed nothing:
+	-- the whole of Strip, which is the half of a set that takes a piece off you,
+	-- and the whole of Displaced, which is the shield a two hander pushes out.
+	do
+		bag()
+		H.wear(15, itemLink("Shroud of Dominion"))
+		local name = saved("strip", { [15] = false })
+
+		local done, why = Sets.Wear(name)
+		check(done, ("a set that takes the cloak off was refused with %q")
+			:format(tostring(why)))
+		check(wearing(15) == nil,
+			("the cloak came off and slot 15 still holds %s"):format(tostring(wearing(15))))
+		check(holding("Shroud of Dominion") ~= nil,
+			"the cloak came off and is in no bag, so the stow put it back on you")
+		check(_G.GetCursorInfo() == nil,
+			"the run ended with the cloak still on the cursor")
+		check(Sets.Running() == nil,
+			("%s is still going after the run finished"):format(tostring(Sets.Running())))
+	end
+
+	------------------------------------------------------------------
+	-- Two rings trading places, with no bag slot between them
+	------------------------------------------------------------------
+
+	-- The case the planner is written for, driven end to end. Three cursor
+	-- operations and the bags are never touched, because the client hands the
+	-- displaced ring straight back onto the cursor: lift 11, drop it on 12 and
+	-- take the other back, drop that on 11.
+	do
+		bag()
+		H.wear(11, itemLink("Band of the Left"))
+		H.wear(12, itemLink("Band of the Right"))
+		local name = saved("fingers", {
+			[11] = "Band of the Right",
+			[12] = "Band of the Left",
+		})
+
+		local done, why = Sets.Wear(name)
+		check(done, ("the ring swap was refused with %q"):format(tostring(why)))
+		check(wearing(11) == "Band of the Right" and wearing(12) == "Band of the Left",
+			("the rings came out %s on 11 and %s on 12")
+				:format(tostring(wearing(11)), tostring(wearing(12))))
+		check(holding("Band of the Left") == nil and holding("Band of the Right") == nil,
+			"a ring went through the bags, and there is a path through that swap with none in it")
+	end
+
+	------------------------------------------------------------------
+	-- A piece out of a bag, onto a finger, and the one it displaces back
+	------------------------------------------------------------------
+
+	do
+		bag("Band of the Left")
+		H.wear(11, itemLink("Band of the Right"))
+		H.wear(12, nil)
+		local name = saved("carried", { [11] = "Band of the Left" })
+
+		local done, why = Sets.Wear(name)
+		check(done, ("a set carried out of a bag was refused with %q"):format(tostring(why)))
+		check(wearing(11) == "Band of the Left",
+			("the ring out of the bag came out as %s on the finger")
+				:format(tostring(wearing(11))))
+		check(holding("Band of the Right") ~= nil,
+			"the ring the set displaced is in no bag")
+		check(holding("Band of the Left") == nil,
+			"the ring that went on is in the bag as well, so it was copied rather than moved")
+	end
+
+	------------------------------------------------------------------
+	-- A gesture refused mid run leaves the run advancing
+	------------------------------------------------------------------
+
+	-- The second half of the bug. Step only ever runs off ITEM_LOCK_CHANGED or
+	-- BAG_UPDATE and there is no ticker by design, so a gesture that Fresh
+	-- refuses makes no client call and fires no event: the run stopped where it
+	-- stood, `running` stayed set for the rest of the session, and every later
+	-- set answered "X is still going on" until a reload.
+	--
+	-- The world is moved under the run from inside the first pickup, which is
+	-- what a bag sort, a loot arriving or another addon's housekeeping looks
+	-- like from in here. It is the only way to reach the case: a plan is made
+	-- and walked inside one word, so nothing outside can move anything between
+	-- the two.
+	do
+		bag("Shroud of Dominion", "Aegis of the Sun")
+		H.wear(15, nil)
+		H.wear(17, nil)
+		local name = saved("twin", {
+			[15] = "Shroud of Dominion",
+			[17] = "Aegis of the Sun",
+		})
+
+		-- Emptied before the call rather than after it, because the call is
+		-- what fires the event the queue runs on: under this stub the whole
+		-- rest of the plan is walked inside it, so a world moved after it
+		-- returns is a world moved after the run is over.
+		local real = _G.PickupContainerItem
+		local gone = false
+		_G.PickupContainerItem = function(which, index)
+			if not gone then
+				gone = true
+				CARRIED[BAG][2] = false
+			end
+			return real(which, index)
+		end
+
+		local said = _G.ChatFrame1.messages or {}
+		local quiet = #said
+		local done = Sets.Wear(name)
+		_G.PickupContainerItem = real
+
+		check(done, "a set whose second piece moved mid run was refused outright")
+		check(wearing(15) == "Shroud of Dominion",
+			("the piece that was still there came out as %s"):format(tostring(wearing(15))))
+		check(wearing(17) == nil,
+			("the shield that vanished mid run was equipped anyway, as %s")
+				:format(tostring(wearing(17))))
+		check(Sets.Running() == nil,
+			("%s is still going, so one refused gesture stalled the queue for the session")
+				:format(tostring(Sets.Running())))
+		check(#said > quiet and tostring(said[#said].text):find("left alone", 1, true) ~= nil,
+			("the run's line reads %q and it has to name what it left alone")
+				:format(tostring(said[#said] and said[#said].text)))
+
+		-- And the next word runs, which is the symptom the player actually met.
+		H.wear(15, nil)
+		bag("Shroud of Dominion")
+		local again, why = Sets.Wear(name)
+		check(again, ("the next set was refused with %q"):format(tostring(why)))
+	end
+
+	------------------------------------------------------------------
+	-- And in a fight the weapons land and the armour does not
+	------------------------------------------------------------------
+
+	do
+		bag("Gorehowl")
+		H.wear(15, itemLink("Shroud of Dominion"))
+		H.wear(16, itemLink("Quel'Serrar"))
+		H.wear(17, nil)
+		local name = saved("mid", { [16] = "Gorehowl", [15] = false })
+
+		local real = _G.InCombatLockdown
+		_G.InCombatLockdown = function() return true end
+		local done, why = Sets.Wear(name)
+		_G.InCombatLockdown = real
+
+		check(done, ("a weapon swap mid pull was refused with %q"):format(tostring(why)))
+		check(wearing(16) == "Gorehowl",
+			("the two hander came out as %s in the main hand"):format(tostring(wearing(16))))
+		check(wearing(15) == "Shroud of Dominion",
+			("the cloak came off in a fight and slot 15 reads %s")
+				:format(tostring(wearing(15))))
+	end
+
+	------------------------------------------------------------------
+	-- Left as it was found
+	--
+	-- The gear back on the doll, the extra bag gone, and every fixture this
+	-- block put in one of the stub's own bags swept out of it. That last is not
+	-- housekeeping: the item lookup reads ITEMS by name and the foot of this
+	-- section deletes these seven, so a ring left in the vendor bag is a crash
+	-- in whichever section next draws that slot.
+	------------------------------------------------------------------
+
+	for _, slot in ipairs({ 11, 12, 15, 16, 17 }) do
+		H.wear(slot, was[slot])
+	end
+	CARRIED[BAG] = nil
+	for which = 0, 4 do
+		local slots = CARRIED[which] or {}
+		for index = 1, #slots do
+			if FIXTURES[slots[index]] then
+				slots[index] = false
+			end
+		end
+	end
+	for _, name in ipairs({ "strip", "fingers", "carried", "twin", "mid" }) do
+		Sets.Remove(name)
+	end
+	check(_G.GetCursorInfo() == nil, "the queue block left something on the cursor")
 end
 
 ----------------------------------------------------------------------
 -- Put the scene back
 ----------------------------------------------------------------------
 
-for _, name in ipairs({ "raid", "swapped", "cleave", "trinkets", "bare", "quiet" }) do
+for _, name in ipairs({ "raid", "swapped", "cleave", "trinkets", "bare", "quiet", "pull" }) do
 	Sets.Remove(name)
 end
 for name in pairs(FIXTURES) do
 	ITEMS[name] = nil
 end
 
-print(("sets %d saved after the run, and a pair of rings trades places in three cursor operations")
+print(("sets %d saved after the run, a pair of rings trades places in three cursor operations, a fight leaves the armour out of the plan, and the queue is driven against the client: a stow fills a bag, a ring swap touches none, and a gesture refused mid run leaves the queue advancing")
 	:format(#Sets.All()))

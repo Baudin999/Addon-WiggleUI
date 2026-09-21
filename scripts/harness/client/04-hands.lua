@@ -671,6 +671,26 @@ _G.IsModifiedClick = function(binding)
 	return false
 end
 
+-- One worn slot written, which is the half of GetInventoryItemLink that had no
+-- writer.
+--
+-- The client answers all twenty slots out of one call and this stub answers
+-- them out of two tables: the hands come off the swing timer's, because the
+-- swing timer wanted them first, and the other eighteen off `worn`. So a file
+-- that put a two hander in slot 16 by writing `worn[16]` would be writing
+-- somewhere GetInventoryItemLink never looks, and the piece would be on you and
+-- invisible. One writer, and it knows about the seam.
+H.wear = function(slot, link)
+	if slot == 16 then
+		swing.mainhand = link
+	elseif slot == 17 then
+		swing.offhand = link
+	else
+		worn[slot] = link
+	end
+	return link
+end
+
 H.swing, H.enemyCasts, H.misused = swing, enemyCasts, misused
 H.worn, H.shots = worn, shots
 -- The corpse a section stands up in place of the four, and the way back. A
