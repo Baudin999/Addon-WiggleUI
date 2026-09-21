@@ -28,6 +28,11 @@
 	--rail-w: calc(var(--m-rail) * var(--px));
 	--rail-row: calc(var(--m-railRow) * var(--px));
 	--title-h: calc(var(--m-title) * var(--px));
+	/* The title bar's drawn height, which is the addon's title row plus the
+	 * padding either side of it. It is a fixed number rather than a minimum
+	 * because the rail sticks to the underside of it and has to know where
+	 * that is. */
+	--bar-h: calc(var(--title-h) + var(--pad));
 	--footer-h: calc(var(--m-footer) * var(--px));
 	--font: calc(var(--m-font) * var(--px));
 	--small: calc(var(--m-small) * var(--px));
@@ -102,8 +107,8 @@ a:hover { text-decoration-thickness: 2px; }
 	display: flex;
 	align-items: center;
 	gap: var(--pad);
-	min-height: var(--title-h);
-	padding: calc(var(--gutter) / 2) var(--pad);
+	height: var(--bar-h);
+	padding: 0 var(--pad);
 	background: var(--c-chrome);
 	border-bottom: var(--hairline) solid var(--c-hairline);
 	position: sticky;
@@ -137,13 +142,26 @@ a:hover { text-decoration-thickness: 2px; }
 
 /* ------------------------------------------------------------------ rail */
 
+/* The rail is the full height of the split so the column keeps its colour all
+ * the way down. What sticks is the list inside it, which is why the rows need
+ * a box of their own: a sticky element cannot also be the thing being
+ * stretched to its container's height, and stretched it would have nowhere to
+ * travel. */
 .rail {
 	flex: 0 0 var(--rail-w);
 	width: var(--rail-w);
 	background: var(--c-rail);
 	border-right: var(--hairline) solid var(--c-hairline);
-	padding: var(--gutter) 0;
 	align-self: stretch;
+}
+
+.rail-inner {
+	position: sticky;
+	top: var(--bar-h);
+	padding: var(--gutter) 0;
+	max-height: calc(100vh - var(--bar-h));
+	overflow-y: auto;
+	overscroll-behavior: contain;
 }
 
 .rail-row {
@@ -364,12 +382,21 @@ tbody tr:nth-child(even) { background: var(--c-band); }
 	.rail {
 		flex: none;
 		width: 100%;
+		border-right: 0;
+		border-bottom: var(--hairline) solid var(--c-hairline);
+		position: sticky;
+		top: var(--bar-h);
+		z-index: 4;
+	}
+
+	.rail-inner {
+		position: static;
 		display: flex;
 		gap: var(--row-gap);
 		overflow-x: auto;
-		padding: var(--gutter) var(--gutter);
-		border-right: 0;
-		border-bottom: var(--hairline) solid var(--c-hairline);
+		overflow-y: hidden;
+		max-height: none;
+		padding: var(--gutter);
 	}
 
 	.rail-row {

@@ -494,8 +494,10 @@ local function document(opts)
 	</header>
 	<div class="split">
 		<nav class="rail">
+			<div class="rail-inner">
 %s
-			<p class="rail-note">Shake the mouse sideways to change the palette, the way the addon changes theme. <button type="button" id="wiggle-off" class="linky"></button></p>
+				<p class="rail-note">Shake the mouse sideways to change the palette, the way the addon changes theme. <button type="button" id="wiggle-off" class="linky"></button></p>
+			</div>
 		</nav>
 		<main class="page">
 %s
