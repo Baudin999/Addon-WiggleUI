@@ -5,6 +5,7 @@ type: bug
 status: todo
 title: Pressing a set does not swap any gear
 parent: 01M1Y4JDFMVHEB87QK9R1KP4BJ
+depends: [01M31BW0V6GET4YTV6YXJTFM85]
 ---
 
 Pressing a set on the character page moves nothing. The run starts, every slot
