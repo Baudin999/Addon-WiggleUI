@@ -16,7 +16,7 @@ mentions, which is the same hole the empty toggle was made to close at
 
 A gesture on a toggle that forgets that set, and a confirm in front of it.
 
-`Sets.Remove` (`Sets.lua:281`) already does the work and already takes a
+`Sets.Remove` (`Sets.lua:296`) already does the work and already takes a
 `Remember()` snapshot, so `/wui set undo` puts the set back. The confirm says
 so, which is what makes it a light confirm rather than a scary one.
 
