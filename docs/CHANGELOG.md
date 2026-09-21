@@ -2,6 +2,53 @@
 
 ## Unreleased
 
+### Pressing a set moves your gear
+
+A set put nothing on. The queue let go of every piece it picked up with
+ClearCursor, which is the call that cancels a pickup and hands the item back to
+the slot it came from, so every lift and stow pair was a round trip that changed
+nothing: the half of a set that takes a piece off you, and the shield a two
+hander pushes out. A set holding three deliberate holes then asked for three
+free bag slots and refused outright when the bags were tight, for three moves it
+was never going to make.
+
+The second half of it was quieter. A piece that moved while the run was going is
+skipped, and skipping made no call to the server, so nothing fired the event the
+queue runs on. The run stopped where it stood and never said so: every later set
+answered "that one is still going on" until a reload, and if the piece that
+moved was the first one, pressing a set did nothing at all.
+
+Press a set in a fight and the weapons go on now. The two hands and the bow are
+the three slots the client allows mid pull, and the rest are dropped from the
+run before it starts rather than refusing all nineteen, which is what a weapon
+swap between two pulls got before: nothing, and a sentence about armour. Nothing
+is held back for the end of the fight. A set half applied thirty seconds later,
+when you have already moved on, is worse than a set that did the two things you
+asked for and stopped.
+
+The circles under the gear rows read your gear again. They compared two item
+links letter for letter, and a link carries a field that changes as the piece
+moves between your bags and your body, so the first time anything touched your
+gear after a capture all nineteen lit up at once. A lit circle is meant to be a
+piece that did not go on, which is the whole of what the column is for.
+
+And a helmet dropped on a ring circle says so. All three gestures that fill a
+circle threw the refusal away, so the page did nothing and said nothing.
+
+### A set goes on a bar, and can be dropped from the page
+
+Drag a set's toggle onto one of your own ad hoc bars and it lands there as a
+square you push toward. It is a macro square with one line in it, the same line
+the toggle's hover offers you for a Blizzard macro, because Blizzard's bars hold
+spells, items and macros and nothing an addon can invent. Rename the set and the
+squares on your own bars follow it; a macro you typed yourself is yours to fix,
+and a square pointing at a set nobody has any more refuses with a sentence
+rather than doing nothing.
+
+Shift right click a toggle to forget that set. A set could be made from the page
+from the day the page existed and only dropped at a slash prompt nothing on the
+page mentions. The box asks first and says that `set undo` puts it back.
+
 ### A set can take a piece off, and be taken again in one press
 
 Three things the gear sets shipped without, all of them found in an evening of
